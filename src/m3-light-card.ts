@@ -3,6 +3,7 @@ import { customElement, property, state, query } from "lit/decorators.js";
 import type {
   HomeAssistant,
   M3LightCardConfig,
+  LightSceneConfig,
   LovelaceCard,
   LovelaceCardEditor,
   LovelaceGridOptions,
@@ -29,14 +30,26 @@ import {
   LIGHT_THROTTLE_MS,
   LIGHT_DRAG_SETTLE_MS,
   LIGHT_MIN_BRIGHTNESS_PCT,
+  LIGHT_COLOR_TEMP_MIN_KELVIN,
+  LIGHT_COLOR_TEMP_MAX_KELVIN,
+  LIGHT_COLOR_TEMP_PRESET_WARM,
+  LIGHT_COLOR_TEMP_PRESET_NEUTRAL,
+  LIGHT_COLOR_TEMP_PRESET_COLD,
+  LIGHT_WHEEL_SIZE,
+  LIGHT_WHEEL_HANDLE_SIZE,
+  LIGHT_PALETTE_SWATCH_SIZE,
+  LIGHT_SCENE_CHIP_HEIGHT,
+  LIGHT_MEMBER_ROW_HEIGHT,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
+import { renderListRow, listRowStyles } from "./shared/list-row";
 import { shouldAnimate, isReducedMotion, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { buildWavePath } from "./shared/wave";
+import { hexToHs, hsToRgb, rgbToHex, rgbToHs } from "./shared/color-picker";
 import { stampVersion } from "./shared/config-migration";
 import { localize, type TranslationKey } from "./localize";
 
@@ -48,6 +61,52 @@ console.info(
 
 const EASING = unsafeCSS(STANDARD_EASING);
 const DEFAULT_SLIDER_WIDTH = 220;
+
+// Throttles a fast-firing continuous value (drag/pointer-move) down to at
+// most one service call per `ms`, always flushing the final value — shared
+// by the brightness slider, color-temp slider, and color wheel, which all
+// need the exact same "call light.turn_on at most every N ms while
+// dragging, but never miss the value you released on" behavior.
+class DragThrottle<T> {
+  private timer?: number;
+  private pending?: T;
+  private lastCallTs = 0;
+
+  constructor(
+    private readonly fn: (value: T) => void,
+    private readonly ms = LIGHT_THROTTLE_MS,
+  ) {}
+
+  call(value: T): void {
+    this.pending = value;
+    const elapsed = performance.now() - this.lastCallTs;
+    if (elapsed >= this.ms) {
+      this.flush(value);
+    } else if (this.timer === undefined) {
+      this.timer = window.setTimeout(() => {
+        this.timer = undefined;
+        if (this.pending !== undefined) this.flush(this.pending);
+      }, this.ms - elapsed);
+    }
+  }
+
+  flush(value: T): void {
+    if (this.timer !== undefined) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+    this.pending = undefined;
+    this.lastCallTs = performance.now();
+    this.fn(value);
+  }
+
+  clear(): void {
+    if (this.timer !== undefined) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+  }
+}
 
 @customElement("m3-light-card")
 export class M3LightCard extends LitElement implements LovelaceCard {
@@ -61,7 +120,14 @@ export class M3LightCard extends LitElement implements LovelaceCard {
   @state() private _dragging = false;
   @state() private _dragValue?: number;
 
+  @state() private _tempDragging = false;
+  @state() private _tempDragValue?: number;
+
+  @state() private _wheelDragging = false;
+  @state() private _wheelDragValue?: [number, number];
+
   @query(".wave-slider") private _sliderEl?: HTMLDivElement;
+  @query(".wheel") private _wheelEl?: HTMLDivElement;
 
   private _rafId?: number;
   private _resizeObserver?: ResizeObserver;
@@ -70,13 +136,15 @@ export class M3LightCard extends LitElement implements LovelaceCard {
   private _targetAmplitude = 0;
   private _phaseAnimating = false;
 
-  private _throttleTimer?: number;
-  private _pendingPct?: number;
-  private _lastCallTs = 0;
   private _dragEndTimer?: number;
+  private _tempDragEndTimer?: number;
 
   private _entityPct = 0;
   private _unavailable = false;
+
+  private readonly _brightnessThrottle = new DragThrottle<number>((pct) => this._setBrightnessNow(pct));
+  private readonly _tempThrottle = new DragThrottle<number>((kelvin) => this._setColorTempNow(kelvin));
+  private readonly _hsThrottle = new DragThrottle<[number, number]>((hs) => this._setHsNow(hs));
 
   public static getStubConfig(hass: HomeAssistant): M3LightCardConfig {
     const entities = Object.keys(hass?.states ?? {}).filter((eid) =>
@@ -100,6 +168,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       animation: "auto",
       wave_style: "wavy",
       use_light_color: true,
+      color_temp_style: "presets",
       ...config,
     });
   }
@@ -140,8 +209,11 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     this._intersectionObserver?.disconnect();
     this._resizeObserver?.disconnect();
     this._stopAnimationLoop();
-    if (this._throttleTimer !== undefined) clearTimeout(this._throttleTimer);
+    this._brightnessThrottle.clear();
+    this._tempThrottle.clear();
+    this._hsThrottle.clear();
     if (this._dragEndTimer !== undefined) clearTimeout(this._dragEndTimer);
+    if (this._tempDragEndTimer !== undefined) clearTimeout(this._tempDragEndTimer);
   }
 
   protected updated(changed: PropertyValues): void {
@@ -216,12 +288,14 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-  private _valueFromClientX(clientX: number): number {
-    if (!this._sliderEl) return LIGHT_MIN_BRIGHTNESS_PCT;
-    const rect = this._sliderEl.getBoundingClientRect();
+  // ---- Brightness (wave slider) --------------------------------------------
+
+  private _pctFromClientX(clientX: number, el: HTMLElement | undefined, min = 0): number {
+    if (!el) return min;
+    const rect = el.getBoundingClientRect();
     const x = clientX - rect.left;
     const pct = rect.width > 0 ? (x / rect.width) * 100 : 0;
-    return Math.min(100, Math.max(LIGHT_MIN_BRIGHTNESS_PCT, Math.round(pct)));
+    return Math.min(100, Math.max(min, Math.round(pct)));
   }
 
   private _handlePointerDown = (e: PointerEvent): void => {
@@ -229,23 +303,23 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     e.preventDefault();
     this._sliderEl?.setPointerCapture(e.pointerId);
     this._dragging = true;
-    const value = this._valueFromClientX(e.clientX);
+    const value = this._pctFromClientX(e.clientX, this._sliderEl, LIGHT_MIN_BRIGHTNESS_PCT);
     this._dragValue = value;
-    this._throttledSetBrightness(value);
+    this._brightnessThrottle.call(value);
   };
 
   private _handlePointerMove = (e: PointerEvent): void => {
     if (!this._dragging) return;
-    const value = this._valueFromClientX(e.clientX);
+    const value = this._pctFromClientX(e.clientX, this._sliderEl, LIGHT_MIN_BRIGHTNESS_PCT);
     if (value === this._dragValue) return;
     this._dragValue = value;
-    this._throttledSetBrightness(value);
+    this._brightnessThrottle.call(value);
   };
 
   private _handlePointerUp = (e: PointerEvent): void => {
     if (!this._dragging) return;
-    const value = this._dragValue ?? this._valueFromClientX(e.clientX);
-    this._flushThrottleImmediately(value);
+    const value = this._dragValue ?? this._pctFromClientX(e.clientX, this._sliderEl, LIGHT_MIN_BRIGHTNESS_PCT);
+    this._brightnessThrottle.flush(value);
     this._scheduleDragEnd();
   };
 
@@ -265,33 +339,9 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     const next = Math.min(100, Math.max(LIGHT_MIN_BRIGHTNESS_PCT, current + dir * step));
     this._dragging = true;
     this._dragValue = next;
-    this._throttledSetBrightness(next);
+    this._brightnessThrottle.call(next);
     this._scheduleDragEnd();
   };
-
-  private _throttledSetBrightness(pct: number): void {
-    this._pendingPct = pct;
-    const now = performance.now();
-    const elapsed = now - this._lastCallTs;
-    if (elapsed >= LIGHT_THROTTLE_MS) {
-      this._flushThrottleImmediately(pct);
-    } else if (this._throttleTimer === undefined) {
-      this._throttleTimer = window.setTimeout(() => {
-        this._throttleTimer = undefined;
-        if (this._pendingPct !== undefined) this._flushThrottleImmediately(this._pendingPct);
-      }, LIGHT_THROTTLE_MS - elapsed);
-    }
-  }
-
-  private _flushThrottleImmediately(pct: number): void {
-    if (this._throttleTimer !== undefined) {
-      clearTimeout(this._throttleTimer);
-      this._throttleTimer = undefined;
-    }
-    this._pendingPct = undefined;
-    this._lastCallTs = performance.now();
-    this._setBrightnessNow(pct);
-  }
 
   private _setBrightnessNow(pct: number): void {
     if (!this.hass || !this._config) return;
@@ -310,6 +360,124 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       this._dragValue = undefined;
       this._dragEndTimer = undefined;
     }, delay);
+  }
+
+  // ---- Color temperature -----------------------------------------------------
+
+  private _setColorTempNow(kelvin: number): void {
+    if (!this.hass || !this._config) return;
+    const data: Record<string, unknown> = {
+      entity_id: this._config.entity,
+      color_temp_kelvin: Math.round(kelvin),
+    };
+    if (this._config.transition !== undefined) data.transition = this._config.transition;
+    this.hass.callService("light", "turn_on", data);
+  }
+
+  private _handleTempPointerDown = (e: PointerEvent, minK: number, maxK: number): void => {
+    if (!this._config || this._unavailable) return;
+    e.preventDefault();
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+    this._tempDragging = true;
+    const pct = this._pctFromClientX(e.clientX, el);
+    const value = Math.round(minK + (pct / 100) * (maxK - minK));
+    this._tempDragValue = value;
+    this._tempThrottle.call(value);
+  };
+
+  private _handleTempPointerMove = (e: PointerEvent, minK: number, maxK: number): void => {
+    if (!this._tempDragging) return;
+    const el = e.currentTarget as HTMLElement;
+    const pct = this._pctFromClientX(e.clientX, el);
+    const value = Math.round(minK + (pct / 100) * (maxK - minK));
+    if (value === this._tempDragValue) return;
+    this._tempDragValue = value;
+    this._tempThrottle.call(value);
+  };
+
+  private _handleTempPointerUp = (): void => {
+    if (!this._tempDragging) return;
+    if (this._tempDragValue !== undefined) this._tempThrottle.flush(this._tempDragValue);
+    if (this._tempDragEndTimer !== undefined) clearTimeout(this._tempDragEndTimer);
+    this._tempDragEndTimer = window.setTimeout(() => {
+      this._tempDragging = false;
+      this._tempDragValue = undefined;
+      this._tempDragEndTimer = undefined;
+    }, LIGHT_DRAG_SETTLE_MS);
+  };
+
+  // ---- Color wheel -----------------------------------------------------------
+
+  private _hsFromWheelEvent(e: PointerEvent): [number, number] {
+    const rect = this._wheelEl!.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const radius = rect.width / 2;
+    const dist = Math.min(radius, Math.hypot(dx, dy));
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    if (angle < 0) angle += 360;
+    const saturation = radius > 0 ? (dist / radius) * 100 : 0;
+    return [angle, saturation];
+  }
+
+  private _handleWheelPointerDown = (e: PointerEvent): void => {
+    if (!this._config || this._unavailable || !this._wheelEl) return;
+    e.preventDefault();
+    this._wheelEl.setPointerCapture(e.pointerId);
+    this._wheelDragging = true;
+    const hs = this._hsFromWheelEvent(e);
+    this._wheelDragValue = hs;
+    this._hsThrottle.call(hs);
+  };
+
+  private _handleWheelPointerMove = (e: PointerEvent): void => {
+    if (!this._wheelDragging || !this._wheelEl) return;
+    const hs = this._hsFromWheelEvent(e);
+    this._wheelDragValue = hs;
+    this._hsThrottle.call(hs);
+  };
+
+  private _handleWheelPointerUp = (): void => {
+    if (!this._wheelDragging) return;
+    if (this._wheelDragValue) this._hsThrottle.flush(this._wheelDragValue);
+    this._wheelDragging = false;
+    this._wheelDragValue = undefined;
+  };
+
+  private _setHsNow(hs: [number, number]): void {
+    if (!this.hass || !this._config) return;
+    const data: Record<string, unknown> = {
+      entity_id: this._config.entity,
+      hs_color: hs,
+    };
+    if (this._config.transition !== undefined) data.transition = this._config.transition;
+    this.hass.callService("light", "turn_on", data);
+  }
+
+  private _pickPaletteColor(hex: string): void {
+    const hs = hexToHs(hex);
+    if (!hs) return;
+    this._setHsNow(hs);
+  }
+
+  // ---- Scenes & group members --------------------------------------------
+
+  private _activateScene(scene: LightSceneConfig): void {
+    if (!this.hass) return;
+    if (scene.service) {
+      const [domain, service] = scene.service.split(".", 2);
+      if (!domain || !service) return;
+      this.hass.callService(domain, service, scene.service_data ?? {});
+    } else if (scene.entity) {
+      this.hass.callService("scene", "turn_on", { entity_id: scene.entity });
+    }
+  }
+
+  private _toggleMember(entityId: string): void {
+    this.hass?.callService("light", "toggle", { entity_id: entityId });
   }
 
   private _handlePowerToggle(): void {
@@ -340,6 +508,12 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     const hasBrightness =
       modes.some((m) => m !== "onoff") ||
       (modes.length === 0 && entity.attributes.brightness !== undefined);
+    const supportsColorTemp = modes.includes("color_temp");
+    const supportsColor = modes.some((m) => ["hs", "rgb", "rgbw", "rgbww", "xy"].includes(m));
+    const memberIds: string[] = Array.isArray(entity.attributes.entity_id)
+      ? entity.attributes.entity_id
+      : [];
+    const isGroup = memberIds.length > 0;
 
     const brightness255 = entity.attributes.brightness as number | undefined;
     const brightnessPct =
@@ -397,6 +571,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       "lc-track": trackColorCss,
       "lc-handle": handleColorCss,
       "lc-power-color": activeColor,
+      "lr-row-height": `${LIGHT_MEMBER_ROW_HEIGHT}px`,
     });
 
     return html`
@@ -425,6 +600,12 @@ export class M3LightCard extends LitElement implements LovelaceCard {
             `,
           })}
           ${hasBrightness ? this._renderWaveSlider(displayPct, unavailable) : nothing}
+          ${supportsColorTemp ? this._renderColorTemp(entity, unavailable) : nothing}
+          ${this._config.show_color_wheel && supportsColor
+            ? this._renderColorWheel(this._currentHs(entity), unavailable)
+            : nothing}
+          ${this._config.scenes?.length ? this._renderScenes(unavailable) : nothing}
+          ${this._config.show_members && isGroup ? this._renderMembers(memberIds) : nothing}
         </div>
       </ha-card>
     `;
@@ -486,9 +667,187 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _renderColorTemp(entity: { attributes: Record<string, unknown> }, unavailable: boolean) {
+    const minK = (entity.attributes.min_color_temp_kelvin as number) ?? LIGHT_COLOR_TEMP_MIN_KELVIN;
+    const maxK = (entity.attributes.max_color_temp_kelvin as number) ?? LIGHT_COLOR_TEMP_MAX_KELVIN;
+    const currentK =
+      this._tempDragging && this._tempDragValue !== undefined
+        ? this._tempDragValue
+        : ((entity.attributes.color_temp_kelvin as number) ?? Math.round((minK + maxK) / 2));
+    const style = this._config?.color_temp_style ?? "presets";
+
+    if (style === "presets") {
+      const presets = this._config?.color_temp_presets ?? {};
+      const options: { key: string; k: number; label: string }[] = [
+        { key: "warm", k: presets.warm ?? LIGHT_COLOR_TEMP_PRESET_WARM, label: this._t("editor_light_color_temp_warm") },
+        { key: "neutral", k: presets.neutral ?? LIGHT_COLOR_TEMP_PRESET_NEUTRAL, label: this._t("editor_light_color_temp_neutral") },
+        { key: "cold", k: presets.cold ?? LIGHT_COLOR_TEMP_PRESET_COLD, label: this._t("editor_light_color_temp_cold") },
+      ];
+      return html`
+        <div class="temp-presets">
+          ${options.map(
+            (o) => html`
+              <button
+                class="temp-preset ${Math.abs(currentK - o.k) < 100 ? "active" : ""}"
+                ?disabled=${unavailable}
+                title=${o.label}
+                aria-label=${o.label}
+                @click=${() => this._tempThrottle.flush(o.k)}
+              >
+                <span class="temp-preset-swatch" style=${`background: ${this._kelvinPreviewColor(o.k)};`}></span>
+              </button>
+            `,
+          )}
+        </div>
+      `;
+    }
+
+    const pct = maxK > minK ? ((currentK - minK) / (maxK - minK)) * 100 : 0;
+    return html`
+      <div
+        class="temp-slider ${unavailable ? "disabled" : ""}"
+        role="slider"
+        aria-label=${this._t("light_color_temp_label")}
+        aria-valuemin=${minK}
+        aria-valuemax=${maxK}
+        aria-valuenow=${Math.round(currentK)}
+        tabindex=${unavailable ? -1 : 0}
+        @pointerdown=${(e: PointerEvent) => this._handleTempPointerDown(e, minK, maxK)}
+        @pointermove=${(e: PointerEvent) => this._handleTempPointerMove(e, minK, maxK)}
+        @pointerup=${this._handleTempPointerUp}
+        @pointercancel=${this._handleTempPointerUp}
+      >
+        <span class="temp-value">${Math.round(currentK)} K</span>
+        <div class="temp-handle" style=${`left: ${pct}%;`}></div>
+      </div>
+    `;
+  }
+
+  private _kelvinPreviewColor(kelvin: number): string {
+    if (kelvin <= 3000) return "#ffb877";
+    if (kelvin <= 4500) return "#fff1de";
+    return "#cfe3ff";
+  }
+
+  private _currentHs(entity: { attributes: Record<string, unknown> }): [number, number] {
+    const hs = entity.attributes.hs_color;
+    if (Array.isArray(hs) && hs.length === 2) return [hs[0], hs[1]];
+    const rgb = entity.attributes.rgb_color;
+    if (Array.isArray(rgb) && rgb.length === 3) {
+      const [h, s] = rgbToHs(rgb[0], rgb[1], rgb[2]);
+      return [h, s];
+    }
+    return [0, 0];
+  }
+
+  private _renderColorWheel(currentHs: [number, number], unavailable: boolean) {
+    const [h, s] = this._wheelDragging && this._wheelDragValue ? this._wheelDragValue : currentHs;
+    const angleRad = (h * Math.PI) / 180;
+    const radiusPct = Math.min(100, s);
+    const handleX = 50 + Math.cos(angleRad) * (radiusPct / 2);
+    const handleY = 50 + Math.sin(angleRad) * (radiusPct / 2);
+    const palette = this._config?.color_palette ?? [];
+
+    return html`
+      <div class="wheel-row">
+        <div
+          class="wheel"
+          role="slider"
+          aria-label=${this._t("light_color_wheel_label")}
+          tabindex=${unavailable ? -1 : 0}
+          @pointerdown=${this._handleWheelPointerDown}
+          @pointermove=${this._handleWheelPointerMove}
+          @pointerup=${this._handleWheelPointerUp}
+          @pointercancel=${this._handleWheelPointerUp}
+        >
+          <div class="wheel-saturation"></div>
+          <div
+            class="wheel-handle"
+            style=${`left: ${handleX}%; top: ${handleY}%; background: ${rgbToHex(...hsToRgb(h, s))};`}
+          ></div>
+        </div>
+        ${palette.length
+          ? html`
+              <div class="palette-row">
+                ${palette.map(
+                  (hex) => html`
+                    <button
+                      class="palette-swatch"
+                      style=${`background: ${hex};`}
+                      ?disabled=${unavailable}
+                      aria-label=${hex}
+                      @click=${() => this._pickPaletteColor(hex)}
+                    ></button>
+                  `,
+                )}
+              </div>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _renderScenes(unavailable: boolean) {
+    const scenes = this._config?.scenes ?? [];
+    return html`
+      <div class="scene-row">
+        ${scenes.map((scene) => {
+          const sceneEntity = scene.entity ? this.hass?.states[scene.entity] : undefined;
+          const label = scene.name || sceneEntity?.attributes.friendly_name || this._t("light_scene_unnamed");
+          const icon = scene.icon || sceneEntity?.attributes.icon || "mdi:palette-swatch-outline";
+          return html`
+            <button
+              class="scene-chip"
+              ?disabled=${unavailable}
+              @click=${() => this._activateScene(scene)}
+            >
+              <ha-icon icon=${icon}></ha-icon>
+              <span>${label}</span>
+            </button>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  private _renderMembers(memberIds: string[]) {
+    return html`
+      <div class="row-list members">
+        ${memberIds.map((id) => {
+          const member = this.hass?.states[id];
+          if (!member) return nothing;
+          const memberOn = member.state === "on";
+          const memberUnavailable = member.state === "unavailable";
+          return renderListRow({
+            key: id,
+            icon: member.attributes.icon || DEFAULT_LIGHT_ICON,
+            iconColor: memberUnavailable ? LIGHT_OFF_COLOR : memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR,
+            iconBackground: `color-mix(in srgb, ${memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR} 14%, transparent)`,
+            middle: html`<div class="member-name">${member.attributes.friendly_name || id}</div>`,
+            right: html`
+              <button
+                class="member-toggle ${memberOn ? "active" : ""}"
+                ?disabled=${memberUnavailable}
+                aria-label=${id}
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._toggleMember(id);
+                }}
+              >
+                <ha-icon icon="mdi:power"></ha-icon>
+              </button>
+            `,
+            label: member.attributes.friendly_name || id,
+          });
+        })}
+      </div>
+    `;
+  }
+
   static styles = [
     glassCardStyles,
     cardHeaderStyles,
+    listRowStyles,
     css`
       .card-inner.unavailable {
         opacity: 0.4;
@@ -598,6 +957,225 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         color: var(--m3p-text);
         pointer-events: none;
       }
+
+      /* ---- Color temperature ---- */
+
+      .temp-presets {
+        display: flex;
+        gap: 8px;
+      }
+
+      .temp-preset {
+        flex: 1;
+        height: 36px;
+        border: none;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 200ms ${EASING};
+      }
+
+      .temp-preset.active {
+        background: color-mix(in srgb, var(--lc-accent) 20%, transparent);
+      }
+
+      .temp-preset:disabled {
+        cursor: default;
+      }
+
+      .temp-preset-swatch {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: block;
+      }
+
+      .temp-slider {
+        position: relative;
+        width: 100%;
+        height: 24px;
+        border-radius: 12px;
+        background: linear-gradient(90deg, #ff9c4a, #fff1de 50%, #a8c9ff);
+        cursor: pointer;
+        touch-action: none;
+        outline: none;
+      }
+
+      .temp-slider:focus-visible {
+        outline: 2px solid var(--lc-accent);
+        outline-offset: 2px;
+      }
+
+      .temp-slider.disabled {
+        cursor: default;
+        pointer-events: none;
+        opacity: 0.5;
+      }
+
+      .temp-value {
+        position: absolute;
+        top: -16px;
+        right: 0;
+        font-size: 11px;
+        font-weight: 700;
+        opacity: 0.5;
+        color: var(--m3p-text);
+      }
+
+      .temp-handle {
+        position: absolute;
+        top: 50%;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      /* ---- Color wheel + palette ---- */
+
+      .wheel-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .wheel {
+        position: relative;
+        width: ${LIGHT_WHEEL_SIZE}px;
+        height: ${LIGHT_WHEEL_SIZE}px;
+        border-radius: 50%;
+        background: conic-gradient(
+          from 90deg,
+          red,
+          yellow,
+          lime,
+          cyan,
+          blue,
+          magenta,
+          red
+        );
+        cursor: pointer;
+        touch-action: none;
+        outline: none;
+      }
+
+      .wheel:focus-visible {
+        outline: 2px solid var(--lc-accent);
+        outline-offset: 3px;
+      }
+
+      .wheel-saturation {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(circle, white 0%, rgba(255, 255, 255, 0) 70%);
+        pointer-events: none;
+      }
+
+      .wheel-handle {
+        position: absolute;
+        width: ${LIGHT_WHEEL_HANDLE_SIZE}px;
+        height: ${LIGHT_WHEEL_HANDLE_SIZE}px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .palette-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .palette-swatch {
+        width: ${LIGHT_PALETTE_SWATCH_SIZE}px;
+        height: ${LIGHT_PALETTE_SWATCH_SIZE}px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .palette-swatch:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+
+      /* ---- Scenes ---- */
+
+      .scene-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .scene-chip {
+        height: ${LIGHT_SCENE_CHIP_HEIGHT}px;
+        padding: 0 14px;
+        border: none;
+        border-radius: 17px;
+        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        color: var(--m3p-text);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      .scene-chip:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+
+      .scene-chip ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      /* ---- Group members ---- */
+
+      .members {
+        margin-top: 2px;
+      }
+
+      .member-name {
+        font-size: 13px;
+        color: var(--m3p-text);
+      }
+
+      .member-toggle {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        color: var(--primary-text-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .member-toggle.active {
+        background: color-mix(in srgb, var(--lc-accent) 20%, transparent);
+        color: var(--lc-accent);
+      }
+
+      .member-toggle ha-icon {
+        --mdc-icon-size: 16px;
+      }
     `,
   ];
 }
@@ -616,7 +1194,7 @@ windowWithCards.customCards.push({
   type: "m3-light-card",
   name: "M3 Light Card",
   description:
-    "Eine Material-3-Expressive-Steuerkarte für Lichter mit wellenförmigem Helligkeits-Slider, Farbtemperatur und Farbsteuerung.",
+    "Eine Material-3-Expressive-Steuerkarte für Lichter mit wellenförmigem Helligkeits-Slider, Farbtemperatur, Farbrad und Szenen.",
   preview: true,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

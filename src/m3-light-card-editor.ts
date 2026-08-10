@@ -1,9 +1,9 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant, LovelaceCardEditor, M3LightCardConfig } from "./types";
+import type { HomeAssistant, LovelaceCardEditor, M3LightCardConfig, LightSceneConfig } from "./types";
 import { DEFAULT_LIGHT_RADIUS } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { fireEvent, colorRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -58,6 +58,43 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
     ];
   }
 
+  private _colorTempSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "color_temp_style",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "presets", label: this._t("editor_light_color_temp_style_presets") },
+              { value: "slider", label: this._t("editor_light_color_temp_style_slider") },
+            ],
+          },
+        },
+      },
+      { name: "warm", selector: { number: { min: 1000, max: 10000, step: 50, mode: "box", unit_of_measurement: "K" } } },
+      { name: "neutral", selector: { number: { min: 1000, max: 10000, step: 50, mode: "box", unit_of_measurement: "K" } } },
+      { name: "cold", selector: { number: { min: 1000, max: 10000, step: 50, mode: "box", unit_of_measurement: "K" } } },
+    ];
+  }
+
+  private _colorSchema(): SchemaEntry[] {
+    return [{ name: "show_color_wheel", selector: { boolean: {} } }];
+  }
+
+  private _membersSchema(): SchemaEntry[] {
+    return [{ name: "show_members", selector: { boolean: {} } }];
+  }
+
+  private _sceneSchema(): SchemaEntry[] {
+    return [
+      { name: "entity", selector: { entity: { domain: "scene" } } },
+      { name: "service", selector: { text: {} } },
+      { name: "name", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+    ];
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -84,6 +121,13 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
       transition: "editor_light_transition",
       use_light_color: "editor_light_use_light_color",
       wave_style: "editor_light_wave_style",
+      color_temp_style: "editor_light_color_temp_style",
+      warm: "editor_light_color_temp_warm",
+      neutral: "editor_light_color_temp_neutral",
+      cold: "editor_light_color_temp_cold",
+      show_color_wheel: "editor_light_show_color_wheel",
+      show_members: "editor_light_show_members",
+      service: "editor_light_scene_service",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -109,6 +153,65 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
     this._config = { ...this._config, ...ev.detail.value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _colorTempPresetChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    const { color_temp_style, ...presetValues } = ev.detail.value;
+    this._config = {
+      ...this._config,
+      color_temp_style,
+      color_temp_presets: { ...this._config.color_temp_presets, ...presetValues },
+    };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _paletteChanged(values: string[]): void {
+    if (!this._config) return;
+    this._config = { ...this._config, color_palette: values };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _sceneChanged(index: number, ev: CustomEvent): void {
+    if (!this._config) return;
+    const scenes = [...(this._config.scenes ?? [])];
+    const value = ev.detail.value as LightSceneConfig;
+    scenes[index] = {
+      ...scenes[index],
+      entity: value.entity || undefined,
+      service: value.service || undefined,
+      name: value.name || undefined,
+      icon: value.icon || undefined,
+    };
+    this._config = { ...this._config, scenes };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _sceneServiceDataChanged(index: number, raw: string): void {
+    if (!this._config) return;
+    const scenes = [...(this._config.scenes ?? [])];
+    try {
+      scenes[index] = { ...scenes[index], service_data: raw.trim() ? JSON.parse(raw) : undefined };
+    } catch {
+      return;
+    }
+    this._config = { ...this._config, scenes };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _addScene(): void {
+    if (!this._config) return;
+    const scenes = [...(this._config.scenes ?? []), {}];
+    this._config = { ...this._config, scenes };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _removeScene(index: number): void {
+    if (!this._config) return;
+    const scenes = [...(this._config.scenes ?? [])];
+    scenes.splice(index, 1);
+    this._config = { ...this._config, scenes };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -164,7 +267,16 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
       use_light_color: this._config.use_light_color ?? true,
       wave_style: this._config.wave_style ?? "wavy",
     };
+    const colorTempData = {
+      color_temp_style: this._config.color_temp_style ?? "presets",
+      warm: this._config.color_temp_presets?.warm,
+      neutral: this._config.color_temp_presets?.neutral,
+      cold: this._config.color_temp_presets?.cold,
+    };
+    const colorData = { show_color_wheel: this._config.show_color_wheel ?? false };
+    const membersData = { show_members: this._config.show_members ?? false };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const scenes = this._config.scenes ?? [];
 
     return html`
       <div class="editor">
@@ -192,6 +304,85 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_light_use_light_color_helper")}</div>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("light_color_temp_label")}>
+          <ha-icon slot="leading-icon" icon="mdi:thermometer"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${colorTempData}
+              .schema=${this._colorTempSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._colorTempPresetChanged}
+            ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("light_color_wheel_label")}>
+          <ha-icon slot="leading-icon" icon="mdi:palette-swatch-outline"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${colorData}
+              .schema=${this._colorSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            ${listRow(
+              this._t("editor_light_color_palette"),
+              this._config.color_palette ?? [],
+              (v) => this._paletteChanged(v),
+            )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_scenes")}>
+          <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_light_scenes_helper")}</div>
+            ${scenes.map(
+              (scene, i) => html`
+                <div class="scene-row">
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${{ entity: scene.entity ?? "", service: scene.service ?? "", name: scene.name ?? "", icon: scene.icon ?? "" }}
+                    .schema=${this._sceneSchema()}
+                    .computeLabel=${this._computeLabel}
+                    @value-changed=${(ev: CustomEvent) => this._sceneChanged(i, ev)}
+                  ></ha-form>
+                  <input
+                    type="text"
+                    class="color-text"
+                    .value=${scene.service_data ? JSON.stringify(scene.service_data) : ""}
+                    placeholder=${this._t("editor_light_scene_service_data")}
+                    @change=${(e: Event) => this._sceneServiceDataChanged(i, (e.target as HTMLInputElement).value)}
+                  />
+                  <button class="remove-btn" @click=${() => this._removeScene(i)}>
+                    <ha-icon icon="mdi:close"></ha-icon>
+                  </button>
+                </div>
+              `,
+            )}
+            <button class="add-btn" @click=${() => this._addScene()}>
+              <ha-icon icon="mdi:plus"></ha-icon>
+              ${this._t("editor_light_add_scene")}
+            </button>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_light_show_members")}>
+          <ha-icon slot="leading-icon" icon="mdi:lightbulb-group-outline"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${membersData}
+              .schema=${this._membersSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_light_show_members_helper")}</div>
           </div>
         </ha-expansion-panel>
 
@@ -238,7 +429,51 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
     `;
   }
 
-  static styles = [editorStyles];
+  static styles = [
+    editorStyles,
+    css`
+      .scene-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .scene-row ha-form {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .remove-btn {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .add-btn {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+    `,
+  ];
 }
 
 declare global {

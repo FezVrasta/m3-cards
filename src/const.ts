@@ -392,6 +392,21 @@ export const LIGHT_THROTTLE_MS = 200;
 export const LIGHT_DRAG_SETTLE_MS = 500;
 export const LIGHT_MIN_BRIGHTNESS_PCT = 1;
 
+// Fallback kelvin range for entities that don't report
+// min/max_color_temp_kelvin (rare, but some legacy integrations only expose
+// mireds or nothing at all).
+export const LIGHT_COLOR_TEMP_MIN_KELVIN = 2000;
+export const LIGHT_COLOR_TEMP_MAX_KELVIN = 6500;
+export const LIGHT_COLOR_TEMP_PRESET_WARM = 2700;
+export const LIGHT_COLOR_TEMP_PRESET_NEUTRAL = 4000;
+export const LIGHT_COLOR_TEMP_PRESET_COLD = 6500;
+
+export const LIGHT_WHEEL_SIZE = 160;
+export const LIGHT_WHEEL_HANDLE_SIZE = 22;
+export const LIGHT_PALETTE_SWATCH_SIZE = 32;
+export const LIGHT_SCENE_CHIP_HEIGHT = 34;
+export const LIGHT_MEMBER_ROW_HEIGHT = 44;
+
 export const DEFAULT_BATTERY_RADIUS = RADIUS.card;
 export const DEFAULT_BATTERY_ICON_OK = "mdi:battery-70";
 export const DEFAULT_BATTERY_ICON_CRITICAL = "mdi:battery-alert-variant-outline";

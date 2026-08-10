@@ -22,6 +22,7 @@ import {
   FLOW_NODE_PV_COLOR,
   FLOW_NODE_GRID_COLOR,
   FLOW_NODE_HOME_COLOR,
+  FLOW_NODE_BATTERY_COLOR,
   FLOW_SELF_SUFFICIENCY_COLOR,
   FLOW_REFRESH_MS,
   FLOW_NODE_SIZE,
@@ -48,14 +49,16 @@ console.info(
 const HALF = FLOW_NODE_SIZE / 2;
 const VIEW_WIDTH = 320;
 const VIEW_HEIGHT = 250;
+const VIEW_HEIGHT_WITH_BATTERY = 310;
 const PV_POS = { x: 160, y: 46 };
 const GRID_POS = { x: 52, y: 160 };
 const HOME_POS = { x: 268, y: 160 };
+const BATTERY_POS = { x: HOME_POS.x, y: HOME_POS.y + 90 };
 const SPLIT_BEND_Y = 145;
 const CORNER_RADIUS = 20;
 
 interface FlowNodeData {
-  key: "pv" | "grid" | "home";
+  key: "pv" | "grid" | "home" | "battery";
   x: number;
   y: number;
   color: string;
@@ -248,11 +251,15 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
     return new Intl.NumberFormat(this._language, { maximumFractionDigits: 2 }).format(value);
   }
 
-  private _buildDiagram(colors: {
-    pv: string;
-    grid: string;
-    home: string;
-  }): { nodes: FlowNodeData[]; flows: FlowLineData[] } {
+  private _buildDiagram(
+    colors: {
+      pv: string;
+      grid: string;
+      home: string;
+      battery: string;
+    },
+    showBattery: boolean,
+  ): { nodes: FlowNodeData[]; flows: FlowLineData[]; viewHeight: number } {
     const homeConsumption =
       this._solarTotal + this._gridImport - this._gridExport - this._batteryCharge + this._batteryDischarge;
     const solarToHome = Math.max(0, this._solarTotal - this._gridExport);
@@ -315,7 +322,31 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
       });
     }
 
-    return { nodes, flows };
+    if (showBattery) {
+      const charging = this._batteryCharge >= this._batteryDischarge;
+      const batteryValue = charging ? this._batteryCharge : this._batteryDischarge;
+      nodes.push({
+        key: "battery",
+        x: BATTERY_POS.x,
+        y: BATTERY_POS.y,
+        color: colors.battery,
+        icon: charging ? "mdi:battery-charging" : "mdi:battery-arrow-down-outline",
+        value: batteryValue,
+        label: `${this._t("flow_node_battery")} · kWh`,
+      });
+      if (batteryValue > 0) {
+        flows.push({
+          key: "battery-home",
+          path: charging
+            ? straightPath(HOME_POS.x, HOME_POS.y + HALF, BATTERY_POS.x, BATTERY_POS.y - HALF)
+            : straightPath(BATTERY_POS.x, BATTERY_POS.y - HALF, HOME_POS.x, HOME_POS.y + HALF),
+          color: colors.battery,
+          value: batteryValue,
+        });
+      }
+    }
+
+    return { nodes, flows, viewHeight: showBattery ? VIEW_HEIGHT_WITH_BATTERY : VIEW_HEIGHT };
   }
 
   protected render() {
@@ -347,6 +378,9 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
     const selfSufficiencyColor = this._config.self_sufficiency_color
       ? resolveThemeColor(this._config.self_sufficiency_color)
       : FLOW_SELF_SUFFICIENCY_COLOR;
+    const batteryColor = this._config.battery_color
+      ? resolveThemeColor(this._config.battery_color)
+      : FLOW_NODE_BATTERY_COLOR;
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );
@@ -356,7 +390,17 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
       this._config.corners,
     );
 
-    const { nodes, flows } = this._buildDiagram({ pv: pvColor, grid: gridColor, home: homeColor });
+    const showBattery =
+      this._config.show_battery === "always"
+        ? true
+        : this._config.show_battery === "never"
+          ? false
+          : this._hasBattery;
+
+    const { nodes, flows, viewHeight } = this._buildDiagram(
+      { pv: pvColor, grid: gridColor, home: homeColor, battery: batteryColor },
+      showBattery,
+    );
     const maxFlow = Math.max(1, ...flows.map((f) => f.value));
 
     const homeConsumption =
@@ -388,7 +432,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
           <div class="diagram-wrap ${this._loading ? "loading" : ""}">
             <svg
               class="flow-svg"
-              viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}"
+              viewBox="0 0 ${VIEW_WIDTH} ${viewHeight}"
               preserveAspectRatio="xMidYMid meet"
             >
               ${flows.map((f) => this._renderFlow(f, maxFlow, animate, dotDuration))}
