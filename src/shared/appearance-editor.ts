@@ -34,26 +34,33 @@ export interface AppearanceState {
 export function initAppearanceState(
   config: AppearanceConfigBase,
   defaultRadius: number,
+  presets: Record<string, number> = RADIUS_PRESETS,
 ): AppearanceState {
   const cornerCustom: Record<string, boolean> = {};
   for (const key of CORNER_KEYS) {
-    cornerCustom[key] = radiusPreset(config.corners?.[key], defaultRadius) === "custom";
+    cornerCustom[key] = radiusPreset(config.corners?.[key], defaultRadius, presets) === "custom";
   }
   return {
-    showCustomRadius: radiusPreset(config.radius, defaultRadius) === "custom",
+    showCustomRadius: radiusPreset(config.radius, defaultRadius, presets) === "custom",
     showCorners: !!config.corners,
     cornerCustom,
   };
 }
 
-export function radiusPresetPatch(preset: string): { showCustomRadius: boolean; radius?: number } {
+export function radiusPresetPatch(
+  preset: string,
+  presets: Record<string, number> = RADIUS_PRESETS,
+): { showCustomRadius: boolean; radius?: number } {
   if (preset === "custom") return { showCustomRadius: true };
-  return { showCustomRadius: false, radius: RADIUS_PRESETS[preset] };
+  return { showCustomRadius: false, radius: presets[preset] };
 }
 
-export function cornerPresetPatch(preset: string): { custom: boolean; px?: number } {
+export function cornerPresetPatch(
+  preset: string,
+  presets: Record<string, number> = RADIUS_PRESETS,
+): { custom: boolean; px?: number } {
   if (preset === "custom") return { custom: true };
-  return { custom: false, px: RADIUS_PRESETS[preset] };
+  return { custom: false, px: presets[preset] };
 }
 
 export function appearanceSchema(): SchemaEntry[] {
@@ -72,6 +79,10 @@ export interface RadiusCornerFieldsParams {
   onCornersToggleChanged: (ev: CustomEvent) => void;
   onCornerPresetChanged: (key: string, ev: CustomEvent) => void;
   onCornerValueChanged: (key: string, ev: CustomEvent) => void;
+  // Overrides the standard eckig/leicht_rund/rund px values — for cards like
+  // m3-climate-card whose default shape is a larger "hero" radius than the
+  // rest of the suite, so its quick-presets stay proportional to that.
+  presets?: Record<string, number>;
 }
 
 // The radius-preset + optional custom-radius + per-corner controls, without
@@ -79,8 +90,8 @@ export interface RadiusCornerFieldsParams {
 // this inside an existing custom "appearance" panel of their own (button,
 // climate-mini) instead of using the fully-wrapped renderAppearanceSection.
 export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): TemplateResult {
-  const { hass, language, config, defaultRadius, state, computeLabel } = params;
-  const radiusPresetData = { radius_preset: radiusPreset(config.radius, defaultRadius) };
+  const { hass, language, config, defaultRadius, state, computeLabel, presets = RADIUS_PRESETS } = params;
+  const radiusPresetData = { radius_preset: radiusPreset(config.radius, defaultRadius, presets) };
   const radiusValueData = { radius: config.radius ?? defaultRadius };
   const baseRadius = config.radius ?? defaultRadius;
   const cornersToggleData = { use_corners: state.showCorners };
@@ -116,7 +127,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
           const currentPx = config.corners?.[key] ?? baseRadius;
           const presetVal = state.cornerCustom[key]
             ? "custom"
-            : radiusPreset(currentPx, defaultRadius);
+            : radiusPreset(currentPx, defaultRadius, presets);
           return html`
             <ha-form
               .hass=${hass}
@@ -142,19 +153,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
   `;
 }
 
-export function renderAppearanceSection(params: {
-  hass?: HomeAssistant;
-  language: string;
-  config: AppearanceConfigBase;
-  defaultRadius: number;
-  state: AppearanceState;
-  computeLabel: (schema: SchemaEntry) => string;
-  onValueChanged: (ev: CustomEvent) => void;
-  onRadiusPresetChanged: (ev: CustomEvent) => void;
-  onCornersToggleChanged: (ev: CustomEvent) => void;
-  onCornerPresetChanged: (key: string, ev: CustomEvent) => void;
-  onCornerValueChanged: (key: string, ev: CustomEvent) => void;
-}): TemplateResult {
+export function renderAppearanceSection(params: RadiusCornerFieldsParams): TemplateResult {
   const { hass, language, config, computeLabel } = params;
   const appearanceData = { glass_background: config.glass_background ?? true };
 

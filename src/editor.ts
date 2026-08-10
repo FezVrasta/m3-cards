@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -13,6 +13,15 @@ import {
   CLIMATE_RADIUS_PRESETS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { radiusLabelMap } from "./shared/radius-editor";
+import {
+  initAppearanceState,
+  radiusPresetPatch,
+  cornerPresetPatch,
+  renderAppearanceSection,
+  type AppearanceState,
+} from "./shared/appearance-editor";
 
 const MODE_KEYS: (keyof ModeColorOverrides)[] = [
   "off",
@@ -24,29 +33,6 @@ const MODE_KEYS: (keyof ModeColorOverrides)[] = [
   "heat_cool",
 ];
 
-const CORNER_KEYS = [
-  "top_left",
-  "top_right",
-  "bottom_right",
-  "bottom_left",
-] as const;
-
-interface SchemaEntry {
-  name: string;
-  selector: Record<string, unknown>;
-  required?: boolean;
-  default?: unknown;
-}
-
-function fireEvent(node: HTMLElement, type: string, detail: unknown): void {
-  const event = new CustomEvent(type, {
-    detail,
-    bubbles: true,
-    composed: true,
-  });
-  node.dispatchEvent(event);
-}
-
 @customElement("m3-climate-card-editor")
 export class M3ClimateCardEditor
   extends LitElement
@@ -55,28 +41,11 @@ export class M3ClimateCardEditor
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ClimateCardConfig;
-  @state() private _showCustomRadius = false;
-  @state() private _showCorners = false;
-  @state() private _cornerCustom: Record<string, boolean> = {};
+  @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
 
   public setConfig(config: M3ClimateCardConfig): void {
     this._config = config;
-    this._showCustomRadius = this._radiusPreset(config.radius) === "custom";
-    this._showCorners = !!config.corners;
-    const cornerCustom: Record<string, boolean> = {};
-    for (const key of CORNER_KEYS) {
-      cornerCustom[key] =
-        this._radiusPreset(config.corners?.[key]) === "custom";
-    }
-    this._cornerCustom = cornerCustom;
-  }
-
-  private _radiusPreset(radius?: number): string {
-    const current = radius ?? DEFAULT_CLIMATE_RADIUS;
-    const match = Object.entries(CLIMATE_RADIUS_PRESETS).find(
-      ([, px]) => px === current,
-    );
-    return match ? match[0] : "custom";
+    this._appearance = initAppearanceState(config, DEFAULT_CLIMATE_RADIUS, CLIMATE_RADIUS_PRESETS);
   }
 
   private get _language(): string {
@@ -186,9 +155,8 @@ export class M3ClimateCardEditor
     ];
   }
 
-  private _appearanceSchema(): SchemaEntry[] {
+  private _behaviorSchema(): SchemaEntry[] {
     return [
-      { name: "glass_background", selector: { boolean: {} } },
       { name: "animations", selector: { boolean: {} } },
       {
         name: "unavailable_style",
@@ -221,70 +189,6 @@ export class M3ClimateCardEditor
     ];
   }
 
-  private _radiusPresetSchema(): SchemaEntry[] {
-    return [
-      {
-        name: "radius_preset",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "eckig", label: this._t("editor_radius_square") },
-              { value: "leicht_rund", label: this._t("editor_radius_soft") },
-              { value: "rund", label: this._t("editor_radius_round") },
-              { value: "custom", label: this._t("editor_radius_custom") },
-            ],
-          },
-        },
-      },
-    ];
-  }
-
-  private _radiusValueSchema(): SchemaEntry[] {
-    return [
-      {
-        name: "radius",
-        selector: {
-          number: { mode: "box", min: 0, step: 1, unit_of_measurement: "px" },
-        },
-      },
-    ];
-  }
-
-  private _cornersToggleSchema(): SchemaEntry[] {
-    return [{ name: "use_corners", selector: { boolean: {} } }];
-  }
-
-  private _cornerPresetSchema(key: string): SchemaEntry[] {
-    return [
-      {
-        name: key,
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "eckig", label: this._t("editor_radius_square") },
-              { value: "leicht_rund", label: this._t("editor_radius_soft") },
-              { value: "rund", label: this._t("editor_radius_round") },
-              { value: "custom", label: this._t("editor_radius_custom") },
-            ],
-          },
-        },
-      },
-    ];
-  }
-
-  private _cornerValueSchema(key: string): SchemaEntry[] {
-    return [
-      {
-        name: key,
-        selector: {
-          number: { mode: "box", min: 0, step: 1, unit_of_measurement: "px" },
-        },
-      },
-    ];
-  }
-
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       entity: "editor_entity",
@@ -302,45 +206,13 @@ export class M3ClimateCardEditor
       hidden_modes: "editor_hidden_modes",
       temperature_chip_placement: "editor_temperature_chip_placement",
       height: "editor_height",
-      radius: "editor_radius",
-      radius_preset: "editor_radius_preset",
       animations: "editor_animations",
       unavailable_style: "editor_unavailable_style",
-      use_corners: "editor_use_corners",
-      top_left: "editor_corner_top_left",
-      top_right: "editor_corner_top_right",
-      bottom_right: "editor_corner_bottom_right",
-      bottom_left: "editor_corner_bottom_left",
+      ...radiusLabelMap,
     };
     const key = labelMap[schema.name];
     return key ? this._t(key) : schema.name;
   };
-
-  private _colorRow(
-    label: string,
-    value: string | undefined,
-    onChange: (value: string) => void,
-  ) {
-    const hexValue = /^#[0-9a-fA-F]{6}$/.test(value ?? "") ? (value as string) : "#888888";
-    return html`
-      <div class="color-row">
-        <label class="color-label">${label}</label>
-        <input
-          type="text"
-          class="color-text"
-          .value=${value ?? ""}
-          placeholder="z.B. red oder #6ba7dc"
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-        <input
-          type="color"
-          class="swatch"
-          .value=${hexValue}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
-  }
 
   private _modeColorChanged(mode: keyof ModeColorOverrides, value: string): void {
     if (!this._config) return;
@@ -373,25 +245,25 @@ export class M3ClimateCardEditor
 
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
-    const newConfig = { ...this._config, ...ev.detail.value };
-    this._config = newConfig;
+    this._config = { ...this._config, ...ev.detail.value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
   private _radiusPresetChanged(ev: CustomEvent): void {
     if (!this._config) return;
-    const preset = ev.detail.value.radius_preset as string;
-    this._showCustomRadius = preset === "custom";
-    if (preset !== "custom") {
-      this._config = { ...this._config, radius: CLIMATE_RADIUS_PRESETS[preset] };
+    const patch = radiusPresetPatch(ev.detail.value.radius_preset as string, CLIMATE_RADIUS_PRESETS);
+    this._appearance = { ...this._appearance, showCustomRadius: patch.showCustomRadius };
+    if (patch.radius !== undefined) {
+      this._config = { ...this._config, radius: patch.radius };
       fireEvent(this, "config-changed", { config: this._config });
     }
   }
 
   private _cornersToggleChanged(ev: CustomEvent): void {
     if (!this._config) return;
-    this._showCorners = ev.detail.value.use_corners as boolean;
-    if (!this._showCorners) {
+    const showCorners = ev.detail.value.use_corners as boolean;
+    this._appearance = { ...this._appearance, showCorners };
+    if (!showCorners) {
       const { corners, ...rest } = this._config;
       this._config = rest;
       fireEvent(this, "config-changed", { config: this._config });
@@ -400,15 +272,13 @@ export class M3ClimateCardEditor
 
   private _cornerPresetChanged(key: string, ev: CustomEvent): void {
     if (!this._config) return;
-    const preset = ev.detail.value[key] as string;
-    this._cornerCustom = { ...this._cornerCustom, [key]: preset === "custom" };
-    if (preset !== "custom") {
-      const px = CLIMATE_RADIUS_PRESETS[preset];
-      if (px === undefined) return;
-      this._config = {
-        ...this._config,
-        corners: { ...(this._config.corners ?? {}), [key]: px },
-      };
+    const patch = cornerPresetPatch(ev.detail.value[key] as string, CLIMATE_RADIUS_PRESETS);
+    this._appearance = {
+      ...this._appearance,
+      cornerCustom: { ...this._appearance.cornerCustom, [key]: patch.custom },
+    };
+    if (patch.px !== undefined) {
+      this._config = { ...this._config, corners: { ...(this._config.corners ?? {}), [key]: patch.px } };
       fireEvent(this, "config-changed", { config: this._config });
     }
   }
@@ -446,23 +316,11 @@ export class M3ClimateCardEditor
         this._config.temperature_chip_placement ?? "info_row",
     };
 
-    const appearanceData = {
-      glass_background: this._config.glass_background ?? true,
+    const behaviorData = {
       animations: this._config.animations ?? true,
       unavailable_style: this._config.unavailable_style ?? "dimmed",
       height: this._config.height,
     };
-
-    const radiusPresetData = {
-      radius_preset: this._radiusPreset(this._config.radius),
-    };
-
-    const radiusValueData = {
-      radius: this._config.radius ?? DEFAULT_CLIMATE_RADIUS,
-    };
-
-    const baseRadius = this._config.radius ?? DEFAULT_CLIMATE_RADIUS;
-    const cornersToggleData = { use_corners: this._showCorners };
 
     return html`
       <div class="editor">
@@ -500,105 +358,43 @@ export class M3ClimateCardEditor
           </div>
         </ha-expansion-panel>
 
-        <ha-expansion-panel outlined .header=${this._t("editor_appearance")}>
+        <ha-expansion-panel outlined .header=${this._t("editor_progress_colors")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
-            <ha-form
-              .hass=${this.hass}
-              .data=${appearanceData}
-              .schema=${this._appearanceSchema()}
-              .computeLabel=${this._computeLabel}
-              @value-changed=${this._valueChanged}
-            ></ha-form>
-            <ha-form
-              .hass=${this.hass}
-              .data=${radiusPresetData}
-              .schema=${this._radiusPresetSchema()}
-              .computeLabel=${this._computeLabel}
-              @value-changed=${this._radiusPresetChanged}
-            ></ha-form>
-            ${this._showCustomRadius
-              ? html`
-                  <ha-form
-                    .hass=${this.hass}
-                    .data=${radiusValueData}
-                    .schema=${this._radiusValueSchema()}
-                    .computeLabel=${this._computeLabel}
-                    @value-changed=${this._valueChanged}
-                  ></ha-form>
-                `
-              : nothing}
-            <ha-form
-              .hass=${this.hass}
-              .data=${cornersToggleData}
-              .schema=${this._cornersToggleSchema()}
-              .computeLabel=${this._computeLabel}
-              @value-changed=${this._cornersToggleChanged}
-            ></ha-form>
-            ${this._showCorners
-              ? CORNER_KEYS.map((key) => {
-                  const currentPx = this._config?.corners?.[key] ?? baseRadius;
-                  const presetVal = this._cornerCustom[key]
-                    ? "custom"
-                    : this._radiusPreset(currentPx);
-                  return html`
-                    <ha-form
-                      .hass=${this.hass}
-                      .data=${{ [key]: presetVal }}
-                      .schema=${this._cornerPresetSchema(key)}
-                      .computeLabel=${this._computeLabel}
-                      @value-changed=${(ev: CustomEvent) =>
-                        this._cornerPresetChanged(key, ev)}
-                    ></ha-form>
-                    ${this._cornerCustom[key]
-                      ? html`
-                          <ha-form
-                            .hass=${this.hass}
-                            .data=${{ [key]: currentPx }}
-                            .schema=${this._cornerValueSchema(key)}
-                            .computeLabel=${this._computeLabel}
-                            @value-changed=${(ev: CustomEvent) =>
-                              this._cornerValueChanged(key, ev)}
-                          ></ha-form>
-                        `
-                      : nothing}
-                  `;
-                })
-              : nothing}
             <div class="hint">${this._t("editor_element_colors_helper")}</div>
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_icon_active_color"),
               this._config?.icon_active_color,
               (v) => this._elementColorChanged("icon_active_color", v),
             )}
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_icon_inactive_color"),
               this._config?.icon_inactive_color,
               (v) => this._elementColorChanged("icon_inactive_color", v),
             )}
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_plus_active_color"),
               this._config?.plus_active_color,
               (v) => this._elementColorChanged("plus_active_color", v),
             )}
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_plus_inactive_color"),
               this._config?.plus_inactive_color,
               (v) => this._elementColorChanged("plus_inactive_color", v),
             )}
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_minus_active_color"),
               this._config?.minus_active_color,
               (v) => this._elementColorChanged("minus_active_color", v),
             )}
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_minus_inactive_color"),
               this._config?.minus_inactive_color,
               (v) => this._elementColorChanged("minus_inactive_color", v),
             )}
             <div class="hint">${this._t("editor_color_helper")}</div>
             ${MODE_KEYS.map((mode) =>
-              this._colorRow(
+              colorRow(
                 `${this._t(mode as TranslationKey)} – ${this._t("editor_mode_color")}`,
                 this._config?.mode_colors?.[mode] ?? DEFAULT_MODE_COLORS[mode],
                 (v) => this._modeColorChanged(mode, v),
@@ -606,78 +402,39 @@ export class M3ClimateCardEditor
             )}
           </div>
         </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_behavior")}>
+          <ha-icon slot="leading-icon" icon="mdi:tune"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${behaviorData}
+              .schema=${this._behaviorSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        ${renderAppearanceSection({
+          hass: this.hass,
+          language: this._language,
+          config: this._config,
+          defaultRadius: DEFAULT_CLIMATE_RADIUS,
+          presets: CLIMATE_RADIUS_PRESETS,
+          state: this._appearance,
+          computeLabel: this._computeLabel,
+          onValueChanged: this._valueChanged.bind(this),
+          onRadiusPresetChanged: this._radiusPresetChanged.bind(this),
+          onCornersToggleChanged: this._cornersToggleChanged.bind(this),
+          onCornerPresetChanged: this._cornerPresetChanged.bind(this),
+          onCornerValueChanged: this._cornerValueChanged.bind(this),
+        })}
       </div>
     `;
   }
 
-  static styles = css`
-    .editor {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    ha-expansion-panel {
-      border-radius: 12px;
-      --expansion-panel-summary-padding: 0 8px;
-      --ha-card-border-radius: 12px;
-    }
-
-    .panel-content {
-      padding: 12px 16px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    ha-form {
-      display: block;
-    }
-
-    .hint {
-      font-size: 12px;
-      opacity: 0.6;
-      color: var(--primary-text-color);
-    }
-
-    .color-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 4px 8px;
-    }
-
-    .color-label {
-      flex-basis: 100%;
-      font-size: 13px;
-      color: var(--secondary-text-color, var(--primary-text-color));
-    }
-
-    .color-text {
-      flex: 1;
-      min-width: 120px;
-      height: 40px;
-      box-sizing: border-box;
-      padding: 0 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(127, 127, 127, 0.4);
-      background: transparent;
-      color: var(--primary-text-color);
-      font-size: 14px;
-      font-family: inherit;
-    }
-
-    .swatch {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 8px;
-      padding: 0;
-      background: none;
-      cursor: pointer;
-    }
-  `;
+  static styles = editorStyles;
 }
 
 declare global {

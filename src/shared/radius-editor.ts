@@ -9,9 +9,13 @@ export const CORNER_KEYS = [
   "bottom_left",
 ] as const;
 
-export function radiusPreset(radius: number | undefined, defaultRadius: number): string {
+export function radiusPreset(
+  radius: number | undefined,
+  defaultRadius: number,
+  presets: Record<string, number> = RADIUS_PRESETS,
+): string {
   const current = radius ?? defaultRadius;
-  const match = Object.entries(RADIUS_PRESETS).find(([, px]) => px === current);
+  const match = Object.entries(presets).find(([, px]) => px === current);
   return match ? match[0] : "custom";
 }
 

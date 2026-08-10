@@ -4,6 +4,7 @@ import type {
   HomeAssistant,
   M3LightCardConfig,
   LovelaceCard,
+  LovelaceCardEditor,
   LovelaceGridOptions,
 } from "./types";
 import {
@@ -113,6 +114,11 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       rows: "auto",
       min_rows: 2,
     };
+  }
+
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import("./m3-light-card-editor");
+    return document.createElement("m3-light-card-editor") as unknown as LovelaceCardEditor;
   }
 
   public connectedCallback(): void {

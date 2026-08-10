@@ -1,7 +1,7 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant, LovelaceCardEditor, M3EnergyFlowCardConfig } from "./types";
-import { DEFAULT_FLOW_RADIUS } from "./const";
+import type { HomeAssistant, LovelaceCardEditor, M3LightCardConfig } from "./types";
+import { DEFAULT_LIGHT_RADIUS } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
@@ -13,16 +13,16 @@ import {
   type AppearanceState,
 } from "./shared/appearance-editor";
 
-@customElement("m3-energy-flow-card-editor")
-export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEditor {
+@customElement("m3-light-card-editor")
+export class M3LightCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @state() private _config?: M3EnergyFlowCardConfig;
+  @state() private _config?: M3LightCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
 
-  public setConfig(config: M3EnergyFlowCardConfig): void {
+  public setConfig(config: M3LightCardConfig): void {
     this._config = config;
-    this._appearance = initAppearanceState(config, DEFAULT_FLOW_RADIUS);
+    this._appearance = initAppearanceState(config, DEFAULT_LIGHT_RADIUS);
   }
 
   private get _language(): string {
@@ -33,37 +33,29 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
     return localize(key, this._language);
   }
 
-  private _entitiesSchema(): SchemaEntry[] {
-    const source = this._config?.source ?? "energy";
-    const fields: SchemaEntry[] = [
+  private _entitySchema(): SchemaEntry[] {
+    return [{ name: "entity", required: true, selector: { entity: { domain: "light" } } }];
+  }
+
+  private _contentSchema(): SchemaEntry[] {
+    return [
+      { name: "name", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+      { name: "transition", selector: { number: { min: 0, step: 0.1, mode: "box", unit_of_measurement: "s" } } },
+      { name: "use_light_color", selector: { boolean: {} } },
       {
-        name: "source",
+        name: "wave_style",
         selector: {
           select: {
             mode: "dropdown",
             options: [
-              { value: "energy", label: this._t("editor_flow_source_energy") },
-              { value: "entities", label: this._t("editor_flow_source_entities") },
+              { value: "wavy", label: this._t("editor_light_wave_style_wavy") },
+              { value: "flat", label: this._t("editor_light_wave_style_flat") },
             ],
           },
         },
       },
-      { name: "name", selector: { text: {} } },
-      { name: "icon", selector: { icon: {} } },
     ];
-    if (source === "entities") {
-      fields.push(
-        { name: "solar_entity", selector: { entity: { domain: "sensor" } } },
-        { name: "grid_import_entity", selector: { entity: { domain: "sensor" } } },
-        { name: "grid_export_entity", selector: { entity: { domain: "sensor" } } },
-        { name: "battery_entity", selector: { entity: { domain: "sensor" } } },
-      );
-    }
-    return fields;
-  }
-
-  private _contentSchema(): SchemaEntry[] {
-    return [{ name: "show_self_sufficiency", selector: { boolean: {} } }];
   }
 
   private _animationSchema(): SchemaEntry[] {
@@ -81,34 +73,18 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
           },
         },
       },
-      {
-        name: "flow_speed",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "slow", label: this._t("editor_flow_speed_slow") },
-              { value: "normal", label: this._t("editor_flow_speed_normal") },
-              { value: "fast", label: this._t("editor_flow_speed_fast") },
-            ],
-          },
-        },
-      },
     ];
   }
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
-      source: "editor_flow_source",
+      entity: "editor_entity",
       name: "editor_name",
       icon: "editor_icon",
-      solar_entity: "editor_flow_solar_entity",
-      grid_import_entity: "editor_flow_grid_import_entity",
-      grid_export_entity: "editor_flow_grid_export_entity",
-      battery_entity: "editor_flow_battery_entity",
-      show_self_sufficiency: "editor_flow_show_self_sufficiency",
+      transition: "editor_light_transition",
+      use_light_color: "editor_light_use_light_color",
+      wave_style: "editor_light_wave_style",
       animation: "editor_progress_animation",
-      flow_speed: "editor_flow_speed",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
     };
@@ -117,14 +93,7 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
   };
 
   private _colorChanged(
-    field:
-      | "pv_color"
-      | "grid_color"
-      | "home_color"
-      | "self_sufficiency_color"
-      | "text_color"
-      | "secondary_text_color"
-      | "card_background",
+    field: "accent_color" | "track_color" | "handle_color" | "text_color" | "secondary_text_color" | "card_background",
     value: string,
   ): void {
     if (!this._config) return;
@@ -187,31 +156,25 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
   protected render() {
     if (!this.hass || !this._config) return nothing;
 
-    const source = this._config.source ?? "energy";
-    const entitiesData = {
-      source,
+    const entityData = { entity: this._config.entity };
+    const contentData = {
       name: this._config.name,
       icon: this._config.icon,
-      solar_entity: this._config.solar_entity,
-      grid_import_entity: this._config.grid_import_entity,
-      grid_export_entity: this._config.grid_export_entity,
-      battery_entity: this._config.battery_entity,
+      transition: this._config.transition,
+      use_light_color: this._config.use_light_color ?? true,
+      wave_style: this._config.wave_style ?? "wavy",
     };
-    const contentData = { show_self_sufficiency: this._config.show_self_sufficiency ?? true };
-    const animationData = {
-      animation: this._config.animation ?? "auto",
-      flow_speed: this._config.flow_speed ?? "normal",
-    };
+    const animationData = { animation: this._config.animation ?? "auto" };
 
     return html`
       <div class="editor">
         <ha-expansion-panel outlined .header=${this._t("editor_entities")} expanded>
-          <ha-icon slot="leading-icon" icon="mdi:database"></ha-icon>
+          <ha-icon slot="leading-icon" icon="mdi:lightbulb-outline"></ha-icon>
           <div class="panel-content">
             <ha-form
               .hass=${this.hass}
-              .data=${entitiesData}
-              .schema=${this._entitiesSchema()}
+              .data=${entityData}
+              .schema=${this._entitySchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
@@ -228,16 +191,16 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_light_use_light_color_helper")}</div>
           </div>
         </ha-expansion-panel>
 
         <ha-expansion-panel outlined .header=${this._t("editor_progress_colors")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
-            ${colorRow(this._t("editor_flow_pv_color"), this._config.pv_color, (v) => this._colorChanged("pv_color", v))}
-            ${colorRow(this._t("editor_flow_grid_color"), this._config.grid_color, (v) => this._colorChanged("grid_color", v))}
-            ${colorRow(this._t("editor_flow_home_color"), this._config.home_color, (v) => this._colorChanged("home_color", v))}
-            ${colorRow(this._t("editor_flow_self_sufficiency_color"), this._config.self_sufficiency_color, (v) => this._colorChanged("self_sufficiency_color", v))}
+            ${colorRow(this._t("editor_light_accent_color"), this._config.accent_color, (v) => this._colorChanged("accent_color", v))}
+            ${colorRow(this._t("editor_light_track_color"), this._config.track_color, (v) => this._colorChanged("track_color", v))}
+            ${colorRow(this._t("editor_light_handle_color"), this._config.handle_color, (v) => this._colorChanged("handle_color", v))}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}
             ${colorRow(this._t("editor_progress_secondary_text_color"), this._config.secondary_text_color, (v) => this._colorChanged("secondary_text_color", v))}
             ${colorRow(this._t("editor_progress_card_background"), this._config.card_background, (v) => this._colorChanged("card_background", v))}
@@ -262,7 +225,7 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
           hass: this.hass,
           language: this._language,
           config: this._config,
-          defaultRadius: DEFAULT_FLOW_RADIUS,
+          defaultRadius: DEFAULT_LIGHT_RADIUS,
           state: this._appearance,
           computeLabel: this._computeLabel,
           onValueChanged: this._valueChanged.bind(this),
@@ -280,6 +243,6 @@ export class M3EnergyFlowCardEditor extends LitElement implements LovelaceCardEd
 
 declare global {
   interface HTMLElementTagNameMap {
-    "m3-energy-flow-card-editor": M3EnergyFlowCardEditor;
+    "m3-light-card-editor": M3LightCardEditor;
   }
 }
