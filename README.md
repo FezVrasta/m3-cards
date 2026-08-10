@@ -61,15 +61,9 @@ TypeScript + [Lit](https://lit.dev), **without** any dependency on
   artwork color extraction, progress and volume wave sliders, and source
   selection
 
-![Design](reference/design.png)
-
 *Screenshots of all seventeen cards with demo data:*
 
-![Overview 1](docs/images/cards-overview-en-1.png)
-![Overview 2](docs/images/cards-overview-en-2.png)
-![Overview 3](docs/images/cards-overview-en-3.png)
-![Overview 4](docs/images/cards-overview-en-4.png)
-![Overview 5](docs/images/cards-overview-en-5.png)
+![Overview](docs/images/cards-overview.png)
 
 <sub>Card and sensor names in the screenshots are generic demo data (HA
 demo integration + placeholder helpers), not real devices.</sub>
@@ -477,8 +471,6 @@ period: hour
 hours: 6
 ```
 
-![Screenshot: M3 Energy Card](reference/energy-card.png)
-
 ### Data retrieval
 
 Past days/hours/months are loaded primarily via HA's long-term statistics
@@ -630,8 +622,6 @@ type: custom:m3-gauge-card
 name: Grid Balance
 ```
 
-![Screenshot: M3 Gauge Card](reference/gauge-card.png)
-
 ### Data sources
 
 - **`source: energy`** (default, no further configuration needed if the HA
@@ -739,8 +729,6 @@ power_entity: sensor.total_power_consumption
 name: Electricity Meter
 ```
 
-![Screenshot: M3 Counter Card](reference/counter-card.png)
-
 ### Digit display
 
 - The number of integer digits (`digits`) grows automatically with the
@@ -796,8 +784,6 @@ type: custom:m3-power-list-card
 auto_discover: true
 name: Smart Plugs
 ```
-
-![Screenshot: M3 Power List Card](reference/power-list-card.png)
 
 ### Entity source
 
@@ -873,8 +859,6 @@ metrics:
     icon: mdi:power-socket-de
 ```
 
-![Screenshot: M3 Power Summary Card](reference/power-summary-card.png)
-
 ### Sign convention
 
 Instantaneous power sensors at the grid connection encode export/import
@@ -936,8 +920,6 @@ source: energy
 period: today
 top_count: 7
 ```
-
-![Screenshot: M3 Top Consumers Card](reference/top-consumers-card.png)
 
 ### Data source and time range
 

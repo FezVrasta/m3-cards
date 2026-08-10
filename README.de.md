@@ -60,15 +60,9 @@ TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
   Cover-Farbextraktion, Fortschritts- und Lautstärke-Wellen-Slider sowie
   Quellenauswahl
 
-![Design](reference/design.png)
-
 *Screenshots aller siebzehn Karten mit Demo-Daten:*
 
-![Übersicht 1](docs/images/cards-overview-de-1.png)
-![Übersicht 2](docs/images/cards-overview-de-2.png)
-![Übersicht 3](docs/images/cards-overview-de-3.png)
-![Übersicht 4](docs/images/cards-overview-de-4.png)
-![Übersicht 5](docs/images/cards-overview-de-5.png)
+![Übersicht](docs/images/cards-overview.png)
 
 <sub>Karten- und Sensornamen in den Screenshots sind generische Demo-Daten
 (HA-Demo-Integration + Platzhalter-Helfer), keine echten Geräte.</sub>
@@ -471,8 +465,6 @@ period: hour
 hours: 6
 ```
 
-![Screenshot: M3 Energy Card](reference/energy-card.png)
-
 ### Datenbeschaffung
 
 Die vergangenen Tage/Stunden/Monate werden primär über HA-Langzeitstatistiken
@@ -628,8 +620,6 @@ type: custom:m3-gauge-card
 name: Netzbilanz
 ```
 
-![Screenshot: M3 Gauge Card](reference/gauge-card.png)
-
 ### Datenquellen
 
 - **`source: energy`** (Standard, keine weitere Konfiguration nötig, wenn das
@@ -738,8 +728,6 @@ power_entity: sensor.gesamter_energieverbrauch
 name: Stromzähler
 ```
 
-![Screenshot: M3 Counter Card](reference/counter-card.png)
-
 ### Ziffernanzeige
 
 - Die Anzahl der Vorkommastellen (`digits`) wächst automatisch mit dem Wert
@@ -797,8 +785,6 @@ type: custom:m3-power-list-card
 auto_discover: true
 name: Steckdosen
 ```
-
-![Screenshot: M3 Power List Card](reference/power-list-card.png)
 
 ### Entitätsquelle
 
@@ -875,8 +861,6 @@ metrics:
     icon: mdi:power-socket-de
 ```
 
-![Screenshot: M3 Power Summary Card](reference/power-summary-card.png)
-
 ### Vorzeichen-Konvention
 
 Momentanleistungssensoren am Netzanschluss kodieren Einspeisung/Bezug
@@ -939,8 +923,6 @@ source: energy
 period: today
 top_count: 7
 ```
-
-![Screenshot: M3 Top Consumers Card](reference/top-consumers-card.png)
 
 ### Datenquelle und Zeitraum
 
