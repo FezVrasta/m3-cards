@@ -1,0 +1,176 @@
+import { html, nothing, type TemplateResult } from "lit";
+import type { HomeAssistant, CornerRadiusConfig } from "../types";
+import {
+  CORNER_KEYS,
+  radiusPreset,
+  radiusPresetSchema,
+  radiusValueSchema,
+  cornersToggleSchema,
+  cornerPresetSchema,
+  cornerValueSchema,
+} from "./radius-editor";
+import type { SchemaEntry } from "./editor-helpers";
+import { RADIUS_PRESETS } from "../const";
+import { localize } from "../localize";
+
+// The "Erscheinungsbild" (glass background + radius + per-corner radius)
+// panel is identical across every card editor. This module owns both the
+// full render template and the pure state-transition logic, so each editor
+// only needs a handful of thin wrapper methods that apply the patch to its
+// own @state fields and fire config-changed.
+
+export interface AppearanceConfigBase {
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+}
+
+export interface AppearanceState {
+  showCustomRadius: boolean;
+  showCorners: boolean;
+  cornerCustom: Record<string, boolean>;
+}
+
+export function initAppearanceState(
+  config: AppearanceConfigBase,
+  defaultRadius: number,
+): AppearanceState {
+  const cornerCustom: Record<string, boolean> = {};
+  for (const key of CORNER_KEYS) {
+    cornerCustom[key] = radiusPreset(config.corners?.[key], defaultRadius) === "custom";
+  }
+  return {
+    showCustomRadius: radiusPreset(config.radius, defaultRadius) === "custom",
+    showCorners: !!config.corners,
+    cornerCustom,
+  };
+}
+
+export function radiusPresetPatch(preset: string): { showCustomRadius: boolean; radius?: number } {
+  if (preset === "custom") return { showCustomRadius: true };
+  return { showCustomRadius: false, radius: RADIUS_PRESETS[preset] };
+}
+
+export function cornerPresetPatch(preset: string): { custom: boolean; px?: number } {
+  if (preset === "custom") return { custom: true };
+  return { custom: false, px: RADIUS_PRESETS[preset] };
+}
+
+export function appearanceSchema(): SchemaEntry[] {
+  return [{ name: "glass_background", selector: { boolean: {} } }];
+}
+
+export interface RadiusCornerFieldsParams {
+  hass?: HomeAssistant;
+  language: string;
+  config: AppearanceConfigBase;
+  defaultRadius: number;
+  state: AppearanceState;
+  computeLabel: (schema: SchemaEntry) => string;
+  onValueChanged: (ev: CustomEvent) => void;
+  onRadiusPresetChanged: (ev: CustomEvent) => void;
+  onCornersToggleChanged: (ev: CustomEvent) => void;
+  onCornerPresetChanged: (key: string, ev: CustomEvent) => void;
+  onCornerValueChanged: (key: string, ev: CustomEvent) => void;
+}
+
+// The radius-preset + optional custom-radius + per-corner controls, without
+// the glass_background toggle or the panel wrapper — for editors that embed
+// this inside an existing custom "appearance" panel of their own (button,
+// climate-mini) instead of using the fully-wrapped renderAppearanceSection.
+export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): TemplateResult {
+  const { hass, language, config, defaultRadius, state, computeLabel } = params;
+  const radiusPresetData = { radius_preset: radiusPreset(config.radius, defaultRadius) };
+  const radiusValueData = { radius: config.radius ?? defaultRadius };
+  const baseRadius = config.radius ?? defaultRadius;
+  const cornersToggleData = { use_corners: state.showCorners };
+
+  return html`
+    <ha-form
+      .hass=${hass}
+      .data=${radiusPresetData}
+      .schema=${radiusPresetSchema(language)}
+      .computeLabel=${computeLabel}
+      @value-changed=${params.onRadiusPresetChanged}
+    ></ha-form>
+    ${state.showCustomRadius
+      ? html`
+          <ha-form
+            .hass=${hass}
+            .data=${radiusValueData}
+            .schema=${radiusValueSchema()}
+            .computeLabel=${computeLabel}
+            @value-changed=${params.onValueChanged}
+          ></ha-form>
+        `
+      : nothing}
+    <ha-form
+      .hass=${hass}
+      .data=${cornersToggleData}
+      .schema=${cornersToggleSchema()}
+      .computeLabel=${computeLabel}
+      @value-changed=${params.onCornersToggleChanged}
+    ></ha-form>
+    ${state.showCorners
+      ? CORNER_KEYS.map((key) => {
+          const currentPx = config.corners?.[key] ?? baseRadius;
+          const presetVal = state.cornerCustom[key]
+            ? "custom"
+            : radiusPreset(currentPx, defaultRadius);
+          return html`
+            <ha-form
+              .hass=${hass}
+              .data=${{ [key]: presetVal }}
+              .schema=${cornerPresetSchema(key, language)}
+              .computeLabel=${computeLabel}
+              @value-changed=${(ev: CustomEvent) => params.onCornerPresetChanged(key, ev)}
+            ></ha-form>
+            ${state.cornerCustom[key]
+              ? html`
+                  <ha-form
+                    .hass=${hass}
+                    .data=${{ [key]: currentPx }}
+                    .schema=${cornerValueSchema(key)}
+                    .computeLabel=${computeLabel}
+                    @value-changed=${(ev: CustomEvent) => params.onCornerValueChanged(key, ev)}
+                  ></ha-form>
+                `
+              : nothing}
+          `;
+        })
+      : nothing}
+  `;
+}
+
+export function renderAppearanceSection(params: {
+  hass?: HomeAssistant;
+  language: string;
+  config: AppearanceConfigBase;
+  defaultRadius: number;
+  state: AppearanceState;
+  computeLabel: (schema: SchemaEntry) => string;
+  onValueChanged: (ev: CustomEvent) => void;
+  onRadiusPresetChanged: (ev: CustomEvent) => void;
+  onCornersToggleChanged: (ev: CustomEvent) => void;
+  onCornerPresetChanged: (key: string, ev: CustomEvent) => void;
+  onCornerValueChanged: (key: string, ev: CustomEvent) => void;
+}): TemplateResult {
+  const { hass, language, config, computeLabel } = params;
+  const appearanceData = { glass_background: config.glass_background ?? true };
+
+  return html`
+    <ha-expansion-panel outlined .header=${localize("editor_appearance", language)}>
+      <ha-icon slot="leading-icon" icon="mdi:card-outline"></ha-icon>
+      <div class="panel-content">
+        <ha-form
+          .hass=${hass}
+          .data=${appearanceData}
+          .schema=${appearanceSchema()}
+          .computeLabel=${computeLabel}
+          @value-changed=${params.onValueChanged}
+        ></ha-form>
+        ${renderRadiusCornerFields(params)}
+      </div>
+    </ha-expansion-panel>
+  `;
+}

@@ -1,0 +1,566 @@
+import type { HomeAssistant } from "../types";
+
+export type StatisticType = "change" | "state";
+
+// Multiple cards on the same dashboard (e.g. cost-card + energy-card, or
+// several top-consumers cards) can independently request the exact same
+// `recorder/statistics_during_period` window for the same entities within
+// the same render burst. Caching by request shape avoids issuing duplicate
+// WS round-trips for identical data: in-flight requests are always shared
+// (same promise), and completed results stay cached briefly so a page-load
+// flurry of near-simultaneous card renders collapses into one fetch.
+const STATS_CACHE_TTL_MS = 30_000;
+const statsCache = new Map<string, { promise: Promise<unknown>; timestamp: number }>();
+
+function cachedStatsCall<T>(hass: HomeAssistant, params: Record<string, unknown>): Promise<T> {
+  const key = JSON.stringify(params);
+  const cached = statsCache.get(key);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < STATS_CACHE_TTL_MS) {
+    return cached.promise as Promise<T>;
+  }
+  const promise = hass.callWS<T>(params).catch((e) => {
+    statsCache.delete(key);
+    throw e;
+  });
+  statsCache.set(key, { promise, timestamp: now });
+  return promise;
+}
+
+export interface EnergyDaysResult {
+  values: number[];
+  usingFallback: boolean;
+}
+
+interface StatisticRow {
+  start: string | number;
+  change?: number;
+  state?: number;
+}
+
+interface HistoryPoint {
+  s?: string;
+  lu?: number;
+}
+
+export function localDayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function localHourKey(d: Date): string {
+  return `${localDayKey(d)}T${String(d.getHours()).padStart(2, "0")}`;
+}
+
+function localMonthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// `recorder/statistics_during_period`'s `units` param normalizes mixed
+// source units within one unit *class* (e.g. Wh/kWh/MWh all -> kWh) — it has
+// no effect on statistics outside the requested class(es), so it's safe to
+// pass unconditionally. Gas/water meter entities (device_class "gas"/
+// "water", unit typically m³) belong to the "volume" class, not "energy" —
+// requesting energy:kWh for them would just silently skip normalization,
+// but explicitly matching the class means multiple gas/water sources in
+// mixed units (e.g. m³ and L) still normalize correctly, same as multi-
+// source kWh electricity entities already do.
+function statisticsUnitsFor(hass: HomeAssistant, entityIds: string[]): Record<string, string> {
+  const deviceClass = hass.states[entityIds[0]]?.attributes.device_class;
+  if (deviceClass === "gas" || deviceClass === "water") return { volume: "m³" };
+  return { energy: "kWh" };
+}
+
+// Converts a `wh_hours`-shaped forecast object (ISO hour-start timestamp ->
+// watt-hours, as returned by HA's `energy/solar_forecast` WS command and by
+// the common convention some forecast integrations expose on an entity
+// attribute) into a local-hour-keyed kWh map.
+export function mapWhHoursToLocalKwh(whHours: Record<string, number>): Map<string, number> {
+  const byHour = new Map<string, number>();
+  for (const [iso, wh] of Object.entries(whHours)) {
+    if (typeof wh !== "number") continue;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) continue;
+    const key = localHourKey(d);
+    byHour.set(key, (byHour.get(key) ?? 0) + wh / 1000);
+  }
+  return byHour;
+}
+
+// Fetches `days` full past calendar days (not including today — the caller
+// reads today's value live from the entity state) via HA's long-term
+// statistics API, falling back to the History API (aggregated per day by
+// maximum, matching how these *_daily counter sensors behave) when the
+// entity has no statistics at all.
+export async function fetchEnergyDays(
+  hass: HomeAssistant,
+  entityId: string,
+  days: number,
+  statisticType: StatisticType,
+): Promise<EnergyDaysResult> {
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const startMidnight = new Date(todayMidnight);
+  startMidnight.setDate(startMidnight.getDate() - days);
+
+  const expectedKeys: string[] = [];
+  for (let i = days; i >= 1; i--) {
+    const d = new Date(todayMidnight);
+    d.setDate(d.getDate() - i);
+    expectedKeys.push(localDayKey(d));
+  }
+
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: startMidnight.toISOString(),
+      end_time: todayMidnight.toISOString(),
+      statistic_ids: [entityId],
+      period: "day",
+      types: [statisticType],
+    });
+    const rows = response[entityId];
+    if (rows && rows.length > 0) {
+      const byDay = new Map<string, number>();
+      for (const row of rows) {
+        const d = new Date(row.start);
+        const val = row[statisticType];
+        if (typeof val === "number") byDay.set(localDayKey(d), val);
+      }
+      return {
+        values: expectedKeys.map((k) => byDay.get(k) ?? 0),
+        usingFallback: false,
+      };
+    }
+  } catch (e) {
+    console.warn("m3-energy-card: statistics_during_period failed, falling back to history", e);
+  }
+
+  const historyResponse = await hass.callWS<Record<string, HistoryPoint[]>>({
+    type: "history/history_during_period",
+    start_time: startMidnight.toISOString(),
+    end_time: todayMidnight.toISOString(),
+    entity_ids: [entityId],
+    minimal_response: true,
+    no_attributes: true,
+  });
+  const points = historyResponse[entityId] ?? [];
+  const byDay = new Map<string, number>();
+  for (const p of points) {
+    if (p.lu === undefined) continue;
+    const raw = parseFloat(p.s ?? "");
+    if (isNaN(raw)) continue;
+    const key = localDayKey(new Date(p.lu * 1000));
+    byDay.set(key, Math.max(byDay.get(key) ?? 0, raw));
+  }
+  return {
+    values: expectedKeys.map((k) => byDay.get(k) ?? 0),
+    usingFallback: true,
+  };
+}
+
+// Fetches `hours` full past hours (not including the current, still-running
+// hour — the caller reads that live from the entity state, same pattern as
+// fetchEnergyDays uses for "today") via HA's long-term statistics API,
+// falling back to the History API when the entity has no statistics.
+export async function fetchEnergyHours(
+  hass: HomeAssistant,
+  entityId: string,
+  hours: number,
+  statisticType: StatisticType,
+): Promise<EnergyDaysResult> {
+  const currentHourStart = new Date();
+  currentHourStart.setMinutes(0, 0, 0);
+  const startTime = new Date(currentHourStart);
+  startTime.setHours(startTime.getHours() - hours);
+
+  const expectedKeys: string[] = [];
+  for (let i = hours; i >= 1; i--) {
+    const d = new Date(currentHourStart);
+    d.setHours(d.getHours() - i);
+    expectedKeys.push(localHourKey(d));
+  }
+
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: startTime.toISOString(),
+      end_time: currentHourStart.toISOString(),
+      statistic_ids: [entityId],
+      period: "hour",
+      types: [statisticType],
+    });
+    const rows = response[entityId];
+    if (rows && rows.length > 0) {
+      const byHour = new Map<string, number>();
+      for (const row of rows) {
+        const d = new Date(row.start);
+        const val = row[statisticType];
+        if (typeof val === "number") byHour.set(localHourKey(d), val);
+      }
+      return {
+        values: expectedKeys.map((k) => byHour.get(k) ?? 0),
+        usingFallback: false,
+      };
+    }
+  } catch (e) {
+    console.warn("m3-energy-card: statistics_during_period (hour) failed, falling back to history", e);
+  }
+
+  const historyResponse = await hass.callWS<Record<string, HistoryPoint[]>>({
+    type: "history/history_during_period",
+    start_time: startTime.toISOString(),
+    end_time: currentHourStart.toISOString(),
+    entity_ids: [entityId],
+    minimal_response: true,
+    no_attributes: true,
+  });
+  const points = historyResponse[entityId] ?? [];
+  const byHour = new Map<string, number>();
+  for (const p of points) {
+    if (p.lu === undefined) continue;
+    const raw = parseFloat(p.s ?? "");
+    if (isNaN(raw)) continue;
+    const key = localHourKey(new Date(p.lu * 1000));
+    byHour.set(key, Math.max(byHour.get(key) ?? 0, raw));
+  }
+  return {
+    values: expectedKeys.map((k) => byHour.get(k) ?? 0),
+    usingFallback: true,
+  };
+}
+
+export interface EnergyMonthsResult {
+  values: number[];
+  hasStatistics: boolean;
+}
+
+// Fetches `months - 1` full past calendar months (not including the
+// current, still-running month — the caller computes that separately via
+// fetchMonthToDateSum + a live/today value, same pattern as fetchEnergyDays
+// uses for "today"). Deliberately does NOT ask the recorder for `period:
+// "month"` statistics directly: daily-resetting counters (the common case
+// this card targets) can log more than one reset event in the same instant
+// at midnight (observed in practice), and HA's recorder "change" statistic
+// double-counts each of those resets — the error compounds across a whole
+// month into a wildly inflated total. Fetching at day granularity and
+// summing locally per calendar month reuses the exact per-day values already
+// verified correct elsewhere in this card (day/hour mode), sidestepping the
+// bug entirely. No History-API fallback: month-scale History queries are
+// impractically large, and Energy-dashboard-eligible entities are expected
+// to carry long-term statistics — `hasStatistics: false` tells the caller
+// to show a clear "no monthly statistics" message instead.
+export async function fetchEnergyMonths(
+  hass: HomeAssistant,
+  entityId: string,
+  months: number,
+  statisticType: StatisticType,
+): Promise<EnergyMonthsResult> {
+  const completedCount = months - 1;
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const expectedKeys: string[] = [];
+  for (let i = completedCount; i >= 1; i--) {
+    const d = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i, 1);
+    expectedKeys.push(localMonthKey(d));
+  }
+  if (completedCount <= 0) return { values: [], hasStatistics: true };
+
+  const startMonth = new Date(
+    currentMonthStart.getFullYear(),
+    currentMonthStart.getMonth() - completedCount,
+    1,
+  );
+
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: startMonth.toISOString(),
+      end_time: currentMonthStart.toISOString(),
+      statistic_ids: [entityId],
+      period: "day",
+      types: [statisticType],
+      units: statisticsUnitsFor(hass, [entityId]),
+    });
+    const rows = response[entityId];
+    if (rows && rows.length > 0) {
+      const byMonth = new Map<string, number>();
+      for (const row of rows) {
+        const val = row[statisticType];
+        if (typeof val !== "number") continue;
+        const key = localMonthKey(new Date(row.start));
+        byMonth.set(key, (byMonth.get(key) ?? 0) + val);
+      }
+      return {
+        values: expectedKeys.map((k) => byMonth.get(k) ?? 0),
+        hasStatistics: true,
+      };
+    }
+    return { values: expectedKeys.map(() => 0), hasStatistics: false };
+  } catch (e) {
+    console.warn("m3-energy-card: statistics_during_period (month) failed", e);
+    return { values: expectedKeys.map(() => 0), hasStatistics: false };
+  }
+}
+
+// Sums per-day statistics from the start of the current calendar month up to
+// (not including) today, for the still-running month's "so far" total in
+// month mode. The caller adds today's own contribution on top (read live for
+// "state"-type counters, or via a fine-grained current-period sum for
+// "change"-type ones) — same day-granularity approach as fetchEnergyMonths,
+// for the same reason (avoids the coarser-period reset-double-counting bug).
+export async function fetchMonthToDateSum(
+  hass: HomeAssistant,
+  entityId: string,
+  statisticType: StatisticType,
+): Promise<number> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const todayMidnight = new Date(now);
+  todayMidnight.setHours(0, 0, 0, 0);
+  if (todayMidnight <= monthStart) return 0;
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: monthStart.toISOString(),
+      end_time: todayMidnight.toISOString(),
+      statistic_ids: [entityId],
+      period: "day",
+      types: [statisticType],
+      units: statisticsUnitsFor(hass, [entityId]),
+    });
+    const rows = response[entityId] ?? [];
+    let total = 0;
+    for (const row of rows) {
+      const val = row[statisticType];
+      if (typeof val === "number") total += val;
+    }
+    return total;
+  } catch (e) {
+    console.warn("m3-energy-card: failed to load month-to-date sum", e);
+    return 0;
+  }
+}
+
+// Fetches today's per-hour actual values (local midnight up to the current,
+// still-running hour) summed across one or more entities — used by the solar
+// mode of m3-energy-card, which can aggregate multiple Energy-dashboard solar
+// sources. No History-API fallback: Energy-dashboard-eligible entities are
+// expected to carry long-term statistics.
+export async function fetchSolarDayHours(
+  hass: HomeAssistant,
+  entityIds: string[],
+  statisticType: StatisticType,
+): Promise<Map<string, number>> {
+  const byHour = new Map<string, number>();
+  if (entityIds.length === 0) return byHour;
+
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const currentHourStart = new Date();
+  currentHourStart.setMinutes(0, 0, 0);
+
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: todayMidnight.toISOString(),
+      end_time: currentHourStart.toISOString(),
+      statistic_ids: entityIds,
+      period: "hour",
+      types: [statisticType],
+      // Solar sensors across multiple sources/integrations are often mixed
+      // Wh/kWh — request a consistent unit so summing across entities and
+      // against the (already kWh-converted) forecast data lines up.
+      units: { energy: "kWh" },
+    });
+    for (const id of entityIds) {
+      const rows = response[id] ?? [];
+      for (const row of rows) {
+        const val = row[statisticType];
+        if (typeof val !== "number") continue;
+        const key = localHourKey(new Date(row.start));
+        byHour.set(key, (byHour.get(key) ?? 0) + val);
+      }
+    }
+  } catch (e) {
+    console.warn("m3-energy-card: failed to load solar hourly statistics", e);
+  }
+  return byHour;
+}
+
+// Same idea as fetchSolarDayHours, but buckets by calendar day over the
+// `days` most recent *completed* days (today excluded — the caller reads
+// today live/from the forecast the same way it already does elsewhere).
+// Used for the solar-mode day view's comparison/average chips, mirroring
+// month-mode's "vs previous month" + "N-month average" pattern one level
+// down (vs yesterday + N-day average).
+export async function fetchSolarPastDays(
+  hass: HomeAssistant,
+  entityIds: string[],
+  days: number,
+  statisticType: StatisticType,
+): Promise<number[]> {
+  const expectedKeys: string[] = [];
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  for (let i = days; i >= 1; i--) {
+    const d = new Date(todayMidnight);
+    d.setDate(d.getDate() - i);
+    expectedKeys.push(localDayKey(d));
+  }
+  if (entityIds.length === 0) return expectedKeys.map(() => 0);
+
+  const startMidnight = new Date(todayMidnight);
+  startMidnight.setDate(startMidnight.getDate() - days);
+
+  const byDay = new Map<string, number>();
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: startMidnight.toISOString(),
+      end_time: todayMidnight.toISOString(),
+      statistic_ids: entityIds,
+      period: "day",
+      types: [statisticType],
+      units: { energy: "kWh" },
+    });
+    for (const id of entityIds) {
+      for (const row of response[id] ?? []) {
+        const val = row[statisticType];
+        if (typeof val !== "number") continue;
+        const key = localDayKey(new Date(row.start));
+        byDay.set(key, (byDay.get(key) ?? 0) + val);
+      }
+    }
+  } catch (e) {
+    console.warn("m3-energy-card: failed to load solar daily statistics", e);
+  }
+  return expectedKeys.map((k) => byDay.get(k) ?? 0);
+}
+
+// Sums the "change" statistic across one or more entities from `periodStart`
+// to now, using 5-minute short-term statistics. Used for the still-running
+// current hour of "change"-type (lifetime-cumulative, never-resetting)
+// counters, where the live entity state is the all-time total and cannot be
+// read directly as "this hour's generation" the way a periodically-resetting
+// counter's state can.
+export async function fetchCurrentPeriodChangeSum(
+  hass: HomeAssistant,
+  entityIds: string[],
+  periodStart: Date,
+  granularity: "5minute" | "hour" | "day" = "5minute",
+): Promise<number> {
+  if (entityIds.length === 0) return 0;
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: periodStart.toISOString(),
+      end_time: new Date().toISOString(),
+      statistic_ids: entityIds,
+      period: granularity,
+      types: ["change"],
+      units: statisticsUnitsFor(hass, entityIds),
+    });
+    let total = 0;
+    for (const id of entityIds) {
+      for (const row of response[id] ?? []) {
+        if (typeof row.change === "number") total += row.change;
+      }
+    }
+    return total;
+  } catch (e) {
+    console.warn("m3-energy-card: failed to load current-period change sum", e);
+    return 0;
+  }
+}
+
+// Same as fetchCurrentPeriodChangeSum, but keeps each entity's total
+// separate instead of combining them — used by m3-top-consumers-card to
+// rank individual devices rather than sum a whole category.
+export async function fetchPeriodChangeByEntity(
+  hass: HomeAssistant,
+  entityIds: string[],
+  periodStart: Date,
+  periodEnd: Date,
+  granularity: "hour" | "day" = "day",
+): Promise<Map<string, number>> {
+  const byEntity = new Map<string, number>();
+  if (entityIds.length === 0) return byEntity;
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: periodStart.toISOString(),
+      end_time: periodEnd.toISOString(),
+      statistic_ids: entityIds,
+      period: granularity,
+      types: ["change"],
+      units: { energy: "kWh" },
+    });
+    for (const id of entityIds) {
+      let total = 0;
+      for (const row of response[id] ?? []) {
+        if (typeof row.change === "number") total += row.change;
+      }
+      byEntity.set(id, total);
+    }
+  } catch (e) {
+    console.warn("m3-top-consumers-card: failed to load per-device statistics", e);
+  }
+  return byEntity;
+}
+
+// General-purpose day-bucketed fetch over an arbitrary [start, end) window
+// (unlike fetchEnergyDays, which is always a fixed rolling N-days-ending-
+// today window) — summed across one or more entities. Used by m3-cost-card
+// for its day-bar chart and period-to-date/previous-period totals, for both
+// real energy entities (kWh -> unit-normalized) and HA's own synthetic cost
+// statistics (monetary, no energy unit class to normalize).
+export async function fetchDaySeries(
+  hass: HomeAssistant,
+  entityIds: string[],
+  start: Date,
+  end: Date,
+  statisticType: StatisticType,
+  applyEnergyUnits = true,
+): Promise<Map<string, number>> {
+  const byDay = new Map<string, number>();
+  if (entityIds.length === 0) return byDay;
+  try {
+    const response = await cachedStatsCall<Record<string, StatisticRow[]>>(hass, {
+      type: "recorder/statistics_during_period",
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      statistic_ids: entityIds,
+      period: "day",
+      types: [statisticType],
+      ...(applyEnergyUnits ? { units: statisticsUnitsFor(hass, entityIds) } : {}),
+    });
+    for (const id of entityIds) {
+      for (const row of response[id] ?? []) {
+        const val = row[statisticType];
+        if (typeof val !== "number") continue;
+        const key = localDayKey(new Date(row.start));
+        byDay.set(key, (byDay.get(key) ?? 0) + val);
+      }
+    }
+  } catch (e) {
+    console.warn("m3-cost-card: failed to load day series", e);
+  }
+  return byDay;
+}
+
+// Used by the editor (Phase 4) to show the "using History-API fallback"
+// hint without needing to fetch the full day range.
+export async function hasLongTermStatistics(
+  hass: HomeAssistant,
+  entityId: string,
+): Promise<boolean> {
+  try {
+    const ids = await hass.callWS<Array<{ statistic_id: string }>>({
+      type: "recorder/list_statistic_ids",
+    });
+    return ids.some((s) => s.statistic_id === entityId);
+  } catch {
+    return false;
+  }
+}

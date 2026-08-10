@@ -1,0 +1,33 @@
+{
+  "name": "m3-cards",
+  "version": "1.0.0",
+  "description": "Material 3 style Lovelace cards for Home Assistant (climate control, generic buttons, progress, energy bar chart, gauge, energy flow, counter, power list, power summary, top consumers, cost, light, battery, weather, presence, media), built natively with Lit — no button-card/card-mod dependencies.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "custom-card",
+    "hacs",
+    "climate"
+  ],
+  "license": "MIT",
+  "author": "j0sp0r",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/j0sp0r/m3-cards.git"
+  },
+  "homepage": "https://github.com/j0sp0r/m3-cards",
+  "bugs": "https://github.com/j0sp0r/m3-cards/issues",
+  "dependencies": {
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

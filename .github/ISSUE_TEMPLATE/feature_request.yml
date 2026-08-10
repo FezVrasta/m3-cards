@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest an idea for a card, or a new card
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: A config option, a new card, a behavior change, ...
+    validations:
+      required: true

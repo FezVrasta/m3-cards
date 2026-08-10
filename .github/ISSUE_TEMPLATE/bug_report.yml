@@ -1,0 +1,60 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: card
+    attributes:
+      label: Affected card
+      options:
+        - M3 Climate Card
+        - M3 Climate Card Mini
+        - M3 Button Card
+        - M3 Progress Card
+        - M3 Energy Card
+        - M3 Gauge Card
+        - M3 Energy Flow Card
+        - M3 Counter Card
+        - M3 Power List Card
+        - M3 Power Summary Card
+        - M3 Top Consumers Card
+        - M3 Cost Card
+        - M3 Light Card
+        - M3 Battery Card
+        - M3 Weather Card
+        - M3 Presence Card
+        - M3 Media Card
+        - Not card-specific / other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Card configuration (YAML)
+      render: yaml
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console errors
+      description: Open dev tools (F12) → Console, copy any red errors mentioning `m3-`
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Card version
+      description: See `card_version` in your card's YAML config, or the HACS entry
+    validations:
+      required: true
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
