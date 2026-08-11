@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.3.0]
+
+### Hinzugefügt
+- **M3 Energy Card**: neue Option `unit`, um die angezeigte Einheit zu
+  überschreiben — nötig für abgeleitete Zähler (z.B. Utility-Meter-Helfer),
+  die keine eigene `unit_of_measurement` melden und sonst pauschal "kWh"
+  anzeigen würden.
+
 ## [1.2.0]
 
 ### Hinzugefügt
