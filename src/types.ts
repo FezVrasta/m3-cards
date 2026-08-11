@@ -441,13 +441,20 @@ export interface M3TopConsumersCardConfig extends PricingConfig {
 
 // Shared by m3-cost-card and m3-top-consumers-card's unit_mode: "cost".
 export type PriceSource = "energy_dashboard" | "input_number" | "fixed";
-export type PriceUnit = "eur_per_kwh" | "ct_per_kwh";
+export type PriceUnit = "eur_per_kwh" | "ct_per_kwh" | "custom";
 
 export interface PricingConfig {
   price_source?: PriceSource;
   price_entity?: string;
   price?: number;
   price_unit?: PriceUnit;
+  // Only used when price_unit is "custom": a free-text unit label for
+  // display (e.g. "€/m³", "$/gal"), and a factor the raw entity value is
+  // multiplied by before pricing (e.g. 0.001 for a liter sensor priced per
+  // m³) — lets any quantity/unit pairing work without hardcoding conversions
+  // for every possible unit.
+  price_unit_label?: string;
+  price_quantity_factor?: number;
   base_fee?: number;
   currency?: string;
 }

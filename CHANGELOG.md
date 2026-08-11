@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.2.0]
+
+### Hinzugefügt
+- **M3 Cost Card**: neuer Preis-Einheit-Modus `custom` — frei definierbare
+  Einheit (z.B. "€/m³") plus ein Mengen-Umrechnungsfaktor, damit die Karte
+  auch für Wasser, Gas oder beliebige andere Zähler funktioniert, nicht nur
+  für kWh-Strompreise.
+
 ## [1.1.0]
 
 ### Hinzugefügt

@@ -58,6 +58,7 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
     if (source === "input_number") {
       schema.push({ name: "price_entity", selector: { entity: { domain: "input_number" } } });
     }
+    const isCustomUnit = source === "fixed" && this._config?.price_unit === "custom";
     if (source === "fixed") {
       schema.push({ name: "price", selector: { number: { min: 0, step: 0.001, mode: "box" } } });
       schema.push({
@@ -68,13 +69,24 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
             options: [
               { value: "eur_per_kwh", label: this._t("editor_cost_price_unit_eur") },
               { value: "ct_per_kwh", label: this._t("editor_cost_price_unit_ct") },
+              { value: "custom", label: this._t("editor_cost_price_unit_custom") },
             ],
           },
         },
       });
+      if (isCustomUnit) {
+        schema.push({ name: "price_unit_label", selector: { text: {} } });
+        schema.push({
+          name: "price_quantity_factor",
+          selector: { number: { min: 0, step: 0.0001, mode: "box" } },
+        });
+      }
     }
     if (source !== "energy_dashboard") {
-      schema.push({ name: "entity", selector: { entity: { domain: "sensor", device_class: "energy" } } });
+      schema.push({
+        name: "entity",
+        selector: { entity: isCustomUnit ? { domain: "sensor" } : { domain: "sensor", device_class: "energy" } },
+      });
       schema.push({
         name: "statistic_type",
         selector: {
@@ -141,6 +153,8 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
       price_entity: "editor_cost_price_entity",
       price: "editor_cost_price",
       price_unit: "editor_cost_price_unit",
+      price_unit_label: "editor_cost_price_unit_label",
+      price_quantity_factor: "editor_cost_price_quantity_factor",
       entity: "editor_cost_entity",
       statistic_type: "editor_energy_statistic_type",
       base_fee: "editor_cost_base_fee",
@@ -229,6 +243,8 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
       price_entity: this._config.price_entity,
       price: this._config.price,
       price_unit: this._config.price_unit ?? "eur_per_kwh",
+      price_unit_label: this._config.price_unit_label ?? "",
+      price_quantity_factor: this._config.price_quantity_factor ?? 1,
       entity: this._config.entity,
       statistic_type: this._config.statistic_type ?? "state",
       base_fee: this._config.base_fee ?? 0,

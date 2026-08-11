@@ -247,12 +247,18 @@ export class M3CostCard extends LitElement implements LovelaceCard {
         // "change" — see fetchEnergyDays / m3-energy-card. "change" is only
         // correct for true lifetime (never-resetting) counters.
         const statType = this._config.statistic_type ?? "state";
+        // "custom" mode (any non-energy quantity, e.g. water in L priced per
+        // m³) skips the recorder's energy-unit-class normalization — it only
+        // converts within the "energy" class anyway, a no-op for anything
+        // else — and instead applies the user's own price_quantity_factor.
+        const isCustom = this._config.price_unit === "custom";
+        const quantityFactor = isCustom ? (this._config.price_quantity_factor ?? 1) : 1;
         const [kwhMap, prevKwhMap] = await Promise.all([
-          fetchDaySeries(this.hass, [this._config.entity], window.start, window.end, statType),
-          fetchDaySeries(this.hass, [this._config.entity], prevWindow.start, prevWindow.end, statType),
+          fetchDaySeries(this.hass, [this._config.entity], window.start, window.end, statType, !isCustom),
+          fetchDaySeries(this.hass, [this._config.entity], prevWindow.start, prevWindow.end, statType, !isCustom),
         ]);
-        currentDayMap = new Map(Array.from(kwhMap, ([k, v]) => [k, v * price]));
-        prevDayMap = new Map(Array.from(prevKwhMap, ([k, v]) => [k, v * price]));
+        currentDayMap = new Map(Array.from(kwhMap, ([k, v]) => [k, v * quantityFactor * price]));
+        prevDayMap = new Map(Array.from(prevKwhMap, ([k, v]) => [k, v * quantityFactor * price]));
       } else {
         const costIds = await getGridCostEntities(this.hass);
         if (!costIds) {
@@ -602,7 +608,12 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       displayValue = new Intl.NumberFormat(this._language, { maximumFractionDigits: 3 }).format(
         this._config.price,
       );
-      unit = this._config.price_unit === "ct_per_kwh" ? `ct/kWh` : `${currency}/kWh`;
+      unit =
+        this._config.price_unit === "ct_per_kwh"
+          ? `ct/kWh`
+          : this._config.price_unit === "custom"
+            ? this._config.price_unit_label || `${currency}/?`
+            : `${currency}/kWh`;
     }
 
     return html`
