@@ -197,6 +197,7 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "subtitle", selector: { text: {} } },
+      { name: "unit", selector: { text: {} } },
     ];
     if (mode === "solar") {
       fields.push({ name: "show_legend", selector: { boolean: {} } });
@@ -246,6 +247,7 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       name: "editor_name",
       icon: "editor_icon",
       subtitle: "editor_energy_subtitle",
+      unit: "editor_energy_unit",
       show_values: "editor_energy_show_values",
       show_legend: "editor_energy_show_legend",
       show_projection: "editor_energy_show_projection",
@@ -348,6 +350,7 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       name: this._config.name,
       icon: this._config.icon,
       subtitle: this._config.subtitle,
+      unit: this._config.unit,
       show_values: this._config.show_values ?? false,
       show_legend: this._config.show_legend ?? true,
       show_projection: this._config.show_projection ?? true,

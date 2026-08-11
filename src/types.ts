@@ -207,6 +207,7 @@ export interface M3ProgressCardConfig {
 export interface M3EnergyCardConfig {
   type: string;
   entity?: string;
+  unit?: string;
   statistic_type?: "change" | "state";
   mode?: "consumption" | "solar";
   source?: "entity" | "energy";

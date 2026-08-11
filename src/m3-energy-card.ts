@@ -743,7 +743,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
           }
         : { maxHeight: BAR_MAX_HEIGHT, minHeight: BAR_MIN_HEIGHT, gap: 6, radius: 9 };
 
-    const unit = entity?.attributes.unit_of_measurement || "kWh";
+    const unit = this._config?.unit || entity?.attributes.unit_of_measurement || "kWh";
     const barExtent = (v: BarValue): number =>
       v.isFuture
         ? (v.forecastValue ?? 0)
