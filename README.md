@@ -64,7 +64,7 @@ TypeScript + [Lit](https://lit.dev), **without** any dependency on
   room-by-room overview of all temperature/humidity sensors, grouped by
   area, with color-coded tiles, a comparison scale, and an outlier chip
 
-*Screenshots of all seventeen cards with demo data:*
+*Screenshots of all eighteen cards with demo data:*
 
 ![Overview](docs/images/cards-overview.png)
 
