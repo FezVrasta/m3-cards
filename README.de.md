@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert siebzehn Karten:
+(`m3-cards.js`) registriert achtzehn Karten:
 
 - **M3 Climate Card** (`custom:m3-climate-card`) — für `climate`-Entities
   (Klimaanlagen und Heizungsthermostate)
@@ -59,8 +59,11 @@ TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 - **M3 Media Card** (`custom:m3-media-card`) — Medienplayer-Steuerung mit
   Cover-Farbextraktion, Fortschritts- und Lautstärke-Wellen-Slider sowie
   Quellenauswahl
+- **M3 Climate Overview Card** (`custom:m3-climate-overview-card`) —
+  raumweise Übersicht aller Temperatur-/Feuchte-Sensoren, gruppiert nach
+  Bereich, mit farbcodierten Kacheln, Vergleichsskala und Hinweis-Chip
 
-*Screenshots aller siebzehn Karten mit Demo-Daten:*
+*Screenshots aller achtzehn Karten mit Demo-Daten:*
 
 ![Übersicht](docs/images/cards-overview.png)
 
@@ -1306,6 +1309,87 @@ von `supported_features` der Entity automatisch aus.
 | `text_color` / `secondary_text_color` | string | Theme-Standard | Titel bzw. Interpret/Album |
 | `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
 | `animation` | `auto` \| `on` \| `off` | `auto` | Fortschritts-/Lautstärke-Animation; `auto`/`on` respektieren `prefers-reduced-motion` |
+| `glass_background` | boolean | `true` | Milchiger Glashintergrund |
+| `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
+
+## M3 Climate Overview Card
+
+Eine kompakte Übersicht aller Temperatur-/Feuchte-Sensoren, gruppiert nach
+Raum: eine Kachel pro Raum (Temperatur + Feuchte zusammengeführt), eine
+waagerechte Vergleichsskala mit einem Punkt pro Raum, und ein Hinweis-Chip
+im Header für den Raum, der am weitesten vom Komfortbereich abweicht.
+
+```yaml
+type: custom:m3-climate-overview-card
+auto_discover: true
+```
+
+### Entity-Quelle und Raumzuordnung
+
+- **`auto_discover: true`** (Standard): findet alle `sensor`-Entities mit
+  `device_class: temperature` oder `humidity`. Sensoren, die einem HA-
+  **Bereich** zugeordnet sind, werden zu diesem Bereich gruppiert (Name/
+  Icon aus der Bereichs-Registry); Sensoren ohne Bereich, die aber
+  dasselbe **Gerät** teilen (z.B. ein Kombisensor für Temperatur+Feuchte),
+  werden nach Gerät gruppiert; der Rest wird zu einer eigenen Kachel,
+  benannt nach dem (bereinigten) Entity-Namen. Räume ohne
+  Temperatursensor werden übersprungen — Feuchte allein ergibt keinen
+  Raum. Filterbar über `include_area` / `exclude_entities`.
+- **`rooms`**: eine manuelle Liste (`name`, `icon`, `temperature_entity`,
+  `humidity_entity`) statt Auto-Discovery — damit lässt sich die Übersicht
+  von Hand aufbauen.
+
+`name_strip` bereinigt Namen, die von einem Gerät statt einem Bereich
+stammen (Standard entfernt die Suffixe "Temperature"/"Temperatur" sowie
+die Präfixe "Thermometer N - "/"Thermostat ") — z.B. wird "Thermometer 6 -
+Arbeitszimmer" zu "Arbeitszimmer". Da in den meisten echten Setups nur ein
+Teil der Sensoren einem Bereich zugewiesen ist, entstehen dabei oft mehr
+Kacheln als tatsächliche Räume (eine pro nicht zugeordnetem Gerät) —
+entweder mit `exclude_entities` eingrenzen oder für ein sauberes Ergebnis
+auf eine manuelle `rooms`-Liste umsteigen.
+
+### Farbstufen, Vergleichsskala, Hinweis-Chip
+
+Die Temperatur jeder Kachel wird über `temp_thresholds` eingefärbt (vier
+Grenzen → fünf Stufen: kalt/kühl/angenehm/warm/heiß); die Feuchte wechselt
+außerhalb von `humidity_range` in die Warnfarbe. Die Vergleichsskala
+(`show_scale`) trägt die Temperatur jedes Raums als Punkt auf demselben
+Farbverlauf ein, mit alternierend ober-/unterhalb platzierten
+Raumnamen (ab 9 Räumen nur noch Punkte mit Tooltip); bei weniger als 2
+Räumen blendet sie sich aus. Der Hinweis-Chip (`show_outlier_chip`) hebt
+den einen Raum hervor, der am weitesten außerhalb des Komfortbereichs
+liegt — kältester bei Unterschreitung, wärmster bei Überschreitung — und
+verschwindet, sobald alle Räume im Komfortbereich liegen.
+
+`show_trend` zeigt einen kleinen Pfeil, wenn sich die Temperatur eines
+Raums in der letzten Stunde um mehr als 0,5 K geändert hat (über die
+History-API abgerufen, alle 15 Minuten aktualisiert). `show_mold_warning`
+zeigt ein Warnsymbol auf Kacheln über 65 % Feuchte **und** unter 18 °C.
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `auto_discover` | boolean | `true` | Automatische Erkennung von Temperatur-/Feuchte-Sensoren |
+| `include_area` | list\<string\> | – | Filter für Auto-Discovery |
+| `exclude_entities` | list\<string\> | – | Von Auto-Discovery ausgeschlossene Entities |
+| `rooms` | Liste (`name`, `icon`, `temperature_entity`, `humidity_entity`) | – | Manuelle Raumliste statt Auto-Discovery |
+| `name_strip` | list\<string\> | siehe oben | Namens-Suffixe/-Präfixe, die aus automatisch erkannten Namen entfernt werden |
+| `name` / `icon` | string | "Raumklima" / `mdi:thermometer` | Header |
+| `sort` | `area` \| `temp_desc` \| `temp_asc` \| `name` | `area` | Kachel-Reihenfolge |
+| `show_scale` | boolean | `true` | Vergleichsskala unter dem Kachelraster |
+| `show_outlier_chip` | boolean | `true` | Header-Chip für den auffälligsten Raum |
+| `show_trend` | boolean | `false` | Pfeil bei einer Änderung >0,5 K in der letzten Stunde |
+| `show_mold_warning` | boolean | `false` | Warnsymbol über 65 % Feuchte und unter 18 °C |
+| `temp_thresholds` | Objekt (`cold`/`cool`/`comfortable`/`warm`) | `19`/`20.5`/`23.5`/`25` | Grenzen zwischen den fünf Farbstufen |
+| `humidity_range` | `[number, number]` | `[35, 65]` | Komfortbereich; außerhalb wird die Warnfarbe verwendet |
+| `scale_min` / `scale_max` | number | automatisch aus den Messwerten | Fester Bereich der Vergleichsskala |
+| `cold_color` / `cool_color` / `comfortable_color` / `warm_color` / `hot_color` | string | blau/türkis/grün/amber/rot | Temperatur-Farbstufen |
+| `humidity_warn_color` | string | amber | Feuchtefarbe außerhalb von `humidity_range` |
+| `accent_color` | string | Theme-Standard | Akzentfarbe des Header-Icons |
+| `text_color` / `secondary_text_color` | string | Theme-Standard | Raumnamen/Werte bzw. Sekundärtext |
+| `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Animation der Vergleichsskala-Punkte; `auto`/`on` respektieren `prefers-reduced-motion` |
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 

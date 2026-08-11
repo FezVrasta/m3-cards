@@ -7,7 +7,7 @@
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
 `button-card`, `card-mod`, `mod-card`, or `stack-in-card`. A single bundle
-(`m3-cards.js`) registers seventeen cards:
+(`m3-cards.js`) registers eighteen cards:
 
 - **M3 Climate Card** (`custom:m3-climate-card`) — for `climate` entities
   (AC units and heating thermostats)
@@ -60,6 +60,9 @@ TypeScript + [Lit](https://lit.dev), **without** any dependency on
 - **M3 Media Card** (`custom:m3-media-card`) — media player control with
   artwork color extraction, progress and volume wave sliders, and source
   selection
+- **M3 Climate Overview Card** (`custom:m3-climate-overview-card`) — a
+  room-by-room overview of all temperature/humidity sensors, grouped by
+  area, with color-coded tiles, a comparison scale, and an outlier chip
 
 *Screenshots of all seventeen cards with demo data:*
 
@@ -1294,6 +1297,84 @@ the entity's `supported_features`.
 | `text_color` / `secondary_text_color` | string | theme default | Title vs. artist/album |
 | `card_background` | string | glass/solid background | Card background |
 | `animation` | `auto` \| `on` \| `off` | `auto` | Progress/volume animation; `auto`/`on` respect `prefers-reduced-motion` |
+| `glass_background` | boolean | `true` | Frosted glass background |
+| `radius` / `corners` | number / object | `28` | Corner radius, optional per corner |
+
+## M3 Climate Overview Card
+
+A compact overview of every temperature/humidity sensor, grouped by room:
+one tile per room (temperature + humidity merged), a horizontal comparison
+scale with a dot per room, and a header chip pointing out whichever room
+deviates furthest from the comfortable range.
+
+```yaml
+type: custom:m3-climate-overview-card
+auto_discover: true
+```
+
+### Entity source and room grouping
+
+- **`auto_discover: true`** (default): finds every `sensor` entity with
+  `device_class: temperature` or `humidity`. Sensors assigned to a Home
+  Assistant **area** are grouped into that area's tile (using the area's
+  own name/icon); sensors without an area but sharing a **device** (e.g. a
+  combo temp+humidity sensor) are grouped by device instead; anything left
+  over becomes its own tile, named from its (cleaned-up) entity name.
+  Rooms without a temperature sensor are skipped — humidity alone doesn't
+  make a room. Filter with `include_area` / `exclude_entities`.
+- **`rooms`**: a manual list (`name`, `icon`, `temperature_entity`,
+  `humidity_entity`) instead of auto-discovery — set this to build the
+  overview by hand.
+
+`name_strip` cleans up names picked up from a device/entity rather than an
+area (default strips "Temperature"/"Temperatur" suffixes and
+"Thermometer N - "/"Thermostat " prefixes) — e.g. "Thermometer 6 -
+Arbeitszimmer" becomes "Arbeitszimmer". Since most real setups have areas
+only partially configured, this frequently produces more tiles than
+distinct rooms (one per un-grouped device) — narrow it down with
+`exclude_entities` or switch to a manual `rooms` list for a clean result.
+
+### Color stages, comparison scale, outlier chip
+
+Each tile's temperature is colored by `temp_thresholds` (four boundaries →
+five stages: cold/cool/comfortable/warm/hot); humidity turns the warning
+color outside `humidity_range`. The comparison scale (`show_scale`) plots
+every room's temperature as a dot along the same color gradient, with
+room-name labels alternating above/below (dots-only with a tooltip above 8
+rooms); it hides itself with fewer than 2 rooms. The outlier chip
+(`show_outlier_chip`) highlights whichever single room sits furthest
+outside the comfortable band — coldest on the cold side, warmest on the
+hot side — and disappears once every room is comfortable.
+
+`show_trend` adds a small arrow when a room's temperature changed by more
+than 0.5 K in the last hour (fetched via the History API, refreshed every
+15 minutes). `show_mold_warning` adds a warning icon on tiles above 65%
+humidity **and** below 18°C.
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `auto_discover` | boolean | `true` | Automatic discovery of temperature/humidity sensors |
+| `include_area` | list\<string\> | – | Filter for auto-discovery |
+| `exclude_entities` | list\<string\> | – | Entities excluded from auto-discovery |
+| `rooms` | list (`name`, `icon`, `temperature_entity`, `humidity_entity`) | – | Manual room list instead of auto-discovery |
+| `name_strip` | list\<string\> | see above | Name suffixes/prefixes to remove from auto-discovered names |
+| `name` / `icon` | string | "Climate" / `mdi:thermometer` | Header |
+| `sort` | `area` \| `temp_desc` \| `temp_asc` \| `name` | `area` | Tile order |
+| `show_scale` | boolean | `true` | Comparison scale below the tile grid |
+| `show_outlier_chip` | boolean | `true` | Header chip for the most conspicuous room |
+| `show_trend` | boolean | `false` | Arrow for a >0.5 K change in the last hour |
+| `show_mold_warning` | boolean | `false` | Warning icon above 65% humidity and below 18°C |
+| `temp_thresholds` | object (`cold`/`cool`/`comfortable`/`warm`) | `19`/`20.5`/`23.5`/`25` | Boundaries between the five color stages |
+| `humidity_range` | `[number, number]` | `[35, 65]` | Comfort band; outside it uses the warning color |
+| `scale_min` / `scale_max` | number | automatic from the readings | Fixed comparison-scale range |
+| `cold_color` / `cool_color` / `comfortable_color` / `warm_color` / `hot_color` | string | blue/teal/green/amber/red | Temperature stage colors |
+| `humidity_warn_color` | string | amber | Humidity color outside `humidity_range` |
+| `accent_color` | string | theme default | Header icon accent |
+| `text_color` / `secondary_text_color` | string | theme default | Room names/values vs. secondary text |
+| `card_background` | string | glass/solid background | Card background |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Comparison-scale dot animation; `auto`/`on` respect `prefers-reduced-motion` |
 | `glass_background` | boolean | `true` | Frosted glass background |
 | `radius` / `corners` | number / object | `28` | Corner radius, optional per corner |
 

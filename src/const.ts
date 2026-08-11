@@ -1,4 +1,4 @@
-import type { CornerRadiusConfig, HvacMode, WeatherChipType } from "./types";
+import type { CornerRadiusConfig, HvacMode, WeatherChipType, ClimateOverviewTempThresholds } from "./types";
 import { RADIUS, HEIGHT, SPACING, DURATION_MS, PALETTE } from "./shared/tokens";
 
 export const CARD_VERSION = "1.0.0";
@@ -487,6 +487,42 @@ export const PRESENCE_COLOR_HOME = PALETTE.ok;
 export const PRESENCE_COLOR_NOT_HOME = PALETTE.home;
 export const PRESENCE_COLOR_ZONE = PALETTE.media;
 export const PRESENCE_COLOR_UNKNOWN = "#8f8b86";
+
+// ---- Climate overview card --------------------------------------------------
+export const DEFAULT_CLIMATE_OVERVIEW_RADIUS = RADIUS.card;
+export const DEFAULT_CLIMATE_OVERVIEW_ICON = "mdi:thermometer";
+export const CLIMATE_OVERVIEW_GRID_GAP = 8;
+export const CLIMATE_OVERVIEW_GRID_MIN_COL = 104;
+export const CLIMATE_OVERVIEW_TILE_RADIUS = 18;
+export const DEFAULT_CLIMATE_OVERVIEW_TEMP_THRESHOLDS: Required<ClimateOverviewTempThresholds> = {
+  cold: 19,
+  cool: 20.5,
+  comfortable: 23.5,
+  warm: 25,
+};
+export const DEFAULT_CLIMATE_OVERVIEW_HUMIDITY_RANGE: [number, number] = [35, 65];
+export const CLIMATE_OVERVIEW_COLOR_COLD = PALETTE.cool;
+export const CLIMATE_OVERVIEW_COLOR_COOL = "#7fc4d6";
+export const CLIMATE_OVERVIEW_COLOR_COMFORTABLE = PALETTE.dryAuto;
+export const CLIMATE_OVERVIEW_COLOR_WARM = PALETTE.light;
+export const CLIMATE_OVERVIEW_COLOR_HOT = PALETTE.heat;
+export const CLIMATE_OVERVIEW_HUMIDITY_WARN_COLOR = PALETTE.solar;
+export const DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP = [
+  " Temperature$",
+  " Temperatur$",
+  "^Thermometer\\s*\\d*\\s*-?\\s*",
+  "^Thermostat\\s+",
+];
+export const CLIMATE_OVERVIEW_SCALE_MIN_SPAN = 8;
+export const CLIMATE_OVERVIEW_SCALE_MAX_LABELS = 8;
+export const CLIMATE_OVERVIEW_DOT_SIZE = 14;
+export const CLIMATE_OVERVIEW_DOT_RADIUS = 5;
+export const CLIMATE_OVERVIEW_DOT_TRANSITION_MS = DURATION_MS.flip;
+export const CLIMATE_OVERVIEW_CHIP_RADIUS = RADIUS.chip;
+export const CLIMATE_OVERVIEW_TREND_REFRESH_MS = 15 * 60 * 1000;
+export const CLIMATE_OVERVIEW_TREND_THRESHOLD_K = 0.5;
+export const CLIMATE_OVERVIEW_MOLD_HUMIDITY_THRESHOLD = 65;
+export const CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD = 18;
 
 // ---- Media card -----------------------------------------------------------
 export const DEFAULT_MEDIA_RADIUS = RADIUS.card;

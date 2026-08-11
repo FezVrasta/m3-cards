@@ -10,6 +10,14 @@ interface EntityRegistryEntry {
 interface DeviceRegistryEntry {
   id: string;
   area_id?: string | null;
+  name?: string | null;
+  name_by_user?: string | null;
+}
+
+interface AreaRegistryEntry {
+  area_id: string;
+  name: string;
+  icon?: string | null;
 }
 
 export interface DiscoverPowerOptions {
@@ -128,4 +136,123 @@ export async function discoverPersonEntities(
     }
     return true;
   });
+}
+
+export interface DiscoverClimateRoomsOptions {
+  includeAreas?: string[];
+  excludeEntities?: string[];
+  nameStrip?: string[];
+}
+
+export interface DiscoveredClimateRoom {
+  key: string;
+  areaId?: string;
+  name: string;
+  icon?: string;
+  temperatureEntity: string;
+  humidityEntity?: string;
+}
+
+function stripFallbackName(raw: string, patterns: string[]): string {
+  let name = raw;
+  for (const pattern of patterns) {
+    try {
+      name = name.replace(new RegExp(pattern, "i"), "");
+    } catch {
+      // ignore invalid user-supplied regex
+    }
+  }
+  return name.trim() || raw;
+}
+
+interface ClimateRoomBucket {
+  key: string;
+  areaId?: string;
+  deviceId?: string;
+  temp?: string;
+  humidity?: string;
+  fallbackName: string;
+}
+
+// Groups temperature/humidity sensors into "rooms": entities assigned to a
+// Home Assistant area are grouped by that area (using the area's registry
+// name/icon); entities without an area but sharing a device (e.g. a combo
+// temp+humidity sensor) are grouped by device instead, using the device's
+// name; anything left over becomes a solo room named from its own
+// (name_strip-cleaned) friendly name. Rooms without a temperature entity are
+// dropped — humidity alone doesn't make a room.
+export async function discoverClimateRooms(
+  hass: HomeAssistant,
+  opts: DiscoverClimateRoomsOptions,
+): Promise<DiscoveredClimateRoom[]> {
+  const exclude = new Set(opts.excludeEntities ?? []);
+  const nameStrip = opts.nameStrip ?? [];
+
+  const isCandidate = (entityId: string, deviceClass: string): boolean => {
+    if (!entityId.startsWith("sensor.") || exclude.has(entityId)) return false;
+    const st = hass.states[entityId];
+    return !!st && st.attributes.device_class === deviceClass;
+  };
+
+  const tempIds = Object.keys(hass.states).filter((id) => isCandidate(id, "temperature"));
+  const humidityIds = Object.keys(hass.states).filter((id) => isCandidate(id, "humidity"));
+  if (tempIds.length === 0) return [];
+
+  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
+    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
+    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
+    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
+  ]);
+  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
+  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
+  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+
+  const includeAreas = opts.includeAreas?.length ? new Set(opts.includeAreas) : undefined;
+
+  function resolve(entityId: string): { areaId?: string; deviceId?: string } {
+    const entry = entryByEntityId.get(entityId);
+    if (!entry) return {};
+    const device = entry.device_id ? deviceById.get(entry.device_id) : undefined;
+    return {
+      areaId: entry.area_id ?? device?.area_id ?? undefined,
+      deviceId: entry.device_id ?? undefined,
+    };
+  }
+
+  const buckets = new Map<string, ClimateRoomBucket>();
+
+  function bucketFor(entityId: string, isTemp: boolean): void {
+    const { areaId, deviceId } = resolve(entityId);
+    if (includeAreas && (!areaId || !includeAreas.has(areaId))) return;
+    const key = areaId ? `area:${areaId}` : deviceId ? `device:${deviceId}` : `solo:${entityId}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      const friendlyName = hass.states[entityId]?.attributes.friendly_name ?? entityId;
+      bucket = { key, areaId, deviceId, fallbackName: stripFallbackName(friendlyName, nameStrip) };
+      buckets.set(key, bucket);
+    }
+    if (isTemp && !bucket.temp) bucket.temp = entityId;
+    if (!isTemp && !bucket.humidity) bucket.humidity = entityId;
+  }
+
+  for (const id of tempIds) bucketFor(id, true);
+  for (const id of humidityIds) bucketFor(id, false);
+
+  const rooms: DiscoveredClimateRoom[] = [];
+  for (const bucket of buckets.values()) {
+    if (!bucket.temp) continue;
+    const area = bucket.areaId ? areaById.get(bucket.areaId) : undefined;
+    const device = !area && bucket.deviceId ? deviceById.get(bucket.deviceId) : undefined;
+    const rawName = area?.name ?? device?.name_by_user ?? device?.name ?? bucket.fallbackName;
+    const name = area ? rawName : stripFallbackName(rawName, nameStrip);
+    rooms.push({
+      key: bucket.key,
+      areaId: bucket.areaId,
+      name,
+      icon: area?.icon ?? undefined,
+      temperatureEntity: bucket.temp,
+      humidityEntity: bucket.humidity,
+    });
+  }
+  return rooms;
 }

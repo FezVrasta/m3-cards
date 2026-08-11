@@ -15,3 +15,4 @@ export * from "./m3-battery-card";
 export * from "./m3-weather-card";
 export * from "./m3-presence-card";
 export * from "./m3-media-card";
+export * from "./m3-climate-overview-card";

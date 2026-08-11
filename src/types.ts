@@ -641,6 +641,57 @@ export interface M3MediaCardConfig {
   card_version?: string;
 }
 
+export type ClimateOverviewSort = "area" | "temp_desc" | "temp_asc" | "name";
+
+export interface ClimateOverviewTempThresholds {
+  cold?: number;
+  cool?: number;
+  comfortable?: number;
+  warm?: number;
+}
+
+export interface ClimateOverviewRoomConfig {
+  name: string;
+  icon?: string;
+  temperature_entity: string;
+  humidity_entity?: string;
+}
+
+export interface M3ClimateOverviewCardConfig {
+  type: string;
+  auto_discover?: boolean;
+  include_area?: string[];
+  exclude_entities?: string[];
+  rooms?: ClimateOverviewRoomConfig[];
+  name_strip?: string[];
+  name?: string;
+  icon?: string;
+  sort?: ClimateOverviewSort;
+  show_scale?: boolean;
+  show_outlier_chip?: boolean;
+  show_trend?: boolean;
+  show_mold_warning?: boolean;
+  temp_thresholds?: ClimateOverviewTempThresholds;
+  humidity_range?: [number, number];
+  scale_min?: number;
+  scale_max?: number;
+  cold_color?: string;
+  cool_color?: string;
+  comfortable_color?: string;
+  warm_color?: string;
+  hot_color?: string;
+  humidity_warn_color?: string;
+  accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
 export type M3CardConfig =
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
@@ -658,7 +709,8 @@ export type M3CardConfig =
   | M3BatteryCardConfig
   | M3WeatherCardConfig
   | M3PresenceCardConfig
-  | M3MediaCardConfig;
+  | M3MediaCardConfig
+  | M3ClimateOverviewCardConfig;
 
 export interface LovelaceCardEditor<
   T extends M3CardConfig = M3CardConfig,

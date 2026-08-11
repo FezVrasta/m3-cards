@@ -549,6 +549,48 @@ export async function fetchDaySeries(
   return byDay;
 }
 
+// Fetches each entity's most recent state value from shortly before
+// `hoursAgo` hours ago (a ±10 min window) — a simple point-in-time lookback
+// for "did this change in the last hour" trend indicators, unlike every
+// other function here which sums/aggregates over a period. Long-term
+// statistics don't help here (temperature sensors' mean/min/max buckets
+// don't give a single "value at time T"), so this goes straight to the
+// History API.
+export async function fetchValueHoursAgo(
+  hass: HomeAssistant,
+  entityIds: string[],
+  hoursAgo: number,
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (entityIds.length === 0) return result;
+  const target = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+  const start = new Date(target.getTime() - 10 * 60 * 1000);
+  const end = new Date(target.getTime() + 10 * 60 * 1000);
+  try {
+    const response = await hass.callWS<Record<string, HistoryPoint[]>>({
+      type: "history/history_during_period",
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      entity_ids: entityIds,
+      minimal_response: true,
+      no_attributes: true,
+    });
+    for (const id of entityIds) {
+      const points = response[id] ?? [];
+      for (let i = points.length - 1; i >= 0; i--) {
+        const raw = parseFloat(points[i].s ?? "");
+        if (!isNaN(raw)) {
+          result.set(id, raw);
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("m3-climate-overview-card: failed to load trend history", e);
+  }
+  return result;
+}
+
 // Used by the editor (Phase 4) to show the "using History-API fallback"
 // hint without needing to fetch the full day range.
 export async function hasLongTermStatistics(
