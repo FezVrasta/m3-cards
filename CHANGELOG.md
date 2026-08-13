@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.4.0]
+
+### Hinzugefügt
+- **M3 Counter Card**: neuer Editor-Abschnitt „Kalibrierung“ für
+  `utility_meter`-Entitäten — Zählerstand direkt aus dem Dashboard-Editor
+  auf einen neuen Wert setzen (z.B. um ihn an einen analogen Zähler
+  anzugleichen), ohne Umweg über die Entwicklerwerkzeuge. Erscheint
+  automatisch nur bei passenden Entitäten, die Statistik-Historie bleibt
+  unangetastet.
+
+### Geändert
+- **M3 Energy Card**: die Monatsansicht zeigt jetzt immer alle 12 Monate
+  (mit Null für Monate vor Erstellung der Entität) statt bei fehlender
+  Historie komplett zu blockieren — verhält sich damit wie länger
+  bestehende Zähler.
+- **M3 Energy Card**: der Monats-Durchschnitt wird nur noch über Monate mit
+  echten Daten gemittelt, statt durch Platzhalter-Nullen vor Erstellung der
+  Entität verwässert zu werden.
+
 ## [1.3.0]
 
 ### Hinzugefügt
