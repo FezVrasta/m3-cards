@@ -26,6 +26,24 @@ export interface DiscoverPowerOptions {
   excludeEntities?: string[];
 }
 
+// Looks up the integration (domain) that owns an entity, e.g. "utility_meter"
+// — used to gate editor-only actions (like calibration) to entities backed
+// by that specific platform, rather than showing them for arbitrary sensors.
+export async function getEntityPlatform(
+  hass: HomeAssistant,
+  entityId: string,
+): Promise<string | undefined> {
+  try {
+    const entry = await hass.callWS<{ platform?: string }>({
+      type: "config/entity_registry/get",
+      entity_id: entityId,
+    });
+    return entry.platform;
+  } catch {
+    return undefined;
+  }
+}
+
 // Auto-discovers entities by domain + device_class from hass.states,
 // narrowing by area/label only when the caller actually configured those
 // filters — avoids the entity/device registry round-trips otherwise.

@@ -17,6 +17,7 @@ export interface HomeAssistant {
     domain: string,
     service: string,
     data?: Record<string, unknown>,
+    target?: { entity_id?: string | string[]; device_id?: string | string[]; area_id?: string | string[] },
   ) => Promise<void>;
   callWS: <T = unknown>(msg: Record<string, unknown>) => Promise<T>;
   formatEntityState?: (stateObj: HassEntity) => string;

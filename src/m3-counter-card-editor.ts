@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3CounterCardConfig, PowerThreshold } from "./types";
 import { DEFAULT_COUNTER_RADIUS } from "./const";
@@ -17,6 +17,7 @@ import {
   renderAppearanceSection,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import { getEntityPlatform } from "./shared/ha-registry";
 
 function thresholdsToText(thresholds: PowerThreshold[] | undefined): string {
   return (thresholds ?? []).map((t) => `${t.above}:${t.color}`).join(", ");
@@ -41,11 +42,59 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
   @state() private _config?: M3CounterCardConfig;
   @state() private _digitsMode: "auto" | "fixed" = "auto";
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _isUtilityMeter = false;
+  @state() private _calibrationValue = "";
+  @state() private _calibrating = false;
+  @state() private _calibrationStatus: "idle" | "success" | "error" = "idle";
+
+  private _lastCheckedEntity?: string;
 
   public setConfig(config: M3CounterCardConfig): void {
     this._config = config;
     this._digitsMode = typeof config.digits === "number" ? "fixed" : "auto";
     this._appearance = initAppearanceState(config, DEFAULT_COUNTER_RADIUS);
+    this._maybeCheckCalibratable();
+  }
+
+  protected updated(): void {
+    this._maybeCheckCalibratable();
+  }
+
+  // Only utility_meter entities support calibrate — gate the panel to that
+  // platform rather than showing an action that would silently no-op for
+  // any other sensor. Re-checks whenever the configured entity changes.
+  private _maybeCheckCalibratable(): void {
+    if (!this.hass || !this._config?.entity) return;
+    if (this._config.entity === this._lastCheckedEntity) return;
+    const entity = this._config.entity;
+    this._lastCheckedEntity = entity;
+    this._calibrationStatus = "idle";
+    this._calibrationValue = this.hass.states[entity]?.state ?? "";
+    getEntityPlatform(this.hass, entity).then((platform) => {
+      if (entity !== this._config?.entity) return; // stale response
+      this._isUtilityMeter = platform === "utility_meter";
+    });
+  }
+
+  private async _calibrate(): Promise<void> {
+    if (!this.hass || !this._config?.entity) return;
+    const value = parseFloat(this._calibrationValue);
+    if (Number.isNaN(value)) return;
+    this._calibrating = true;
+    this._calibrationStatus = "idle";
+    try {
+      await this.hass.callService(
+        "utility_meter",
+        "calibrate",
+        { value: String(value) },
+        { entity_id: this._config.entity },
+      );
+      this._calibrationStatus = "success";
+    } catch {
+      this._calibrationStatus = "error";
+    } finally {
+      this._calibrating = false;
+    }
   }
 
   private get _language(): string {
@@ -215,6 +264,47 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _renderCalibrationPanel() {
+    const entity = this._config?.entity;
+    const unit = entity ? (this.hass?.states[entity]?.attributes.unit_of_measurement ?? "") : "";
+    const currentValue = entity ? (this.hass?.states[entity]?.state ?? "?") : "?";
+    return html`
+      <ha-expansion-panel outlined .header=${this._t("editor_counter_calibration")}>
+        <ha-icon slot="leading-icon" icon="mdi:target"></ha-icon>
+        <div class="panel-content">
+          <div class="hint">${this._t("editor_counter_calibration_hint")}</div>
+          <div class="calibration-current">
+            ${this._t("editor_counter_calibration_current")}: <strong>${currentValue} ${unit}</strong>
+          </div>
+          <div class="color-row">
+            <label class="color-label">${this._t("editor_counter_calibration_new_value")}</label>
+            <input
+              type="number"
+              step="any"
+              class="color-text"
+              .value=${this._calibrationValue}
+              @input=${(e: Event) => {
+                this._calibrationValue = (e.target as HTMLInputElement).value;
+              }}
+            />
+          </div>
+          <button
+            class="calibrate-btn"
+            ?disabled=${this._calibrating || this._calibrationValue.trim() === ""}
+            @click=${() => this._calibrate()}
+          >
+            ${this._t("editor_counter_calibration_button")}
+          </button>
+          ${this._calibrationStatus === "success"
+            ? html`<div class="calibration-status success">${this._t("editor_counter_calibration_success")}</div>`
+            : this._calibrationStatus === "error"
+              ? html`<div class="calibration-status error">${this._t("editor_counter_calibration_error")}</div>`
+              : nothing}
+        </div>
+      </ha-expansion-panel>
+    `;
+  }
+
   protected render() {
     if (!this.hass || !this._config) return nothing;
 
@@ -324,6 +414,8 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
           </div>
         </ha-expansion-panel>
 
+        ${this._isUtilityMeter ? this._renderCalibrationPanel() : nothing}
+
         ${renderAppearanceSection({
           hass: this.hass,
           language: this._language,
@@ -341,7 +433,44 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
     `;
   }
 
-  static styles = editorStyles;
+  static styles = [
+    editorStyles,
+    css`
+      .calibration-current {
+        font-size: 13px;
+        color: var(--secondary-text-color, var(--primary-text-color));
+      }
+
+      .calibrate-btn {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 14px;
+        font-family: inherit;
+      }
+
+      .calibrate-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .calibration-status {
+        font-size: 13px;
+      }
+
+      .calibration-status.success {
+        color: var(--success-color, #4caf50);
+      }
+
+      .calibration-status.error {
+        color: var(--error-color, #db4437);
+      }
+    `,
+  ];
 }
 
 declare global {
