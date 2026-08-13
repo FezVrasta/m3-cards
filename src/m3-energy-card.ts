@@ -95,7 +95,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
   @state() private _noEnergyDashboard = false;
   @state() private _monthCompletedValues: number[] = [];
   @state() private _monthCurrentValue = 0;
-  @state() private _hasMonthlyStatistics = true;
+  @state() private _monthRealCount = 0;
 
   private _refreshTimer?: number;
   private _refreshBucket?: string;
@@ -292,30 +292,34 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
     const months = this._config.months ?? DEFAULT_ENERGY_MONTHS;
     try {
       const result = await fetchEnergyMonths(this.hass, entity, months, statisticType);
+      // Always render the full 12-month axis (zero-filled for months
+      // without statistics, e.g. before the entity existed) — same
+      // treatment as a newly added power entity gets, rather than hiding
+      // months or blocking the whole chart.
       this._monthCompletedValues = result.values;
-      this._hasMonthlyStatistics = result.hasStatistics;
+      this._monthRealCount = result.realMonthCount;
 
-      if (result.hasStatistics) {
-        // Month-to-date (full completed days of this month) at day
-        // granularity, same reset-double-counting-avoidance reasoning as
-        // fetchEnergyMonths — plus today's own still-running contribution,
-        // added the same way "today" is computed everywhere else in this
-        // card (live state for periodically-resetting counters, a
-        // fine-grained current-period sum for lifetime ones).
-        const monthToDate = await fetchMonthToDateSum(this.hass, entity, statisticType);
-        if (statisticType === "change") {
-          const todayMidnight = new Date();
-          todayMidnight.setHours(0, 0, 0, 0);
-          const todaySoFar = await fetchCurrentPeriodChangeSum(
-            this.hass,
-            [entity],
-            todayMidnight,
-            "hour",
-          );
-          this._monthCurrentValue = monthToDate + todaySoFar;
-        } else {
-          this._monthCurrentValue = monthToDate + this._liveValueInKwh(this.hass.states[entity]);
-        }
+      // Month-to-date (full completed days of this month) at day
+      // granularity, same reset-double-counting-avoidance reasoning as
+      // fetchEnergyMonths — plus today's own still-running contribution,
+      // added the same way "today" is computed everywhere else in this
+      // card (live state for periodically-resetting counters, a
+      // fine-grained current-period sum for lifetime ones). Computed
+      // unconditionally: the still-running month is real data independent
+      // of whether any past months have statistics yet.
+      const monthToDate = await fetchMonthToDateSum(this.hass, entity, statisticType);
+      if (statisticType === "change") {
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        const todaySoFar = await fetchCurrentPeriodChangeSum(
+          this.hass,
+          [entity],
+          todayMidnight,
+          "hour",
+        );
+        this._monthCurrentValue = monthToDate + todaySoFar;
+      } else {
+        this._monthCurrentValue = monthToDate + this._liveValueInKwh(this.hass.states[entity]);
       }
     } catch (e) {
       console.error("m3-energy-card: failed to load monthly energy data", e);
@@ -521,16 +525,18 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
 
   private _buildMonthBars(): BarValue[] {
     const config = this._config!;
-    const months = config.months ?? DEFAULT_ENERGY_MONTHS;
     const formatter = new Intl.DateTimeFormat(this._language, { month: "short" });
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const completedCount = months - 1;
+    // fetchEnergyMonths always returns a full months-1-length array
+    // (zero-filled for months predating the entity), so this naturally
+    // covers the whole configured axis.
+    const pastCount = this._monthCompletedValues.length;
 
     let bars: BarValue[] = [];
-    for (let i = completedCount; i >= 1; i--) {
+    for (let i = pastCount; i >= 1; i--) {
       const d = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i, 1);
-      const value = this._monthCompletedValues[completedCount - i] ?? 0;
+      const value = this._monthCompletedValues[pastCount - i];
       bars.push({ label: formatter.format(d), value, isCurrent: false, showLabel: true });
     }
     bars.push({
@@ -658,20 +664,6 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
         </ha-card>
       `;
     }
-    if (
-      mode !== "solar" &&
-      (this._config.period ?? "day") === "month" &&
-      !this._hasMonthlyStatistics
-    ) {
-      return html`
-        <ha-card>
-          <div class="card-inner glass">
-            <div class="missing-entity">${this._t("energy_month_no_statistics")}</div>
-          </div>
-        </ha-card>
-      `;
-    }
-
     const name =
       this._config.name ||
       entity?.attributes.friendly_name ||
@@ -772,9 +764,12 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
         ? values.reduce((sum, v) => sum + Math.max(v.value, v.forecastValue ?? 0), 0)
         : undefined;
 
+    // Divide by the count of months actually backed by statistics, not the
+    // full configured window — otherwise a recently added entity's average
+    // stays diluted by zero-filled pre-existence months for up to a year.
     const monthAverage =
-      period === "month" && this._monthCompletedValues.length > 0
-        ? this._monthCompletedValues.reduce((a, b) => a + b, 0) / this._monthCompletedValues.length
+      period === "month" && this._monthRealCount > 0
+        ? this._monthCompletedValues.reduce((a, b) => a + b, 0) / this._monthRealCount
         : undefined;
 
     const betterColor = this._config.comparison_better_color

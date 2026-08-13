@@ -232,6 +232,11 @@ export async function fetchEnergyHours(
 export interface EnergyMonthsResult {
   values: number[];
   hasStatistics: boolean;
+  // How many of the returned `values` entries are backed by actual
+  // statistics rows, as opposed to being zero-filled placeholders for
+  // months before the entity existed. Lets callers average only over real
+  // months instead of diluting the average with pre-existence zeros.
+  realMonthCount: number;
 }
 
 // Fetches `months - 1` full past calendar months (not including the
@@ -264,7 +269,7 @@ export async function fetchEnergyMonths(
     const d = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i, 1);
     expectedKeys.push(localMonthKey(d));
   }
-  if (completedCount <= 0) return { values: [], hasStatistics: true };
+  if (completedCount <= 0) return { values: [], hasStatistics: true, realMonthCount: 0 };
 
   const startMonth = new Date(
     currentMonthStart.getFullYear(),
@@ -294,12 +299,13 @@ export async function fetchEnergyMonths(
       return {
         values: expectedKeys.map((k) => byMonth.get(k) ?? 0),
         hasStatistics: true,
+        realMonthCount: expectedKeys.filter((k) => byMonth.has(k)).length,
       };
     }
-    return { values: expectedKeys.map(() => 0), hasStatistics: false };
+    return { values: expectedKeys.map(() => 0), hasStatistics: false, realMonthCount: 0 };
   } catch (e) {
     console.warn("m3-energy-card: statistics_during_period (month) failed", e);
-    return { values: expectedKeys.map(() => 0), hasStatistics: false };
+    return { values: expectedKeys.map(() => 0), hasStatistics: false, realMonthCount: 0 };
   }
 }
 
