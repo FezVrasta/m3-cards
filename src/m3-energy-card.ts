@@ -36,7 +36,7 @@ import {
   ENERGY_MONTH_BAR_RADIUS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
@@ -700,10 +700,10 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
     const tintPercent = mode === "solar" ? ENERGY_SOLAR_BAR_TINT_PERCENT : ENERGY_BAR_TINT_PERCENT;
     const tintColorCss = this._config.bar_tint_color
       ? resolveThemeColor(this._config.bar_tint_color)
-      : `color-mix(in srgb, ${accentColor} ${tintPercent}%, transparent)`;
+      : tintBackground(accentColor, this._config.accent_opacity, tintPercent);
     const outlineOpacity =
       period === "month" ? ENERGY_PROJECTION_OUTLINE_OPACITY : ENERGY_FORECAST_OUTLINE_OPACITY;
-    const outlineColorCss = `color-mix(in srgb, ${accentColor} ${outlineOpacity}%, transparent)`;
+    const outlineColorCss = tintBackground(accentColor, this._config.accent_opacity, outlineOpacity);
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );
@@ -852,7 +852,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
     const cssVars = buildCssVars({
       "m3p-accent": accentColor,
       "m3p-icon-color": accentColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${accentColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "bar-max-height": `${geometry.maxHeight}px`,
@@ -903,7 +903,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
                     ? html`
                         <div
                           class="comparison-chip"
-                          style=${`color: ${activeComparison.color}; background: color-mix(in srgb, ${activeComparison.color} 16%, transparent);`}
+                          style=${`color: ${activeComparison.color}; background: ${tintBackground(activeComparison.color, this._config.comparison_tint_opacity, 16)};`}
                         >
                           <ha-icon
                             icon=${activeComparison.isMore ? "mdi:arrow-up" : "mdi:arrow-down"}
@@ -922,10 +922,9 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
                     ? html`
                         <div class="comparison-chip neutral">
                           <span
-                            >${this._t("energy_month_chip_average").replace(
-                              "{value}",
-                              this._formatNumber(activeAverage),
-                            )}</span
+                            >${this._t("energy_month_chip_average")
+                              .replace("{value}", this._formatNumber(activeAverage))
+                              .replace("{unit}", unit)}</span
                           >
                         </div>
                       `

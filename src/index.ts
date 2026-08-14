@@ -16,3 +16,4 @@ export * from "./m3-weather-card";
 export * from "./m3-presence-card";
 export * from "./m3-media-card";
 export * from "./m3-climate-overview-card";
+export * from "./m3-aquarium-card";

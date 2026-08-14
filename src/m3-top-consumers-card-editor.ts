@@ -206,6 +206,12 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "accent_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _nameStripChanged(values: string[]): void {
     if (!this._config) return;
     this._config = { ...this._config, name_strip: values };
@@ -359,7 +365,17 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
         <ha-expansion-panel outlined .header=${this._t("editor_progress_colors")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
-            ${colorRow(this._t("editor_top_consumers_accent_color"), this._config.accent_color, (v) => this._colorChanged("accent_color", v))}
+            ${colorRow(
+              this._t("editor_top_consumers_accent_color"),
+              this._config.accent_color,
+              (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
+            )}
             ${listRow(this._t("editor_top_consumers_palette"), this._config.palette ?? [], (v) => this._paletteChanged(v))}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}
             ${colorRow(this._t("editor_progress_secondary_text_color"), this._config.secondary_text_color, (v) => this._colorChanged("secondary_text_color", v))}

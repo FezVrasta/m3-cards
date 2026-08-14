@@ -43,6 +43,22 @@ interface HistoryPoint {
   lu?: number;
 }
 
+// A negative "change" for a period is never physically valid for the
+// total_increasing/cumulative counters this module targets — consumption
+// can't be negative. It only shows up when the recorder's long-term
+// statistics lose continuity across a meter reset (observed in practice:
+// an entity reload right at a daily reset boundary made the recorder treat
+// the post-reset value as a raw decrease instead of a new cycle, baking a
+// large negative "change" into that one bucket). Clamping here keeps a
+// one-off recorder-side data glitch from corrupting bars/averages/sums
+// derived from it; "state"-type reads are snapshots, not deltas, so they're
+// left untouched.
+function statValue(row: StatisticRow, statisticType: StatisticType): number | undefined {
+  const val = row[statisticType];
+  if (typeof val !== "number") return undefined;
+  return statisticType === "change" && val < 0 ? 0 : val;
+}
+
 export function localDayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -123,8 +139,8 @@ export async function fetchEnergyDays(
       const byDay = new Map<string, number>();
       for (const row of rows) {
         const d = new Date(row.start);
-        const val = row[statisticType];
-        if (typeof val === "number") byDay.set(localDayKey(d), val);
+        const val = statValue(row, statisticType);
+        if (val !== undefined) byDay.set(localDayKey(d), val);
       }
       return {
         values: expectedKeys.map((k) => byDay.get(k) ?? 0),
@@ -194,8 +210,8 @@ export async function fetchEnergyHours(
       const byHour = new Map<string, number>();
       for (const row of rows) {
         const d = new Date(row.start);
-        const val = row[statisticType];
-        if (typeof val === "number") byHour.set(localHourKey(d), val);
+        const val = statValue(row, statisticType);
+        if (val !== undefined) byHour.set(localHourKey(d), val);
       }
       return {
         values: expectedKeys.map((k) => byHour.get(k) ?? 0),
@@ -291,8 +307,8 @@ export async function fetchEnergyMonths(
     if (rows && rows.length > 0) {
       const byMonth = new Map<string, number>();
       for (const row of rows) {
-        const val = row[statisticType];
-        if (typeof val !== "number") continue;
+        const val = statValue(row, statisticType);
+        if (val === undefined) continue;
         const key = localMonthKey(new Date(row.start));
         byMonth.set(key, (byMonth.get(key) ?? 0) + val);
       }
@@ -338,8 +354,8 @@ export async function fetchMonthToDateSum(
     const rows = response[entityId] ?? [];
     let total = 0;
     for (const row of rows) {
-      const val = row[statisticType];
-      if (typeof val === "number") total += val;
+      const val = statValue(row, statisticType);
+      if (val !== undefined) total += val;
     }
     return total;
   } catch (e) {
@@ -382,8 +398,8 @@ export async function fetchSolarDayHours(
     for (const id of entityIds) {
       const rows = response[id] ?? [];
       for (const row of rows) {
-        const val = row[statisticType];
-        if (typeof val !== "number") continue;
+        const val = statValue(row, statisticType);
+        if (val === undefined) continue;
         const key = localHourKey(new Date(row.start));
         byHour.set(key, (byHour.get(key) ?? 0) + val);
       }
@@ -432,8 +448,8 @@ export async function fetchSolarPastDays(
     });
     for (const id of entityIds) {
       for (const row of response[id] ?? []) {
-        const val = row[statisticType];
-        if (typeof val !== "number") continue;
+        const val = statValue(row, statisticType);
+        if (val === undefined) continue;
         const key = localDayKey(new Date(row.start));
         byDay.set(key, (byDay.get(key) ?? 0) + val);
       }
@@ -470,7 +486,8 @@ export async function fetchCurrentPeriodChangeSum(
     let total = 0;
     for (const id of entityIds) {
       for (const row of response[id] ?? []) {
-        if (typeof row.change === "number") total += row.change;
+        const val = statValue(row, "change");
+        if (val !== undefined) total += val;
       }
     }
     return total;
@@ -505,7 +522,8 @@ export async function fetchPeriodChangeByEntity(
     for (const id of entityIds) {
       let total = 0;
       for (const row of response[id] ?? []) {
-        if (typeof row.change === "number") total += row.change;
+        const val = statValue(row, "change");
+        if (val !== undefined) total += val;
       }
       byEntity.set(id, total);
     }
@@ -543,8 +561,8 @@ export async function fetchDaySeries(
     });
     for (const id of entityIds) {
       for (const row of response[id] ?? []) {
-        const val = row[statisticType];
-        if (typeof val !== "number") continue;
+        const val = statValue(row, statisticType);
+        if (val === undefined) continue;
         const key = localDayKey(new Date(row.start));
         byDay.set(key, (byDay.get(key) ?? 0) + val);
       }

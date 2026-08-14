@@ -7,6 +7,18 @@ export function resolveThemeColor(value: string): string {
   return THEME_COLOR_TOKENS[value] ?? value;
 }
 
+// Formats a `color-mix(...)` background-tint string. `opacityPercent` is the
+// user-configured strength (0-100) from an editor opacityRow slider; when
+// unset, falls back to `defaultPercent` — the value hardcoded at this call
+// site before the slider existed, so unconfigured cards render identically.
+export function tintBackground(
+  colorCss: string,
+  opacityPercent: number | undefined,
+  defaultPercent: number,
+): string {
+  return `color-mix(in srgb, ${colorCss} ${opacityPercent ?? defaultPercent}%, transparent)`;
+}
+
 // Builds a `--prefix-key: value;` inline style string from a map, skipping
 // undefined entries. Used by cards to assemble their CSS-custom-property
 // theming block on the <ha-card> root in one line.

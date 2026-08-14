@@ -19,7 +19,12 @@ import {
   ENERGY_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import {
+  resolveThemeColor,
+  buildCssVars,
+  resolveCommonColors,
+  tintBackground,
+} from "./shared/color-config";
 import { stampVersion } from "./shared/config-migration";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -277,7 +282,7 @@ export class M3GaugeCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": segmentAColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${segmentAColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(segmentAColor, this._config.segment_a_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });

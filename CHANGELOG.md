@@ -4,6 +4,46 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.5.0]
+
+### Hinzugefügt
+- **M3 Aquarium Card** (`custom:m3-aquarium-card`) — neue Karte:
+  Geräte-Raster (Taglicht, Nachtlicht, Pumpe, Heizer, CO2 + beliebig
+  viele weitere Geräte), Tagesbogen-Beleuchtungsplan (manuelle
+  Phasenliste oder `schedule`-Helfer), optionale Kamera als Standbild,
+  Banner oder echter Live-Stream, Status-Chips (Temperaturabweichung,
+  Heizer ohne Leistung, Wasserstand, pH/TDS, fällige Reinigung) und
+  vollständiger visueller Editor.
+- **M3 Climate Overview Card**: individuelle Farbe pro Raum
+  (`rooms[].color`) — überschreibt die automatische Temperatur-Einfärbung
+  für einzelne Thermometer, statt nur die fünf globalen Farbstufen zu
+  nutzen.
+- **Farbstärke-Regler**: jede Karte, die eine Akzent-/Themenfarbe als
+  Hintergrund-Tönung verwendet, hat jetzt einen 0–100-Regler direkt neben
+  der Farbauswahl im Editor, der steuert, wie kräftig diese Farbe den
+  Hintergrund einfärbt (ersetzt die bisher fest einprogrammierten
+  Prozentwerte). Unveränderte Karten sehen dabei exakt wie vorher aus —
+  der Regler startet immer beim bisherigen Standardwert.
+- Deutsche Farbnamen (`grau`, `rot`, `blau`, `grün`, `gelb`, `lila`/
+  `violett`, `rosa`, `braun`, `schwarz`, `weiß`, `türkis`, `hellblau`,
+  `hellgrün`, `dunkelgrau`) werden jetzt in jedem Farbfeld erkannt, nicht
+  nur die englischen Namen.
+
+### Behoben
+- **M3 Climate Overview Card**: die Editor-Option „Akzentfarbe“ hatte
+  keinerlei Effekt — sie wurde beim Rendern der Karte nie ausgelesen.
+  Färbt jetzt korrekt das Header-Icon ein.
+- Ein deutscher Farbname wie `grau` in einem Farbfeld ergab bisher keine
+  gültige CSS-Farbe und ließ den betroffenen Hintergrund komplett
+  durchsichtig werden, statt eine sichtbare Fehlermeldung oder zumindest
+  eine erkennbare Farbe zu liefern (siehe „Hinzugefügt“ oben).
+- Energie-Statistiken (u.a. Energy-, Cost-, Power-Karten): ein negativer
+  „Change“-Wert für einen Zeitraum wird jetzt auf 0 begrenzt, statt
+  Balken/Durchschnitte/Summen zu verfälschen — trat vereinzelt auf, wenn
+  der Recorder beim Neuladen einer Entität genau an einer Tagesgrenze die
+  Kontinuität der Langzeitstatistik verliert und den Wert nach einem
+  Zähler-Reset fälschlich als Abnahme statt als neuen Zyklus verbucht.
+
 ## [1.4.0]
 
 ### Hinzugefügt

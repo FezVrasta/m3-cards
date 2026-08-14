@@ -23,6 +23,7 @@ import {
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { renderMissingEntity } from "./shared/glass-card";
+import { tintBackground } from "./shared/color-config";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField, stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
@@ -311,7 +312,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-mode-color: ${modeColor}; --m3-icon-color: ${iconColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; border-radius: ${radius};`}
+        style=${`--m3-mode-color: ${modeColor}; --m3-icon-color: ${iconColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-bg: ${tintBackground(iconColor, this._config.icon_opacity, 18)}; --m3-plus-bg: ${tintBackground(plusColor, this._config.plus_opacity, 20)}; --m3-minus-bg: ${tintBackground(minusColor, this._config.minus_opacity, 8)}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
@@ -612,7 +613,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: color-mix(in srgb, var(--m3-icon-color) 18%, transparent);
+      background: var(--m3-icon-bg);
       color: var(--m3-icon-color);
     }
 
@@ -809,12 +810,12 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
 
     .stepper-btn.minus {
       border-radius: 30px 12px 12px 30px;
-      background: color-mix(in srgb, var(--m3-minus-color) 8%, transparent);
+      background: var(--m3-minus-bg);
     }
 
     .stepper-btn.plus {
       border-radius: 12px 30px 30px 12px;
-      background: color-mix(in srgb, var(--m3-plus-color) 20%, transparent);
+      background: var(--m3-plus-bg);
     }
 
     .stepper-display {

@@ -142,6 +142,12 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "accent_opacity" | "producer_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
     const value = ev.detail.value;
@@ -261,11 +267,23 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               this._t("editor_power_list_accent_color"),
               this._config.accent_color,
               (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
             )}
             ${colorRow(
               this._t("editor_power_list_producer_color"),
               this._config.producer_color,
               (v) => this._colorChanged("producer_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.producer_opacity,
+                defaultValue: 24,
+                onChange: (v) => this._opacityChanged("producer_opacity", v),
+              },
             )}
             ${colorRow(
               this._t("editor_power_list_bar_tint_color"),

@@ -6,6 +6,7 @@ import { localize, type TranslationKey } from "./localize";
 import {
   fireEvent,
   colorRow,
+  opacityRow,
   editorStyles,
   type SchemaEntry,
 } from "./shared/editor-helpers";
@@ -124,6 +125,12 @@ export class M3PowerSummaryCardEditor extends LitElement implements LovelaceCard
       const { [field]: _removed, ...rest } = this._config;
       this._config = rest;
     }
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _opacityChanged(field: "flow_tint_opacity" | "accent_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -263,7 +270,18 @@ export class M3PowerSummaryCardEditor extends LitElement implements LovelaceCard
             ${colorRow(this._t("editor_summary_export_color"), this._config.export_color, (v) => this._colorChanged("export_color", v))}
             ${colorRow(this._t("editor_summary_import_color"), this._config.import_color, (v) => this._colorChanged("import_color", v))}
             ${colorRow(this._t("editor_summary_producer_color"), this._config.producer_color, (v) => this._colorChanged("producer_color", v))}
-            ${colorRow(this._t("editor_summary_accent_color"), this._config.accent_color, (v) => this._colorChanged("accent_color", v))}
+            ${opacityRow(this._t("editor_summary_flow_tint_opacity"), this._config.flow_tint_opacity, 18, (v) => this._opacityChanged("flow_tint_opacity", v))}
+            ${colorRow(
+              this._t("editor_summary_accent_color"),
+              this._config.accent_color,
+              (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
+            )}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}
             ${colorRow(this._t("editor_progress_secondary_text_color"), this._config.secondary_text_color, (v) => this._colorChanged("secondary_text_color", v))}
             ${colorRow(this._t("editor_progress_card_background"), this._config.card_background, (v) => this._colorChanged("card_background", v))}

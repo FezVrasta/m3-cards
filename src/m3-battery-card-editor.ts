@@ -13,6 +13,7 @@ import { discoverBatteryEntities } from "./shared/ha-registry";
 import {
   fireEvent,
   colorRow,
+  opacityRow,
   listRow,
   editorStyles,
   type SchemaEntry,
@@ -176,6 +177,12 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       const { [field]: _removed, ...rest } = this._config;
       this._config = rest;
     }
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _opacityChanged(field: "stage_tint_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -383,6 +390,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
             ${colorRow(this._t("editor_battery_medium_color"), this._config.medium_color, (v) => this._colorChanged("medium_color", v))}
             ${colorRow(this._t("editor_battery_ok_color"), this._config.ok_color, (v) => this._colorChanged("ok_color", v))}
             ${colorRow(this._t("editor_battery_unavailable_color"), this._config.unavailable_color, (v) => this._colorChanged("unavailable_color", v))}
+            ${opacityRow(this._t("editor_battery_stage_tint_opacity"), this._config.stage_tint_opacity, 18, (v) => this._opacityChanged("stage_tint_opacity", v))}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}
             ${colorRow(this._t("editor_progress_secondary_text_color"), this._config.secondary_text_color, (v) => this._colorChanged("secondary_text_color", v))}
             ${colorRow(this._t("editor_progress_card_background"), this._config.card_background, (v) => this._colorChanged("card_background", v))}

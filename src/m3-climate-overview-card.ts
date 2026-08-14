@@ -36,7 +36,7 @@ import {
   CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -296,6 +296,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           icon: r.icon,
           tempEntity: r.temperature_entity,
           humidityEntity: r.humidity_entity,
+          color: r.color,
         }))
       : this._discovered.map((r) => ({
           key: r.key,
@@ -303,6 +304,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           icon: r.icon,
           tempEntity: r.temperatureEntity,
           humidityEntity: r.humidityEntity,
+          color: undefined as string | undefined,
         }));
 
     return source.map((room): ClimateOverviewTile => {
@@ -329,7 +331,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         humidity,
         humidityUnavailable,
         hasHumidity: !!room.humidityEntity,
-        tempColor: this._tempColor(stage),
+        tempColor: room.color ? resolveThemeColor(room.color) : this._tempColor(stage),
       };
     });
   }
@@ -480,9 +482,13 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
     const outlier = this._config.show_outlier_chip !== false ? this._outlierTile(tiles) : undefined;
 
+    const accentColor = this._config.accent_color
+      ? resolveThemeColor(this._config.accent_color)
+      : "var(--primary-text-color)";
+
     const cssVars = buildCssVars({
-      "m3p-icon-color": "var(--primary-text-color)",
-      "m3p-icon-bg": "color-mix(in srgb, var(--primary-text-color) 12%, transparent)",
+      "m3p-icon-color": accentColor,
+      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 12),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
@@ -501,7 +507,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
               ? html`
                   <div
                     class="outlier-chip"
-                    style=${`background: color-mix(in srgb, ${outlier.tile.tempColor} 18%, transparent); color: ${outlier.tile.tempColor};`}
+                    style=${`background: ${tintBackground(outlier.tile.tempColor, this._config.tile_tint_opacity, 18)}; color: ${outlier.tile.tempColor};`}
                     role="button"
                     tabindex="0"
                     aria-label=${outlier.tile.name}
@@ -532,7 +538,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     return html`
       <div
         class="room-tile ${tile.temperatureUnavailable ? "unavailable" : ""}"
-        style=${`--tile-color: ${tile.tempColor}; background: color-mix(in srgb, ${tile.tempColor} 12%, transparent);`}
+        style=${`--tile-color: ${tile.tempColor}; background: ${tintBackground(tile.tempColor, this._config?.tile_tint_opacity, 12)};`}
         role="button"
         tabindex="0"
         aria-label=${tile.name}

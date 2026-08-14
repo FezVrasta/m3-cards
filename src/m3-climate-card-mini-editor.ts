@@ -11,7 +11,12 @@ import {
   DEFAULT_MINI_RADIUS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, type SchemaEntry } from "./shared/editor-helpers";
+import {
+  fireEvent,
+  opacityRow,
+  type SchemaEntry,
+  type ColorOpacityOption,
+} from "./shared/editor-helpers";
 import {
   initAppearanceState,
   radiusPresetPatch,
@@ -135,6 +140,7 @@ export class M3ClimateCardMiniEditor
     label: string,
     value: string | undefined,
     onChange: (value: string) => void,
+    opacity?: ColorOpacityOption,
   ) {
     const hexValue = /^#[0-9a-fA-F]{6}$/.test(value ?? "") ? (value as string) : "#888888";
     return html`
@@ -153,6 +159,9 @@ export class M3ClimateCardMiniEditor
           .value=${hexValue}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
+        ${opacity
+          ? opacityRow(opacity.label, opacity.value, opacity.defaultValue, opacity.onChange)
+          : nothing}
       </div>
     `;
   }
@@ -185,6 +194,21 @@ export class M3ClimateCardMiniEditor
       const { [field]: _removed, ...rest } = this._config;
       this._config = rest;
     }
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _opacityChanged(
+    field:
+      | "icon_active_opacity"
+      | "icon_inactive_opacity"
+      | "power_active_opacity"
+      | "power_inactive_opacity"
+      | "plus_opacity"
+      | "minus_opacity",
+    value: number,
+  ): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -301,21 +325,45 @@ export class M3ClimateCardMiniEditor
               this._t("editor_icon_active_color"),
               this._config?.icon_active_color,
               (v) => this._elementColorChanged("icon_active_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config?.icon_active_opacity,
+                defaultValue: 22,
+                onChange: (v) => this._opacityChanged("icon_active_opacity", v),
+              },
             )}
             ${this._colorRow(
               this._t("editor_icon_inactive_color"),
               this._config?.icon_inactive_color,
               (v) => this._elementColorChanged("icon_inactive_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config?.icon_inactive_opacity,
+                defaultValue: 14,
+                onChange: (v) => this._opacityChanged("icon_inactive_opacity", v),
+              },
             )}
             ${this._colorRow(
               this._t("editor_power_active_color"),
               this._config?.power_active_color,
               (v) => this._elementColorChanged("power_active_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config?.power_active_opacity,
+                defaultValue: 30,
+                onChange: (v) => this._opacityChanged("power_active_opacity", v),
+              },
             )}
             ${this._colorRow(
               this._t("editor_power_inactive_color"),
               this._config?.power_inactive_color,
               (v) => this._elementColorChanged("power_inactive_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config?.power_inactive_opacity,
+                defaultValue: 14,
+                onChange: (v) => this._opacityChanged("power_inactive_opacity", v),
+              },
             )}
             ${this._colorRow(
               this._t("editor_plus_active_color"),
@@ -327,6 +375,12 @@ export class M3ClimateCardMiniEditor
               this._config?.plus_inactive_color,
               (v) => this._elementColorChanged("plus_inactive_color", v),
             )}
+            ${opacityRow(
+              this._t("editor_plus_opacity"),
+              this._config?.plus_opacity,
+              20,
+              (v) => this._opacityChanged("plus_opacity", v),
+            )}
             ${this._colorRow(
               this._t("editor_minus_active_color"),
               this._config?.minus_active_color,
@@ -336,6 +390,12 @@ export class M3ClimateCardMiniEditor
               this._t("editor_minus_inactive_color"),
               this._config?.minus_inactive_color,
               (v) => this._elementColorChanged("minus_inactive_color", v),
+            )}
+            ${opacityRow(
+              this._t("editor_minus_opacity"),
+              this._config?.minus_opacity,
+              8,
+              (v) => this._opacityChanged("minus_opacity", v),
             )}
             <div class="hint">${this._t("editor_color_helper")}</div>
             ${MODE_KEYS.map((mode) =>
@@ -417,6 +477,34 @@ export class M3ClimateCardMiniEditor
       padding: 0;
       background: none;
       cursor: pointer;
+    }
+
+    .opacity-row {
+      flex-basis: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .opacity-label {
+      flex-shrink: 0;
+      min-width: 90px;
+      font-size: 12px;
+      color: var(--secondary-text-color, var(--primary-text-color));
+      opacity: 0.7;
+    }
+
+    .opacity-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--primary-color);
+    }
+
+    .opacity-value {
+      flex-shrink: 0;
+      min-width: 32px;
+      text-align: right;
+      font-size: 12px;
+      color: var(--secondary-text-color, var(--primary-text-color));
     }
   `;
 }

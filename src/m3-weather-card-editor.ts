@@ -151,6 +151,12 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "accent_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _radiusPresetChanged(ev: CustomEvent): void {
     if (!this._config) return;
     const patch = radiusPresetPatch(ev.detail.value.radius_preset as string);
@@ -240,7 +246,17 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
         <ha-expansion-panel outlined .header=${this._t("editor_progress_colors")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
-            ${colorRow(this._t("editor_weather_accent_color"), this._config.accent_color, (v) => this._colorChanged("accent_color", v))}
+            ${colorRow(
+              this._t("editor_weather_accent_color"),
+              this._config.accent_color,
+              (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
+            )}
             ${colorRow(this._t("editor_weather_precipitation_color"), this._config.precipitation_color, (v) => this._colorChanged("precipitation_color", v))}
             ${colorRow(this._t("editor_weather_gradient_color"), this._config.gradient_color, (v) => this._colorChanged("gradient_color", v))}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}

@@ -13,7 +13,7 @@ import {
   CLIMATE_RADIUS_PRESETS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { fireEvent, colorRow, opacityRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -243,6 +243,15 @@ export class M3ClimateCardEditor
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(
+    field: "icon_opacity" | "plus_opacity" | "minus_opacity",
+    value: number,
+  ): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
     this._config = { ...this._config, ...ev.detail.value };
@@ -372,6 +381,12 @@ export class M3ClimateCardEditor
               this._config?.icon_inactive_color,
               (v) => this._elementColorChanged("icon_inactive_color", v),
             )}
+            ${opacityRow(
+              this._t("editor_climate_icon_tint_opacity"),
+              this._config?.icon_opacity,
+              18,
+              (v) => this._opacityChanged("icon_opacity", v),
+            )}
             ${colorRow(
               this._t("editor_plus_active_color"),
               this._config?.plus_active_color,
@@ -382,6 +397,12 @@ export class M3ClimateCardEditor
               this._config?.plus_inactive_color,
               (v) => this._elementColorChanged("plus_inactive_color", v),
             )}
+            ${opacityRow(
+              this._t("editor_climate_plus_tint_opacity"),
+              this._config?.plus_opacity,
+              20,
+              (v) => this._opacityChanged("plus_opacity", v),
+            )}
             ${colorRow(
               this._t("editor_minus_active_color"),
               this._config?.minus_active_color,
@@ -391,6 +412,12 @@ export class M3ClimateCardEditor
               this._t("editor_minus_inactive_color"),
               this._config?.minus_inactive_color,
               (v) => this._elementColorChanged("minus_inactive_color", v),
+            )}
+            ${opacityRow(
+              this._t("editor_climate_minus_tint_opacity"),
+              this._config?.minus_opacity,
+              8,
+              (v) => this._opacityChanged("minus_opacity", v),
             )}
             <div class="hint">${this._t("editor_color_helper")}</div>
             ${MODE_KEYS.map((mode) =>

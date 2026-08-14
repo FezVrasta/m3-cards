@@ -22,6 +22,7 @@ import { renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField, stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
+import { tintBackground } from "./shared/color-config";
 
 console.info(
   `%c M3-CLIMATE-CARD-MINI %c v${CARD_VERSION} `,
@@ -205,6 +206,29 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     const plusColor = active ? plusActiveColor : plusInactiveColor;
     const minusColor = active ? minusActiveColor : minusInactiveColor;
 
+    const iconInactiveBg = tintBackground(
+      iconInactiveColor,
+      this._config.icon_inactive_opacity,
+      14,
+    );
+    const iconActiveBg = tintBackground(
+      iconActiveColor,
+      this._config.icon_active_opacity,
+      22,
+    );
+    const powerInactiveBg = tintBackground(
+      powerInactiveColor,
+      this._config.power_inactive_opacity,
+      14,
+    );
+    const powerActiveBg = tintBackground(
+      powerActiveColor,
+      this._config.power_active_opacity,
+      30,
+    );
+    const minusBg = tintBackground(minusColor, this._config.minus_opacity, 8);
+    const plusBg = tintBackground(plusColor, this._config.plus_opacity, 20);
+
     const hvacModesRaw: string[] = Array.isArray(attrs.hvac_modes)
       ? attrs.hvac_modes
       : [];
@@ -238,7 +262,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-mode-color: ${modeColor}; --m3-icon-active-color: ${iconActiveColor}; --m3-icon-inactive-color: ${iconInactiveColor}; --m3-power-active-color: ${powerActiveColor}; --m3-power-inactive-color: ${powerInactiveColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; border-radius: ${radius};`}
+        style=${`--m3-mode-color: ${modeColor}; --m3-icon-active-color: ${iconActiveColor}; --m3-icon-inactive-color: ${iconInactiveColor}; --m3-power-active-color: ${powerActiveColor}; --m3-power-inactive-color: ${powerInactiveColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-inactive-bg: ${iconInactiveBg}; --m3-icon-active-bg: ${iconActiveBg}; --m3-power-inactive-bg: ${powerInactiveBg}; --m3-power-active-bg: ${powerActiveBg}; --m3-minus-bg: ${minusBg}; --m3-plus-bg: ${plusBg}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
@@ -407,14 +431,14 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: color-mix(in srgb, var(--m3-icon-inactive-color) 14%, transparent);
+      background: var(--m3-icon-inactive-bg);
       color: var(--m3-icon-inactive-color);
       cursor: pointer;
       transition: all 0.35s cubic-bezier(0.2, 0, 0, 1);
     }
 
     .icon-swatch.active {
-      background: color-mix(in srgb, var(--m3-icon-active-color) 22%, transparent);
+      background: var(--m3-icon-active-bg);
       color: var(--m3-icon-active-color);
     }
 
@@ -440,7 +464,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: color-mix(in srgb, var(--m3-power-inactive-color) 14%, transparent);
+      background: var(--m3-power-inactive-bg);
       color: var(--m3-power-inactive-color);
       cursor: pointer;
       padding: 0;
@@ -453,7 +477,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
 
     .power-btn.active {
       border-radius: 50%;
-      background: color-mix(in srgb, var(--m3-power-active-color) 30%, transparent);
+      background: var(--m3-power-active-bg);
       color: var(--m3-power-active-color);
     }
 
@@ -535,12 +559,12 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
 
     .stepper-btn.minus {
       border-radius: 20px 8px 8px 20px;
-      background: color-mix(in srgb, var(--m3-minus-color) 8%, transparent);
+      background: var(--m3-minus-bg);
     }
 
     .stepper-btn.plus {
       border-radius: 8px 20px 20px 8px;
-      background: color-mix(in srgb, var(--m3-plus-color) 20%, transparent);
+      background: var(--m3-plus-bg);
     }
 
     .stepper-value {

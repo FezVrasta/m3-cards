@@ -26,7 +26,7 @@ import {
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { buildWavePath } from "./shared/wave";
-import { resolveCommonColors } from "./shared/color-config";
+import { resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { stampVersion } from "./shared/config-migration";
 
@@ -336,7 +336,7 @@ export class M3ProgressCard extends LitElement implements LovelaceCard {
       : accentColor;
     const iconBackgroundCss = this._config.icon_background
       ? this._resolveColor(this._config.icon_background)
-      : `color-mix(in srgb, ${iconColorCss} 18%, transparent)`;
+      : tintBackground(iconColorCss, this._config.icon_background_opacity, 18);
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );

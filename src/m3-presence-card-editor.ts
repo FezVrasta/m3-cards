@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3PresenceCardConfig } from "./types";
 import { DEFAULT_PRESENCE_RADIUS } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { fireEvent, colorRow, opacityRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -128,6 +128,12 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
       const { [field]: _removed, ...rest } = this._config;
       this._config = rest;
     }
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _opacityChanged(field: "presence_tint_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -265,6 +271,7 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
             ${colorRow(this._t("editor_presence_not_home_color"), this._config.not_home_color, (v) => this._colorChanged("not_home_color", v))}
             ${colorRow(this._t("editor_presence_zone_color"), this._config.zone_color, (v) => this._colorChanged("zone_color", v))}
             ${colorRow(this._t("editor_presence_unknown_color"), this._config.unknown_color, (v) => this._colorChanged("unknown_color", v))}
+            ${opacityRow(this._t("editor_opacity"), this._config.presence_tint_opacity, 18, (v) => this._opacityChanged("presence_tint_opacity", v))}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}
             ${colorRow(this._t("editor_progress_secondary_text_color"), this._config.secondary_text_color, (v) => this._colorChanged("secondary_text_color", v))}
             ${colorRow(this._t("editor_progress_card_background"), this._config.card_background, (v) => this._colorChanged("card_background", v))}

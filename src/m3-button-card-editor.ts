@@ -11,7 +11,12 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, type SchemaEntry } from "./shared/editor-helpers";
+import {
+  fireEvent,
+  opacityRow,
+  type ColorOpacityOption,
+  type SchemaEntry,
+} from "./shared/editor-helpers";
 import {
   initAppearanceState,
   radiusPresetPatch,
@@ -202,6 +207,7 @@ export class M3ButtonCardEditor
     label: string,
     value: string | undefined,
     onChange: (value: string) => void,
+    opacity?: ColorOpacityOption,
   ) {
     const hexValue = this._swatchHex(value);
     return html`
@@ -220,6 +226,7 @@ export class M3ButtonCardEditor
           .value=${hexValue}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
+        ${opacity ? opacityRow(opacity.label, opacity.value, opacity.defaultValue, opacity.onChange) : nothing}
       </div>
     `;
   }
@@ -233,6 +240,15 @@ export class M3ButtonCardEditor
   private _inactiveColorChanged(value: string): void {
     if (!this._config) return;
     this._config = { ...this._config, inactive_color: value || undefined };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _opacityChanged(
+    field: "color_opacity" | "inactive_opacity",
+    value: number,
+  ): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -367,14 +383,28 @@ export class M3ButtonCardEditor
         <ha-expansion-panel outlined .header=${this._t("editor_appearance")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
-            ${this._colorRow(this._t("editor_color"), this._config.color, (v) =>
-              this._colorChanged(v),
+            ${this._colorRow(
+              this._t("editor_color"),
+              this._config.color,
+              (v) => this._colorChanged(v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.color_opacity,
+                defaultValue: 20,
+                onChange: (v) => this._opacityChanged("color_opacity", v),
+              },
             )}
             <div class="hint">${this._t("editor_color_helper")}</div>
             ${this._colorRow(
               this._t("editor_inactive_color"),
               this._config.inactive_color,
               (v) => this._inactiveColorChanged(v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.inactive_opacity,
+                defaultValue: 8,
+                onChange: (v) => this._opacityChanged("inactive_opacity", v),
+              },
             )}
             <div class="hint">${this._t("editor_inactive_color_helper")}</div>
             <ha-form
@@ -483,6 +513,34 @@ export class M3ButtonCardEditor
       padding: 0;
       background: none;
       cursor: pointer;
+    }
+
+    .opacity-row {
+      flex-basis: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .opacity-label {
+      flex-shrink: 0;
+      min-width: 90px;
+      font-size: 12px;
+      color: var(--secondary-text-color, var(--primary-text-color));
+      opacity: 0.7;
+    }
+
+    .opacity-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--primary-color);
+    }
+
+    .opacity-value {
+      flex-shrink: 0;
+      min-width: 32px;
+      text-align: right;
+      font-size: 12px;
+      color: var(--secondary-text-color, var(--primary-text-color));
     }
   `;
 }

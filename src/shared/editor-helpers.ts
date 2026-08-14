@@ -1,4 +1,4 @@
-import { html, css } from "lit";
+import { html, css, nothing } from "lit";
 
 export interface SchemaEntry {
   name: string;
@@ -16,13 +16,49 @@ export function fireEvent(node: HTMLElement, type: string, detail: unknown): voi
   node.dispatchEvent(event);
 }
 
+export interface ColorOpacityOption {
+  label: string;
+  value: number | undefined;
+  defaultValue: number;
+  onChange: (value: number) => void;
+}
+
+// A standalone 0-100 intensity slider, used either on its own (e.g. one
+// slider governing several background-tint sites at once) or embedded in
+// colorRow via its `opacity` option (a slider tied to one specific color).
+export function opacityRow(
+  label: string,
+  value: number | undefined,
+  defaultValue: number,
+  onChange: (value: number) => void,
+) {
+  const current = value ?? defaultValue;
+  return html`
+    <div class="opacity-row">
+      <span class="opacity-label">${label}</span>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        .value=${String(current)}
+        @input=${(e: Event) => onChange(Number((e.target as HTMLInputElement).value))}
+      />
+      <span class="opacity-value">${current}%</span>
+    </div>
+  `;
+}
+
 // A free-text color field with a live swatch preview, used for every
 // optional color override across the M3 card editors (not an ha-form
 // selector, since these accept HA color tokens, hex, or any CSS color).
+// Pass `opacity` when this color is used as a `color-mix(...)` background
+// tint somewhere in the card, to expose a strength slider alongside it.
 export function colorRow(
   label: string,
   value: string | undefined,
   onChange: (value: string) => void,
+  opacity?: ColorOpacityOption,
 ) {
   const hexValue = /^#[0-9a-fA-F]{6}$/.test(value ?? "") ? (value as string) : "#888888";
   return html`
@@ -41,6 +77,7 @@ export function colorRow(
         .value=${hexValue}
         @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
       />
+      ${opacity ? opacityRow(opacity.label, opacity.value, opacity.defaultValue, opacity.onChange) : nothing}
     </div>
   `;
 }
@@ -143,5 +180,33 @@ export const editorStyles = css`
     padding: 0;
     background: none;
     cursor: pointer;
+  }
+
+  .opacity-row {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .opacity-label {
+    flex-shrink: 0;
+    min-width: 90px;
+    font-size: 12px;
+    color: var(--secondary-text-color, var(--primary-text-color));
+    opacity: 0.7;
+  }
+
+  .opacity-row input[type="range"] {
+    flex: 1;
+    accent-color: var(--primary-color);
+  }
+
+  .opacity-value {
+    flex-shrink: 0;
+    min-width: 32px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--secondary-text-color, var(--primary-text-color));
   }
 `;

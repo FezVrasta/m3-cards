@@ -35,7 +35,7 @@ import {
   COST_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
@@ -334,7 +334,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
             style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
           >
             <div class="main-row">
-              <div class="main-icon" style=${`background: color-mix(in srgb, ${accentColor} 18%, transparent); color: ${accentColor};`}>
+              <div class="main-icon" style=${`background: ${tintBackground(accentColor, this._config.accent_opacity, 18)}; color: ${accentColor};`}>
                 <ha-icon icon=${icon}></ha-icon>
               </div>
               <div class="main-text">
@@ -421,7 +421,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
           <div class="main-row">
             <div
               class="main-icon"
-              style=${`background: color-mix(in srgb, ${isCredit ? COST_BETTER_COLOR : accentColor} 18%, transparent); color: ${isCredit ? COST_BETTER_COLOR : accentColor};`}
+              style=${`background: ${tintBackground(isCredit ? COST_BETTER_COLOR : accentColor, this._config.accent_opacity, 18)}; color: ${isCredit ? COST_BETTER_COLOR : accentColor};`}
             >
               <ha-icon icon=${icon}></ha-icon>
             </div>
@@ -508,7 +508,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
         <div class="nav-info">
           <div
             class="nav-icon"
-            style=${`background: color-mix(in srgb, ${accentColor} 20%, transparent); color: ${accentColor};`}
+            style=${`background: ${tintBackground(accentColor, this._config?.accent_opacity, 20)}; color: ${accentColor};`}
           >
             <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
           </div>
@@ -575,8 +575,8 @@ export class M3CostCard extends LitElement implements LovelaceCard {
           class="bar ${isFuture ? "future" : ""} ${isCurrent ? "current" : ""}"
           style=${`height: ${heightPx.toFixed(1)}px; ${
             isFuture
-              ? `border-color: color-mix(in srgb, ${accentColor} 55%, transparent);`
-              : `background: ${isCurrent ? accentColor : `color-mix(in srgb, ${accentColor} 30%, transparent)`};`
+              ? `border-color: ${tintBackground(accentColor, this._config?.accent_opacity, 55)};`
+              : `background: ${isCurrent ? accentColor : tintBackground(accentColor, this._config?.accent_opacity, 30)};`
           }`}
           role="button"
           tabindex="0"
@@ -627,7 +627,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       >
         <div
           class="tariff-icon"
-          style=${`background: color-mix(in srgb, ${accentColor} 20%, transparent); color: ${accentColor};`}
+          style=${`background: ${tintBackground(accentColor, this._config.accent_opacity, 20)}; color: ${accentColor};`}
         >
           <ha-icon icon="mdi:tag-outline"></ha-icon>
         </div>

@@ -24,7 +24,7 @@ import {
   MEDIA_ARTWORK_COLOR_CACHE_SIZE,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -349,10 +349,16 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": accentColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${accentColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "mc-accent": accentColor,
+      "m3p-power-btn-bg": tintBackground(accentColor, this._config.accent_opacity, 14),
+      "m3p-artwork-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-transport-btn-bg": tintBackground(accentColor, this._config.accent_opacity, 8),
+      "m3p-pill-active-bg": tintBackground(accentColor, this._config.accent_opacity, 24),
+      "m3p-mute-active-bg": tintBackground(accentColor, this._config.accent_opacity, 20),
+      "m3p-source-active-bg": tintBackground(accentColor, this._config.accent_opacity, 22),
     });
 
     return html`
@@ -628,7 +634,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         height: 40px;
         border: none;
         border-radius: 14px;
-        background: color-mix(in srgb, var(--mc-accent) 14%, transparent);
+        background: var(--m3p-power-btn-bg);
         color: var(--mc-accent);
         cursor: pointer;
         display: flex;
@@ -653,7 +659,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         width: ${MEDIA_ARTWORK_SIZE}px;
         height: ${MEDIA_ARTWORK_SIZE}px;
         border-radius: ${MEDIA_ARTWORK_RADIUS}px;
-        background-color: color-mix(in srgb, var(--mc-accent) 18%, transparent);
+        background-color: var(--m3p-artwork-bg);
         background-size: cover;
         background-position: center;
         display: flex;
@@ -752,7 +758,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         height: ${MEDIA_TRANSPORT_BTN_SIZE}px;
         border: none;
         border-radius: ${MEDIA_TRANSPORT_BTN_RADIUS}px;
-        background: color-mix(in srgb, var(--mc-accent) 8%, transparent);
+        background: var(--m3p-transport-btn-bg);
         color: var(--m3p-text);
         cursor: pointer;
         display: flex;
@@ -798,7 +804,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       }
 
       .pill-toggle.active {
-        background: color-mix(in srgb, var(--mc-accent) 24%, transparent);
+        background: var(--m3p-pill-active-bg);
         color: var(--mc-accent);
       }
 
@@ -825,7 +831,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
       .mute-btn.active {
         border-radius: 12px;
-        background: color-mix(in srgb, var(--mc-accent) 20%, transparent);
+        background: var(--m3p-mute-active-bg);
         color: var(--mc-accent);
       }
 
@@ -888,7 +894,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       }
 
       .source-pill.active {
-        background: color-mix(in srgb, var(--mc-accent) 22%, transparent);
+        background: var(--m3p-source-active-bg);
         color: var(--mc-accent);
         border-radius: 10px;
       }

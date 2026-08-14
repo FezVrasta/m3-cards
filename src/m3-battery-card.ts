@@ -42,7 +42,7 @@ import {
   DEFAULT_BATTERY_NAME_STRIP,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -295,7 +295,7 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
       label: row.name,
       icon: row.icon,
       iconColor: color,
-      iconBackground: `color-mix(in srgb, ${color} 18%, transparent)`,
+      iconBackground: tintBackground(color, this._config?.stage_tint_opacity, 18),
       middle: html`
         <div class="battery-name">${row.name}</div>
         <div class="battery-track">
@@ -376,7 +376,7 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": headerColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${headerColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(headerColor, this._config.stage_tint_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "lr-row-height": `${BATTERY_ROW_HEIGHT}px`,

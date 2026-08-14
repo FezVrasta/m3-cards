@@ -32,7 +32,12 @@ import {
   FLOW_DOT_DURATION_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import {
+  resolveThemeColor,
+  buildCssVars,
+  resolveCommonColors,
+  tintBackground,
+} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { stampVersion } from "./shared/config-migration";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -416,7 +421,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
     const cssVars = buildCssVars({
       "m3p-accent": homeColor,
       "m3p-icon-color": textColorCss,
-      "m3p-icon-bg": `color-mix(in srgb, ${textColorCss} 12%, transparent)`,
+      "m3p-icon-bg": tintBackground(textColorCss, this._config.text_opacity, 12),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
@@ -439,7 +444,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
               ${flows.length > 1
                 ? svg`<circle class="junction-dot" cx=${PV_POS.x} cy=${SPLIT_BEND_Y} r="3"></circle>`
                 : nothing}
-              ${nodes.map((n) => this._renderNode(n))}
+              ${nodes.map((n) => this._renderNode(n, this._config?.node_tint_opacity))}
             </svg>
           </div>
 
@@ -497,8 +502,8 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderNode(node: FlowNodeData): SVGTemplateResult {
-    const fill = `color-mix(in srgb, ${node.color} 18%, transparent)`;
+  private _renderNode(node: FlowNodeData, nodeTintOpacity: number | undefined): SVGTemplateResult {
+    const fill = tintBackground(node.color, nodeTintOpacity, 18);
     return svg`
       <g class="flow-node">
         <rect

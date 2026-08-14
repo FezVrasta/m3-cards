@@ -31,7 +31,7 @@ import {
   POWER_LIST_FLIP_DURATION_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -252,7 +252,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": accentColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${accentColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "pl-accent": accentColor,
@@ -341,12 +341,12 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       label: row.name,
       icon: row.icon,
       iconColor: "var(--pl-producer)",
-      iconBackground: "color-mix(in srgb, var(--pl-producer) 24%, transparent)",
+      iconBackground: tintBackground("var(--pl-producer)", this._config?.producer_opacity, 24),
       middle: html`<div class="row-name">${row.name}</div>`,
       right: html`<div class="row-value producer-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),
       extraClass: "producer-row",
-      style: "--lr-row-bg: color-mix(in srgb, var(--pl-producer) 14%, transparent);",
+      style: `--lr-row-bg: ${tintBackground("var(--pl-producer)", this._config?.producer_opacity, 14)};`,
     });
   }
 
@@ -356,7 +356,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       label: row.name,
       icon: row.icon,
       iconColor: "var(--pl-accent)",
-      iconBackground: "color-mix(in srgb, var(--pl-accent) 20%, transparent)",
+      iconBackground: tintBackground("var(--pl-accent)", this._config?.accent_opacity, 20),
       middle: html`<div class="row-name">${row.name}</div>`,
       right: html`<div class="row-value consumer-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),

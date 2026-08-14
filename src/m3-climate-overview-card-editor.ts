@@ -13,7 +13,7 @@ import {
   DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, colorRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { fireEvent, colorRow, opacityRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -216,6 +216,12 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "tile_tint_opacity" | "accent_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _nameStripChanged(values: string[]): void {
     if (!this._config) return;
     this._config = { ...this._config, name_strip: values };
@@ -231,7 +237,17 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       icon: value.icon || undefined,
       temperature_entity: value.temperature_entity ?? "",
       humidity_entity: value.humidity_entity || undefined,
+      color: rooms[index]?.color,
     };
+    this._config = { ...this._config, rooms };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _roomColorChanged(index: number, value: string): void {
+    if (!this._config) return;
+    const rooms = [...(this._config.rooms ?? [])];
+    if (!rooms[index]) return;
+    rooms[index] = { ...rooms[index], color: value || undefined };
     this._config = { ...this._config, rooms };
     fireEvent(this, "config-changed", { config: this._config });
   }
@@ -340,18 +356,21 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
             ${rooms.map(
               (r, i) => html`
                 <div class="override-row">
-                  <ha-form
-                    .hass=${this.hass}
-                    .data=${{
-                      name: r.name,
-                      icon: r.icon ?? "",
-                      temperature_entity: r.temperature_entity,
-                      humidity_entity: r.humidity_entity ?? "",
-                    }}
-                    .schema=${this._roomSchema()}
-                    .computeLabel=${this._computeLabel}
-                    @value-changed=${(ev: CustomEvent) => this._roomChanged(i, ev)}
-                  ></ha-form>
+                  <div class="override-form">
+                    <ha-form
+                      .hass=${this.hass}
+                      .data=${{
+                        name: r.name,
+                        icon: r.icon ?? "",
+                        temperature_entity: r.temperature_entity,
+                        humidity_entity: r.humidity_entity ?? "",
+                      }}
+                      .schema=${this._roomSchema()}
+                      .computeLabel=${this._computeLabel}
+                      @value-changed=${(ev: CustomEvent) => this._roomChanged(i, ev)}
+                    ></ha-form>
+                    ${colorRow(this._t("editor_climate_overview_room_color"), r.color, (v) => this._roomColorChanged(i, v))}
+                  </div>
                   <button class="remove-btn" @click=${() => this._removeRoom(i)}>
                     <ha-icon icon="mdi:close"></ha-icon>
                   </button>
@@ -421,8 +440,19 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
             ${colorRow(this._t("editor_climate_overview_comfortable_color"), this._config.comfortable_color, (v) => this._colorChanged("comfortable_color", v))}
             ${colorRow(this._t("editor_climate_overview_warm_color"), this._config.warm_color, (v) => this._colorChanged("warm_color", v))}
             ${colorRow(this._t("editor_climate_overview_hot_color"), this._config.hot_color, (v) => this._colorChanged("hot_color", v))}
+            ${opacityRow(this._t("editor_climate_overview_tile_tint_opacity"), this._config.tile_tint_opacity, 12, (v) => this._opacityChanged("tile_tint_opacity", v))}
             ${colorRow(this._t("editor_climate_overview_humidity_warn_color"), this._config.humidity_warn_color, (v) => this._colorChanged("humidity_warn_color", v))}
-            ${colorRow(this._t("editor_climate_overview_accent_color"), this._config.accent_color, (v) => this._colorChanged("accent_color", v))}
+            ${colorRow(
+              this._t("editor_climate_overview_accent_color"),
+              this._config.accent_color,
+              (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_climate_overview_accent_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 12,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
+            )}
             ${colorRow(this._t("editor_progress_text_color"), this._config.text_color, (v) => this._colorChanged("text_color", v))}
             ${colorRow(this._t("editor_progress_secondary_text_color"), this._config.secondary_text_color, (v) => this._colorChanged("secondary_text_color", v))}
             ${colorRow(this._t("editor_progress_card_background"), this._config.card_background, (v) => this._colorChanged("card_background", v))}
@@ -469,9 +499,12 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
         gap: 8px;
       }
 
-      .override-row ha-form {
+      .override-form {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
       .remove-btn {

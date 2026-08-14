@@ -30,7 +30,7 @@ import {
   COUNTER_POWER_CHIP_COLOR,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
@@ -302,10 +302,11 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": accentColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${accentColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "counter-accent": accentColor,
+      "counter-frac-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "counter-cell-bg": cellBackgroundCss,
       "counter-cell-w": `${this._narrow ? COUNTER_CELL_NARROW_WIDTH : COUNTER_CELL_WIDTH}px`,
       "counter-cell-h": `${this._narrow ? COUNTER_CELL_NARROW_HEIGHT : COUNTER_CELL_HEIGHT}px`,
@@ -331,7 +332,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
                 ? html`
                     <div
                       class="power-chip"
-                      style=${`color: ${this._powerChipColor(powerValue)}; background: color-mix(in srgb, ${this._powerChipColor(powerValue)} 18%, transparent);`}
+                      style=${`color: ${this._powerChipColor(powerValue)}; background: ${tintBackground(this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
                     >
                       <ha-icon icon="mdi:lightning-bolt"></ha-icon>
                       <span>${this._formatNumber(powerValue, 0)} W</span>
@@ -451,7 +452,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
       }
 
       .cell.frac {
-        background: color-mix(in srgb, var(--counter-accent) 18%, transparent);
+        background: var(--counter-frac-bg);
         color: var(--counter-accent);
       }
 

@@ -98,6 +98,29 @@ export const THEME_COLOR_TOKENS: Record<string, string> = {
   black: "#000000",
   white: "#ffffff",
   disabled: "var(--disabled-text-color)",
+  // German aliases for the same tokens above — editor fields are labeled in
+  // German, so "grau" is a natural first guess and, unlike a real CSS color
+  // name, silently invalidates the color-mix() it's used in (rendering as
+  // no background at all) rather than erroring visibly.
+  rot: "#e57373",
+  rosa: "#f06292",
+  lila: "#ba68c8",
+  violett: "#ba68c8",
+  blau: "#64b5f6",
+  hellblau: "#4fc3f7",
+  türkis: "#4dd0e1",
+  tuerkis: "#4dd0e1",
+  grün: "#81c784",
+  gruen: "#81c784",
+  hellgrün: "#aed581",
+  hellgruen: "#aed581",
+  gelb: "#fff176",
+  braun: "#a1887f",
+  grau: "#bdbdbd",
+  dunkelgrau: "#616161",
+  schwarz: "#000000",
+  weiß: "#ffffff",
+  weiss: "#ffffff",
 };
 
 export const DEFAULT_BUTTON_COLOR = "primary";
@@ -538,3 +561,58 @@ export const MEDIA_VOLUME_WAVE_HEIGHT = 44;
 export const MEDIA_VOLUME_THROTTLE_MS = 200;
 export const MEDIA_MUTE_BTN_HEIGHT = 40;
 export const MEDIA_ARTWORK_COLOR_CACHE_SIZE = 20;
+
+// ---- Aquarium card ----------------------------------------------------------
+export const DEFAULT_AQUARIUM_RADIUS = RADIUS.card;
+export const DEFAULT_AQUARIUM_ICON = "mdi:fishbowl-outline";
+export const DEFAULT_AQUARIUM_ACCENT = PALETTE.dryAuto;
+export const DEFAULT_AQUARIUM_TARGET_RANGE: [number, number] = [24, 26];
+export const DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS = 14;
+export const DEFAULT_AQUARIUM_CAMERA_REFRESH_S = 10;
+// Deliberately deviates from the shared squircle scale (tokens.ts only has
+// 44/16) — the reference design's header icon is a size/radius pair unique
+// to this card.
+export const AQUARIUM_HEADER_ICON_SIZE = 46;
+export const AQUARIUM_HEADER_ICON_RADIUS = 17;
+export const AQUARIUM_TILE_GAP = 6;
+export const AQUARIUM_TILE_MIN_COL = 64;
+export const AQUARIUM_TILE_RADIUS_OFF = 19;
+export const AQUARIUM_TILE_RADIUS_ON = 13;
+export const AQUARIUM_TILE_ICON_BOX = 28;
+export const AQUARIUM_TILE_ICON_RADIUS_OFF = 14;
+export const AQUARIUM_TILE_ICON_RADIUS_ON = 9;
+export const AQUARIUM_TILE_MORPH_MS = 350;
+export const AQUARIUM_WATER_COLOR_OK = PALETTE.dryAuto;
+export const AQUARIUM_WATER_COLOR_BELOW = PALETTE.cool;
+export const AQUARIUM_WATER_COLOR_ABOVE = PALETTE.light;
+export const AQUARIUM_WATER_COLOR_WARN = PALETTE.heat;
+export const AQUARIUM_WATER_WARN_DEVIATION_K = 1;
+export const AQUARIUM_SCHEDULE_TRACK_HEIGHT = 7;
+export const AQUARIUM_SCHEDULE_TRACK_RADIUS = 3.5;
+export const AQUARIUM_SCHEDULE_MARKER_WIDTH = 4;
+export const AQUARIUM_SCHEDULE_MARKER_HEIGHT = 17;
+export const AQUARIUM_SCHEDULE_MARKER_RADIUS = 2;
+export const AQUARIUM_SCHEDULE_REFRESH_MS = 60 * 1000;
+export const AQUARIUM_CAMERA_BANNER_RADIUS = 20;
+export const AQUARIUM_CAMERA_BANNER_PADDING = 10;
+export const AQUARIUM_CAMERA_THUMB_SIZE = 56;
+export const AQUARIUM_CAMERA_THUMB_RADIUS = 19;
+export const AQUARIUM_CAMERA_THUMB_RADIUS_ACTIVE = 13;
+export const AQUARIUM_CAMERA_LIVE_DOT_SIZE = 8;
+export const AQUARIUM_CAMERA_EXPAND_MS = 350;
+export const AQUARIUM_CAMERA_BADGE_HEIGHT = 24;
+export const AQUARIUM_CAMERA_BADGE_RADIUS = 9;
+export const AQUARIUM_CAMERA_CHIP_HEIGHT = 28;
+export const AQUARIUM_CAMERA_CHIP_RADIUS = 11;
+export const AQUARIUM_CHIP_HEIGHT = 28;
+export const AQUARIUM_CHIP_RADIUS = 14;
+export const AQUARIUM_CHIP_MAX = 4;
+export const DEFAULT_AQUARIUM_DEVICE_COLORS = {
+  light_day: PALETTE.light,
+  light_night: PALETTE.grid,
+  pump: PALETTE.cool,
+  heater: PALETTE.heat,
+  co2: PALETTE.dryAuto,
+  cleaning: PALETTE.cover,
+  camera: PALETTE.media,
+} as const;

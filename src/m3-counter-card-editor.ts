@@ -197,6 +197,12 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "accent_opacity" | "power_chip_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _thresholdsChanged(ev: Event): void {
     if (!this._config) return;
     const text = (ev.target as HTMLInputElement).value;
@@ -359,6 +365,12 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
               this._t("editor_counter_accent_color"),
               this._config.accent_color,
               (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
             )}
             ${colorRow(
               this._t("editor_counter_cell_background"),
@@ -369,6 +381,12 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
               this._t("editor_counter_power_chip_color"),
               this._config.power_chip_color,
               (v) => this._colorChanged("power_chip_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.power_chip_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("power_chip_opacity", v),
+              },
             )}
             <div class="color-row">
               <label class="color-label"

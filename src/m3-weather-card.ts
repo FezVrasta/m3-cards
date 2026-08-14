@@ -35,7 +35,7 @@ import {
   WEATHER_DAYS_TOGGLE_RADIUS_OPEN,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -375,12 +375,13 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": accentColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${accentColor} 18%, transparent)`,
+      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "wc-accent": accentColor,
       "wc-precip": precipColor,
       "wc-gradient": gradientColor,
+      "wc-days-toggle-bg": tintBackground(accentColor, this._config.accent_opacity, 14),
     });
 
     const hours = Math.max(0, this._config.hours ?? DEFAULT_WEATHER_HOURS);
@@ -844,7 +845,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
         margin-top: 6px;
         border-radius: ${WEATHER_DAYS_TOGGLE_RADIUS}px;
         border: none;
-        background: color-mix(in srgb, var(--wc-accent) 14%, transparent);
+        background: var(--wc-days-toggle-bg);
         color: var(--wc-accent);
         display: flex;
         align-items: center;

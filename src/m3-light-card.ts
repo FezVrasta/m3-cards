@@ -42,7 +42,7 @@ import {
   LIGHT_MEMBER_ROW_HEIGHT,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { renderListRow, listRowStyles } from "./shared/list-row";
@@ -564,13 +564,16 @@ export class M3LightCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3p-icon-color": activeColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${activeColor} ${unavailable || !effectiveOn ? 14 : 20}%, transparent)`,
+      "m3p-icon-bg": tintBackground(activeColor, this._config.accent_opacity, unavailable || !effectiveOn ? 14 : 20),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "lc-accent": activeColor,
+      "lc-accent-bg": tintBackground(activeColor, this._config.accent_opacity, 20),
       "lc-track": trackColorCss,
       "lc-handle": handleColorCss,
       "lc-power-color": activeColor,
+      "lc-power-bg": tintBackground(activeColor, this._config.accent_opacity, 14),
+      "lc-power-bg-active": tintBackground(activeColor, this._config.accent_opacity, 20),
       "lr-row-height": `${LIGHT_MEMBER_ROW_HEIGHT}px`,
     });
 
@@ -822,7 +825,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
             key: id,
             icon: member.attributes.icon || DEFAULT_LIGHT_ICON,
             iconColor: memberUnavailable ? LIGHT_OFF_COLOR : memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR,
-            iconBackground: `color-mix(in srgb, ${memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR} 14%, transparent)`,
+            iconBackground: tintBackground(memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR, this._config?.accent_opacity, 14),
             middle: html`<div class="member-name">${member.attributes.friendly_name || id}</div>`,
             right: html`
               <button
@@ -863,7 +866,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: color-mix(in srgb, var(--lc-power-color) 14%, transparent);
+        background: var(--lc-power-bg);
         color: var(--lc-power-color);
         cursor: pointer;
         padding: 0;
@@ -879,7 +882,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
 
       .power-btn.active {
         border-radius: ${LIGHT_POWER_BTN_RADIUS_ON}px;
-        background: color-mix(in srgb, var(--lc-power-color) 20%, transparent);
+        background: var(--lc-power-bg-active);
       }
 
       .power-btn ha-icon {
@@ -979,7 +982,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       }
 
       .temp-preset.active {
-        background: color-mix(in srgb, var(--lc-accent) 20%, transparent);
+        background: var(--lc-accent-bg);
       }
 
       .temp-preset:disabled {
@@ -1169,7 +1172,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       }
 
       .member-toggle.active {
-        background: color-mix(in srgb, var(--lc-accent) 20%, transparent);
+        background: var(--lc-accent-bg);
         color: var(--lc-accent);
       }
 

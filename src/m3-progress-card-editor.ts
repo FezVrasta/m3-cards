@@ -13,7 +13,12 @@ import {
   DEFAULT_DONE_STATES,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, type SchemaEntry } from "./shared/editor-helpers";
+import {
+  fireEvent,
+  opacityRow,
+  type SchemaEntry,
+  type ColorOpacityOption,
+} from "./shared/editor-helpers";
 import {
   initAppearanceState,
   radiusPresetPatch,
@@ -139,6 +144,7 @@ export class M3ProgressCardEditor
     label: string,
     value: string | undefined,
     onChange: (value: string) => void,
+    opacity?: ColorOpacityOption,
   ) {
     const hexValue = /^#[0-9a-fA-F]{6}$/.test(value ?? "") ? (value as string) : "#888888";
     return html`
@@ -157,6 +163,7 @@ export class M3ProgressCardEditor
           .value=${hexValue}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
+        ${opacity ? opacityRow(opacity.label, opacity.value, opacity.defaultValue, opacity.onChange) : nothing}
       </div>
     `;
   }
@@ -205,6 +212,15 @@ export class M3ProgressCardEditor
       const { [field]: _removed, ...rest } = this._config;
       this._config = rest;
     }
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _opacityChanged(
+    field: "icon_background_opacity",
+    value: number,
+  ): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -397,6 +413,12 @@ export class M3ProgressCardEditor
               this._t("editor_progress_icon_background"),
               this._config.icon_background,
               (v) => this._progressColorChanged("icon_background", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.icon_background_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("icon_background_opacity", v),
+              },
             )}
             ${this._colorRow(
               this._t("editor_progress_text_color"),
@@ -532,6 +554,34 @@ export class M3ProgressCardEditor
       padding: 0;
       background: none;
       cursor: pointer;
+    }
+
+    .opacity-row {
+      flex-basis: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .opacity-label {
+      flex-shrink: 0;
+      min-width: 90px;
+      font-size: 12px;
+      color: var(--secondary-text-color, var(--primary-text-color));
+      opacity: 0.7;
+    }
+
+    .opacity-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--primary-color);
+    }
+
+    .opacity-value {
+      flex-shrink: 0;
+      min-width: 32px;
+      text-align: right;
+      font-size: 12px;
+      color: var(--secondary-text-color, var(--primary-text-color));
     }
   `;
 }

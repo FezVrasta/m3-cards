@@ -31,7 +31,7 @@ import {
   SUMMARY_VALUE_LERP_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
@@ -292,6 +292,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "ps-accent": accentColor,
+      "ps-accent-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "ps-producer": producerColor,
       "ps-main": mainColor,
     });
@@ -307,7 +308,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
           <div class="main-row ${gridUnavailable ? "unavailable" : ""}">
             <div
               class="main-icon"
-              style=${`background: color-mix(in srgb, ${mainColor} 18%, transparent); color: ${mainColor};`}
+              style=${`background: ${tintBackground(mainColor, this._config.flow_tint_opacity, 18)}; color: ${mainColor};`}
               role="button"
               tabindex="0"
               aria-label=${mainLabel}
@@ -375,16 +376,17 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     const isProducer = metric.type === "producer";
     const explicitColor = metric.color ? resolveThemeColor(metric.color) : undefined;
     const color = explicitColor ?? (isProducer ? producerColor : "var(--primary-text-color)");
+    const flowTintOpacity = this._config?.flow_tint_opacity;
     const bg = explicitColor
-      ? `color-mix(in srgb, ${explicitColor} 14%, transparent)`
+      ? tintBackground(explicitColor, flowTintOpacity, 14)
       : isProducer
-        ? `color-mix(in srgb, ${producerColor} 14%, transparent)`
+        ? tintBackground(producerColor, flowTintOpacity, 14)
         : "color-mix(in srgb, var(--primary-text-color) 7%, transparent)";
     const iconColor = explicitColor ?? (isProducer ? producerColor : "var(--primary-text-color)");
     const iconBg = explicitColor
-      ? `color-mix(in srgb, ${explicitColor} 24%, transparent)`
+      ? tintBackground(explicitColor, flowTintOpacity, 24)
       : isProducer
-        ? `color-mix(in srgb, ${producerColor} 24%, transparent)`
+        ? tintBackground(producerColor, flowTintOpacity, 24)
         : "color-mix(in srgb, var(--primary-text-color) 12%, transparent)";
     const name = metric.name || state?.attributes.friendly_name || metric.entity;
     const icon = metric.icon || state?.attributes.icon || "mdi:power-plug";
@@ -479,7 +481,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
         height: 30px;
         padding: 0 12px;
         border-radius: ${SUMMARY_CHIP_RADIUS}px;
-        background: color-mix(in srgb, var(--ps-accent) 18%, transparent);
+        background: var(--ps-accent-bg);
         color: var(--ps-accent);
         font-size: 14px;
         font-weight: 700;

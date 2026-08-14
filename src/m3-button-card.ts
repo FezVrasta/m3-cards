@@ -22,6 +22,7 @@ import { localize, type TranslationKey } from "./localize";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField, stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
+import { tintBackground } from "./shared/color-config";
 
 const HOLD_DURATION_MS = 500;
 const DOUBLE_TAP_WINDOW_MS = 250;
@@ -516,6 +517,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const inactiveColor = this._config.invert_colors
       ? rawActiveColor
       : rawInactiveColor;
+    const sliderFillBg = tintBackground(color, this._config.color_opacity, 45);
+    const iconBgInactive = tintBackground(inactiveColor, this._config.inactive_opacity, 8);
+    const iconBgActive = tintBackground(color, this._config.color_opacity, 20);
     const name =
       this._config.name ||
       entity?.attributes.friendly_name ||
@@ -566,7 +570,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
+        style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
@@ -699,7 +703,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     .slider-fill-bg {
       position: absolute;
       inset: 0 auto 0 0;
-      background: color-mix(in srgb, var(--m3-btn-color) 45%, transparent);
+      background: var(--m3-btn-slider-fill-bg);
       pointer-events: none;
       transition: width 0.1s ease;
     }
@@ -756,7 +760,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       align-items: center;
       justify-content: center;
       color: var(--m3-btn-inactive-color);
-      background: color-mix(in srgb, var(--m3-btn-inactive-color) 8%, transparent);
+      background: var(--m3-btn-icon-bg-inactive);
       transition: all 0.25s ease;
       cursor: pointer;
     }
@@ -766,7 +770,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     }
 
     .icon-container.active {
-      background: color-mix(in srgb, var(--m3-btn-color) 20%, transparent);
+      background: var(--m3-btn-icon-bg-active);
       color: var(--m3-btn-color);
     }
 

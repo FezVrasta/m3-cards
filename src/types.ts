@@ -72,10 +72,13 @@ export interface M3ClimateCardConfig {
   mode_colors?: ModeColorOverrides;
   icon_active_color?: string;
   icon_inactive_color?: string;
+  icon_opacity?: number;
   plus_active_color?: string;
   plus_inactive_color?: string;
+  plus_opacity?: number;
   minus_active_color?: string;
   minus_inactive_color?: string;
+  minus_opacity?: number;
   glass_background?: boolean;
   preset_style?: "chip" | "pill";
   temperature_chip_placement?: "info_row" | "header";
@@ -97,13 +100,19 @@ export interface M3ClimateCardMiniConfig {
   icon?: string;
   mode_colors?: ModeColorOverrides;
   icon_active_color?: string;
+  icon_active_opacity?: number;
   icon_inactive_color?: string;
+  icon_inactive_opacity?: number;
   power_active_color?: string;
+  power_active_opacity?: number;
   power_inactive_color?: string;
+  power_inactive_opacity?: number;
   plus_active_color?: string;
   plus_inactive_color?: string;
+  plus_opacity?: number;
   minus_active_color?: string;
   minus_inactive_color?: string;
+  minus_opacity?: number;
   glass_background?: boolean;
   radius?: number;
   corners?: CornerRadiusConfig;
@@ -140,7 +149,9 @@ export interface M3ButtonCardConfig {
   name?: string;
   icon?: string;
   color?: string;
+  color_opacity?: number;
   inactive_color?: string;
+  inactive_opacity?: number;
   invert_colors?: boolean;
   state_colors?: Record<string, string>;
   show_state?: boolean;
@@ -194,6 +205,7 @@ export interface M3ProgressCardConfig {
   dot_color?: string;
   icon_color?: string;
   icon_background?: string;
+  icon_background_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;
@@ -226,10 +238,12 @@ export interface M3EnergyCardConfig {
   higher_is_better?: boolean;
   comparison_better_color?: string;
   comparison_worse_color?: string;
+  comparison_tint_opacity?: number;
   name?: string;
   icon?: string;
   subtitle?: string;
   accent_color?: string;
+  accent_opacity?: number;
   bar_tint_color?: string;
   text_color?: string;
   secondary_text_color?: string;
@@ -256,6 +270,7 @@ export interface M3GaugeCardConfig {
   label_a?: string;
   label_b?: string;
   segment_a_color?: string;
+  segment_a_opacity?: number;
   segment_b_color?: string;
   track_color?: string;
   text_color?: string;
@@ -289,6 +304,8 @@ export interface M3EnergyFlowCardConfig {
   battery_color?: string;
   self_sufficiency_color?: string;
   text_color?: string;
+  text_opacity?: number;
+  node_tint_opacity?: number;
   secondary_text_color?: string;
   card_background?: string;
   animation?: "auto" | "on" | "off";
@@ -316,8 +333,10 @@ export interface M3CounterCardConfig {
   digits?: number | "auto";
   show_ticker?: boolean;
   accent_color?: string;
+  accent_opacity?: number;
   cell_background?: string;
   power_chip_color?: string;
+  power_chip_opacity?: number;
   power_thresholds?: PowerThreshold[];
   text_color?: string;
   secondary_text_color?: string;
@@ -355,7 +374,9 @@ export interface M3PowerListCardConfig {
   icon?: string;
   subtitle?: string;
   accent_color?: string;
+  accent_opacity?: number;
   producer_color?: string;
+  producer_opacity?: number;
   bar_tint_color?: string;
   text_color?: string;
   secondary_text_color?: string;
@@ -393,7 +414,9 @@ export interface M3PowerSummaryCardConfig {
   export_color?: string;
   import_color?: string;
   producer_color?: string;
+  flow_tint_opacity?: number;
   accent_color?: string;
+  accent_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;
@@ -430,6 +453,7 @@ export interface M3TopConsumersCardConfig extends PricingConfig {
   icon?: string;
   subtitle?: string;
   accent_color?: string;
+  accent_opacity?: number;
   palette?: string[];
   text_color?: string;
   secondary_text_color?: string;
@@ -475,6 +499,7 @@ export interface M3CostCardConfig extends PricingConfig {
   show_comparison?: boolean;
   budget?: number;
   accent_color?: string;
+  accent_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;
@@ -516,6 +541,7 @@ export interface M3LightCardConfig {
   scenes?: LightSceneConfig[];
   use_light_color?: boolean;
   accent_color?: string;
+  accent_opacity?: number;
   track_color?: string;
   handle_color?: string;
   text_color?: string;
@@ -561,6 +587,7 @@ export interface M3BatteryCardConfig {
   medium_color?: string;
   ok_color?: string;
   unavailable_color?: string;
+  stage_tint_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;
@@ -589,6 +616,7 @@ export interface M3WeatherCardConfig {
   show_sun?: boolean;
   show_days_toggle?: boolean;
   accent_color?: string;
+  accent_opacity?: number;
   precipitation_color?: string;
   gradient_color?: string;
   text_color?: string;
@@ -621,6 +649,7 @@ export interface M3PresenceCardConfig {
   zone_color?: string;
   unknown_color?: string;
   zone_colors?: Record<string, string>;
+  presence_tint_opacity?: number;
   hold_action?: HaActionConfig;
   text_color?: string;
   secondary_text_color?: string;
@@ -640,6 +669,7 @@ export interface M3MediaCardConfig {
   show_shuffle_repeat?: boolean;
   use_artwork_color?: boolean;
   accent_color?: string;
+  accent_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;
@@ -664,6 +694,7 @@ export interface ClimateOverviewRoomConfig {
   icon?: string;
   temperature_entity: string;
   humidity_entity?: string;
+  color?: string;
 }
 
 export interface M3ClimateOverviewCardConfig {
@@ -690,7 +721,64 @@ export interface M3ClimateOverviewCardConfig {
   warm_color?: string;
   hot_color?: string;
   humidity_warn_color?: string;
+  tile_tint_opacity?: number;
   accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export interface AquariumDeviceConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface AquariumScheduleEntry {
+  device: "day" | "night";
+  start: string;
+  end: string;
+  color?: string;
+}
+
+export type AquariumCameraStyle = "none" | "thumbnail" | "banner" | "live";
+
+export interface M3AquariumCardConfig {
+  type: string;
+  name?: string;
+  icon?: string;
+  water_temperature_entity?: string;
+  target_range?: [number, number];
+  light_day?: AquariumDeviceConfig;
+  light_night?: AquariumDeviceConfig;
+  pump?: AquariumDeviceConfig;
+  heater?: AquariumDeviceConfig;
+  co2?: AquariumDeviceConfig;
+  extra_devices?: AquariumDeviceConfig[];
+  heater_power_entity?: string;
+  ph_entity?: string;
+  tds_entity?: string;
+  power_entity?: string;
+  water_level_entity?: string;
+  cleaning_entity?: string;
+  cleaning_interval?: number;
+  camera_entity?: string;
+  camera_style?: AquariumCameraStyle;
+  camera_refresh?: number;
+  camera_live_on_tap?: boolean;
+  schedule?: AquariumScheduleEntry[];
+  schedule_entity?: string;
+  show_schedule?: boolean;
+  accent_color?: string;
+  accent_opacity?: number;
+  tile_tint_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;
@@ -719,7 +807,8 @@ export type M3CardConfig =
   | M3WeatherCardConfig
   | M3PresenceCardConfig
   | M3MediaCardConfig
-  | M3ClimateOverviewCardConfig;
+  | M3ClimateOverviewCardConfig
+  | M3AquariumCardConfig;
 
 export interface LovelaceCardEditor<
   T extends M3CardConfig = M3CardConfig,

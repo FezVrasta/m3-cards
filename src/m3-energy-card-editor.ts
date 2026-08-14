@@ -17,6 +17,7 @@ import { localize, type TranslationKey } from "./localize";
 import {
   fireEvent,
   colorRow,
+  opacityRow,
   editorStyles,
   type SchemaEntry,
 } from "./shared/editor-helpers";
@@ -283,6 +284,12 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "accent_opacity" | "comparison_tint_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
     this._config = { ...this._config, ...ev.detail.value };
@@ -399,6 +406,12 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
               this._t("editor_energy_accent_color"),
               this._config.accent_color,
               (v) => this._colorChanged("accent_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.accent_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("accent_opacity", v),
+              },
             )}
             ${colorRow(
               this._t("editor_energy_bar_tint_color"),
@@ -431,6 +444,12 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
                     this._t("editor_energy_comparison_worse_color"),
                     this._config.comparison_worse_color,
                     (v) => this._colorChanged("comparison_worse_color", v),
+                  )}
+                  ${opacityRow(
+                    this._t("editor_energy_comparison_tint_opacity"),
+                    this._config.comparison_tint_opacity,
+                    16,
+                    (v) => this._opacityChanged("comparison_tint_opacity", v),
                   )}
                 `
               : nothing}

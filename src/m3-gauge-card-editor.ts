@@ -132,6 +132,12 @@ export class M3GaugeCardEditor extends LitElement implements LovelaceCardEditor 
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _opacityChanged(field: "segment_a_opacity", value: number): void {
+    if (!this._config) return;
+    this._config = { ...this._config, [field]: value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
     this._config = { ...this._config, ...ev.detail.value };
@@ -234,6 +240,12 @@ export class M3GaugeCardEditor extends LitElement implements LovelaceCardEditor 
               this._t("editor_gauge_segment_a_color"),
               this._config.segment_a_color,
               (v) => this._colorChanged("segment_a_color", v),
+              {
+                label: this._t("editor_opacity"),
+                value: this._config.segment_a_opacity,
+                defaultValue: 18,
+                onChange: (v) => this._opacityChanged("segment_a_opacity", v),
+              },
             )}
             ${colorRow(
               this._t("editor_gauge_segment_b_color"),
