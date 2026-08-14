@@ -1483,6 +1483,31 @@ diesem Zeitstempel hoch ("Reinigung fällig", "vor 3 T.", ...) — kein
 Umweg über Telegram/Benachrichtigungen nötig, nur ein normaler Helfer,
 dessen Verlauf sich auch im Entity-Verlauf ansehen lässt.
 
+### Reinigungs-Erinnerung
+
+Der Chip ist nur sichtbar, solange das Dashboard offen ist — deshalb kann
+der Abschnitt **Wartung → Erinnerung** im Editor eine echte
+Home-Assistant-Automatisierung anlegen, die auch benachrichtigt, wenn
+nichts geöffnet ist. Ein oder mehrere Benachrichtigungsziele auswählen
+(die Liste wird aus den eigenen `notify.*`-Diensten aufgebaut), eine
+tägliche Prüfzeit setzen, dann "Erinnerung einrichten" drücken. Die Karte:
+
+- legt einen `input_number`-Intervall-Helfer an, falls
+  `cleaning_interval_entity` noch nicht gesetzt ist (Startwert ist das
+  aktuelle `cleaning_interval`), und schreibt ihn in die Kartenkonfiguration
+  zurück;
+- legt eine Automatisierung an (oder aktualisiert sie), die täglich zur
+  gewählten Uhrzeit auslöst und jedes ausgewählte Ziel benachrichtigt, wenn
+  seit `cleaning_entity` mehr Tage vergangen sind als der Intervall-Helfer
+  erlaubt.
+
+Die Automatisierungs-ID wird aus `cleaning_entity` abgeleitet — ein
+erneuter Druck auf den Button aktualisiert also dieselbe Automatisierung,
+statt Duplikate anzulegen. Es ist eine ganz normale Automatisierung,
+sichtbar und bearbeitbar unter Einstellungen → Automatisierungen. Da Chip
+und Automatisierung denselben `cleaning_interval_entity`-Helfer lesen,
+ändert eine Anpassung dort beide gleichzeitig.
+
 `accent_color` (Header-Icon) und die temperaturabhängigen
 Kachelfarben haben beide eine zugehörige `_opacity`-Option
 (`accent_opacity`, `tile_tint_opacity`, 0–100), die steuert, wie stark
@@ -1504,6 +1529,9 @@ Changelog).
 | `water_level_entity` | string | – | `binary_sensor`, "on" = niedriger Wasserstand |
 | `cleaning_entity` | string | – | `input_datetime`-Helfer, beim Tippen gestempelt |
 | `cleaning_interval` | number | `14` | Tage, bevor der Wartungs-Chip warnt |
+| `cleaning_interval_entity` | string | – | `input_number`-Helfer; hat Vorrang vor `cleaning_interval` und wird mit der Erinnerungs-Automatisierung geteilt |
+| `cleaning_notify_service` | list\<string\> | – | Benachrichtigungsziele der Erinnerung (ohne `notify.`-Präfix) |
+| `cleaning_notify_time` | string | `18:00:00` | Tägliche Uhrzeit, zu der die Erinnerung prüft, ob die Reinigung fällig ist |
 | `camera_entity` | string | – | `camera`-Entity |
 | `camera_style` | `none` \| `thumbnail` \| `banner` \| `live` | `none` | Wie die Kamera angezeigt wird |
 | `camera_refresh` | number | `10` | Standbild-Aktualisierungsintervall in Sekunden (`0` = aus) |

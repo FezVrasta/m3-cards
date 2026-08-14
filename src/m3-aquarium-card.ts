@@ -635,6 +635,19 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
     return Number.isNaN(val) ? undefined : val;
   }
 
+  // An input_number helper takes priority over the plain number so the card
+  // chip and the reminder automation (which reads the same helper) can never
+  // drift apart; falls back to the static value when no helper is set.
+  private _cleaningIntervalDays(): number {
+    const cfg = this._config;
+    if (!cfg) return DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS;
+    if (cfg.cleaning_interval_entity) {
+      const fromHelper = this._numericState(cfg.cleaning_interval_entity);
+      if (fromHelper !== undefined && fromHelper > 0) return fromHelper;
+    }
+    return cfg.cleaning_interval ?? DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS;
+  }
+
   // Fixed priority order (warn-capable chips first) since only the first
   // AQUARIUM_CHIP_MAX are shown — the rest collapse into a single "+{n}"
   // chip rather than each competing for one of the 4 slots individually.
@@ -673,7 +686,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
       const date = entity && entity.state !== "unavailable" && entity.state !== "unknown" ? new Date(entity.state) : undefined;
       if (date && !Number.isNaN(date.getTime())) {
         const days = Math.floor((Date.now() - date.getTime()) / 86400000);
-        const interval = cfg.cleaning_interval ?? DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS;
+        const interval = this._cleaningIntervalDays();
         if (days >= interval) {
           chips.push({ key: "cleaning", icon: "mdi:broom", text: this._t("aquarium_chip_cleaning_due"), warn: true });
         } else {

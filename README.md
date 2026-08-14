@@ -1460,6 +1460,28 @@ stamps the helper with now, and the chip counts up from that timestamp
 ("Reinigung fällig", "vor 3 T.", ...) — no Telegram/notification detour
 needed, just a plain helper you can also see in the entity's history.
 
+### Cleaning reminder
+
+The chip only appears while you're looking at the dashboard, so the editor's
+**Wartung → Erinnerung** section can create a real Home Assistant automation
+that notifies you even when nothing is open. Pick one or more notify targets
+(the dropdown is built from your own `notify.*` services) and a daily check
+time, then press "Erinnerung einrichten". The card then:
+
+- creates an `input_number` interval helper if `cleaning_interval_entity`
+  isn't set yet, seeded with the current `cleaning_interval`, and writes it
+  back into the card config;
+- creates (or updates) an automation that fires daily at the chosen time and
+  notifies each selected target when more days have passed since
+  `cleaning_entity` than the interval helper allows.
+
+The automation id is derived from `cleaning_entity`, so pressing the button
+again updates the same automation instead of creating duplicates. It's a
+completely normal automation — visible and editable under Settings →
+Automations. Because both the chip and the automation read the same
+`cleaning_interval_entity` helper, changing the interval there updates both
+at once.
+
 `accent_color` (header icon) and the temperature-derived tile colors both
 have a paired `_opacity` option (`accent_opacity`, `tile_tint_opacity`,
 0–100) controlling how strongly that color tints its background — the
@@ -1480,6 +1502,9 @@ Changelog).
 | `water_level_entity` | string | – | `binary_sensor`, "on" = low water level |
 | `cleaning_entity` | string | – | `input_datetime` helper stamped on tap |
 | `cleaning_interval` | number | `14` | Days before the maintenance chip warns |
+| `cleaning_interval_entity` | string | – | `input_number` helper; takes priority over `cleaning_interval` and is shared with the reminder automation |
+| `cleaning_notify_service` | list\<string\> | – | Notify targets for the reminder (without the `notify.` prefix) |
+| `cleaning_notify_time` | string | `18:00:00` | Daily time at which the reminder checks whether cleaning is due |
 | `camera_entity` | string | – | `camera` entity |
 | `camera_style` | `none` \| `thumbnail` \| `banner` \| `live` | `none` | How the camera is shown |
 | `camera_refresh` | number | `10` | Still-image refresh interval in seconds (`0` = off) |

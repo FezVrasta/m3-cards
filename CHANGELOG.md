@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.6.0]
+
+### Hinzugefügt
+- **M3 Aquarium Card**: Reinigungs-Erinnerung direkt aus dem Kachel-Editor.
+  Im Abschnitt „Wartung → Erinnerung“ lassen sich ein oder mehrere
+  Benachrichtigungsziele (aus den eigenen `notify.*`-Diensten) und eine
+  tägliche Prüfzeit wählen; ein Klick auf „Erinnerung einrichten“ legt eine
+  echte Home-Assistant-Automatisierung an, die auch dann benachrichtigt,
+  wenn kein Dashboard geöffnet ist. Fehlt ein Intervall-Helfer, wird er
+  automatisch mit angelegt. Erneutes Klicken aktualisiert dieselbe
+  Automatisierung, statt Duplikate zu erzeugen.
+- **M3 Aquarium Card**: neue Option `cleaning_interval_entity` — ein
+  `input_number`-Helfer als Reinigungsintervall. Hat Vorrang vor der festen
+  Zahl und wird von Kachel-Chip und Erinnerungs-Automatisierung gemeinsam
+  gelesen, sodass beide nicht auseinanderlaufen können.
+
 ## [1.5.0]
 
 ### Hinzugefügt

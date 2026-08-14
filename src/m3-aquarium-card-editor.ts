@@ -31,6 +31,9 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
 
   @state() private _config?: M3AquariumCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _reminderBusy = false;
+  @state() private _reminderStatus: "idle" | "success" | "error" = "idle";
+  @state() private _reminderDetail = "";
 
   public setConfig(config: M3AquariumCardConfig): void {
     this._config = config;
@@ -139,6 +142,26 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
     return [
       { name: "cleaning_entity", selector: { entity: { domain: ["input_datetime", "input_button", "button"] } } },
       { name: "cleaning_interval", selector: { number: { mode: "box", min: 1, step: 1, unit_of_measurement: "d" } } },
+      { name: "cleaning_interval_entity", selector: { entity: { domain: "input_number" } } },
+    ];
+  }
+
+  // Built from the live service registry rather than a fixed list, so every
+  // notify target the user actually has (mobile app, persistent notification,
+  // custom notify groups) shows up without the card knowing about it.
+  private _reminderSchema(): SchemaEntry[] {
+    const options = Object.keys(this.hass?.services?.notify ?? {})
+      .filter((name) => name !== "send_message")
+      .sort()
+      .map((name) => ({
+        value: name,
+        label: name.startsWith("mobile_app_")
+          ? name.slice("mobile_app_".length).replace(/_/g, " ")
+          : name.replace(/_/g, " "),
+      }));
+    return [
+      { name: "cleaning_notify_service", selector: { select: { mode: "dropdown", multiple: true, options } } },
+      { name: "cleaning_notify_time", selector: { time: {} } },
     ];
   }
 
@@ -184,6 +207,9 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
       end: "editor_aquarium_phase_end",
       cleaning_entity: "editor_aquarium_cleaning_entity",
       cleaning_interval: "editor_aquarium_cleaning_interval",
+      cleaning_interval_entity: "editor_aquarium_cleaning_interval_entity",
+      cleaning_notify_service: "editor_aquarium_notify_service",
+      cleaning_notify_time: "editor_aquarium_notify_time",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
     };
@@ -221,6 +247,103 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
     if (!this._config) return;
     this._config = { ...this._config, [field]: value };
     fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  // ---- cleaning reminder ----------------------------------------------
+
+  private _slug(text: string): string {
+    return (
+      text
+        .toLowerCase()
+        .replace(/ä/g, "ae")
+        .replace(/ö/g, "oe")
+        .replace(/ü/g, "ue")
+        .replace(/ß/g, "ss")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "aquarium"
+    );
+  }
+
+  // Creates (or updates) the "cleaning due" automation, plus the input_number
+  // interval helper it shares with the card's chip if there isn't one yet. The
+  // automation id is derived from the cleaning entity so pressing the button
+  // twice updates the same automation instead of piling up duplicates.
+  private async _setupReminder(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.cleaning_notify_service ?? [];
+    if (!cfg.cleaning_entity || targets.length === 0) {
+      this._reminderStatus = "error";
+      this._reminderDetail = this._t("editor_aquarium_reminder_missing");
+      return;
+    }
+    this._reminderBusy = true;
+    this._reminderStatus = "idle";
+    this._reminderDetail = "";
+    try {
+      const cardName = cfg.name || this._t("aquarium_default_name");
+      let intervalEntity = cfg.cleaning_interval_entity;
+
+      if (!intervalEntity) {
+        const created = await this.hass.callWS<{ id: string }>({
+          type: "input_number/create",
+          name: `${cardName} ${this._t("editor_aquarium_interval_helper_name")}`,
+          icon: "mdi:calendar-refresh",
+          min: 1,
+          max: 365,
+          step: 1,
+          initial: cfg.cleaning_interval ?? DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS,
+          mode: "box",
+          unit_of_measurement: "d",
+        });
+        // create() returns the storage item, not the entity_id. Resolve it via
+        // the entity registry (the helper's storage id is its unique_id) rather
+        // than watching hass.states — that keeps working even when this editor
+        // isn't receiving live hass updates.
+        const registry = await this.hass.callWS<Array<{ entity_id: string; unique_id: string; platform: string }>>(
+          { type: "config/entity_registry/list" },
+        );
+        intervalEntity = registry.find(
+          (entry) => entry.platform === "input_number" && entry.unique_id === created.id,
+        )?.entity_id;
+        if (!intervalEntity) throw new Error("interval helper could not be resolved");
+        this._config = { ...cfg, cleaning_interval_entity: intervalEntity };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+
+      const cleaned = cfg.cleaning_entity;
+      const tsExpr = `{% set ts = state_attr('${cleaned}', 'timestamp') %}`;
+      const ivExpr = `{% set iv = states('${intervalEntity}') | float(${DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS}) %}`;
+      const automationId = `m3_aquarium_clean_${this._slug(cleaned)}`;
+
+      await this.hass.callApi("POST", `config/automation/config/${automationId}`, {
+        alias: `${cardName}: ${this._t("editor_aquarium_reminder_alias")}`,
+        description: this._t("editor_aquarium_reminder_description"),
+        mode: "single",
+        triggers: [{ trigger: "time", at: cfg.cleaning_notify_time || "18:00:00" }],
+        conditions: [
+          {
+            condition: "template",
+            value_template: `${tsExpr}${ivExpr}{{ ts is not none and iv > 0 and (now().timestamp() - ts) / 86400 >= iv }}`,
+          },
+        ],
+        actions: targets.map((target) => ({
+          action: `notify.${target}`,
+          data: {
+            title: cardName,
+            message: `${tsExpr}{% set d = ((now().timestamp() - ts) / 86400) | round(0) | int %}${this._t("editor_aquarium_reminder_message")}`,
+          },
+        })),
+      });
+
+      this._reminderStatus = "success";
+      this._reminderDetail = intervalEntity;
+    } catch (e) {
+      this._reminderStatus = "error";
+      this._reminderDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._reminderBusy = false;
+    }
   }
 
   private _deviceSlotChanged(slot: DeviceSlotKey, ev: CustomEvent): void {
@@ -407,6 +530,11 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
     const maintenanceData = {
       cleaning_entity: this._config.cleaning_entity,
       cleaning_interval: this._config.cleaning_interval ?? DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS,
+      cleaning_interval_entity: this._config.cleaning_interval_entity ?? "",
+    };
+    const reminderData = {
+      cleaning_notify_service: this._config.cleaning_notify_service ?? [],
+      cleaning_notify_time: this._config.cleaning_notify_time ?? "18:00:00",
     };
     const extraDevices = this._config.extra_devices ?? [];
     const animationData = { animation: this._config.animation ?? "auto" };
@@ -546,6 +674,36 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_aquarium_cleaning_interval_helper")}</div>
+
+            <div class="sub-header">${this._t("editor_aquarium_reminder")}</div>
+            <div class="hint">${this._t("editor_aquarium_reminder_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${reminderData}
+              .schema=${this._reminderSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <button
+              class="reminder-btn"
+              ?disabled=${this._reminderBusy ||
+              !this._config.cleaning_entity ||
+              !this._config.cleaning_notify_service?.length}
+              @click=${() => this._setupReminder()}
+            >
+              <ha-icon icon="mdi:bell-plus-outline"></ha-icon>
+              ${this._t("editor_aquarium_reminder_button")}
+            </button>
+            ${this._reminderStatus === "success"
+              ? html`<div class="reminder-status success">
+                  ${this._t("editor_aquarium_reminder_success")}
+                </div>`
+              : this._reminderStatus === "error"
+                ? html`<div class="reminder-status error">
+                    ${this._t("editor_aquarium_reminder_error")} ${this._reminderDetail}
+                  </div>`
+                : nothing}
           </div>
         </ha-expansion-panel>
 
@@ -663,6 +821,39 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
         gap: 6px;
         font-size: 14px;
         font-family: inherit;
+      }
+
+      .reminder-btn {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+
+      .reminder-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .reminder-status {
+        font-size: 13px;
+      }
+
+      .reminder-status.success {
+        color: var(--success-color, #4caf50);
+      }
+
+      .reminder-status.error {
+        color: var(--error-color, #db4437);
       }
     `,
   ];

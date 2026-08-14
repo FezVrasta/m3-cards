@@ -20,6 +20,15 @@ export interface HomeAssistant {
     target?: { entity_id?: string | string[]; device_id?: string | string[]; area_id?: string | string[] },
   ) => Promise<void>;
   callWS: <T = unknown>(msg: Record<string, unknown>) => Promise<T>;
+  // REST fallback for endpoints with no websocket equivalent (e.g. writing an
+  // automation config). Refreshes the access token on its own, unlike a plain
+  // fetch() with hass.auth.data.access_token.
+  callApi: <T = unknown>(
+    method: "GET" | "POST" | "PUT" | "DELETE",
+    path: string,
+    parameters?: Record<string, unknown>,
+  ) => Promise<T>;
+  services: Record<string, Record<string, unknown>>;
   formatEntityState?: (stateObj: HassEntity) => string;
 }
 
@@ -769,6 +778,9 @@ export interface M3AquariumCardConfig {
   water_level_entity?: string;
   cleaning_entity?: string;
   cleaning_interval?: number;
+  cleaning_interval_entity?: string;
+  cleaning_notify_service?: string[];
+  cleaning_notify_time?: string;
   camera_entity?: string;
   camera_style?: AquariumCameraStyle;
   camera_refresh?: number;

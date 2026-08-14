@@ -579,6 +579,26 @@ const translations = {
     editor_aquarium_maintenance: "Wartung",
     editor_aquarium_cleaning_entity: "Reinigungs-Zeitstempel (input_datetime)",
     editor_aquarium_cleaning_interval: "Reinigungsintervall (Tage)",
+    editor_aquarium_cleaning_interval_entity: "Intervall-Helfer (optional)",
+    editor_aquarium_cleaning_interval_helper:
+      "Ist ein Helfer gesetzt, hat sein Wert Vorrang vor der festen Zahl darüber — so nutzen Kachel und Erinnerung garantiert dasselbe Intervall.",
+    editor_aquarium_interval_helper_name: "Reinigungsintervall",
+    editor_aquarium_reminder: "Erinnerung",
+    editor_aquarium_reminder_hint:
+      "Legt eine Home-Assistant-Automatisierung an, die täglich zur gewählten Uhrzeit prüft, ob die Reinigung fällig ist, und dann eine Benachrichtigung schickt. Fehlt ein Intervall-Helfer, wird er automatisch mit angelegt.",
+    editor_aquarium_notify_service: "Benachrichtigung an",
+    editor_aquarium_notify_time: "Prüfzeit",
+    editor_aquarium_reminder_button: "Erinnerung einrichten",
+    editor_aquarium_reminder_success:
+      "Erinnerung eingerichtet. Sie erscheint jetzt unter Einstellungen → Automatisierungen.",
+    editor_aquarium_reminder_error: "Fehler beim Einrichten:",
+    editor_aquarium_reminder_missing:
+      "Bitte zuerst Reinigungs-Zeitstempel und Benachrichtigungsziel auswählen.",
+    editor_aquarium_reminder_alias: "Reinigung fällig",
+    editor_aquarium_reminder_description:
+      "Automatisch erstellt von der M3 Aquarium-Karte. Prüft, ob seit der letzten Reinigung mehr Tage vergangen sind als im Intervall-Helfer eingestellt.",
+    editor_aquarium_reminder_message:
+      "Reinigung fällig — zuletzt vor {{ d }} Tagen gesäubert.",
     editor_climate_overview_auto_discover: "Automatisch erkennen",
     editor_climate_overview_auto_discover_helper: "Erkennt alle Sensoren mit device_class „temperature“ bzw. „humidity“ automatisch, gruppiert nach Bereich/Gerät.",
     editor_climate_overview_include_area: "Bereich einschränken",
@@ -1199,6 +1219,26 @@ const translations = {
     editor_aquarium_maintenance: "Maintenance",
     editor_aquarium_cleaning_entity: "Cleaning timestamp (input_datetime)",
     editor_aquarium_cleaning_interval: "Cleaning interval (days)",
+    editor_aquarium_cleaning_interval_entity: "Interval helper (optional)",
+    editor_aquarium_cleaning_interval_helper:
+      "When a helper is set, its value takes priority over the fixed number above — that way the card and the reminder always use the same interval.",
+    editor_aquarium_interval_helper_name: "cleaning interval",
+    editor_aquarium_reminder: "Reminder",
+    editor_aquarium_reminder_hint:
+      "Creates a Home Assistant automation that checks daily at the chosen time whether cleaning is due, and sends a notification if so. If no interval helper exists yet, one is created automatically.",
+    editor_aquarium_notify_service: "Notify",
+    editor_aquarium_notify_time: "Check time",
+    editor_aquarium_reminder_button: "Set up reminder",
+    editor_aquarium_reminder_success:
+      "Reminder set up. It now shows under Settings → Automations.",
+    editor_aquarium_reminder_error: "Setup failed:",
+    editor_aquarium_reminder_missing:
+      "Please pick a cleaning timestamp entity and a notification target first.",
+    editor_aquarium_reminder_alias: "cleaning due",
+    editor_aquarium_reminder_description:
+      "Created automatically by the M3 Aquarium Card. Checks whether more days have passed since the last cleaning than the interval helper allows.",
+    editor_aquarium_reminder_message:
+      "Cleaning due — last cleaned {{ d }} days ago.",
     editor_climate_overview_auto_discover: "Auto-discover",
     editor_climate_overview_auto_discover_helper: "Automatically finds all sensors with device_class \"temperature\" or \"humidity\", grouped by area/device.",
     editor_climate_overview_include_area: "Restrict to area",
