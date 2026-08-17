@@ -290,9 +290,9 @@ const translations = {
       "Der Zustand dieses Sensors ist kein Zeitraum-Wert (z.B. ein fortlaufender Gesamtzähler). Lege unter Einstellungen → Geräte & Dienste → Helfer einen „Verbrauchszähler“ (utility_meter) mit Zyklus täglich bzw. monatlich auf diesen Sensor an und trage ihn oben ein.",
     editor_energy_notify_no_entity:
       "Bitte einen Sensor für die Meldung auswählen (bei Datenquelle „Energie-Dashboard“ hat die Karte keinen einzelnen Sensor).",
-    editor_energy_notify_day_label: "Heute verbraucht",
+    editor_energy_notify_day_label: "Heute",
     editor_energy_notify_day_label_solar: "Heute erzeugt",
-    editor_energy_notify_month_label: "Verbrauch",
+    editor_energy_notify_month_label: "Monat",
     editor_energy_notify_month_label_solar: "Erzeugung",
     editor_gauge_source: "Datenquelle",
     editor_gauge_source_energy: "Energie-Dashboard (Standard)",
@@ -1095,9 +1095,9 @@ const translations = {
       "This sensor's state is not a period total (e.g. a never-resetting lifetime counter). Create a \"Utility meter\" helper with a daily or monthly cycle on it under Settings → Devices & services → Helpers, then select that helper above.",
     editor_energy_notify_no_entity:
       "Please pick a sensor for the notification (with the \"Energy dashboard\" data source the card has no single sensor).",
-    editor_energy_notify_day_label: "Used today",
+    editor_energy_notify_day_label: "Today",
     editor_energy_notify_day_label_solar: "Produced today",
-    editor_energy_notify_month_label: "Consumption",
+    editor_energy_notify_month_label: "Month",
     editor_energy_notify_month_label_solar: "Production",
     editor_gauge_source: "Data source",
     editor_gauge_source_energy: "Energy dashboard (default)",
