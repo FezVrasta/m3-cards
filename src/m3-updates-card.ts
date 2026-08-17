@@ -6,6 +6,7 @@ import type {
   HassEntity,
   M3UpdatesCardConfig,
   LovelaceCard,
+  LovelaceCardEditor,
   LovelaceGridOptions,
   UpdateGroup,
 } from "./types";
@@ -121,8 +122,10 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     this._loadPlatforms();
   }
 
-  // getConfigElement follows in step 4 together with the editor; until then
-  // the card is configured via YAML.
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import("./m3-updates-card-editor");
+    return document.createElement("m3-updates-card-editor") as unknown as LovelaceCardEditor;
+  }
 
   public static getStubConfig(): Partial<M3UpdatesCardConfig> {
     return { auto_discover: true };

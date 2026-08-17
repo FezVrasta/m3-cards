@@ -878,6 +878,8 @@ export interface M3UpdatesCardConfig extends NotifyConfigBase {
   no_install_types?: UpdateGroup[];
   backup_entity?: string;
   backup_warn_days?: number;
+  /** Update entities the notification ignores while the card still lists them. */
+  notify_exclude_entities?: string[];
   require_confirm?: boolean;
   inline_install?: boolean;
   /**
