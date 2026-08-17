@@ -5,6 +5,7 @@ import {
   DEFAULT_UPDATES_RADIUS,
   DEFAULT_UPDATES_MAX_VISIBLE,
   DEFAULT_UPDATES_NO_INSTALL,
+  DEFAULT_UPDATES_BACKUP_WARN_DAYS,
   UPDATES_GROUP_ORDER,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
@@ -296,8 +297,20 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
       { name: "icon", selector: { icon: {} } },
       { name: "max_visible", selector: { number: { min: 0, step: 1, mode: "box" } } },
       { name: "show_uptodate", selector: { boolean: {} } },
+      { name: "show_skipped", selector: { boolean: {} } },
       { name: "show_release_notes", selector: { boolean: {} } },
       { name: "require_confirm", selector: { boolean: {} } },
+      { name: "inline_install", selector: { boolean: {} } },
+    ];
+  }
+
+  private _backupSchema(): SchemaEntry[] {
+    return [
+      { name: "backup_entity", selector: { entity: { domain: "sensor", device_class: "timestamp" } } },
+      {
+        name: "backup_warn_days",
+        selector: { number: { min: 1, max: 90, step: 1, mode: "box" } },
+      },
     ];
   }
 
@@ -330,8 +343,12 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
       icon: "editor_icon",
       max_visible: "editor_updates_max_visible",
       show_uptodate: "editor_updates_show_uptodate",
+      show_skipped: "editor_updates_show_skipped",
       show_release_notes: "editor_updates_show_release_notes",
       require_confirm: "editor_updates_require_confirm",
+      inline_install: "editor_updates_inline_install",
+      backup_entity: "editor_updates_backup_entity",
+      backup_warn_days: "editor_updates_backup_warn_days",
       notify_service: "editor_updates_notify_service",
       notify_mode: "editor_updates_notify_mode",
       notify_time: "editor_updates_notify_time",
@@ -443,8 +460,14 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
       icon: this._config.icon,
       max_visible: this._config.max_visible ?? DEFAULT_UPDATES_MAX_VISIBLE,
       show_uptodate: this._config.show_uptodate ?? true,
+      show_skipped: this._config.show_skipped ?? true,
       show_release_notes: this._config.show_release_notes ?? true,
       require_confirm: this._config.require_confirm ?? true,
+      inline_install: this._config.inline_install ?? false,
+    };
+    const backupData = {
+      backup_entity: this._config.backup_entity ?? "",
+      backup_warn_days: this._config.backup_warn_days ?? DEFAULT_UPDATES_BACKUP_WARN_DAYS,
     };
     const notifyData = {
       notify_service: this._config.notify_service ?? [],
@@ -577,6 +600,20 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
             ></ha-form>
             <div class="hint">${this._t("editor_updates_max_visible_helper")}</div>
             <div class="hint">${this._t("editor_updates_require_confirm_helper")}</div>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_updates_backup")}>
+          <ha-icon slot="leading-icon" icon="mdi:backup-restore"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${backupData}
+              .schema=${this._backupSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_updates_backup_helper")}</div>
           </div>
         </ha-expansion-panel>
 

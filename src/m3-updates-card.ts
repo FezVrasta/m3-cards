@@ -22,6 +22,13 @@ import {
   UPDATES_COLOR_HACS,
   UPDATES_COLOR_FIRMWARE,
   UPDATES_COLOR_REMOTE,
+  UPDATES_COLOR_BACKUP_WARN,
+  UPDATES_COLOR_BACKUP_MISSING,
+  UPDATES_CHIP_HEIGHT,
+  UPDATES_CHIP_RADIUS,
+  UPDATES_COMPACT_ROW_HEIGHT,
+  UPDATES_COMPACT_ROW_RADIUS,
+  DEFAULT_UPDATES_BACKUP_WARN_DAYS,
   UPDATES_GROUP_ORDER,
   UPDATES_BANNER_PADDING,
   UPDATES_BANNER_RADIUS,
@@ -140,6 +147,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
   @state() private _config?: M3UpdatesCardConfig;
   @state() private _expanded = false;
+  @state() private _expandedOk = false;
   @state() private _platforms: Record<string, string> = {};
   /** Entity whose install button is currently asking "are you sure?". */
   @state() private _confirming?: string;
@@ -342,7 +350,10 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     const rows = this._buildRows();
     const pending = rows.filter((r) => r.pending && !r.skipped);
     const running = pending.find((r) => r.inProgress);
-    const upToDate = rows.filter((r) => !r.pending);
+    const skipped = rows.filter((r) => r.skipped);
+    // A skipped update is still an update, so it belongs neither in the
+    // pending list nor in the "up to date" count.
+    const upToDate = rows.filter((r) => !r.pending && !r.skipped);
 
     const okColor = this._config.ok_color ? resolveThemeColor(this._config.ok_color) : UPDATES_COLOR_OK;
     const updColor = this._config.update_color
@@ -404,6 +415,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
                 ${this._t("updates_watched").replace("{n}", String(rows.length))}
               </div>
             </div>
+            ${this._renderBackupChip()}
           </div>
 
           ${rows.length === 0
@@ -444,6 +456,12 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
               `
             : nothing}
 
+          ${this._config.show_skipped !== false && skipped.length
+            ? html`<div class="row-list skipped-list">
+                ${repeat(skipped, (r) => r.entity, (r) => this._renderRow(r, true))}
+              </div>`
+            : nothing}
+
           ${this._unavailable
             ? html`<div class="uptodate-note">
                 <ha-icon icon="mdi:cloud-off-outline"></ha-icon>
@@ -452,13 +470,94 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
             : nothing}
 
           ${this._config.show_uptodate !== false && upToDate.length
-            ? html`<div class="uptodate-note">
-                <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-                <span>${this._t("updates_uptodate").replace("{n}", String(upToDate.length))}</span>
-              </div>`
+            ? html`
+                <button
+                  class="toggle uptodate-toggle ${this._expandedOk ? "open" : ""}"
+                  @click=${() => (this._expandedOk = !this._expandedOk)}
+                >
+                  <ha-icon class="ok-check" icon="mdi:check-circle-outline"></ha-icon>
+                  <span>${this._t("updates_uptodate").replace("{n}", String(upToDate.length))}</span>
+                  <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
+                </button>
+                ${this._expandedOk
+                  ? html`<div class="compact-list">
+                      ${repeat(upToDate, (r) => r.entity, (r) => this._renderCompactRow(r))}
+                    </div>`
+                  : nothing}
+              `
             : nothing}
         </div>
       </ha-card>
+    `;
+  }
+
+  // The backup entity is a timestamp sensor (the backup integration's
+  // "last successful automatic backup"), so its state is parsed as a date
+  // rather than read as a number.
+  private _backupAgeDays(): number | undefined {
+    const id = this._config?.backup_entity;
+    const st = id ? this.hass?.states[id] : undefined;
+    if (!st || st.state === "unknown" || st.state === "unavailable") return undefined;
+    const date = new Date(st.state);
+    if (Number.isNaN(date.getTime())) return undefined;
+    return Math.floor((Date.now() - date.getTime()) / 86400000);
+  }
+
+  private _renderBackupChip() {
+    if (!this._config?.backup_entity) return nothing;
+    const days = this._backupAgeDays();
+    const warnDays = this._config.backup_warn_days ?? DEFAULT_UPDATES_BACKUP_WARN_DAYS;
+    if (days === undefined) {
+      return html`<div
+        class="backup-chip"
+        style=${`background: ${tintBackground(UPDATES_COLOR_BACKUP_MISSING, undefined, 20)}; color: ${UPDATES_COLOR_BACKUP_MISSING};`}
+        @click=${this._moreInfo(this._config.backup_entity)}
+      >
+        <ha-icon icon="mdi:backup-restore"></ha-icon>
+        <span>${this._t("updates_backup_missing")}</span>
+      </div>`;
+    }
+    const color = days > warnDays ? UPDATES_COLOR_BACKUP_WARN : UPDATES_COLOR_OK;
+    const age =
+      days <= 0
+        ? this._t("updates_backup_today")
+        : days === 1
+          ? this._t("updates_backup_yesterday")
+          : this._t("updates_backup_days_ago").replace("{n}", String(days));
+    return html`<div
+      class="backup-chip"
+      style=${`background: ${tintBackground(color, undefined, 20)}; color: ${color};`}
+      @click=${this._moreInfo(this._config.backup_entity)}
+    >
+      <ha-icon icon="mdi:backup-restore"></ha-icon>
+      <span>${this._t("updates_backup").replace("{age}", age)}</span>
+    </div>`;
+  }
+
+  // Un-skipping is a separate button rather than a whole-row tap: the row's
+  // tap target already means "open more-info" everywhere else in this card,
+  // and silently repurposing it here would be a trap.
+  private _clearSkipped(entityId: string): (e: Event) => void {
+    return (e: Event) => {
+      e.stopPropagation();
+      this.hass?.callService("update", "clear_skipped", {}, { entity_id: entityId });
+    };
+  }
+
+  private _renderCompactRow(row: UpdateRow) {
+    return html`
+      <div
+        class="compact-row"
+        role="button"
+        tabindex="0"
+        title=${row.name}
+        @click=${this._moreInfo(row.entity)}
+        @keydown=${activateOnKey(this._moreInfo(row.entity))}
+      >
+        <ha-icon class="ok-check" icon="mdi:check"></ha-icon>
+        <span class="compact-name">${row.name}</span>
+        <span class="compact-version">${row.installed ?? ""}</span>
+      </div>
     `;
   }
 
@@ -520,12 +619,13 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderRow(row: UpdateRow) {
+  private _renderRow(row: UpdateRow, isSkipped = false) {
     const color = this._groupColor(row.group);
     const readOnly = !this._installAllowed(row.group);
+    const inline = this._config?.inline_install === true && !readOnly && !row.autoUpdate && !isSkipped;
     return html`
       <div
-        class="row"
+        class="row ${isSkipped ? "skipped" : ""}"
         role="button"
         tabindex="0"
         title=${row.name}
@@ -543,9 +643,39 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
             ${this._t(GROUP_LABELS[row.group])}
             ${row.autoUpdate ? html`· <ha-icon class="auto" icon="mdi:autorenew"></ha-icon>` : nothing}
             ${readOnly ? html`· ${this._t("updates_readonly")}` : nothing}
+            ${isSkipped ? html`· ${this._t("updates_skipped")}` : nothing}
           </div>
         </div>
         <div class="row-version" style=${`color: ${color};`}>${row.latest ?? ""}</div>
+        ${isSkipped
+          ? html`<button
+              class="row-btn"
+              title=${this._t("updates_unskip")}
+              @click=${this._clearSkipped(row.entity)}
+            >
+              <ha-icon icon="mdi:undo-variant"></ha-icon>
+            </button>`
+          : nothing}
+        ${inline
+          ? html`<button
+              class="row-btn accent"
+              ?disabled=${row.inProgress}
+              title=${this._t("updates_install")}
+              style=${`background: ${tintBackground(color, undefined, 22)}; color: ${color};`}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._install(row);
+              }}
+            >
+              ${row.inProgress
+                ? html`<span class="btn-label"
+                    >${row.percentage === undefined ? this._t("updates_installing") : `${Math.round(row.percentage)} %`}</span
+                  >`
+                : this._confirming === row.entity
+                  ? html`<span class="btn-label">${this._t("updates_confirm")}</span>`
+                  : html`<ha-icon icon="mdi:tray-arrow-down"></ha-icon>`}
+            </button>`
+          : nothing}
       </div>
     `;
   }
@@ -588,7 +718,26 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       }
 
       .banner-text {
+        flex: 1;
         min-width: 0;
+      }
+
+      .backup-chip {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        height: ${UPDATES_CHIP_HEIGHT}px;
+        padding: 0 10px;
+        border-radius: ${UPDATES_CHIP_RADIUS}px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .backup-chip ha-icon {
+        --mdc-icon-size: 15px;
       }
 
       .banner-title {
@@ -854,6 +1003,95 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       .card-inner.no-animations .toggle,
       .card-inner.no-animations .chevron {
         transition: none;
+      }
+
+      .row-list.skipped-list .row {
+        opacity: 0.45;
+      }
+
+      .row-btn {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 11px;
+        background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+        color: var(--m3p-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .row-btn.accent {
+        width: auto;
+        min-width: 30px;
+        padding: 0 8px;
+      }
+
+      .row-btn ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .uptodate-toggle {
+        gap: 8px;
+        font-size: 12px;
+        opacity: 0.75;
+      }
+
+      .uptodate-toggle .ok-check {
+        --mdc-icon-size: 16px;
+        color: ${unsafeCSS(UPDATES_COLOR_OK)};
+      }
+
+      .uptodate-toggle span {
+        flex: 1;
+        text-align: left;
+      }
+
+      .compact-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        opacity: 0.7;
+      }
+
+      .compact-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: ${UPDATES_COMPACT_ROW_HEIGHT}px;
+        border-radius: ${UPDATES_COMPACT_ROW_RADIUS}px;
+        padding: 0 12px;
+        background: color-mix(in srgb, var(--primary-text-color) 4%, transparent);
+        cursor: pointer;
+        min-width: 0;
+      }
+
+      .compact-row .ok-check {
+        flex-shrink: 0;
+        --mdc-icon-size: 15px;
+        color: ${unsafeCSS(UPDATES_COLOR_OK)};
+      }
+
+      .compact-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 11px;
+        color: var(--m3p-text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .compact-version {
+        flex-shrink: 0;
+        font-size: 10px;
+        opacity: 0.6;
+        color: var(--m3p-secondary-text);
       }
 
       .uptodate-note {

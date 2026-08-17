@@ -76,6 +76,13 @@ const translations = {
     updates_installing: "läuft",
     updates_major: "MAJOR",
     updates_auto_update: "Aktualisiert sich automatisch",
+    updates_skipped: "übersprungen",
+    updates_unskip: "Wieder anzeigen",
+    updates_backup: "Backup {age}",
+    updates_backup_today: "heute",
+    updates_backup_yesterday: "gestern",
+    updates_backup_days_ago: "vor {n} Tagen",
+    updates_backup_missing: "Kein Backup",
     editor_updates_auto_discover: "Alle Update-Entitäten automatisch finden",
     editor_updates_auto_discover_helper:
       "Die Karte nimmt alles aus der Domain update.* auf. Nicht erreichbare Entitäten werden nur gezählt, nicht gelistet.",
@@ -103,6 +110,13 @@ const translations = {
     editor_updates_require_confirm_helper:
       "Der Update-Button fragt einmal nach, bevor Core, Betriebssystem oder Supervisor installiert werden – die Instanz startet dabei neu.",
     editor_updates_show_release_notes: "Versionszeile öffnet die Release Notes",
+    editor_updates_show_skipped: "Übersprungene Updates anzeigen",
+    editor_updates_inline_install: "Install-Button direkt in der Zeile",
+    editor_updates_backup: "Backup",
+    editor_updates_backup_entity: "Backup-Sensor",
+    editor_updates_backup_warn_days: "Warnen ab Alter (Tage)",
+    editor_updates_backup_helper:
+      "Zeigt im Banner einen Chip mit dem Alter des letzten Backups. Ein Zeitstempel-Sensor der Backup-Integration passt hier – leer lassen blendet den Chip aus.",
     editor_updates_notify_hint:
       "Legt eine Home-Assistant-Automatisierung an, die dich über verfügbare Updates informiert.",
     editor_updates_notify_service: "Benachrichtigen über",
@@ -962,6 +976,13 @@ const translations = {
     updates_installing: "running",
     updates_major: "MAJOR",
     updates_auto_update: "Updates itself automatically",
+    updates_skipped: "skipped",
+    updates_unskip: "Show again",
+    updates_backup: "Backup {age}",
+    updates_backup_today: "today",
+    updates_backup_yesterday: "yesterday",
+    updates_backup_days_ago: "{n} days ago",
+    updates_backup_missing: "No backup",
     editor_updates_auto_discover: "Find all update entities automatically",
     editor_updates_auto_discover_helper:
       "The card picks up everything in the update.* domain. Unreachable entities are only counted, not listed.",
@@ -989,6 +1010,13 @@ const translations = {
     editor_updates_require_confirm_helper:
       "The install button asks once before core, operating system or supervisor is installed — the instance restarts for it.",
     editor_updates_show_release_notes: "Version line opens the release notes",
+    editor_updates_show_skipped: "Show skipped updates",
+    editor_updates_inline_install: "Install button inside the row",
+    editor_updates_backup: "Backup",
+    editor_updates_backup_entity: "Backup sensor",
+    editor_updates_backup_warn_days: "Warn from age (days)",
+    editor_updates_backup_helper:
+      "Shows a chip in the banner with the age of the last backup. A timestamp sensor from the backup integration fits here — leave empty to hide the chip.",
     editor_updates_notify_hint:
       "Creates a Home Assistant automation that tells you when updates are available.",
     editor_updates_notify_service: "Notify via",
