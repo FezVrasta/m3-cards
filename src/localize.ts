@@ -83,6 +83,8 @@ const translations = {
     updates_backup_yesterday: "gestern",
     updates_backup_days_ago: "vor {n} Tagen",
     updates_backup_missing: "Kein Backup",
+    updates_status_offline: "Verbindung getrennt – {name} läuft",
+    updates_offline_hint: "Home Assistant startet gleich neu",
     editor_updates_auto_discover: "Alle Update-Entitäten automatisch finden",
     editor_updates_auto_discover_helper:
       "Die Karte nimmt alles aus der Domain update.* auf. Nicht erreichbare Entitäten werden nur gezählt, nicht gelistet.",
@@ -983,6 +985,8 @@ const translations = {
     updates_backup_yesterday: "yesterday",
     updates_backup_days_ago: "{n} days ago",
     updates_backup_missing: "No backup",
+    updates_status_offline: "Disconnected — {name} is running",
+    updates_offline_hint: "Home Assistant is about to restart",
     editor_updates_auto_discover: "Find all update entities automatically",
     editor_updates_auto_discover_helper:
       "The card picks up everything in the update.* domain. Unreachable entities are only counted, not listed.",

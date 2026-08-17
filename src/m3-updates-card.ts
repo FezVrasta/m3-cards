@@ -153,6 +153,12 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
   @state() private _confirming?: string;
   private _unavailable = 0;
   private _confirmTimer?: number;
+  /**
+   * Name of the update that was installing when the connection was last up.
+   * A core update restarts Home Assistant, so the websocket drops mid-install
+   * and the card would otherwise just freeze on a stale banner.
+   */
+  private _lastRunning?: string;
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
@@ -373,7 +379,15 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     const visible = maxVisible > 0 ? restPending.slice(0, maxVisible) : restPending;
     const overflow = maxVisible > 0 ? restPending.slice(maxVisible) : [];
 
-    const title = running
+    // Losing the connection during a core update is the expected course of
+    // events, not an error — say so instead of showing a frozen banner.
+    const offline = this.hass.connected === false;
+    if (!offline) this._lastRunning = running?.name;
+    const installingOffline = offline && this._lastRunning;
+
+    const title = installingOffline
+      ? this._t("updates_status_offline").replace("{name}", this._lastRunning as string)
+      : running
       ? this._t("updates_status_running").replace("{name}", running.name)
       : pending.length
         ? this._t(pending.length === 1 ? "updates_status_one" : "updates_status_many").replace(
@@ -402,17 +416,21 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
           <div class="banner">
             <div class="banner-icon">
               <ha-icon
-                icon=${running
-                  ? "mdi:progress-download"
-                  : pending.length
-                    ? "mdi:package-up"
-                    : "mdi:check-circle-outline"}
+                icon=${installingOffline
+                  ? "mdi:lan-disconnect"
+                  : running
+                    ? "mdi:progress-download"
+                    : pending.length
+                      ? "mdi:package-up"
+                      : "mdi:check-circle-outline"}
               ></ha-icon>
             </div>
             <div class="banner-text">
               <div class="banner-title">${title}</div>
               <div class="banner-sub">
-                ${this._t("updates_watched").replace("{n}", String(rows.length))}
+                ${installingOffline
+                  ? this._t("updates_offline_hint")
+                  : this._t("updates_watched").replace("{n}", String(rows.length))}
               </div>
             </div>
             ${this._renderBackupChip()}

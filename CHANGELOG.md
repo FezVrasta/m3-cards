@@ -7,6 +7,35 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 ## [1.8.0]
 
 ### Hinzugefügt
+- **Neue Karte: M3 Updates Card** (`custom:m3-updates-card`). Übersicht aller
+  verfügbaren Updates in einer Kachel.
+  - **Statusbanner** mit „Alles aktuell“ / „{n} Updates verfügbar“ /
+    „{name} wird installiert“ und der Zahl der überwachten Komponenten.
+  - **Kern-Boxen** für Core, Betriebssystem und Supervisor mit
+    `{installed} → {latest}`, MAJOR-Badge und Install-Button. Die
+    MAJOR-Erkennung versteht beide Versionsschemata: bei
+    HA-Kalenderversionen (`2026.8.1`) zählt der Wechsel von Jahr oder Monat,
+    bei SemVer (`5.8.0`) die erste Zahl.
+  - **Bestätigungsschritt** vor Kern-Updates (`require_confirm`, Standard an).
+    Der Button entschärft sich nach fünf Sekunden von selbst — auf einem
+    Wandtablet soll kein scharfer „startet-HA-neu“-Button liegenbleiben.
+  - **Gruppierung über die Integration** statt über den `entity_id`-Namen. Bei
+    eingebundener zweiter Instanz hätte eine Namensregel zwei
+    ununterscheidbare Core-Boxen erzeugt; die zweite Instanz bekommt jetzt
+    eine eigene Gruppe. Reihenfolge und Sichtbarkeit der Gruppen sind im
+    Editor per Pfeiltasten bzw. `include_types` einstellbar.
+  - **Backup-Chip** im Banner (`backup_entity`), grün bis `backup_warn_days`,
+    danach orange, ohne Zeitstempel rot.
+  - **Übersprungene Updates** stehen gedimmt am Ende mit eigenem Button zum
+    Wiederanzeigen — und zählen nicht mehr als „aktuell“.
+  - **Aufklappbereich** für bereits aktuelle Komponenten, `max_visible` für
+    die Update-Liste selbst.
+  - **Benachrichtigung** sofort, täglich oder wöchentlich, mit denselben
+    Freitextfeldern wie die übrigen Karten.
+  - **Verbindungsverlust** während eines Core-Updates wird als solcher
+    angezeigt statt als eingefrorenes Banner.
+  - Nicht erreichbare Update-Entities werden separat ausgewiesen statt
+    mitgezählt.
 - **Eigene Benachrichtigungstexte.** Jedes Benachrichtigungs-Panel hat jetzt
   zwei Freitextfelder für Titel und Nachricht. Leer lassen behält den
   bisherigen Text, sodass sich für bestehende Konfigurationen nichts ändert.

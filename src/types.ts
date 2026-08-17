@@ -31,6 +31,8 @@ export interface HomeAssistant {
     parameters?: Record<string, unknown>,
   ) => Promise<T>;
   services: Record<string, Record<string, unknown>>;
+  /** False while the websocket is down — states are the last known ones. */
+  connected?: boolean;
   formatEntityState?: (stateObj: HassEntity) => string;
 }
 
