@@ -157,6 +157,27 @@ export const notifyStyles = css`
 
 // ---- automation plumbing --------------------------------------------
 
+export type MeterCycle = "daily" | "weekly" | "monthly" | "other";
+
+// Verified against a live HA 2026.8 instance: `utility_meter` entities do NOT
+// publish `meter_period` (or `cron_pattern`) as an attribute — only
+// `last_reset` / `next_reset`. Checking `meter_period` therefore never matches
+// and silently disables anything gated on it, so the cycle is derived from the
+// distance between the two resets instead. Bands are wide enough for DST
+// shifts and for months of differing length.
+export function meterCycle(hass: HomeAssistant | undefined, entityId: string): MeterCycle {
+  const attrs = hass?.states[entityId]?.attributes ?? {};
+  const last = Date.parse(String(attrs.last_reset ?? ""));
+  const next = Date.parse(String(attrs.next_reset ?? ""));
+  // A meter that has never rolled over yet has no next_reset — unverifiable.
+  if (Number.isNaN(last) || Number.isNaN(next) || next <= last) return "other";
+  const days = (next - last) / 86_400_000;
+  if (days >= 0.9 && days <= 1.1) return "daily";
+  if (days >= 6.9 && days <= 7.1) return "weekly";
+  if (days >= 27 && days <= 32) return "monthly";
+  return "other";
+}
+
 export interface NotifyAutomationSpec {
   id: string;
   alias: string;

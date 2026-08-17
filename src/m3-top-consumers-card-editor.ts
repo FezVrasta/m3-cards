@@ -18,6 +18,40 @@ import {
   renderAppearanceSection,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import { getEntityPlatform } from "./shared/ha-registry";
+import {
+  notifyServiceSchema,
+  notifyModeSchema,
+  notifyTimeSchema,
+  notifyWeekdaySchema,
+  renderNotifyButton,
+  notifyStyles,
+  saveNotifyAutomation,
+  resolveAutomationId,
+  notifyActions,
+  type NotifyAutomationSpec,
+  meterCycle,
+} from "./shared/notify-editor";
+
+// Why the weekly digest is gated so tightly:
+//
+// The card ranks devices from Home Assistant's *long-term statistics*
+// (`recorder/statistics_during_period`, see shared/ha-statistics.ts) — a
+// websocket call it makes at render time. An automation template has no
+// equivalent: Jinja can read entity states and attributes, but it cannot sum
+// statistics over a period. So for the general case (Energy-dashboard devices,
+// or arbitrary total_increasing kWh sensors) a truthful "top consumers this
+// week" ranking simply is not expressible in an automation, and faking it from
+// live states would report a lifetime total or an instantaneous value as if it
+// were a weekly one.
+//
+// The one case that *is* expressible: a `utility_meter` helper on a weekly
+// cycle already holds exactly the value we want — its state is this cycle's
+// consumption, and `last_period` is the previous completed week. Ranking those
+// states in Jinja is honest. Everything else is refused with an explanation.
+const WEEKLY_DIGEST_UNITS = new Set(["Wh", "kWh", "MWh"]);
+
+type DigestEligibility = "checking" | "ok" | "source" | "empty" | "unsupported";
 
 @customElement("m3-top-consumers-card-editor")
 export class M3TopConsumersCardEditor extends LitElement implements LovelaceCardEditor {
@@ -25,10 +59,140 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
 
   @state() private _config?: M3TopConsumersCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _eligibility: DigestEligibility = "checking";
+  @state() private _unsupportedNames: string[] = [];
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
+
+  private _lastEligibilityKey?: string;
 
   public setConfig(config: M3TopConsumersCardConfig): void {
     this._config = config;
     this._appearance = initAppearanceState(config, DEFAULT_TOP_CONSUMERS_RADIUS);
+    this._maybeCheckEligibility();
+  }
+
+  protected updated(): void {
+    this._maybeCheckEligibility();
+  }
+
+  private _digestEntities(): string[] {
+    if (!this._config || (this._config.source ?? "energy") !== "entities") return [];
+    return (this._config.entities ?? []).map((e) => e.entity).filter(Boolean);
+  }
+
+  // Re-resolves whether the configured sensors can carry a weekly digest,
+  // keyed on source + entity list so switching a colour doesn't re-hit the
+  // entity registry.
+  private _maybeCheckEligibility(): void {
+    if (!this.hass || !this._config) return;
+    const source = this._config.source ?? "energy";
+    const ids = this._digestEntities();
+    const key = JSON.stringify([source, ids]);
+    if (key === this._lastEligibilityKey) return;
+    this._lastEligibilityKey = key;
+    this._unsupportedNames = [];
+    if (source !== "entities") {
+      this._eligibility = "source";
+      return;
+    }
+    if (ids.length === 0) {
+      this._eligibility = "empty";
+      return;
+    }
+    this._eligibility = "checking";
+    void this._checkEntities(ids, key);
+  }
+
+  private async _checkEntities(ids: string[], key: string): Promise<void> {
+    const platforms = await Promise.all(ids.map((id) => getEntityPlatform(this.hass!, id)));
+    if (key !== this._lastEligibilityKey) return; // config moved on while we waited
+    const unsupported: string[] = [];
+    ids.forEach((id, i) => {
+      const state = this.hass!.states[id];
+      const ok =
+        platforms[i] === "utility_meter" &&
+        meterCycle(this.hass, id) === "weekly" &&
+        WEEKLY_DIGEST_UNITS.has(state?.attributes.unit_of_measurement);
+      if (!ok) unsupported.push(state?.attributes.friendly_name ?? id);
+    });
+    this._unsupportedNames = unsupported;
+    this._eligibility = unsupported.length ? "unsupported" : "ok";
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg || this._eligibility !== "ok") return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_notify_missing");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const ids = this._digestEntities();
+      const lastWeek = cfg.notify_mode === "last_week";
+      const count = cfg.top_count ?? DEFAULT_TOP_CONSUMERS_COUNT;
+      const cardName = cfg.name || this._t("top_consumers_default_name");
+      const automationId = resolveAutomationId("top_consumers_digest", cfg.notify_automation_id);
+
+      // Ranks the meters by their own cycle value (state = this week so far,
+      // last_period = the previous completed week) and renders the numbered
+      // lines the message joins. Mixed Wh/kWh/MWh meters are normalised to kWh
+      // first so the ranking compares like with like.
+      const valueExpr = lastWeek ? "s.attributes.last_period" : "s.state";
+      const rankTemplate =
+        `{% set ids = ${JSON.stringify(ids)} %}` +
+        `{% set ns = namespace(items=[]) %}` +
+        `{% for e in ids %}{% set s = states[e] %}` +
+        `{% if s is not none %}` +
+        `{% set u = s.attributes.unit_of_measurement | default('kWh', true) %}` +
+        `{% set f = 0.001 if u == 'Wh' else (1000 if u == 'MWh' else 1) %}` +
+        `{% set v = (${valueExpr} | float(0)) * f %}` +
+        `{% if v > 0 %}{% set ns.items = ns.items + [{'n': s.name, 'v': v}] %}{% endif %}` +
+        `{% endif %}{% endfor %}` +
+        `{% set ranked = ns.items | sort(attribute='v', reverse=true) %}` +
+        `{% set out = namespace(lines=[]) %}` +
+        `{% for it in ranked[:${count}] %}` +
+        `{% set out.lines = out.lines + [loop.index ~ '. ' ~ it.n ~ ' ' ~ (it.v | round(1)) ~ ' kWh'] %}` +
+        `{% endfor %}{{ out.lines }}`;
+
+      const intro = this._t(
+        lastWeek
+          ? "editor_top_consumers_notify_digest_last"
+          : "editor_top_consumers_notify_digest_current",
+      );
+
+      const spec: NotifyAutomationSpec = {
+        id: automationId,
+        alias: `${cardName}: ${this._t("editor_top_consumers_notify_alias")}`,
+        description: this._t("editor_top_consumers_notify_description"),
+        mode: "single",
+        variables: { top_items: rankTemplate },
+        triggers: [{ trigger: "time", at: cfg.notify_time || "20:00:00" }],
+        conditions: [
+          { condition: "time", weekday: [cfg.notify_weekday || "sun"] },
+          { condition: "template", value_template: "{{ top_items | count > 0 }}" },
+        ],
+        actions: notifyActions(targets, cardName, `${intro}\n{{ top_items | join('\n') }}`),
+      };
+
+      await saveNotifyAutomation(this.hass, spec);
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+      this._notifyStatus = "success";
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
   }
 
   private get _language(): string {
@@ -150,6 +314,18 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
     return schema;
   }
 
+  private _notifySchema(): SchemaEntry[] {
+    return [
+      notifyServiceSchema(this.hass),
+      notifyModeSchema([
+        { value: "current", label: this._t("editor_top_consumers_notify_mode_current") },
+        { value: "last_week", label: this._t("editor_top_consumers_notify_mode_last") },
+      ]),
+      notifyTimeSchema(),
+      notifyWeekdaySchema(this._language),
+    ];
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -184,6 +360,10 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
       price: "editor_cost_price",
       price_unit: "editor_cost_price_unit",
       currency: "editor_cost_currency",
+      notify_service: "editor_notify_service",
+      notify_mode: "editor_notify_mode",
+      notify_time: "editor_notify_time",
+      notify_weekday: "editor_notify_weekday",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -280,6 +460,24 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  // Names the exact reason the digest can't be built, so the user isn't left
+  // guessing at a disabled button.
+  private _blockedText(): string {
+    switch (this._eligibility) {
+      case "checking":
+        return this._t("editor_top_consumers_notify_checking");
+      case "source":
+        return this._t("editor_top_consumers_notify_blocked_source");
+      case "empty":
+        return this._t("editor_top_consumers_notify_blocked_empty");
+      default: {
+        const shown = this._unsupportedNames.slice(0, 3).join(", ");
+        const list = this._unsupportedNames.length > 3 ? `${shown} …` : shown;
+        return this._t("editor_top_consumers_notify_blocked_unsupported").replace("{list}", list);
+      }
+    }
+  }
+
   protected render() {
     if (!this.hass || !this._config) return nothing;
 
@@ -304,6 +502,12 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
       currency: this._config.currency ?? "EUR",
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+      notify_mode: this._config.notify_mode ?? "current",
+      notify_time: this._config.notify_time ?? "20:00:00",
+      notify_weekday: this._config.notify_weekday ?? "sun",
+    };
 
     return html`
       <div class="editor">
@@ -349,6 +553,33 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
               </ha-expansion-panel>
             `
           : nothing}
+
+        <ha-expansion-panel outlined .header=${this._t("editor_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_top_consumers_notify_hint")}</div>
+            ${this._eligibility === "ok"
+              ? html`
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${notifyData}
+                    .schema=${this._notifySchema()}
+                    .computeLabel=${this._computeLabel}
+                    @value-changed=${this._valueChanged}
+                  ></ha-form>
+                  <div class="hint">${this._t("editor_top_consumers_notify_cycle_hint")}</div>
+                `
+              : html`<div class="hint blocked">${this._blockedText()}</div>`}
+            ${renderNotifyButton({
+              language: this._language,
+              busy: this._notifyBusy,
+              disabled: this._eligibility !== "ok" || !this._config.notify_service?.length,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              onClick: () => this._setupNotify(),
+            })}
+          </div>
+        </ha-expansion-panel>
 
         <ha-expansion-panel outlined .header=${this._t("editor_top_consumers_name_strip_header")}>
           <ha-icon slot="leading-icon" icon="mdi:format-letter-case"></ha-icon>
@@ -414,7 +645,15 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
     `;
   }
 
-  static styles = editorStyles;
+  static styles = [
+    editorStyles,
+    notifyStyles,
+    css`
+      .hint.blocked {
+        color: var(--warning-color, #ff9800);
+      }
+    `,
+  ];
 }
 
 declare global {

@@ -1,8 +1,14 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3PowerListCardConfig } from "./types";
-import { DEFAULT_POWER_LIST_RADIUS, DEFAULT_POWER_LIST_THRESHOLD } from "./const";
+import {
+  DEFAULT_POWER_LIST_RADIUS,
+  DEFAULT_POWER_LIST_THRESHOLD,
+  DEFAULT_POWER_LIST_NOTIFY_THRESHOLD,
+  DEFAULT_POWER_LIST_NOTIFY_DURATION_HOURS,
+} from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { discoverPowerEntities } from "./shared/ha-registry";
 import {
   fireEvent,
   colorRow,
@@ -17,6 +23,15 @@ import {
   renderAppearanceSection,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import {
+  notifyServiceSchema,
+  notifyActions,
+  renderNotifyButton,
+  notifyStyles,
+  saveNotifyAutomation,
+  resolveAutomationId,
+  type NotifyAutomationSpec,
+} from "./shared/notify-editor";
 
 @customElement("m3-power-list-card-editor")
 export class M3PowerListCardEditor extends LitElement implements LovelaceCardEditor {
@@ -24,10 +39,99 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
 
   @state() private _config?: M3PowerListCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
 
   public setConfig(config: M3PowerListCardConfig): void {
     this._config = config;
     this._appearance = initAppearanceState(config, DEFAULT_POWER_LIST_RADIUS);
+  }
+
+  // The warning has to cover exactly the devices the card lists, so the set is
+  // resolved the same way the card does it (manual list vs. auto-discovery
+  // with area/label filters) and baked into the trigger. Pressing the button
+  // again re-resolves after new sockets have been added.
+  //
+  // Two groups never belong in a "left running" warning: producers (a solar
+  // string above 10 W for three hours is the good case, not the bad one) and
+  // devices the user muted because they are supposed to run 24/7.
+  private async _resolveNotifyEntities(): Promise<string[]> {
+    const cfg = this._config;
+    if (!cfg || !this.hass) return [];
+    const ids = cfg.auto_discover
+      ? await discoverPowerEntities(this.hass, {
+          excludeEntities: cfg.exclude_entities,
+          includeAreas: cfg.include_area,
+          includeLabels: cfg.include_label,
+        })
+      : (cfg.entities ?? []).map((e) => e.entity);
+    // Producers are only ever declared in the manual list — discovery has no
+    // notion of type — but filtering by id covers both paths.
+    const producers = new Set(
+      (cfg.entities ?? []).filter((e) => e.type === "producer").map((e) => e.entity),
+    );
+    const muted = new Set(cfg.notify_exclude_entities ?? []);
+    return ids.filter((id) => id && !producers.has(id) && !muted.has(id));
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_notify_missing");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const ids = await this._resolveNotifyEntities();
+      if (ids.length === 0) throw new Error(this._t("editor_power_list_notify_empty"));
+      const threshold = cfg.notify_power_threshold ?? DEFAULT_POWER_LIST_NOTIFY_THRESHOLD;
+      const hours = cfg.notify_duration_hours ?? DEFAULT_POWER_LIST_NOTIFY_DURATION_HOURS;
+      const cardName = cfg.name || this._t("power_list_default_name");
+      const automationId = resolveAutomationId("power_left_running", cfg.notify_automation_id);
+
+      const message = this._t("editor_power_list_notify_message")
+        .replace("{name}", "{{ trigger.to_state.name }}")
+        .replace("{h}", String(hours))
+        .replace("{w}", "{{ trigger.to_state.state | float(0) | round(0) }}");
+
+      await saveNotifyAutomation(this.hass, {
+        id: automationId,
+        alias: `${cardName}: ${this._t("editor_power_list_notify_alias")}`,
+        description: this._t("editor_power_list_notify_description"),
+        // A numeric_state trigger tracks its `for` window per entity, so two
+        // devices can come due at the same moment — "single" would silently
+        // drop the second one.
+        mode: "queued",
+        triggers: [
+          {
+            trigger: "numeric_state",
+            entity_id: ids,
+            above: threshold,
+            for: { hours },
+          },
+        ],
+        conditions: [],
+        actions: notifyActions(targets, cardName, message),
+      } as NotifyAutomationSpec);
+
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+      this._notifyStatus = "success";
+      this._notifyDetail = `${ids.length}`;
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
   }
 
   private get _language(): string {
@@ -88,6 +192,24 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
     ];
   }
 
+  private _notifySchema(): SchemaEntry[] {
+    return [
+      notifyServiceSchema(this.hass),
+      {
+        name: "notify_power_threshold",
+        selector: { number: { min: 0, step: 1, mode: "box", unit_of_measurement: "W" } },
+      },
+      {
+        name: "notify_duration_hours",
+        selector: { number: { min: 1, max: 24, step: 1, mode: "box", unit_of_measurement: "h" } },
+      },
+      {
+        name: "notify_exclude_entities",
+        selector: { entity: { domain: "sensor", device_class: "power", multiple: true } },
+      },
+    ];
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -120,6 +242,10 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
       sort: "editor_power_list_sort",
       max_visible: "editor_power_list_max_visible",
       show_idle_toggle: "editor_power_list_show_idle_toggle",
+      notify_service: "editor_notify_service",
+      notify_power_threshold: "editor_power_list_notify_threshold",
+      notify_duration_hours: "editor_power_list_notify_duration",
+      notify_exclude_entities: "editor_power_list_notify_exclude",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -230,6 +356,14 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
       show_idle_toggle: this._config.show_idle_toggle ?? true,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+      notify_power_threshold:
+        this._config.notify_power_threshold ?? DEFAULT_POWER_LIST_NOTIFY_THRESHOLD,
+      notify_duration_hours:
+        this._config.notify_duration_hours ?? DEFAULT_POWER_LIST_NOTIFY_DURATION_HOURS,
+      notify_exclude_entities: this._config.notify_exclude_entities ?? [],
+    };
 
     return html`
       <div class="editor">
@@ -257,6 +391,31 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_power_list_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_power_list_notify_exclude_hint")}</div>
+            ${renderNotifyButton({
+              language: this._language,
+              busy: this._notifyBusy,
+              disabled: !this._config.notify_service?.length,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              labelKey: "editor_power_list_notify_button",
+              successText: `${this._t("editor_power_list_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_power_list_notify_success_suffix")}`,
+              onClick: () => this._setupNotify(),
+            })}
           </div>
         </ha-expansion-panel>
 
@@ -339,7 +498,7 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
     `;
   }
 
-  static styles = editorStyles;
+  static styles = [editorStyles, notifyStyles];
 }
 
 declare global {

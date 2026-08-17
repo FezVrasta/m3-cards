@@ -143,6 +143,18 @@ const translations = {
     editor_progress_running_states: "Läuft – Statuswerte",
     editor_progress_preparing_states: "Vorbereitung – Statuswerte",
     editor_progress_done_states: "Fertig – Statuswerte",
+    editor_progress_notify_hint:
+      "Benachrichtigt, sobald der Status von einem „Läuft“-Wert auf einen „Fertig“-Wert wechselt — also nach einem echten Durchlauf, nicht beim Neustart von Home Assistant.",
+    editor_progress_notify_states_hint:
+      "Es gelten die Statuswerte aus „Status-Zuordnung“. Nach Änderungen dort die Benachrichtigung erneut einrichten.",
+    editor_progress_notify_alias: "fertig",
+    editor_progress_notify_description:
+      "Von der M3 Progress Card angelegt: benachrichtigt, wenn das Gerät durchgelaufen ist.",
+    editor_progress_notify_message: "{name} ist fertig.",
+    editor_progress_notify_missing_entity:
+      "Bitte zuerst eine Status-Entität auswählen.",
+    editor_progress_notify_missing_states:
+      "Bitte unter „Status-Zuordnung“ mindestens einen „Läuft“- und einen „Fertig“-Wert eintragen.",
     editor_progress_animation: "Animation",
     editor_progress_animation_auto: "Automatisch (respektiert Systemeinstellung „Bewegung reduzieren“)",
     editor_progress_animation_on: "Immer an",
@@ -254,6 +266,29 @@ const translations = {
     editor_energy_accent_color: "Akzentfarbe (heutiger Balken)",
     editor_energy_bar_tint_color: "Balkenfarbe vergangene Tage (leer = automatisch aus Akzentfarbe)",
     editor_energy_fallback_hint: "Für diese Entität wurden keine Langzeitstatistiken gefunden — es wird auf die History-API zurückgegriffen (weniger genau, aggregiert Tageswerte per Maximum). Prüfbar unter Entwicklerwerkzeuge → Statistik.",
+    editor_energy_notify_entity: "Sensor für die Meldung (leer = Sensor der Karte)",
+    editor_energy_notify_mode_day_end: "Tagesbilanz (täglich zur gewählten Uhrzeit)",
+    editor_energy_notify_mode_month_end: "Monatsbilanz (am 1. für den abgeschlossenen Vormonat)",
+    editor_energy_notify_alias: "Energie-Bericht",
+    editor_energy_notify_description: "Automatisch von der M3 Energy Card angelegt.",
+    editor_energy_notify_hint:
+      "Eine Automatisierung kann keine Langzeitstatistiken lesen — sie kennt nur den Zustand eines Sensors. Die Meldung braucht deshalb einen Sensor, dessen Wert genau den Zeitraum abdeckt: einen utility_meter-Helfer mit Zyklus „täglich“ bzw. „monatlich“ oder einen täglich zurücksetzenden Zähler.",
+    editor_energy_notify_scope_daily:
+      "Erkannt: täglich zurücksetzender Zähler. Gemeldet wird sein Stand zur gewählten Uhrzeit (also der Tag bis dahin).",
+    editor_energy_notify_scope_monthly:
+      "Erkannt: monatlicher utility_meter. Gemeldet wird am 1. der exakte Gesamtwert des abgeschlossenen Vormonats (Attribut „last_period“).",
+    editor_energy_notify_unsupported_daily:
+      "Dieser Sensor deckt einen Tag ab, keinen Monat — bitte „Tagesbilanz“ wählen oder oben einen utility_meter mit Zyklus „monatlich“ angeben.",
+    editor_energy_notify_unsupported_monthly:
+      "Dieser Sensor deckt einen Monat ab, keinen Tag — bitte „Monatsbilanz“ wählen oder oben einen utility_meter mit Zyklus „täglich“ angeben.",
+    editor_energy_notify_unsupported_other:
+      "Der Zustand dieses Sensors ist kein Zeitraum-Wert (z.B. ein fortlaufender Gesamtzähler). Lege unter Einstellungen → Geräte & Dienste → Helfer einen „Verbrauchszähler“ (utility_meter) mit Zyklus täglich bzw. monatlich auf diesen Sensor an und trage ihn oben ein.",
+    editor_energy_notify_no_entity:
+      "Bitte einen Sensor für die Meldung auswählen (bei Datenquelle „Energie-Dashboard“ hat die Karte keinen einzelnen Sensor).",
+    editor_energy_notify_day_label: "Heute verbraucht",
+    editor_energy_notify_day_label_solar: "Heute erzeugt",
+    editor_energy_notify_month_label: "Verbrauch",
+    editor_energy_notify_month_label_solar: "Erzeugung",
     editor_gauge_source: "Datenquelle",
     editor_gauge_source_energy: "Energie-Dashboard (Standard)",
     editor_gauge_source_entities: "Zwei eigene Sensoren",
@@ -311,6 +346,22 @@ const translations = {
     editor_power_list_accent_color: "Akzentfarbe (Verbraucher)",
     editor_power_list_producer_color: "Erzeugerfarbe",
     editor_power_list_bar_tint_color: "Anteilsbalken-Farbe (leer = automatisch aus Akzentfarbe)",
+    editor_power_list_notify_hint:
+      "Meldet sich, wenn ein Gerät ununterbrochen zu lange Strom zieht — vergessenes Bügeleisen, Heizlüfter, Lötkolben. Die Automatisierung wird aus den Sensoren dieser Karte gebaut.",
+    editor_power_list_notify_threshold: "Gilt als „läuft“ ab",
+    editor_power_list_notify_duration: "Ununterbrochen länger als",
+    editor_power_list_notify_exclude: "Dauerläufer ausnehmen",
+    editor_power_list_notify_exclude_hint:
+      "Geräte, die absichtlich rund um die Uhr laufen (Kühlschrank, Router, NAS). Erzeuger-Einträge sind automatisch ausgenommen.",
+    editor_power_list_notify_button: "Benachrichtigung einrichten",
+    editor_power_list_notify_success_prefix: "Eingerichtet für",
+    editor_power_list_notify_success_suffix:
+      "Geräte. Zu finden unter Einstellungen → Automatisierungen.",
+    editor_power_list_notify_alias: "Gerät läuft noch",
+    editor_power_list_notify_description:
+      "Von der M3 Power List Card erstellt: meldet Geräte, die ununterbrochen zu lange Strom ziehen.",
+    editor_power_list_notify_message: "{name} läuft seit {h} Std. ({w} W)",
+    editor_power_list_notify_empty: "Keine Sensoren für die Benachrichtigung übrig.",
     power_summary_export: "Einspeisung ins Netz",
     power_summary_import: "Bezug aus dem Netz",
     power_summary_neutral: "Ausgeglichen",
@@ -407,10 +458,49 @@ const translations = {
     editor_cost_show_projection: "Prognose-Chip anzeigen",
     editor_cost_show_comparison: "Vergleichs-Chip anzeigen",
     editor_cost_budget: "Budget (optional)",
+    editor_cost_notify_mode_budget: "Budget-Warnung",
+    editor_cost_notify_mode_month_end: "Monatsabschluss",
+    editor_cost_notify_entity: "Monats-Entität (Kosten oder Verbrauch)",
+    editor_cost_notify_percent: "Warnen ab … % vom Budget",
+    editor_cost_notify_entity_hint:
+      "Die Karte rechnet ihre Summe aus den Langzeit-Statistiken – darauf hat eine Automatisierung keinen Zugriff. Wähle deshalb eine Entität, deren aktueller Zustand der Monatswert ist (z.B. ein utility_meter mit Zyklus „monatlich“). Kosten-Entitäten (device_class „monetary“) werden direkt verwendet, Verbrauchs-Entitäten mit dem oben eingestellten Preis multipliziert.",
+    editor_cost_notify_month_end_hint:
+      "Meldet den Monatswert kurz vor Mitternacht des letzten Tages – danach setzt der Zähler zurück.",
+    editor_cost_notify_no_entity: "Bitte eine verfügbare Monats-Entität auswählen.",
+    editor_cost_notify_no_price:
+      "Mit der Preisquelle „Energie-Dashboard“ liegt der Preis nur in den Statistiken, nicht in einer Entität. Wähle hier eine Kosten-Entität (device_class „monetary“) oder stelle oben einen festen Preis bzw. einen input_number-Helfer ein.",
+    editor_cost_notify_bad_unit:
+      "Einheit der Monats-Entität wird nicht erkannt (erwartet Wh, kWh oder MWh). Für andere Größen oben die Preis-Einheit „Benutzerdefiniert“ mit Mengen-Umrechnungsfaktor verwenden.",
+    editor_cost_notify_no_budget: "Für die Budget-Warnung zuerst oben ein Budget eintragen.",
+    editor_cost_notify_period_warn:
+      "Hinweis: Diese Entität setzt nicht monatlich zurück ({period}) – die Meldung würde einen anderen Zeitraum beschreiben.",
+    editor_cost_notify_alias_budget: "Budget-Warnung",
+    editor_cost_notify_alias_month_end: "Monatsabschluss",
+    editor_cost_notify_description: "Automatisch erstellt von der M3 Cost Card.",
+    editor_cost_notify_budget_message: "Budget-Warnung: {value} von {budget} ({percent} %).",
+    editor_cost_notify_month_end_message: "Kosten im Monat {month}: {value}.",
     editor_top_consumers_unit_mode: "Anzeige",
     editor_top_consumers_unit_mode_energy: "Energie (kWh)",
     editor_top_consumers_unit_mode_cost: "Kosten",
     top_consumers_of_total_cost: "der Kosten",
+    editor_top_consumers_notify_hint:
+      "Wöchentlicher Digest mit deinen größten Verbrauchern. Wichtig: Eine Automatisierung kann die Langzeitstatistiken nicht auslesen, aus denen diese Karte ihr Ranking berechnet. Der Digest ist deshalb nur möglich, wenn die Quelle „Eigene Sensor-Liste“ ist und alle Sensoren Utility-Meter-Helfer mit Zyklus „wöchentlich“ sind — deren Zustand ist bereits der Wochenverbrauch.",
+    editor_top_consumers_notify_checking: "Sensoren werden geprüft …",
+    editor_top_consumers_notify_blocked_source:
+      "Quelle „Energie-Dashboard“: Das Ranking kommt aus den Langzeitstatistiken, die eine Automatisierung nicht abfragen kann. Stelle die Quelle auf „Eigene Sensor-Liste“ mit wöchentlichen Utility-Meter-Helfern um.",
+    editor_top_consumers_notify_blocked_empty:
+      "Noch keine Sensoren ausgewählt.",
+    editor_top_consumers_notify_blocked_unsupported:
+      "Nicht auswertbar: {list}. Der Digest braucht ausschließlich Utility-Meter-Helfer mit Zyklus „wöchentlich“ in Wh/kWh/MWh — für alle anderen Sensoren gäbe es keinen ehrlichen Wochenwert.",
+    editor_top_consumers_notify_cycle_hint:
+      "Wöchentliche Utility-Meter setzen montags um 00:00 zurück: „Diese Woche (bisher)“ also am besten Sonntagabend senden, „Letzte Woche (komplett)“ montags.",
+    editor_top_consumers_notify_mode_current: "Diese Woche (bisher)",
+    editor_top_consumers_notify_mode_last: "Letzte Woche (komplett)",
+    editor_top_consumers_notify_alias: "Wochen-Digest",
+    editor_top_consumers_notify_description:
+      "Von der M3 Top-Verbraucher-Karte erstellt: sendet wöchentlich die größten Verbraucher aus den ausgewählten Utility-Meter-Helfern.",
+    editor_top_consumers_notify_digest_current: "Deine Top-Verbraucher diese Woche:",
+    editor_top_consumers_notify_digest_last: "Deine Top-Verbraucher letzte Woche:",
     light_default_name: "Licht",
     light_brightness_label: "Helligkeit",
     light_color_temp_label: "Farbtemperatur",
@@ -693,6 +783,23 @@ const translations = {
     editor_climate_overview_tile_tint_opacity: "Kachel-Farbstärke",
     editor_climate_overview_accent_color: "Akzentfarbe",
     editor_climate_overview_accent_opacity: "Farbstärke",
+    editor_climate_overview_notify_rule_hint:
+      "Meldet Räume mit Schimmelrisiko: Luftfeuchte über {h} % und gleichzeitig Temperatur unter {t} °C — dieselbe Regel wie die Warnung auf der Karte.",
+    editor_climate_overview_notify_rooms_hint:
+      "Berücksichtigt werden nur Räume mit Temperatur- und Feuchte-Sensor. Nach neuen Räumen einfach erneut einrichten.",
+    editor_climate_overview_notify_warning_off_hint:
+      "Hinweis: „Schimmel-Warnung anzeigen“ ist aus — die Karte zeigt das Symbol dann nicht, die Benachrichtigung kommt trotzdem.",
+    editor_climate_overview_notify_mode_daily: "Täglich (Sammelnachricht)",
+    editor_climate_overview_notify_mode_weekly: "Wöchentlich (Sammelnachricht)",
+    editor_climate_overview_notify_alias: "Schimmelrisiko",
+    editor_climate_overview_notify_description:
+      "Von der M3 Climate Overview Card erstellt: meldet Räume mit hoher Luftfeuchte bei niedriger Temperatur.",
+    editor_climate_overview_notify_digest: "Räume mit Schimmelrisiko:",
+    editor_climate_overview_notify_no_rooms:
+      "Keine Räume mit Temperatur- und Feuchte-Sensor gefunden.",
+    editor_climate_overview_notify_success_prefix: "Eingerichtet für",
+    editor_climate_overview_notify_success_suffix:
+      "Räume. Zu finden unter Einstellungen → Automatisierungen.",
   },
   en: {
     off: "Off",
@@ -836,6 +943,18 @@ const translations = {
     editor_progress_running_states: "Running – status values",
     editor_progress_preparing_states: "Preparing – status values",
     editor_progress_done_states: "Done – status values",
+    editor_progress_notify_hint:
+      "Notifies as soon as the status changes from a \"running\" value to a \"done\" value — after a real run, not on a Home Assistant restart.",
+    editor_progress_notify_states_hint:
+      "Uses the status values from \"Status mapping\". After changing them, set the notification up again.",
+    editor_progress_notify_alias: "finished",
+    editor_progress_notify_description:
+      "Created by the M3 Progress Card: notifies when the appliance has finished its run.",
+    editor_progress_notify_message: "{name} is done.",
+    editor_progress_notify_missing_entity:
+      "Please pick a status entity first.",
+    editor_progress_notify_missing_states:
+      "Please set at least one \"running\" and one \"done\" value under \"Status mapping\".",
     editor_progress_animation: "Animation",
     editor_progress_animation_auto: "Automatic (respects the system's \"reduce motion\" setting)",
     editor_progress_animation_on: "Always on",
@@ -947,6 +1066,29 @@ const translations = {
     editor_energy_accent_color: "Accent color (today's bar)",
     editor_energy_bar_tint_color: "Past-day bar color (empty = derived from accent)",
     editor_energy_fallback_hint: "No long-term statistics were found for this entity — falling back to the History API (less accurate, aggregates daily values by maximum). Check under Developer Tools → Statistics.",
+    editor_energy_notify_entity: "Sensor for the notification (empty = the card's sensor)",
+    editor_energy_notify_mode_day_end: "Daily total (every day at the chosen time)",
+    editor_energy_notify_mode_month_end: "Monthly total (on the 1st, for the completed previous month)",
+    editor_energy_notify_alias: "Energy report",
+    editor_energy_notify_description: "Created automatically by the M3 Energy Card.",
+    editor_energy_notify_hint:
+      "An automation cannot read long-term statistics — it only ever sees a sensor's state. The report therefore needs a sensor whose value covers exactly the period: a utility_meter helper with a \"daily\" or \"monthly\" cycle, or a counter that resets every day.",
+    editor_energy_notify_scope_daily:
+      "Detected: a daily-resetting counter. The report sends its value at the chosen time (i.e. the day so far).",
+    editor_energy_notify_scope_monthly:
+      "Detected: a monthly utility_meter. On the 1st the report sends the exact total of the completed previous month (its \"last_period\" attribute).",
+    editor_energy_notify_unsupported_daily:
+      "This sensor covers a day, not a month — pick \"Daily total\", or point the notification at a utility_meter with a \"monthly\" cycle.",
+    editor_energy_notify_unsupported_monthly:
+      "This sensor covers a month, not a day — pick \"Monthly total\", or point the notification at a utility_meter with a \"daily\" cycle.",
+    editor_energy_notify_unsupported_other:
+      "This sensor's state is not a period total (e.g. a never-resetting lifetime counter). Create a \"Utility meter\" helper with a daily or monthly cycle on it under Settings → Devices & services → Helpers, then select that helper above.",
+    editor_energy_notify_no_entity:
+      "Please pick a sensor for the notification (with the \"Energy dashboard\" data source the card has no single sensor).",
+    editor_energy_notify_day_label: "Used today",
+    editor_energy_notify_day_label_solar: "Produced today",
+    editor_energy_notify_month_label: "Consumption",
+    editor_energy_notify_month_label_solar: "Production",
     editor_gauge_source: "Data source",
     editor_gauge_source_energy: "Energy dashboard (default)",
     editor_gauge_source_entities: "Two custom sensors",
@@ -1004,6 +1146,21 @@ const translations = {
     editor_power_list_accent_color: "Accent color (consumers)",
     editor_power_list_producer_color: "Producer color",
     editor_power_list_bar_tint_color: "Share bar color (empty = automatic from accent)",
+    editor_power_list_notify_hint:
+      "Warns you when a device draws power continuously for too long — a forgotten iron, heater or soldering station. The automation is built from this card's sensors.",
+    editor_power_list_notify_threshold: "Counts as \"running\" above",
+    editor_power_list_notify_duration: "Continuously for longer than",
+    editor_power_list_notify_exclude: "Exclude always-on devices",
+    editor_power_list_notify_exclude_hint:
+      "Devices meant to run around the clock (fridge, router, NAS). Producer entries are excluded automatically.",
+    editor_power_list_notify_button: "Set up notification",
+    editor_power_list_notify_success_prefix: "Set up for",
+    editor_power_list_notify_success_suffix: "devices. Find it under Settings → Automations.",
+    editor_power_list_notify_alias: "device left running",
+    editor_power_list_notify_description:
+      "Created by the M3 Power List Card: reports devices that draw power continuously for too long.",
+    editor_power_list_notify_message: "{name} has been running for {h} h ({w} W)",
+    editor_power_list_notify_empty: "No sensors left for the notification.",
     power_summary_export: "Feeding into the grid",
     power_summary_import: "Drawing from the grid",
     power_summary_neutral: "Balanced",
@@ -1100,10 +1257,49 @@ const translations = {
     editor_cost_show_projection: "Show forecast chip",
     editor_cost_show_comparison: "Show comparison chip",
     editor_cost_budget: "Budget (optional)",
+    editor_cost_notify_mode_budget: "Budget alert",
+    editor_cost_notify_mode_month_end: "Month-end report",
+    editor_cost_notify_entity: "Month-to-date entity (cost or consumption)",
+    editor_cost_notify_percent: "Warn at … % of budget",
+    editor_cost_notify_entity_hint:
+      "The card sums its total from long-term statistics, which an automation cannot read. Pick an entity whose current state is the month-to-date value instead (e.g. a utility_meter with a monthly cycle). Cost entities (device_class \"monetary\") are used as-is; consumption entities are multiplied by the price configured above.",
+    editor_cost_notify_month_end_hint:
+      "Reports the month-to-date value shortly before midnight on the last day — the meter resets right after that.",
+    editor_cost_notify_no_entity: "Please pick an available month-to-date entity.",
+    editor_cost_notify_no_price:
+      "With the \"Energy dashboard\" price source the price only exists in the statistics, not in an entity. Pick a cost entity (device_class \"monetary\") here, or configure a fixed price / input_number helper above.",
+    editor_cost_notify_bad_unit:
+      "Unit of the month-to-date entity is not recognised (expected Wh, kWh or MWh). For other quantities use the \"Custom\" price unit with a quantity factor above.",
+    editor_cost_notify_no_budget: "Set a budget above before using the budget alert.",
+    editor_cost_notify_period_warn:
+      "Note: this entity does not reset monthly ({period}) — the message would describe a different period.",
+    editor_cost_notify_alias_budget: "Budget alert",
+    editor_cost_notify_alias_month_end: "Month-end report",
+    editor_cost_notify_description: "Created automatically by the M3 Cost Card.",
+    editor_cost_notify_budget_message: "Budget alert: {value} of {budget} ({percent} %).",
+    editor_cost_notify_month_end_message: "Cost for {month}: {value}.",
     editor_top_consumers_unit_mode: "Display",
     editor_top_consumers_unit_mode_energy: "Energy (kWh)",
     editor_top_consumers_unit_mode_cost: "Cost",
     top_consumers_of_total_cost: "of cost",
+    editor_top_consumers_notify_hint:
+      "Weekly digest of your biggest consumers. Important: an automation cannot read the long-term statistics this card ranks by. The digest is therefore only possible when the source is “Custom sensor list” and every sensor is a utility_meter helper on a weekly cycle — their state already is the week's consumption.",
+    editor_top_consumers_notify_checking: "Checking sensors …",
+    editor_top_consumers_notify_blocked_source:
+      "Source “Energy dashboard”: the ranking comes from long-term statistics, which an automation cannot query. Switch the source to “Custom sensor list” with weekly utility_meter helpers.",
+    editor_top_consumers_notify_blocked_empty:
+      "No sensors selected yet.",
+    editor_top_consumers_notify_blocked_unsupported:
+      "Cannot be ranked: {list}. The digest needs utility_meter helpers on a weekly cycle in Wh/kWh/MWh only — for any other sensor there is no honest weekly value to report.",
+    editor_top_consumers_notify_cycle_hint:
+      "Weekly utility meters reset Monday at 00:00: send “This week (so far)” on Sunday evening, “Last week (complete)” on Monday.",
+    editor_top_consumers_notify_mode_current: "This week (so far)",
+    editor_top_consumers_notify_mode_last: "Last week (complete)",
+    editor_top_consumers_notify_alias: "weekly digest",
+    editor_top_consumers_notify_description:
+      "Created by the M3 Top Consumers Card: sends the biggest consumers from the selected utility_meter helpers every week.",
+    editor_top_consumers_notify_digest_current: "Your top consumers this week:",
+    editor_top_consumers_notify_digest_last: "Your top consumers last week:",
     light_default_name: "Light",
     light_brightness_label: "Brightness",
     light_color_temp_label: "Color temperature",
@@ -1385,6 +1581,23 @@ const translations = {
     editor_climate_overview_tile_tint_opacity: "Tile color strength",
     editor_climate_overview_accent_color: "Accent color",
     editor_climate_overview_accent_opacity: "Color strength",
+    editor_climate_overview_notify_rule_hint:
+      "Reports rooms at risk of mold: humidity above {h} % while the temperature is below {t} °C — the same rule as the warning on the card.",
+    editor_climate_overview_notify_rooms_hint:
+      "Only rooms with both a temperature and a humidity sensor are covered. Set it up again after adding new rooms.",
+    editor_climate_overview_notify_warning_off_hint:
+      "Note: \"Show mold warning\" is off — the card hides the icon, but the notification is still sent.",
+    editor_climate_overview_notify_mode_daily: "Daily (digest)",
+    editor_climate_overview_notify_mode_weekly: "Weekly (digest)",
+    editor_climate_overview_notify_alias: "mold risk",
+    editor_climate_overview_notify_description:
+      "Created by the M3 Climate Overview Card: reports rooms with high humidity at a low temperature.",
+    editor_climate_overview_notify_digest: "rooms at risk of mold:",
+    editor_climate_overview_notify_no_rooms:
+      "No rooms with both a temperature and a humidity sensor found.",
+    editor_climate_overview_notify_success_prefix: "Set up for",
+    editor_climate_overview_notify_success_suffix:
+      "rooms. Find it under Settings → Automations.",
   },
 } as const;
 

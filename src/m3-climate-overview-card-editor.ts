@@ -11,10 +11,13 @@ import {
   DEFAULT_CLIMATE_OVERVIEW_TEMP_THRESHOLDS,
   DEFAULT_CLIMATE_OVERVIEW_HUMIDITY_RANGE,
   DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
+  CLIMATE_OVERVIEW_MOLD_HUMIDITY_THRESHOLD,
+  CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, opacityRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
+import { discoverClimateRooms } from "./shared/ha-registry";
 import {
   initAppearanceState,
   radiusPresetPatch,
@@ -22,6 +25,28 @@ import {
   renderAppearanceSection,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import {
+  notifyServiceSchema,
+  notifyModeSchema,
+  notifyTimeSchema,
+  notifyWeekdaySchema,
+  renderNotifyButton,
+  notifyStyles,
+  saveNotifyAutomation,
+  resolveAutomationId,
+  type NotifyAutomationSpec,
+} from "./shared/notify-editor";
+
+const DEFAULT_NOTIFY_TIME = "09:00:00";
+
+// A room only enters the mould digest when both readings exist — the card
+// treats humidity as optional, so a temperature-only room can never satisfy
+// the rule and is dropped here rather than producing a half-evaluated entry.
+interface NotifyRoom {
+  name: string;
+  temperatureEntity: string;
+  humidityEntity: string;
+}
 
 type ClimateOverviewColorField =
   | "cold_color"
@@ -41,6 +66,9 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
 
   @state() private _config?: M3ClimateOverviewCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
 
   public setConfig(config: M3ClimateOverviewCardConfig): void {
     this._config = config;
@@ -53,6 +81,124 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
 
   private _t(key: TranslationKey): string {
     return localize(key, this._language);
+  }
+
+  // The notification has to cover exactly the rooms the card shows, and that
+  // set is either the manual list or whatever auto-discovery finds right now.
+  // Resolving it here (with the card's own precedence: a non-empty manual list
+  // wins) and baking the pairs into the automation keeps the two in sync;
+  // pressing the button again re-resolves after new sensors appear.
+  private async _resolveNotifyRooms(): Promise<NotifyRoom[]> {
+    const cfg = this._config;
+    if (!cfg || !this.hass) return [];
+    const source: { name: string; temperatureEntity: string; humidityEntity?: string }[] = cfg.rooms?.length
+      ? cfg.rooms.map((r) => ({
+          name: r.name,
+          temperatureEntity: r.temperature_entity,
+          humidityEntity: r.humidity_entity,
+        }))
+      : (cfg.auto_discover ?? true)
+        ? (
+            await discoverClimateRooms(this.hass, {
+              includeAreas: cfg.include_area,
+              excludeEntities: cfg.exclude_entities,
+              nameStrip: cfg.name_strip ?? DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
+            })
+          ).map((r) => ({ name: r.name, temperatureEntity: r.temperatureEntity, humidityEntity: r.humidityEntity }))
+        : [];
+
+    return source
+      .filter((r) => !!r.temperatureEntity && !!r.humidityEntity)
+      .map((r) => ({
+        name:
+          r.name ||
+          (this.hass!.states[r.temperatureEntity]?.attributes.friendly_name as string | undefined) ||
+          r.temperatureEntity,
+        temperatureEntity: r.temperatureEntity,
+        humidityEntity: r.humidityEntity!,
+      }));
+  }
+
+  // Mirrors _moldRisk() in the card: humidity strictly above the humidity
+  // threshold *and* temperature strictly below the temperature one. Both are
+  // fixed constants on the card, so they are inlined here as literals.
+  private _moldListTemplate(rooms: NotifyRoom[]): string {
+    const unit = this.hass?.config?.unit_system?.temperature ?? "°C";
+    // German renders decimals with a comma; the digest is plain text, so the
+    // swap has to happen inside the template.
+    const decimal = this._language.toLowerCase().startsWith("de") ? " | replace('.', ',')" : "";
+    const pairs = JSON.stringify(
+      rooms.map((r) => [r.name, r.temperatureEntity, r.humidityEntity]),
+    );
+    return (
+      `{% set rooms = ${pairs} %}` +
+      `{% set ns = namespace(items=[]) %}` +
+      `{% for r in rooms %}{% set t = states[r[1]] %}{% set h = states[r[2]] %}` +
+      `{% if t is not none and h is not none ` +
+      `and t.state not in ['unknown', 'unavailable'] ` +
+      `and h.state not in ['unknown', 'unavailable'] ` +
+      `and h.state | float(0) > ${CLIMATE_OVERVIEW_MOLD_HUMIDITY_THRESHOLD} ` +
+      `and t.state | float(100) < ${CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD} %}` +
+      `{% set ns.items = ns.items + [r[0] ~ ' (' ~ (h.state | float | round(0) | int) ~ ' %, ' ~ ` +
+      `((t.state | float | round(1)) | string${decimal}) ~ ' ${unit})'] %}` +
+      `{% endif %}{% endfor %}` +
+      `{{ ns.items }}`
+    );
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_notify_missing");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const rooms = await this._resolveNotifyRooms();
+      if (rooms.length === 0) throw new Error(this._t("editor_climate_overview_notify_no_rooms"));
+      const mode = cfg.notify_mode ?? "daily";
+      const cardName = cfg.name || this._t("climate_overview_default_name");
+      const automationId = resolveAutomationId("climate_mold", cfg.notify_automation_id);
+
+      // One digest listing every room at risk, so a damp flat doesn't turn
+      // into half a dozen separate pushes.
+      const automation = {
+        alias: `${cardName}: ${this._t("editor_climate_overview_notify_alias")}`,
+        description: this._t("editor_climate_overview_notify_description"),
+        mode: "single",
+        variables: { mold_items: this._moldListTemplate(rooms) },
+        triggers: [{ trigger: "time", at: cfg.notify_time || DEFAULT_NOTIFY_TIME }],
+        conditions: [
+          ...(mode === "weekly" ? [{ condition: "time", weekday: [cfg.notify_weekday || "mon"] }] : []),
+          { condition: "template", value_template: "{{ mold_items | count > 0 }}" },
+        ],
+        actions: targets.map((target) => ({
+          action: `notify.${target}`,
+          data: {
+            title: cardName,
+            message: `{{ mold_items | count }} ${this._t("editor_climate_overview_notify_digest")}\n• {{ mold_items | join('\n• ') }}`,
+          },
+        })),
+      };
+
+      await saveNotifyAutomation(this.hass, { id: automationId, ...automation } as NotifyAutomationSpec);
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+      this._notifyStatus = "success";
+      this._notifyDetail = `${rooms.length}`;
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
   }
 
   private _roomsMetaSchema(): SchemaEntry[] {
@@ -120,6 +266,21 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     ];
   }
 
+  private _notifySchema(): SchemaEntry[] {
+    const schema: SchemaEntry[] = [
+      notifyServiceSchema(this.hass),
+      notifyModeSchema([
+        { value: "daily", label: this._t("editor_climate_overview_notify_mode_daily") },
+        { value: "weekly", label: this._t("editor_climate_overview_notify_mode_weekly") },
+      ]),
+      notifyTimeSchema(),
+    ];
+    if ((this._config?.notify_mode ?? "daily") === "weekly") {
+      schema.push(notifyWeekdaySchema(this._language));
+    }
+    return schema;
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -160,6 +321,10 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       humidity_max: "editor_climate_overview_humidity_max",
       scale_min: "editor_climate_overview_scale_min",
       scale_max: "editor_climate_overview_scale_max",
+      notify_service: "editor_notify_service",
+      notify_mode: "editor_notify_mode",
+      notify_time: "editor_notify_time",
+      notify_weekday: "editor_notify_weekday",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -339,6 +504,12 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     const humidityRangeData = { humidity_min: humidityMin, humidity_max: humidityMax };
     const scaleRangeData = { scale_min: this._config.scale_min, scale_max: this._config.scale_max };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+      notify_mode: this._config.notify_mode ?? "daily",
+      notify_time: this._config.notify_time ?? DEFAULT_NOTIFY_TIME,
+      notify_weekday: this._config.notify_weekday ?? "mon",
+    };
 
     return html`
       <div class="editor">
@@ -432,6 +603,38 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
           </div>
         </ha-expansion-panel>
 
+        <ha-expansion-panel outlined .header=${this._t("editor_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">
+              ${this._t("editor_climate_overview_notify_rule_hint")
+                .replace("{h}", String(CLIMATE_OVERVIEW_MOLD_HUMIDITY_THRESHOLD))
+                .replace("{t}", String(CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD))}
+            </div>
+            <div class="hint">${this._t("editor_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_climate_overview_notify_rooms_hint")}</div>
+            ${this._config.show_mold_warning
+              ? nothing
+              : html`<div class="hint">${this._t("editor_climate_overview_notify_warning_off_hint")}</div>`}
+            ${renderNotifyButton({
+              language: this._language,
+              busy: this._notifyBusy,
+              disabled: !this._config.notify_service?.length,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              successText: `${this._t("editor_climate_overview_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_climate_overview_notify_success_suffix")}`,
+              onClick: () => this._setupNotify(),
+            })}
+          </div>
+        </ha-expansion-panel>
+
         <ha-expansion-panel outlined .header=${this._t("editor_progress_colors")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
@@ -492,6 +695,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
 
   static styles = [
     editorStyles,
+    notifyStyles,
     css`
       .override-row {
         display: flex;

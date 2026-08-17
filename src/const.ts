@@ -256,6 +256,14 @@ export const ENERGY_PROJECTION_OUTLINE_OPACITY = 50;
 export const ENERGY_MONTH_COMPARISON_BETTER_COLOR = PALETTE.ok;
 export const ENERGY_MONTH_COMPARISON_WORSE_COLOR = PALETTE.heat;
 
+// Evening default for the energy report: late enough that "today" is nearly
+// complete, early enough that the push still gets read the same day. Also
+// used for the month report (which fires on the 1st and reports the *closed*
+// previous month, so the time of day doesn't affect its correctness).
+export const DEFAULT_ENERGY_NOTIFY_TIME = "21:00:00";
+// A utility_meter's cycle is derived from next_reset - last_reset; these are
+// the tolerance bands that map that span onto "daily" / "monthly".
+
 export const DEFAULT_FLOW_RADIUS = RADIUS.card;
 export const DEFAULT_FLOW_ICON = "mdi:home-lightning-bolt-outline";
 export const FLOW_NODE_PV_COLOR = PALETTE.solar;
@@ -307,6 +315,8 @@ export const DEFAULT_POWER_LIST_ICON = "mdi:power-socket-de";
 export const DEFAULT_POWER_LIST_ACCENT = PALETTE.home;
 export const DEFAULT_POWER_LIST_PRODUCER_COLOR = PALETTE.solar;
 export const DEFAULT_POWER_LIST_THRESHOLD = 1;
+export const DEFAULT_POWER_LIST_NOTIFY_THRESHOLD = 10;
+export const DEFAULT_POWER_LIST_NOTIFY_DURATION_HOURS = 3;
 export const POWER_LIST_ROW_HEIGHT = HEIGHT.rowStandard;
 export const POWER_LIST_ROW_RADIUS = RADIUS.row;
 export const POWER_LIST_ROW_RADIUS_ACTIVE = RADIUS.rowActive;
@@ -375,6 +385,12 @@ export const DEFAULT_COST_RADIUS = RADIUS.card;
 export const DEFAULT_COST_ICON = "mdi:cash-multiple";
 export const DEFAULT_COST_ACCENT = PALETTE.solar;
 export const DEFAULT_COST_CURRENCY = "EUR";
+// Warn at 90 % of the budget: early enough to still react, late enough not to
+// cry wolf every month.
+export const DEFAULT_COST_NOTIFY_PERCENT = 90;
+// Late on the last day of the month — the month-to-date counter resets at
+// midnight, so the report has to run before that.
+export const DEFAULT_COST_NOTIFY_TIME = "23:55:00";
 export const COST_MAIN_ICON_SIZE = 52;
 export const COST_MAIN_ICON_RADIUS = RADIUS.squircle52;
 export const COST_CHIP_RADIUS = RADIUS.chip;

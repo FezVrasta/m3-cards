@@ -26,6 +26,14 @@ import {
   renderRadiusCornerFields,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import {
+  notifyServiceSchema,
+  notifyActions,
+  renderNotifyButton,
+  notifyStyles,
+  saveNotifyAutomation,
+  resolveAutomationId,
+} from "./shared/notify-editor";
 
 @customElement("m3-progress-card-editor")
 export class M3ProgressCardEditor
@@ -36,6 +44,9 @@ export class M3ProgressCardEditor
 
   @state() private _config?: M3ProgressCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
 
   public setConfig(config: M3ProgressCardConfig): void {
     this._config = config;
@@ -113,6 +124,99 @@ export class M3ProgressCardEditor
     ];
   }
 
+  private _notifySchema(): SchemaEntry[] {
+    // Targets only. "Appliance finished" has exactly one sensible moment to
+    // fire — the run ending — so there is nothing to schedule or choose.
+    return [notifyServiceSchema(this.hass)];
+  }
+
+  private get _cardName(): string {
+    const entity = this._config?.entity;
+    return (
+      this._config?.name ||
+      (entity ? (this.hass?.states?.[entity]?.attributes?.friendly_name ?? entity) : "")
+    );
+  }
+
+  // The card matches status values case-insensitively, an HA state trigger
+  // compares them verbatim. Emitting the usual casings keeps a config of
+  // "end" working against an entity that reports "End".
+  private _stateVariants(values: string[]): string[] {
+    const out = new Set<string>();
+    for (const raw of values) {
+      const value = raw.trim();
+      if (!value) continue;
+      const lower = value.toLowerCase();
+      out.add(value);
+      out.add(lower);
+      out.add(lower.charAt(0).toUpperCase() + lower.slice(1));
+    }
+    return [...out];
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_notify_missing");
+      return;
+    }
+    if (!cfg.entity) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_progress_notify_missing_entity");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const running = this._stateVariants(cfg.running_states ?? DEFAULT_RUNNING_STATES);
+      const done = this._stateVariants(cfg.done_states ?? DEFAULT_DONE_STATES);
+      if (running.length === 0 || done.length === 0) {
+        throw new Error(this._t("editor_progress_notify_missing_states"));
+      }
+      const cardName = this._cardName;
+      const automationId = resolveAutomationId("progress_done", cfg.notify_automation_id);
+      const message =
+        cfg.status_text_done ||
+        this._t("editor_progress_notify_message").replace("{name}", cardName);
+
+      await saveNotifyAutomation(this.hass, {
+        id: automationId,
+        alias: `${cardName}: ${this._t("editor_progress_notify_alias")}`,
+        description: this._t("editor_progress_notify_description"),
+        mode: "single",
+        // from: <running> is what makes this "a run just ended" rather than
+        // "the state is "done"" — an entity coming back from unavailable or
+        // reloading into a done state on restart never matches.
+        triggers: [
+          {
+            trigger: "state",
+            entity_id: cfg.entity,
+            from: running,
+            to: done,
+          },
+        ],
+        conditions: [],
+        actions: notifyActions(targets, cardName, message),
+      });
+
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+      this._notifyStatus = "success";
+      this._notifyDetail = "";
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
+  }
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       entity: "editor_progress_status_entity",
@@ -128,6 +232,7 @@ export class M3ProgressCardEditor
       wave_style: "editor_progress_wave_style",
       glass_background: "editor_glass_background",
       hide_when_ready: "editor_progress_hide_when_ready",
+      notify_service: "editor_notify_service",
       radius: "editor_radius",
       radius_preset: "editor_radius_preset",
       use_corners: "editor_use_corners",
@@ -320,6 +425,10 @@ export class M3ProgressCardEditor
       hide_when_ready: this._config.hide_when_ready ?? false,
     };
 
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+    };
+
     return html`
       <div class="editor">
         <ha-expansion-panel outlined .header=${this._t("editor_entities")} expanded>
@@ -368,6 +477,32 @@ export class M3ProgressCardEditor
               this._config.done_states ?? DEFAULT_DONE_STATES,
               (v) => this._statesChanged("done_states", v),
             )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_progress_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_progress_notify_states_hint")}</div>
+            ${this._config.entity
+              ? nothing
+              : html`<div class="hint">${this._t("editor_progress_notify_missing_entity")}</div>`}
+            ${renderNotifyButton({
+              language: this._language,
+              busy: this._notifyBusy,
+              disabled: !this._config.notify_service?.length || !this._config.entity,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              onClick: () => this._setupNotify(),
+            })}
           </div>
         </ha-expansion-panel>
 
@@ -484,7 +619,9 @@ export class M3ProgressCardEditor
     `;
   }
 
-  static styles = css`
+  static styles = [
+    notifyStyles,
+    css`
     .editor {
       display: flex;
       flex-direction: column;
@@ -583,7 +720,8 @@ export class M3ProgressCardEditor
       font-size: 12px;
       color: var(--secondary-text-color, var(--primary-text-color));
     }
-  `;
+  `,
+  ];
 }
 
 declare global {

@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3EnergyCardConfig } from "./types";
 import {
@@ -6,6 +6,7 @@ import {
   DEFAULT_ENERGY_DAYS,
   DEFAULT_ENERGY_HOURS,
   DEFAULT_ENERGY_MONTHS,
+  DEFAULT_ENERGY_NOTIFY_TIME,
   ENERGY_MIN_DAYS,
   ENERGY_MAX_DAYS,
   ENERGY_MIN_HOURS,
@@ -21,6 +22,19 @@ import {
   editorStyles,
   type SchemaEntry,
 } from "./shared/editor-helpers";
+import { getEntityPlatform } from "./shared/ha-registry";
+import {
+  notifyServiceSchema,
+  notifyModeSchema,
+  notifyTimeSchema,
+  notifyActions,
+  renderNotifyButton,
+  notifyStyles,
+  saveNotifyAutomation,
+  resolveAutomationId,
+  type NotifyAutomationSpec,
+  meterCycle,
+} from "./shared/notify-editor";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -31,6 +45,16 @@ import {
 } from "./shared/appearance-editor";
 import { hasLongTermStatistics } from "./shared/ha-statistics";
 
+// What a Jinja template inside the generated automation can honestly report
+// for the notify entity:
+//   "daily"   – its state IS today's total
+//   "monthly" – it's a monthly utility_meter, so its `last_period` attribute
+//               is the completed previous month's exact total
+//   "other"   – its state is not a period total (lifetime counter, weekly /
+//               quarterly / yearly meter, …) — nothing correct to report
+//   "none"    – no entity to read at all
+type NotifyScope = "daily" | "monthly" | "other" | "none";
+
 @customElement("m3-energy-card-editor")
 export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
@@ -38,17 +62,24 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
   @state() private _config?: M3EnergyCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
   @state() private _showFallbackHint = false;
+  @state() private _isUtilityMeter = false;
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
 
   private _lastCheckedEntity?: string;
+  private _lastMeterEntity?: string;
 
   public setConfig(config: M3EnergyCardConfig): void {
     this._config = config;
     this._appearance = initAppearanceState(config, DEFAULT_ENERGY_RADIUS);
     this._maybeCheckFallback();
+    this._maybeCheckMeter();
   }
 
   protected updated(): void {
     this._maybeCheckFallback();
+    this._maybeCheckMeter();
   }
 
   private _maybeCheckFallback(): void {
@@ -58,6 +89,132 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
     hasLongTermStatistics(this.hass, this._config.entity).then((has) => {
       this._showFallbackHint = !has;
     });
+  }
+
+  // The sensor the notification reads: an explicit override wins, otherwise
+  // the card's own entity.
+  private get _notifyEntity(): string | undefined {
+    return this._config?.notify_entity || this._config?.entity || undefined;
+  }
+
+  // A utility_meter's cycle isn't exposed as an attribute in current HA
+  // builds (verified against a live instance: only status / last_period /
+  // last_valid_state / last_reset / next_reset are published), so the platform
+  // lookup gates the check and the reset timestamps supply the cycle length.
+  private _maybeCheckMeter(): void {
+    const entity = this._notifyEntity;
+    if (!this.hass || !entity) return;
+    if (entity === this._lastMeterEntity) return;
+    this._lastMeterEntity = entity;
+    this._isUtilityMeter = false;
+    getEntityPlatform(this.hass, entity).then((platform) => {
+      if (entity !== this._notifyEntity) return; // stale response
+      this._isUtilityMeter = platform === "utility_meter";
+    });
+  }
+
+  private get _notifyScope(): NotifyScope {
+    const cfg = this._config;
+    const entity = this._notifyEntity;
+    if (!cfg || !entity || !this.hass?.states[entity]) return "none";
+    if (this._isUtilityMeter) return meterCycle(this.hass, entity) as NotifyScope;
+    // Not a utility_meter, so the cycle can't be verified — except in the one
+    // configuration where the card itself already treats the live state as
+    // "today": consumption mode, day period, "state" statistic type (that's
+    // literally the value it draws as today's bar). Only valid for the card's
+    // own entity; an override sensor carries no such guarantee.
+    if (entity !== cfg.entity) return "other";
+    const mode = cfg.mode ?? "consumption";
+    const period = cfg.period ?? "day";
+    const statisticType =
+      cfg.statistic_type ?? (mode === "solar" || period === "month" ? "change" : "state");
+    if (mode !== "solar" && period === "day" && statisticType === "state") return "daily";
+    return "other";
+  }
+
+  private get _notifyScopeHint(): TranslationKey {
+    const scope = this._notifyScope;
+    const mode = this._config?.notify_mode ?? "day_end";
+    if (scope === "none") return "editor_energy_notify_no_entity";
+    if (scope === "other") return "editor_energy_notify_unsupported_other";
+    if (scope === "daily") {
+      return mode === "day_end" ? "editor_energy_notify_scope_daily" : "editor_energy_notify_unsupported_daily";
+    }
+    return mode === "month_end"
+      ? "editor_energy_notify_scope_monthly"
+      : "editor_energy_notify_unsupported_monthly";
+  }
+
+  private get _notifySupported(): boolean {
+    const mode = this._config?.notify_mode ?? "day_end";
+    return this._notifyScope === (mode === "month_end" ? "monthly" : "daily");
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    const entity = this._notifyEntity;
+    if (!this.hass || !cfg || !entity) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_notify_missing");
+      return;
+    }
+    if (!this._notifySupported) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t(this._notifyScopeHint);
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const state = this.hass.states[entity];
+      const solar = (cfg.mode ?? "consumption") === "solar";
+      const unit = cfg.unit || String(state?.attributes.unit_of_measurement ?? "kWh");
+      const cardName = cfg.name || state?.attributes.friendly_name || entity;
+      const mode = cfg.notify_mode ?? "day_end";
+      const automationId = resolveAutomationId("energy_report", cfg.notify_automation_id);
+
+      const message =
+        mode === "month_end"
+          ? // Fires on the 1st, after the meter's midnight reset has moved the
+            // just-finished month into `last_period` — the exact, complete
+            // total, rather than a month-to-date read that would clip the last
+            // hours of the month. The label carries the previous month as
+            // MM/YYYY (strftime has no localized month names in HA templates).
+            `${this._t(solar ? "editor_energy_notify_month_label_solar" : "editor_energy_notify_month_label")}` +
+            ` {{ (now().replace(day=1) - timedelta(days=1)).strftime('%m/%Y') }}: ` +
+            `{{ state_attr('${entity}', 'last_period') | float(0) | round(1) }} ${unit}`
+          : `${this._t(solar ? "editor_energy_notify_day_label_solar" : "editor_energy_notify_day_label")}: ` +
+            `{{ states('${entity}') | float(0) | round(1) }} ${unit}`;
+
+      const spec: NotifyAutomationSpec = {
+        id: automationId,
+        alias: `${cardName}: ${this._t("editor_energy_notify_alias")}`,
+        description: this._t("editor_energy_notify_description"),
+        mode: "single",
+        triggers: [{ trigger: "time", at: cfg.notify_time || DEFAULT_ENERGY_NOTIFY_TIME }],
+        conditions:
+          mode === "month_end"
+            ? [{ condition: "template", value_template: "{{ now().day == 1 }}" }]
+            : [],
+        actions: notifyActions(targets, cardName, message),
+      };
+
+      await saveNotifyAutomation(this.hass, spec);
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+      this._notifyStatus = "success";
+      this._notifyDetail = "";
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
   }
 
   private get _language(): string {
@@ -215,6 +372,18 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
     return fields;
   }
 
+  private _notifySchema(): SchemaEntry[] {
+    return [
+      notifyModeSchema([
+        { value: "day_end", label: this._t("editor_energy_notify_mode_day_end") },
+        { value: "month_end", label: this._t("editor_energy_notify_mode_month_end") },
+      ]),
+      { name: "notify_entity", selector: { entity: { domain: "sensor" } } },
+      notifyServiceSchema(this.hass),
+      notifyTimeSchema(),
+    ];
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -255,6 +424,10 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       show_average: "editor_energy_show_average",
       show_comparison: "editor_energy_show_comparison",
       higher_is_better: "editor_energy_higher_is_better",
+      notify_mode: "editor_notify_mode",
+      notify_entity: "editor_energy_notify_entity",
+      notify_service: "editor_notify_service",
+      notify_time: "editor_notify_time",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -366,6 +539,12 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       higher_is_better: this._config.higher_is_better ?? false,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_mode: this._config.notify_mode ?? "day_end",
+      notify_entity: this._config.notify_entity ?? "",
+      notify_service: this._config.notify_service ?? [],
+      notify_time: this._config.notify_time ?? DEFAULT_ENERGY_NOTIFY_TIME,
+    };
 
     return html`
       <div class="editor">
@@ -395,6 +574,32 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_notify_hint")}</div>
+            <div class="hint">${this._t("editor_energy_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint ${this._notifySupported ? "" : "warn"}">
+              ${this._t(this._notifyScopeHint)}
+            </div>
+            ${renderNotifyButton({
+              language: this._language,
+              busy: this._notifyBusy,
+              disabled: !this._config.notify_service?.length || !this._notifySupported,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              onClick: () => this._setupNotify(),
+            })}
           </div>
         </ha-expansion-panel>
 
@@ -487,7 +692,15 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
     `;
   }
 
-  static styles = editorStyles;
+  static styles = [
+    editorStyles,
+    notifyStyles,
+    css`
+      .hint.warn {
+        color: var(--warning-color, #ffa600);
+      }
+    `,
+  ];
 }
 
 declare global {

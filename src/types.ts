@@ -195,7 +195,10 @@ export interface ProgressStateColors {
   done?: string;
 }
 
-export interface M3ProgressCardConfig {
+export interface M3ProgressCardConfig extends NotifyConfigBase {
+  // notify_service / notify_automation_id come from NotifyConfigBase — see
+  // shared/notify-editor. The "appliance finished" automation needs no
+  // schedule, so notify_mode/time/weekday stay unused here.
   type: string;
   entity: string;
   percentage_entity?: string;
@@ -228,10 +231,23 @@ export interface M3ProgressCardConfig {
   card_version?: string;
 }
 
-export interface M3EnergyCardConfig {
+export type EnergyNotifyMode = "day_end" | "month_end";
+
+export interface M3EnergyCardConfig extends NotifyConfigBase {
   type: string;
   entity?: string;
   unit?: string;
+  // notify_service / notify_time / notify_automation_id come from
+  // NotifyConfigBase — see shared/notify-editor. notify_weekday is unused
+  // here (both report modes are date-driven, not weekday-driven).
+  notify_mode?: EnergyNotifyMode;
+  /**
+   * Sensor the notification reads instead of `entity`. The chart's entity is
+   * often a lifetime counter (correct for statistics-backed bars, useless in
+   * a Jinja template); this lets the report point at a period-scoped
+   * utility_meter of the same source without changing what the chart draws.
+   */
+  notify_entity?: string;
   statistic_type?: "change" | "state";
   mode?: "consumption" | "solar";
   source?: "entity" | "energy";
@@ -370,7 +386,7 @@ export interface PowerListEntity {
 
 export type PowerListSort = "power_desc" | "power_asc" | "name" | "config";
 
-export interface M3PowerListCardConfig {
+export interface M3PowerListCardConfig extends NotifyConfigBase {
   type: string;
   entities?: PowerListEntity[];
   auto_discover?: boolean;
@@ -378,6 +394,14 @@ export interface M3PowerListCardConfig {
   include_label?: string[];
   exclude_entities?: string[];
   threshold?: number;
+  // notify_service / notify_mode / notify_time / notify_weekday /
+  // notify_automation_id come from NotifyConfigBase — see shared/notify-editor.
+  /** Watts a device must exceed before the "left running" clock starts. */
+  notify_power_threshold?: number;
+  /** How long it has to stay above that draw before notifying. */
+  notify_duration_hours?: number;
+  /** Devices that are meant to run around the clock (fridge, router, NAS). */
+  notify_exclude_entities?: string[];
   sort?: PowerListSort;
   max_visible?: number;
   show_idle_toggle?: boolean;
@@ -451,7 +475,12 @@ export interface TopConsumerEntityConfig {
 
 export type TopConsumersUnitMode = "energy" | "cost";
 
-export interface M3TopConsumersCardConfig extends PricingConfig {
+export interface M3TopConsumersCardConfig extends PricingConfig, NotifyConfigBase {
+  // notify_service / notify_mode / notify_time / notify_weekday /
+  // notify_automation_id come from NotifyConfigBase — see
+  // shared/notify-editor. The weekly digest only works for utility_meter
+  // helpers on a weekly cycle (see the editor for why), so notify_mode here
+  // selects which cycle to report: "current" | "last_week".
   type: string;
   source?: TopConsumersSource;
   entities?: TopConsumerEntityConfig[];
@@ -498,7 +527,7 @@ export interface PricingConfig {
 
 export type CostPeriod = "day" | "month" | "year";
 
-export interface M3CostCardConfig extends PricingConfig {
+export interface M3CostCardConfig extends PricingConfig, NotifyConfigBase {
   type: string;
   entity?: string;
   statistic_type?: "change" | "state";
@@ -509,6 +538,16 @@ export interface M3CostCardConfig extends PricingConfig {
   show_projection?: boolean;
   show_comparison?: boolean;
   budget?: number;
+  // notify_service / notify_mode / notify_time / notify_automation_id come
+  // from NotifyConfigBase — see shared/notify-editor.
+  // The card's own total comes from long-term statistics, which a Jinja
+  // template can't read; the notification therefore needs an entity whose
+  // *state* is the month-to-date value (a monetary one, or a consumption one
+  // that gets multiplied by the configured price).
+  notify_cost_entity?: string;
+  /** Warn at this share of `budget` (%), so the warning arrives before the
+   * budget is blown. Defaults to DEFAULT_COST_NOTIFY_PERCENT. */
+  notify_budget_percent?: number;
   accent_color?: string;
   accent_opacity?: number;
   text_color?: string;
@@ -714,7 +753,9 @@ export interface ClimateOverviewRoomConfig {
   color?: string;
 }
 
-export interface M3ClimateOverviewCardConfig {
+export type ClimateOverviewNotifyMode = "daily" | "weekly";
+
+export interface M3ClimateOverviewCardConfig extends NotifyConfigBase {
   type: string;
   auto_discover?: boolean;
   include_area?: string[];
@@ -728,6 +769,9 @@ export interface M3ClimateOverviewCardConfig {
   show_outlier_chip?: boolean;
   show_trend?: boolean;
   show_mold_warning?: boolean;
+  // notify_service / notify_time / notify_weekday / notify_automation_id come
+  // from NotifyConfigBase — see shared/notify-editor.
+  notify_mode?: ClimateOverviewNotifyMode;
   temp_thresholds?: ClimateOverviewTempThresholds;
   humidity_range?: [number, number];
   scale_min?: number;
