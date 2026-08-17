@@ -636,3 +636,45 @@ export const DEFAULT_AQUARIUM_DEVICE_COLORS = {
   cleaning: PALETTE.cover,
   camera: PALETTE.media,
 } as const;
+
+export const DEFAULT_UPDATES_RADIUS = RADIUS.card;
+export const DEFAULT_UPDATES_ICON = "mdi:package-up";
+export const DEFAULT_UPDATES_MAX_VISIBLE = 5;
+export const DEFAULT_UPDATES_BACKUP_WARN_DAYS = 7;
+
+export const UPDATES_COLOR_OK = "#81c784";
+export const UPDATES_COLOR_AVAILABLE = "#85b7eb";
+export const UPDATES_COLOR_ADDON = "#a58fe8";
+export const UPDATES_COLOR_HACS = "#5dcaa5";
+export const UPDATES_COLOR_FIRMWARE = "#f0a24a";
+export const UPDATES_COLOR_REMOTE = "#8fa3b8";
+export const UPDATES_COLOR_BACKUP_WARN = "#f0a24a";
+export const UPDATES_COLOR_BACKUP_MISSING = "#e57368";
+
+export const UPDATES_BANNER_PADDING = 12;
+export const UPDATES_BANNER_RADIUS = 22;
+export const UPDATES_BANNER_ICON_SIZE = 46;
+export const UPDATES_BANNER_ICON_RADIUS = 17;
+export const UPDATES_CHIP_HEIGHT = 30;
+export const UPDATES_CHIP_RADIUS = 15;
+export const UPDATES_CORE_PADDING = 13;
+export const UPDATES_CORE_RADIUS = 20;
+export const UPDATES_CORE_ICON_SIZE = 38;
+export const UPDATES_CORE_ICON_RADIUS = 14;
+export const UPDATES_ROW_HEIGHT = 48;
+export const UPDATES_ROW_RADIUS = 16;
+export const UPDATES_ROW_ICON_SIZE = 30;
+export const UPDATES_ROW_ICON_RADIUS = 11;
+export const UPDATES_TOGGLE_HEIGHT = 44;
+export const UPDATES_TOGGLE_RADIUS = 18;
+export const UPDATES_COMPACT_ROW_HEIGHT = 36;
+export const UPDATES_COMPACT_ROW_RADIUS = 14;
+
+// Default display order; group_order may override it.
+export const UPDATES_GROUP_ORDER = [
+  "core", "os", "supervisor", "addon", "hacs", "firmware", "remote", "other",
+] as const;
+
+// Zigbee/device firmware flashing can brick hardware, so these are listed
+// read-only by default and installed deliberately from the device page.
+export const DEFAULT_UPDATES_NO_INSTALL: string[] = ["firmware"];

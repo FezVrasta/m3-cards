@@ -853,6 +853,62 @@ export interface M3AquariumCardConfig extends NotifyConfigBase {
   card_version?: string;
 }
 
+
+export type UpdateGroup =
+  | "core"
+  | "os"
+  | "supervisor"
+  | "addon"
+  | "hacs"
+  | "firmware"
+  | "remote"
+  | "other";
+
+export interface M3UpdatesCardConfig extends NotifyConfigBase {
+  type: string;
+  auto_discover?: boolean;
+  entities?: string[];
+  exclude_entities?: string[];
+  include_types?: UpdateGroup[];
+  /** Display order of the groups; anything omitted keeps the default order. */
+  group_order?: UpdateGroup[];
+  /** entity_id substring → group, overriding the platform-based mapping. */
+  type_patterns?: Record<string, UpdateGroup>;
+  /** Groups shown read-only — no install button. Defaults to firmware. */
+  no_install_types?: UpdateGroup[];
+  backup_entity?: string;
+  backup_warn_days?: number;
+  require_confirm?: boolean;
+  inline_install?: boolean;
+  /**
+   * How many pending updates are shown directly, most important first
+   * (group_order decides what "important" means). The rest collapse behind
+   * an expander, like the battery card's healthy-devices section.
+   */
+  max_visible?: number;
+  show_uptodate?: boolean;
+  show_skipped?: boolean;
+  show_release_notes?: boolean;
+  name?: string;
+  icon?: string;
+  ok_color?: string;
+  update_color?: string;
+  progress_color?: string;
+  addon_color?: string;
+  hacs_color?: string;
+  firmware_color?: string;
+  remote_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
 export type M3CardConfig =
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
@@ -872,7 +928,8 @@ export type M3CardConfig =
   | M3PresenceCardConfig
   | M3MediaCardConfig
   | M3ClimateOverviewCardConfig
-  | M3AquariumCardConfig;
+  | M3AquariumCardConfig
+  | M3UpdatesCardConfig;
 
 export interface LovelaceCardEditor<
   T extends M3CardConfig = M3CardConfig,
