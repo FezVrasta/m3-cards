@@ -16,6 +16,11 @@ export type NotifyStatus = "idle" | "success" | "error";
 // Config fields every notify-capable card carries. Cards spread this into
 // their own config interface rather than nesting, so YAML stays flat.
 export interface NotifyConfigBase {
+  /**
+   * Master switch. Off by default — a card must never start notifying just
+   * because a target was picked while exploring the editor.
+   */
+  notify_enabled?: boolean;
   notify_service?: string[];
   notify_mode?: string;
   notify_time?: string;
@@ -153,6 +158,45 @@ export const notifyStyles = css`
   .notify-status.error {
     color: var(--error-color, #db4437);
   }
+
+  .notify-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .notify-toggle-label {
+    font-size: 14px;
+    color: var(--primary-text-color);
+  }
+
+  .notify-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  .notify-state ha-icon {
+    --mdc-icon-size: 18px;
+  }
+
+  .notify-state.active {
+    background: color-mix(in srgb, var(--success-color, #4caf50) 14%, transparent);
+    color: var(--success-color, #4caf50);
+  }
+
+  .notify-state.inactive {
+    background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+    color: var(--secondary-text-color, var(--primary-text-color));
+  }
+
+  .notify-blocked {
+    font-size: 13px;
+    color: var(--warning-color, #ffa726);
+  }
 `;
 
 // ---- automation plumbing --------------------------------------------
@@ -229,4 +273,98 @@ export async function saveNotifyAutomation(
 ): Promise<void> {
   const { id, ...body } = spec;
   await hass.callApi("POST", `config/automation/config/${id}`, body);
+}
+
+export type AutomationStatus = "missing" | "on" | "off";
+
+// An automation's config id and its entity_id are different things; the
+// registry links them via unique_id.
+function automationEntityId(hass: HomeAssistant | undefined, automationId: string): string | undefined {
+  if (!hass || !automationId) return undefined;
+  return Object.keys(hass.states).find(
+    (id) => id.startsWith("automation.") && hass.states[id].attributes.id === automationId,
+  );
+}
+
+// Reads the real state rather than trusting the config flag, so the editor
+// can't claim a notification is active after the automation was deleted or
+// switched off elsewhere.
+export function automationStatus(
+  hass: HomeAssistant | undefined,
+  automationId: string | undefined,
+): AutomationStatus {
+  if (!automationId) return "missing";
+  const entityId = automationEntityId(hass, automationId);
+  if (!entityId) return "missing";
+  return hass!.states[entityId].state === "on" ? "on" : "off";
+}
+
+export async function setAutomationEnabled(
+  hass: HomeAssistant,
+  automationId: string,
+  enabled: boolean,
+): Promise<void> {
+  const entityId = automationEntityId(hass, automationId);
+  if (!entityId) return;
+  await hass.callService("automation", enabled ? "turn_on" : "turn_off", {}, { entity_id: entityId });
+}
+
+export interface NotifyControlsOptions {
+  hass: HomeAssistant | undefined;
+  language: string;
+  enabled: boolean;
+  automationId?: string;
+  busy: boolean;
+  status: NotifyStatus;
+  detail?: string;
+  successText?: string;
+  /** Why the notification can't be switched on yet; also disables the toggle. */
+  blockedReason?: string;
+  onToggle: (enabled: boolean) => void;
+  onSetup: () => void;
+}
+
+// The whole control block: master toggle, a live status line reflecting the
+// actual automation, and an update button once it exists. Cards render this
+// instead of assembling their own, so on/off reads identically everywhere.
+export function renderNotifyControls(options: NotifyControlsOptions): TemplateResult {
+  const t = (key: TranslationKey) => localize(key, options.language);
+  const live = automationStatus(options.hass, options.automationId);
+  const blocked = !!options.blockedReason;
+  return html`
+    <div class="notify-toggle-row">
+      <ha-switch
+        .checked=${options.enabled}
+        .disabled=${blocked || options.busy}
+        @change=${(e: Event) => options.onToggle((e.target as HTMLInputElement).checked)}
+      ></ha-switch>
+      <span class="notify-toggle-label">${t("editor_notify_enabled")}</span>
+    </div>
+    ${blocked ? html`<div class="notify-blocked">${options.blockedReason}</div>` : nothing}
+    ${options.enabled && !blocked
+      ? html`
+          <div class="notify-state ${live === "on" ? "active" : "inactive"}">
+            <ha-icon icon=${live === "on" ? "mdi:bell-ring-outline" : "mdi:bell-off-outline"}></ha-icon>
+            <span>
+              ${live === "on"
+                ? t("editor_notify_state_active")
+                : live === "off"
+                  ? t("editor_notify_state_paused")
+                  : t("editor_notify_state_missing")}
+            </span>
+          </div>
+          <button class="notify-btn" ?disabled=${options.busy} @click=${options.onSetup}>
+            <ha-icon icon="mdi:refresh"></ha-icon>
+            ${t(live === "missing" ? "editor_notify_button" : "editor_notify_update")}
+          </button>
+        `
+      : nothing}
+    ${options.status === "success"
+      ? html`<div class="notify-status success">
+          ${options.successText ?? t("editor_notify_success")}
+        </div>`
+      : options.status === "error"
+        ? html`<div class="notify-status error">${t("editor_notify_error")} ${options.detail ?? ""}</div>`
+        : nothing}
+  `;
 }

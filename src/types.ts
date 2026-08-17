@@ -811,7 +811,7 @@ export interface AquariumScheduleEntry {
 
 export type AquariumCameraStyle = "none" | "thumbnail" | "banner" | "live";
 
-export interface M3AquariumCardConfig {
+export interface M3AquariumCardConfig extends NotifyConfigBase {
   type: string;
   name?: string;
   icon?: string;

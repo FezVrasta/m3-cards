@@ -24,6 +24,9 @@ import {
 } from "./shared/appearance-editor";
 import {
   notifyServiceSchema,
+  renderNotifyControls,
+  setAutomationEnabled,
+  resolveAutomationId,
   notifyTimeSchema,
   notifyStyles,
   saveNotifyAutomation,
@@ -250,6 +253,18 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
   // interval helper it shares with the card's chip if there isn't one yet. The
   // automation id is derived from the cleaning entity so pressing the button
   // twice updates the same automation instead of piling up duplicates.
+  private async _toggleReminder(enabled: boolean): Promise<void> {
+    if (!this._config || !this.hass) return;
+    this._config = { ...this._config, notify_enabled: enabled };
+    fireEvent(this, "config-changed", { config: this._config });
+    if (enabled) {
+      await this._setupReminder();
+      return;
+    }
+    const id = this._config.notify_automation_id;
+    if (id) await setAutomationEnabled(this.hass, id, false);
+  }
+
   private async _setupReminder(): Promise<void> {
     const cfg = this._config;
     if (!this.hass || !cfg) return;
@@ -296,7 +311,10 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
       const cleaned = cfg.cleaning_entity;
       const tsExpr = `{% set ts = state_attr('${cleaned}', 'timestamp') %}`;
       const ivExpr = `{% set iv = states('${intervalEntity}') | float(${DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS}) %}`;
-      const automationId = `m3_aquarium_clean_${slugifyForId(cleaned)}`;
+      const automationId = resolveAutomationId(
+        "aquarium_clean",
+        cfg.notify_automation_id ?? `m3_aquarium_clean_${slugifyForId(cleaned)}`,
+      );
 
       await saveNotifyAutomation(this.hass, {
         id: automationId,
@@ -318,6 +336,16 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
           },
         })),
       });
+
+      await setAutomationEnabled(this.hass, automationId, true);
+
+      if (cfg.notify_automation_id !== automationId) {
+
+        this._config = { ...cfg, notify_automation_id: automationId };
+
+        fireEvent(this, "config-changed", { config: this._config });
+
+      }
 
       this._reminderStatus = "success";
       this._reminderDetail = intervalEntity;
@@ -668,25 +696,23 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
-            <button
-              class="notify-btn"
-              ?disabled=${this._reminderBusy ||
-              !this._config.cleaning_entity ||
-              !this._config.cleaning_notify_service?.length}
-              @click=${() => this._setupReminder()}
-            >
-              <ha-icon icon="mdi:bell-plus-outline"></ha-icon>
-              ${this._t("editor_aquarium_reminder_button")}
-            </button>
-            ${this._reminderStatus === "success"
-              ? html`<div class="notify-status success">
-                  ${this._t("editor_aquarium_reminder_success")}
-                </div>`
-              : this._reminderStatus === "error"
-                ? html`<div class="notify-status error">
-                    ${this._t("editor_aquarium_reminder_error")} ${this._reminderDetail}
-                  </div>`
-                : nothing}
+            ${renderNotifyControls({
+              hass: this.hass,
+              language: this._language,
+              enabled: this._config.notify_enabled ?? false,
+              automationId: this._config.notify_automation_id,
+              busy: this._reminderBusy,
+              status: this._reminderStatus,
+              detail: this._reminderDetail,
+              successText: this._t("editor_aquarium_reminder_success"),
+              blockedReason: !this._config.cleaning_entity
+                ? this._t("editor_aquarium_reminder_missing")
+                : this._config.cleaning_notify_service?.length
+                  ? undefined
+                  : this._t("editor_notify_missing"),
+              onToggle: (on) => this._toggleReminder(on),
+              onSetup: () => this._setupReminder(),
+            })}
           </div>
         </ha-expansion-panel>
 

@@ -30,7 +30,8 @@ import {
   notifyModeSchema,
   notifyTimeSchema,
   notifyWeekdaySchema,
-  renderNotifyButton,
+  renderNotifyControls,
+  setAutomationEnabled,
   notifyStyles,
   saveNotifyAutomation,
   resolveAutomationId,
@@ -146,6 +147,20 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     );
   }
 
+  // On switches the automation on (creating it first if needed); off pauses
+  // it rather than deleting, so the configuration survives a toggle.
+  private async _toggleNotify(enabled: boolean): Promise<void> {
+    if (!this._config || !this.hass) return;
+    this._config = { ...this._config, notify_enabled: enabled };
+    fireEvent(this, "config-changed", { config: this._config });
+    if (enabled) {
+      await this._setupNotify();
+      return;
+    }
+    const id = this._config.notify_automation_id;
+    if (id) await setAutomationEnabled(this.hass, id, false);
+  }
+
   private async _setupNotify(): Promise<void> {
     const cfg = this._config;
     if (!this.hass || !cfg) return;
@@ -191,6 +206,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
         this._config = { ...cfg, notify_automation_id: automationId };
         fireEvent(this, "config-changed", { config: this._config });
       }
+      await setAutomationEnabled(this.hass, automationId, true);
       this._notifyStatus = "success";
       this._notifyDetail = `${rooms.length}`;
     } catch (e) {
@@ -623,14 +639,18 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
             ${this._config.show_mold_warning
               ? nothing
               : html`<div class="hint">${this._t("editor_climate_overview_notify_warning_off_hint")}</div>`}
-            ${renderNotifyButton({
+            ${renderNotifyControls({
+              hass: this.hass,
+              enabled: this._config.notify_enabled ?? false,
+              automationId: this._config.notify_automation_id,
+              blockedReason: this._config.notify_service?.length ? undefined : this._t("editor_notify_missing"),
               language: this._language,
               busy: this._notifyBusy,
-              disabled: !this._config.notify_service?.length,
               status: this._notifyStatus,
               detail: this._notifyDetail,
               successText: `${this._t("editor_climate_overview_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_climate_overview_notify_success_suffix")}`,
-              onClick: () => this._setupNotify(),
+              onToggle: (on) => this._toggleNotify(on),
+              onSetup: () => this._setupNotify(),
             })}
           </div>
         </ha-expansion-panel>

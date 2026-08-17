@@ -31,7 +31,8 @@ import {
   notifyServiceSchema,
   notifyTimeSchema,
   notifyWeekdaySchema,
-  renderNotifyButton,
+  renderNotifyControls,
+  setAutomationEnabled,
   notifyStyles,
   saveNotifyAutomation,
   resolveAutomationId,
@@ -105,6 +106,21 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     } catch {
       return undefined; // 404 — nothing to adopt
     }
+  }
+
+  // Turning it on runs the full setup (creating the automation if needed);
+  // turning it off pauses the automation rather than deleting it, so the
+  // configuration survives a toggle round-trip.
+  private async _toggleNotify(enabled: boolean): Promise<void> {
+    if (!this._config || !this.hass) return;
+    this._config = { ...this._config, notify_enabled: enabled };
+    fireEvent(this, "config-changed", { config: this._config });
+    if (enabled) {
+      await this._setupNotify();
+      return;
+    }
+    const id = this._config.notify_automation_id;
+    if (id) await setAutomationEnabled(this.hass, id, false);
   }
 
   private async _setupNotify(): Promise<void> {
@@ -205,6 +221,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
         this._config = { ...cfg, notify_automation_id: automationId };
         fireEvent(this, "config-changed", { config: this._config });
       }
+      await setAutomationEnabled(this.hass, automationId, true);
       this._notifyStatus = "success";
       this._notifyDetail = `${ids.length}`;
     } catch (e) {
@@ -578,15 +595,20 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_battery_notify_exclude_hint")}</div>
-            ${renderNotifyButton({
+            ${renderNotifyControls({
+              hass: this.hass,
               language: this._language,
+              enabled: this._config.notify_enabled ?? false,
+              automationId: this._config.notify_automation_id,
               busy: this._notifyBusy,
-              disabled: !this._config.notify_service?.length,
               status: this._notifyStatus,
               detail: this._notifyDetail,
-              labelKey: "editor_battery_notify_button",
+              blockedReason: this._config.notify_service?.length
+                ? undefined
+                : this._t("editor_notify_missing"),
               successText: `${this._t("editor_battery_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_battery_notify_success_suffix")}`,
-              onClick: () => this._setupNotify(),
+              onToggle: (on) => this._toggleNotify(on),
+              onSetup: () => this._setupNotify(),
             })}
           </div>
         </ha-expansion-panel>

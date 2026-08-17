@@ -24,7 +24,8 @@ import {
   notifyModeSchema,
   notifyTimeSchema,
   notifyWeekdaySchema,
-  renderNotifyButton,
+  renderNotifyControls,
+  setAutomationEnabled,
   notifyStyles,
   saveNotifyAutomation,
   resolveAutomationId,
@@ -121,6 +122,20 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
     this._eligibility = unsupported.length ? "unsupported" : "ok";
   }
 
+  // On switches the automation on (creating it first if needed); off pauses
+  // it rather than deleting, so the configuration survives a toggle.
+  private async _toggleNotify(enabled: boolean): Promise<void> {
+    if (!this._config || !this.hass) return;
+    this._config = { ...this._config, notify_enabled: enabled };
+    fireEvent(this, "config-changed", { config: this._config });
+    if (enabled) {
+      await this._setupNotify();
+      return;
+    }
+    const id = this._config.notify_automation_id;
+    if (id) await setAutomationEnabled(this.hass, id, false);
+  }
+
   private async _setupNotify(): Promise<void> {
     const cfg = this._config;
     if (!this.hass || !cfg || this._eligibility !== "ok") return;
@@ -186,6 +201,7 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
         this._config = { ...cfg, notify_automation_id: automationId };
         fireEvent(this, "config-changed", { config: this._config });
       }
+      await setAutomationEnabled(this.hass, automationId, true);
       this._notifyStatus = "success";
     } catch (e) {
       this._notifyStatus = "error";
@@ -569,14 +585,22 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
                   ></ha-form>
                   <div class="hint">${this._t("editor_top_consumers_notify_cycle_hint")}</div>
                 `
-              : html`<div class="hint blocked">${this._blockedText()}</div>`}
-            ${renderNotifyButton({
+              : nothing}
+            ${renderNotifyControls({
+              hass: this.hass,
+              enabled: this._config.notify_enabled ?? false,
+              automationId: this._config.notify_automation_id,
+              blockedReason: this._eligibility !== "ok"
+                ? this._blockedText()
+                : this._config.notify_service?.length
+                  ? undefined
+                  : this._t("editor_notify_missing"),
               language: this._language,
               busy: this._notifyBusy,
-              disabled: this._eligibility !== "ok" || !this._config.notify_service?.length,
               status: this._notifyStatus,
               detail: this._notifyDetail,
-              onClick: () => this._setupNotify(),
+              onToggle: (on) => this._toggleNotify(on),
+              onSetup: () => this._setupNotify(),
             })}
           </div>
         </ha-expansion-panel>

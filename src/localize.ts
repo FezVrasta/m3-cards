@@ -51,7 +51,12 @@ const translations = {
     editor_interactions: "Interaktionen",
     editor_opacity: "Farbstärke",
     editor_notify: "Benachrichtigung",
-    editor_notify_service: "Benachrichtigung an",
+    editor_notify_enabled: "Benachrichtigung aktiv",
+    editor_notify_update: "Einstellungen übernehmen",
+    editor_notify_state_active: "Aktiv — Automatisierung läuft",
+    editor_notify_state_paused: "Automatisierung ist pausiert",
+    editor_notify_state_missing: "Noch nicht eingerichtet",
+    editor_notify_service: "Empfänger",
     editor_notify_mode: "Wann",
     editor_notify_time: "Uhrzeit",
     editor_notify_weekday: "Wochentag",
@@ -527,7 +532,7 @@ const translations = {
     editor_battery_notify: "Benachrichtigung",
     editor_battery_notify_hint:
       "Legt eine Home-Assistant-Automatisierung an, die bei schwachen Batterien benachrichtigt — auch wenn kein Dashboard offen ist. Es werden genau die Geräte überwacht, die diese Karte auflistet.",
-    editor_battery_notify_service: "Benachrichtigung an",
+    editor_battery_notify_service: "Empfänger",
     editor_battery_notify_threshold: "Benachrichtigen ab",
     editor_battery_notify_mode: "Wann",
     editor_battery_notify_mode_daily: "Täglich (Sammelnachricht)",
@@ -729,7 +734,7 @@ const translations = {
     editor_aquarium_reminder: "Erinnerung",
     editor_aquarium_reminder_hint:
       "Legt eine Home-Assistant-Automatisierung an, die täglich zur gewählten Uhrzeit prüft, ob die Reinigung fällig ist, und dann eine Benachrichtigung schickt. Fehlt ein Intervall-Helfer, wird er automatisch mit angelegt.",
-    editor_aquarium_notify_service: "Benachrichtigung an",
+    editor_aquarium_notify_service: "Empfänger",
     editor_aquarium_notify_time: "Prüfzeit",
     editor_aquarium_reminder_button: "Erinnerung einrichten",
     editor_aquarium_reminder_success:
@@ -851,7 +856,12 @@ const translations = {
     editor_interactions: "Interactions",
     editor_opacity: "Color strength",
     editor_notify: "Notification",
-    editor_notify_service: "Notify",
+    editor_notify_enabled: "Notification active",
+    editor_notify_update: "Apply settings",
+    editor_notify_state_active: "Active — automation is running",
+    editor_notify_state_paused: "Automation is paused",
+    editor_notify_state_missing: "Not set up yet",
+    editor_notify_service: "Recipients",
     editor_notify_mode: "When",
     editor_notify_time: "Time",
     editor_notify_weekday: "Weekday",
@@ -1326,7 +1336,7 @@ const translations = {
     editor_battery_notify: "Notification",
     editor_battery_notify_hint:
       "Creates a Home Assistant automation that notifies you about weak batteries, even when no dashboard is open. It watches exactly the devices this card lists.",
-    editor_battery_notify_service: "Notify",
+    editor_battery_notify_service: "Recipients",
     editor_battery_notify_threshold: "Notify at or below",
     editor_battery_notify_mode: "When",
     editor_battery_notify_mode_daily: "Daily (digest)",
@@ -1527,7 +1537,7 @@ const translations = {
     editor_aquarium_reminder: "Reminder",
     editor_aquarium_reminder_hint:
       "Creates a Home Assistant automation that checks daily at the chosen time whether cleaning is due, and sends a notification if so. If no interval helper exists yet, one is created automatically.",
-    editor_aquarium_notify_service: "Notify",
+    editor_aquarium_notify_service: "Recipients",
     editor_aquarium_notify_time: "Check time",
     editor_aquarium_reminder_button: "Set up reminder",
     editor_aquarium_reminder_success:
