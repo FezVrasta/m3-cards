@@ -30,10 +30,14 @@ import {
   notifyModeSchema,
   notifyTimeSchema,
   notifyWeekdaySchema,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
+  notifyActions,
   resolveAutomationId,
   type NotifyAutomationSpec,
 } from "./shared/notify-editor";
@@ -192,13 +196,12 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
           ...(mode === "weekly" ? [{ condition: "time", weekday: [cfg.notify_weekday || "mon"] }] : []),
           { condition: "template", value_template: "{{ mold_items | count > 0 }}" },
         ],
-        actions: targets.map((target) => ({
-          action: `notify.${target}`,
-          data: {
-            title: cardName,
-            message: `{{ mold_items | count }} ${this._t("editor_climate_overview_notify_digest")}\n• {{ mold_items | join('\n• ') }}`,
-          },
-        })),
+        actions: notifyActions(targets, cardName,
+          `{{ mold_items | count }} ${this._t("editor_climate_overview_notify_digest")}\n• {{ mold_items | join('\n• ') }}`,
+          { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+            anzahl: "{{ mold_items | count }}",
+            liste: "{{ mold_items | join(', ') }}",
+          } }),
       };
 
       await saveNotifyAutomation(this.hass, { id: automationId, ...automation } as NotifyAutomationSpec);
@@ -294,6 +297,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     if ((this._config?.notify_mode ?? "daily") === "weekly") {
       schema.push(notifyWeekdaySchema(this._language));
     }
+    schema.push(notifyTitleSchema("notify_title"), notifyMessageSchema("notify_message"));
     return schema;
   }
 
@@ -338,6 +342,8 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       scale_min: "editor_climate_overview_scale_min",
       scale_max: "editor_climate_overview_scale_max",
       notify_service: "editor_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       notify_mode: "editor_notify_mode",
       notify_time: "editor_notify_time",
       notify_weekday: "editor_notify_weekday",
@@ -639,6 +645,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
             ${this._config.show_mold_warning
               ? nothing
               : html`<div class="hint">${this._t("editor_climate_overview_notify_warning_off_hint")}</div>`}
+            <div class="hint">${notifyTokenHint(this._language, ["anzahl", "liste"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               enabled: this._config.notify_enabled ?? false,

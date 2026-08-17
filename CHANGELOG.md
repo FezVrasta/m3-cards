@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.8.0]
+
+### Hinzugefügt
+- **Eigene Benachrichtigungstexte.** Jedes Benachrichtigungs-Panel hat jetzt
+  zwei Freitextfelder für Titel und Nachricht. Leer lassen behält den
+  bisherigen Text, sodass sich für bestehende Konfigurationen nichts ändert.
+  Platzhalter in geschweiften Klammern werden beim Anlegen der
+  Automatisierung durch die passende Vorlage ersetzt; welche es gibt, steht
+  je Karte direkt unter den Feldern:
+  - Energy: `{wert}`, `{einheit}`, `{zeitraum}`
+  - Cost: `{betrag}`, `{waehrung}`, `{budget}`, `{zeitraum}`
+  - Battery: `{anzahl}`, `{liste}`, `{geraet}`, `{wert}`
+  - Progress: `{geraet}`
+  - Power List: `{geraet}`, `{watt}`, `{stunden}`
+  - Climate Overview / Top Consumers: `{anzahl}`, `{liste}`
+  - Aquarium: `{tage}`
+  Emoji sind möglich. Unbekannte Platzhalter bleiben sichtbar stehen, statt
+  stillschweigend zu verschwinden — ein Tippfehler fällt so in der Nachricht
+  auf, statt eine Lücke zu hinterlassen.
+
 ## [1.7.0]
 
 ### Hinzugefügt

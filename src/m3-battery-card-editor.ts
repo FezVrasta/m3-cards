@@ -31,10 +31,14 @@ import {
   notifyServiceSchema,
   notifyTimeSchema,
   notifyWeekdaySchema,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
+  notifyActions,
   resolveAutomationId,
   slugifyForId,
   type NotifyAutomationSpec,
@@ -167,20 +171,18 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
           ...base,
           triggers,
           conditions: [],
-          actions: targets.map((target) => ({
-            action: `notify.${target}`,
-            data: {
-              title: cardName,
-              message:
-                `{% set s = trigger.to_state %}` +
+          actions: notifyActions(targets, cardName,
+            `{% set s = trigger.to_state %}` +
                 `{{ s.name }}: ` +
                 `{% if s.entity_id.startswith('binary_sensor.') %}` +
                 `${this._t("editor_battery_notify_single_empty")}` +
                 `{% else %}` +
                 `${this._t("editor_battery_notify_single_pct").replace("{x}", "{{ s.state }}")}` +
                 `{% endif %}`,
-            },
-          })),
+            { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+              geraet: "{{ trigger.to_state.name }}",
+              wert: "{{ trigger.to_state.state }}",
+            } }),
         };
       } else {
         // One digest listing every weak battery, so a dozen low devices don't
@@ -206,13 +208,12 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               : []),
             { condition: "template", value_template: "{{ low_items | count > 0 }}" },
           ],
-          actions: targets.map((target) => ({
-            action: `notify.${target}`,
-            data: {
-              title: cardName,
-              message: `{{ low_items | count }} ${this._t("editor_battery_notify_digest")}\n• {{ low_items | join('\n• ') }}`,
-            },
-          })),
+          actions: notifyActions(targets, cardName,
+            `{{ low_items | count }} ${this._t("editor_battery_notify_digest")}\n• {{ low_items | join('\n• ') }}`,
+            { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+              anzahl: "{{ low_items | count }}",
+              liste: "{{ low_items | join(', ') }}",
+            } }),
         };
       }
 
@@ -311,6 +312,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       name: "notify_exclude_entities",
       selector: { entity: { domain: ["sensor", "binary_sensor"], device_class: "battery", multiple: true } },
     });
+    schema.push(notifyTitleSchema("notify_title"), notifyMessageSchema("notify_message"));
     return schema;
   }
 
@@ -356,6 +358,8 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       max_visible: "editor_battery_max_visible",
       show_healthy_toggle: "editor_battery_show_healthy_toggle",
       notify_service: "editor_battery_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       notify_threshold: "editor_battery_notify_threshold",
       notify_mode: "editor_battery_notify_mode",
       notify_time: "editor_battery_notify_time",
@@ -595,6 +599,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_battery_notify_exclude_hint")}</div>
+            <div class="hint">${notifyTokenHint(this._language, ["anzahl", "liste", "geraet", "wert"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               language: this._language,

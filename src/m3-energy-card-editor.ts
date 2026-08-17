@@ -28,9 +28,12 @@ import {
   notifyModeSchema,
   notifyTimeSchema,
   notifyActions,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
   resolveAutomationId,
   type NotifyAutomationSpec,
@@ -214,7 +217,14 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
           mode === "month_end"
             ? [{ condition: "template", value_template: "{{ now().day == 1 }}" }]
             : [],
-        actions: notifyActions(targets, cardName, message),
+        actions: notifyActions(targets, cardName, message,
+        { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+          wert: `{{ states('${entity}') | float(0) | round(1) }}`,
+          einheit: unit,
+          zeitraum: mode === "month_end"
+            ? "{{ (now().replace(day=1) - timedelta(days=1)).strftime('%m/%Y') }}"
+            : "{{ now().strftime('%d.%m.%Y') }}",
+        } }),
       };
 
       await saveNotifyAutomation(this.hass, spec);
@@ -397,6 +407,8 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       { name: "notify_entity", selector: { entity: { domain: "sensor" } } },
       notifyServiceSchema(this.hass),
       notifyTimeSchema(),
+      notifyTitleSchema("notify_title"),
+      notifyMessageSchema("notify_message"),
     ];
   }
 
@@ -443,6 +455,8 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
       notify_mode: "editor_notify_mode",
       notify_entity: "editor_energy_notify_entity",
       notify_service: "editor_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       notify_time: "editor_notify_time",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
@@ -608,6 +622,7 @@ export class M3EnergyCardEditor extends LitElement implements LovelaceCardEditor
             ${this._notifySupported
               ? html`<div class="hint">${this._t(this._notifyScopeHint)}</div>`
               : nothing}
+            <div class="hint">${notifyTokenHint(this._language, ["wert", "einheit", "zeitraum"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               enabled: this._config.notify_enabled ?? false,

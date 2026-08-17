@@ -27,9 +27,12 @@ import {
   notifyModeSchema,
   notifyTimeSchema,
   notifyActions,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
   resolveAutomationId,
   type NotifyAutomationSpec,
@@ -252,7 +255,13 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
               value_template: `{{ ${cost.expr} }}`,
             },
           ],
-          actions: notifyActions(targets, cardName, message),
+          actions: notifyActions(targets, cardName, message,
+          { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+            betrag: valueText,
+            waehrung: symbol,
+            budget: String(cfg.budget ?? ""),
+            zeitraum: "{{ now().strftime('%m/%Y') }}",
+          } }),
         };
       } else {
         const message = this._t("editor_cost_notify_month_end_message")
@@ -269,7 +278,13 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
               value_template: "{{ (now() + timedelta(days=1)).month != now().month }}",
             },
           ],
-          actions: notifyActions(targets, cardName, message),
+          actions: notifyActions(targets, cardName, message,
+          { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+            betrag: valueText,
+            waehrung: symbol,
+            budget: String(cfg.budget ?? ""),
+            zeitraum: "{{ now().strftime('%m/%Y') }}",
+          } }),
         };
       }
 
@@ -308,6 +323,7 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
     } else {
       schema.push(notifyTimeSchema());
     }
+    schema.push(notifyTitleSchema("notify_title"), notifyMessageSchema("notify_message"));
     return schema;
   }
 
@@ -440,6 +456,8 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
       show_comparison: "editor_cost_show_comparison",
       budget: "editor_cost_budget",
       notify_service: "editor_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       notify_mode: "editor_notify_mode",
       notify_time: "editor_notify_time",
       notify_cost_entity: "editor_cost_notify_entity",
@@ -604,6 +622,7 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
               ? html`<div class="hint warn">${notifyPeriodWarning}</div>`
               : nothing}
             ${notifyBlocker ? html`<div class="hint warn">${this._t(notifyBlocker)}</div>` : nothing}
+            <div class="hint">${notifyTokenHint(this._language, ["betrag", "waehrung", "budget", "zeitraum"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               enabled: this._config.notify_enabled ?? false,

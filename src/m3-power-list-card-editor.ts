@@ -26,9 +26,12 @@ import {
 import {
   notifyServiceSchema,
   notifyActions,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
   resolveAutomationId,
   type NotifyAutomationSpec,
@@ -132,7 +135,12 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
           },
         ],
         conditions: [],
-        actions: notifyActions(targets, cardName, message),
+        actions: notifyActions(targets, cardName, message,
+        { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+          geraet: "{{ trigger.to_state.name }}",
+          watt: "{{ trigger.to_state.state | float(0) | round(0) }}",
+          stunden: String(hours),
+        } }),
       } as NotifyAutomationSpec);
 
       if (cfg.notify_automation_id !== automationId) {
@@ -223,6 +231,8 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
         name: "notify_exclude_entities",
         selector: { entity: { domain: "sensor", device_class: "power", multiple: true } },
       },
+      notifyTitleSchema("notify_title"),
+      notifyMessageSchema("notify_message"),
     ];
   }
 
@@ -259,6 +269,8 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
       max_visible: "editor_power_list_max_visible",
       show_idle_toggle: "editor_power_list_show_idle_toggle",
       notify_service: "editor_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       notify_power_threshold: "editor_power_list_notify_threshold",
       notify_duration_hours: "editor_power_list_notify_duration",
       notify_exclude_entities: "editor_power_list_notify_exclude",
@@ -422,6 +434,7 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_power_list_notify_exclude_hint")}</div>
+            <div class="hint">${notifyTokenHint(this._language, ["geraet", "watt", "stunden"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               enabled: this._config.notify_enabled ?? false,

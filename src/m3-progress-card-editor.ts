@@ -29,9 +29,12 @@ import {
 import {
   notifyServiceSchema,
   notifyActions,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
   resolveAutomationId,
 } from "./shared/notify-editor";
@@ -128,7 +131,11 @@ export class M3ProgressCardEditor
   private _notifySchema(): SchemaEntry[] {
     // Targets only. "Appliance finished" has exactly one sensible moment to
     // fire — the run ending — so there is nothing to schedule or choose.
-    return [notifyServiceSchema(this.hass)];
+    return [
+      notifyServiceSchema(this.hass),
+      notifyTitleSchema("notify_title"),
+      notifyMessageSchema("notify_message"),
+    ];
   }
 
   private get _cardName(): string {
@@ -215,7 +222,10 @@ export class M3ProgressCardEditor
           },
         ],
         conditions: [],
-        actions: notifyActions(targets, cardName, message),
+        actions: notifyActions(targets, cardName, message,
+        { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+          geraet: cardName,
+        } }),
       });
 
       if (cfg.notify_automation_id !== automationId) {
@@ -249,6 +259,8 @@ export class M3ProgressCardEditor
       glass_background: "editor_glass_background",
       hide_when_ready: "editor_progress_hide_when_ready",
       notify_service: "editor_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       radius: "editor_radius",
       radius_preset: "editor_radius_preset",
       use_corners: "editor_use_corners",
@@ -511,6 +523,7 @@ export class M3ProgressCardEditor
             ${this._config.entity
               ? nothing
               : html`<div class="hint">${this._t("editor_progress_notify_missing_entity")}</div>`}
+            <div class="hint">${notifyTokenHint(this._language, ["geraet"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               enabled: this._config.notify_enabled ?? false,

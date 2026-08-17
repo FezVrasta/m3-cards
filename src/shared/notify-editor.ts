@@ -22,6 +22,9 @@ export interface NotifyConfigBase {
    */
   notify_enabled?: boolean;
   notify_service?: string[];
+  /** Free-text overrides; empty falls back to the card's built-in wording. */
+  notify_title?: string;
+  notify_message?: string;
   notify_mode?: string;
   notify_time?: string;
   notify_weekday?: string;
@@ -63,6 +66,36 @@ export function notifyModeSchema(
 
 export function notifyTimeSchema(name = "notify_time"): SchemaEntry {
   return { name, selector: { time: {} } };
+}
+
+export function notifyTitleSchema(name = "notify_title"): SchemaEntry {
+  return { name, selector: { text: {} } };
+}
+
+export function notifyMessageSchema(name = "notify_message"): SchemaEntry {
+  return { name, selector: { text: { multiline: true } } };
+}
+
+/** Placeholder name → the Jinja expression it expands to. */
+export type NotifyTokens = Record<string, string>;
+
+// Expands `{platzhalter}` in a user-written text. The card's own default is
+// returned untouched — it already contains Jinja, and running it through the
+// same replace could mangle an expression like `{{ d }}`.
+// Unknown placeholders are left visible rather than silently dropped, so a
+// typo shows up in the notification instead of vanishing.
+export function applyNotifyTemplate(
+  custom: string | undefined,
+  fallback: string,
+  tokens: NotifyTokens,
+): string {
+  if (!custom || !custom.trim()) return fallback;
+  return custom.replace(/\{(\w+)\}/g, (whole, key: string) => tokens[key] ?? whole);
+}
+
+// Renders the "available placeholders" hint under the free-text fields.
+export function notifyTokenHint(language: string, tokens: string[]): string {
+  return `${localize("editor_notify_tokens", language)} ${tokens.map((t) => `{${t}}`).join(", ")}`;
 }
 
 const WEEKDAY_KEYS: [string, TranslationKey][] = [
@@ -256,14 +289,25 @@ export function resolveAutomationId(kind: string, stored?: string): string {
   return `m3_${slugifyForId(kind)}_${suffix}`;
 }
 
+export interface NotifyTextOverrides {
+  title?: string;
+  message?: string;
+  /** Placeholders the user may use in the custom texts. */
+  tokens?: NotifyTokens;
+}
+
 export function notifyActions(
   targets: string[],
   title: string,
   message: string,
+  overrides?: NotifyTextOverrides,
 ): Record<string, unknown>[] {
+  const tokens = overrides?.tokens ?? {};
+  const finalTitle = applyNotifyTemplate(overrides?.title, title, tokens);
+  const finalMessage = applyNotifyTemplate(overrides?.message, message, tokens);
   return targets.map((target) => ({
     action: `notify.${target}`,
-    data: { title, message },
+    data: { title: finalTitle, message: finalMessage },
   }));
 }
 

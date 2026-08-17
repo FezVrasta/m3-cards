@@ -24,12 +24,16 @@ import {
 } from "./shared/appearance-editor";
 import {
   notifyServiceSchema,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   resolveAutomationId,
   notifyTimeSchema,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
+  notifyActions,
   slugifyForId,
 } from "./shared/notify-editor";
 
@@ -160,6 +164,8 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
     return [
       notifyServiceSchema(this.hass, "cleaning_notify_service"),
       notifyTimeSchema("cleaning_notify_time"),
+      notifyTitleSchema("cleaning_notify_title"),
+      notifyMessageSchema("cleaning_notify_message"),
     ];
   }
 
@@ -183,6 +189,8 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
+      cleaning_notify_title: "editor_notify_title",
+      cleaning_notify_message: "editor_notify_message",
       name: "editor_name",
       icon: "editor_icon",
       entity: "editor_entity",
@@ -328,13 +336,11 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
             value_template: `${tsExpr}${ivExpr}{{ ts is not none and iv > 0 and (now().timestamp() - ts) / 86400 >= iv }}`,
           },
         ],
-        actions: targets.map((target) => ({
-          action: `notify.${target}`,
-          data: {
-            title: cardName,
-            message: `${tsExpr}{% set d = ((now().timestamp() - ts) / 86400) | round(0) | int %}${this._t("editor_aquarium_reminder_message")}`,
-          },
-        })),
+        actions: notifyActions(targets, cardName,
+          `${tsExpr}{% set d = ((now().timestamp() - ts) / 86400) | round(0) | int %}${this._t("editor_aquarium_reminder_message")}`,
+          { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+            tage: `${tsExpr}{{ ((now().timestamp() - ts) / 86400) | round(0) | int }}`,
+          } }),
       });
 
       await setAutomationEnabled(this.hass, automationId, true);
@@ -696,6 +702,7 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${notifyTokenHint(this._language, ["tage"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               language: this._language,

@@ -24,9 +24,12 @@ import {
   notifyModeSchema,
   notifyTimeSchema,
   notifyWeekdaySchema,
+  notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
   notifyStyles,
+  notifyTitleSchema,
+  notifyMessageSchema,
   saveNotifyAutomation,
   resolveAutomationId,
   notifyActions,
@@ -193,7 +196,11 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
           { condition: "time", weekday: [cfg.notify_weekday || "sun"] },
           { condition: "template", value_template: "{{ top_items | count > 0 }}" },
         ],
-        actions: notifyActions(targets, cardName, `${intro}\n{{ top_items | join('\n') }}`),
+        actions: notifyActions(targets, cardName, `${intro}\n{{ top_items | join('\n') }}`,
+        { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+          anzahl: "{{ top_items | count }}",
+          liste: "{{ top_items | join(', ') }}",
+        } }),
       };
 
       await saveNotifyAutomation(this.hass, spec);
@@ -339,6 +346,8 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
       ]),
       notifyTimeSchema(),
       notifyWeekdaySchema(this._language),
+      notifyTitleSchema("notify_title"),
+      notifyMessageSchema("notify_message"),
     ];
   }
 
@@ -377,6 +386,8 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
       price_unit: "editor_cost_price_unit",
       currency: "editor_cost_currency",
       notify_service: "editor_notify_service",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       notify_mode: "editor_notify_mode",
       notify_time: "editor_notify_time",
       notify_weekday: "editor_notify_weekday",
@@ -586,6 +597,7 @@ export class M3TopConsumersCardEditor extends LitElement implements LovelaceCard
                   <div class="hint">${this._t("editor_top_consumers_notify_cycle_hint")}</div>
                 `
               : nothing}
+            <div class="hint">${notifyTokenHint(this._language, ["anzahl", "liste"])}</div>
             ${renderNotifyControls({
               hass: this.hass,
               enabled: this._config.notify_enabled ?? false,
