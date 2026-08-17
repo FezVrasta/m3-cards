@@ -22,6 +22,13 @@ import {
   renderAppearanceSection,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import {
+  notifyServiceSchema,
+  notifyTimeSchema,
+  notifyStyles,
+  saveNotifyAutomation,
+  slugifyForId,
+} from "./shared/notify-editor";
 
 type DeviceSlotKey = "light_day" | "light_night" | "pump" | "heater" | "co2";
 
@@ -146,22 +153,10 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
     ];
   }
 
-  // Built from the live service registry rather than a fixed list, so every
-  // notify target the user actually has (mobile app, persistent notification,
-  // custom notify groups) shows up without the card knowing about it.
   private _reminderSchema(): SchemaEntry[] {
-    const options = Object.keys(this.hass?.services?.notify ?? {})
-      .filter((name) => name !== "send_message")
-      .sort()
-      .map((name) => ({
-        value: name,
-        label: name.startsWith("mobile_app_")
-          ? name.slice("mobile_app_".length).replace(/_/g, " ")
-          : name.replace(/_/g, " "),
-      }));
     return [
-      { name: "cleaning_notify_service", selector: { select: { mode: "dropdown", multiple: true, options } } },
-      { name: "cleaning_notify_time", selector: { time: {} } },
+      notifyServiceSchema(this.hass, "cleaning_notify_service"),
+      notifyTimeSchema("cleaning_notify_time"),
     ];
   }
 
@@ -251,19 +246,6 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
 
   // ---- cleaning reminder ----------------------------------------------
 
-  private _slug(text: string): string {
-    return (
-      text
-        .toLowerCase()
-        .replace(/ä/g, "ae")
-        .replace(/ö/g, "oe")
-        .replace(/ü/g, "ue")
-        .replace(/ß/g, "ss")
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "") || "aquarium"
-    );
-  }
-
   // Creates (or updates) the "cleaning due" automation, plus the input_number
   // interval helper it shares with the card's chip if there isn't one yet. The
   // automation id is derived from the cleaning entity so pressing the button
@@ -314,9 +296,10 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
       const cleaned = cfg.cleaning_entity;
       const tsExpr = `{% set ts = state_attr('${cleaned}', 'timestamp') %}`;
       const ivExpr = `{% set iv = states('${intervalEntity}') | float(${DEFAULT_AQUARIUM_CLEANING_INTERVAL_DAYS}) %}`;
-      const automationId = `m3_aquarium_clean_${this._slug(cleaned)}`;
+      const automationId = `m3_aquarium_clean_${slugifyForId(cleaned)}`;
 
-      await this.hass.callApi("POST", `config/automation/config/${automationId}`, {
+      await saveNotifyAutomation(this.hass, {
+        id: automationId,
         alias: `${cardName}: ${this._t("editor_aquarium_reminder_alias")}`,
         description: this._t("editor_aquarium_reminder_description"),
         mode: "single",
@@ -686,7 +669,7 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
               @value-changed=${this._valueChanged}
             ></ha-form>
             <button
-              class="reminder-btn"
+              class="notify-btn"
               ?disabled=${this._reminderBusy ||
               !this._config.cleaning_entity ||
               !this._config.cleaning_notify_service?.length}
@@ -696,11 +679,11 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
               ${this._t("editor_aquarium_reminder_button")}
             </button>
             ${this._reminderStatus === "success"
-              ? html`<div class="reminder-status success">
+              ? html`<div class="notify-status success">
                   ${this._t("editor_aquarium_reminder_success")}
                 </div>`
               : this._reminderStatus === "error"
-                ? html`<div class="reminder-status error">
+                ? html`<div class="notify-status error">
                     ${this._t("editor_aquarium_reminder_error")} ${this._reminderDetail}
                   </div>`
                 : nothing}
@@ -750,6 +733,7 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
 
   static styles = [
     editorStyles,
+    notifyStyles,
     css`
       .slot-block {
         display: flex;
@@ -823,38 +807,6 @@ export class M3AquariumCardEditor extends LitElement implements LovelaceCardEdit
         font-family: inherit;
       }
 
-      .reminder-btn {
-        width: 100%;
-        height: 40px;
-        border: none;
-        border-radius: 8px;
-        background: color-mix(in srgb, var(--primary-color) 18%, transparent);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .reminder-btn:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-
-      .reminder-status {
-        font-size: 13px;
-      }
-
-      .reminder-status.success {
-        color: var(--success-color, #4caf50);
-      }
-
-      .reminder-status.error {
-        color: var(--error-color, #db4437);
-      }
     `,
   ];
 }

@@ -27,6 +27,17 @@ import {
   renderAppearanceSection,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import {
+  notifyServiceSchema,
+  notifyTimeSchema,
+  notifyWeekdaySchema,
+  renderNotifyButton,
+  notifyStyles,
+  saveNotifyAutomation,
+  resolveAutomationId,
+  slugifyForId,
+  type NotifyAutomationSpec,
+} from "./shared/notify-editor";
 
 @customElement("m3-battery-card-editor")
 export class M3BatteryCardEditor extends LitElement implements LovelaceCardEditor {
@@ -68,19 +79,6 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     fireEvent(this, "config-changed", { config: this._config });
   }
 
-  private _slug(text: string): string {
-    return (
-      text
-        .toLowerCase()
-        .replace(/ä/g, "ae")
-        .replace(/ö/g, "oe")
-        .replace(/ü/g, "ue")
-        .replace(/ß/g, "ss")
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "") || "batterien"
-    );
-  }
-
   // The notification has to cover exactly the devices the card lists, and that
   // set differs per card (manual list vs. auto-discovery with area/label
   // filters). Resolving it here and baking the result into the automation
@@ -98,6 +96,15 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       : (cfg.entities ?? []).map((e) => e.entity);
     const muted = new Set(cfg.notify_exclude_entities ?? []);
     return ids.filter((id) => !muted.has(id));
+  }
+
+  private async _legacyAutomationId(id: string): Promise<string | undefined> {
+    try {
+      await this.hass!.callApi("GET", `config/automation/config/${id}`);
+      return id;
+    } catch {
+      return undefined; // 404 — nothing to adopt
+    }
   }
 
   private async _setupNotify(): Promise<void> {
@@ -120,7 +127,13 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       const threshold = cfg.notify_threshold ?? DEFAULT_BATTERY_NOTIFY_THRESHOLD;
       const mode = cfg.notify_mode ?? "daily";
       const cardName = cfg.name || this._t("battery_default_name");
-      const automationId = `m3_battery_low_${this._slug(cardName)}`;
+      const automationId = resolveAutomationId(
+        "battery_low",
+        cfg.notify_automation_id ??
+          // Adopt an automation created before ids were stored, so pressing
+          // the button again updates it instead of orphaning it.
+          (await this._legacyAutomationId(`m3_battery_low_${slugifyForId(cardName)}`)),
+      );
       const jsonIds = JSON.stringify(ids);
 
       const base = {
@@ -187,7 +200,11 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
         };
       }
 
-      await this.hass.callApi("POST", `config/automation/config/${automationId}`, automation);
+      await saveNotifyAutomation(this.hass, { id: automationId, ...automation } as NotifyAutomationSpec);
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
       this._notifyStatus = "success";
       this._notifyDetail = `${ids.length}`;
     } catch (e) {
@@ -243,21 +260,10 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     ];
   }
 
-  // Built from the live service registry so every notify target the user
-  // actually has shows up without the card knowing about it.
   private _notifySchema(): SchemaEntry[] {
-    const targets = Object.keys(this.hass?.services?.notify ?? {})
-      .filter((name) => name !== "send_message")
-      .sort()
-      .map((name) => ({
-        value: name,
-        label: name.startsWith("mobile_app_")
-          ? name.slice("mobile_app_".length).replace(/_/g, " ")
-          : name.replace(/_/g, " "),
-      }));
     const mode = this._config?.notify_mode ?? "daily";
     const schema: SchemaEntry[] = [
-      { name: "notify_service", selector: { select: { mode: "dropdown", multiple: true, options: targets } } },
+      notifyServiceSchema(this.hass),
       {
         name: "notify_threshold",
         selector: { number: { min: 0, max: 100, step: 1, mode: "box", unit_of_measurement: "%" } },
@@ -279,26 +285,10 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     // Time only matters for the scheduled digests; on_change fires the moment
     // a battery crosses the threshold, so a check time would be misleading.
     if (mode !== "on_change") {
-      schema.push({ name: "notify_time", selector: { time: {} } });
+      schema.push(notifyTimeSchema());
     }
     if (mode === "weekly") {
-      schema.push({
-        name: "notify_weekday",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "mon", label: this._t("editor_battery_weekday_mon") },
-              { value: "tue", label: this._t("editor_battery_weekday_tue") },
-              { value: "wed", label: this._t("editor_battery_weekday_wed") },
-              { value: "thu", label: this._t("editor_battery_weekday_thu") },
-              { value: "fri", label: this._t("editor_battery_weekday_fri") },
-              { value: "sat", label: this._t("editor_battery_weekday_sat") },
-              { value: "sun", label: this._t("editor_battery_weekday_sun") },
-            ],
-          },
-        },
-      });
+      schema.push(notifyWeekdaySchema(this._language));
     }
     schema.push({
       name: "notify_exclude_entities",
@@ -588,24 +578,16 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_battery_notify_exclude_hint")}</div>
-            <button
-              class="notify-btn"
-              ?disabled=${this._notifyBusy || !this._config.notify_service?.length}
-              @click=${() => this._setupNotify()}
-            >
-              <ha-icon icon="mdi:bell-plus-outline"></ha-icon>
-              ${this._t("editor_battery_notify_button")}
-            </button>
-            ${this._notifyStatus === "success"
-              ? html`<div class="notify-status success">
-                  ${this._t("editor_battery_notify_success_prefix")} ${this._notifyDetail}
-                  ${this._t("editor_battery_notify_success_suffix")}
-                </div>`
-              : this._notifyStatus === "error"
-                ? html`<div class="notify-status error">
-                    ${this._t("editor_battery_notify_error")} ${this._notifyDetail}
-                  </div>`
-                : nothing}
+            ${renderNotifyButton({
+              language: this._language,
+              busy: this._notifyBusy,
+              disabled: !this._config.notify_service?.length,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              labelKey: "editor_battery_notify_button",
+              successText: `${this._t("editor_battery_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_battery_notify_success_suffix")}`,
+              onClick: () => this._setupNotify(),
+            })}
           </div>
         </ha-expansion-panel>
 
@@ -675,6 +657,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
 
   static styles = [
     editorStyles,
+    notifyStyles,
     css`
       .override-row {
         display: flex;
@@ -717,38 +700,6 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
         font-family: inherit;
       }
 
-      .notify-btn {
-        width: 100%;
-        height: 40px;
-        border: none;
-        border-radius: 8px;
-        background: color-mix(in srgb, var(--primary-color) 18%, transparent);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .notify-btn:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-
-      .notify-status {
-        font-size: 13px;
-      }
-
-      .notify-status.success {
-        color: var(--success-color, #4caf50);
-      }
-
-      .notify-status.error {
-        color: var(--error-color, #db4437);
-      }
     `,
   ];
 }

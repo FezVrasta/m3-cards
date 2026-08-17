@@ -1,3 +1,5 @@
+import type { NotifyConfigBase } from "./shared/notify-editor";
+
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
   locale: {
@@ -578,7 +580,7 @@ export interface BatteryThresholds {
 
 export type BatteryNotifyMode = "daily" | "weekly" | "on_change";
 
-export interface M3BatteryCardConfig {
+export interface M3BatteryCardConfig extends NotifyConfigBase {
   type: string;
   entities?: BatteryEntityConfig[];
   auto_discover?: boolean;
@@ -590,11 +592,10 @@ export interface M3BatteryCardConfig {
   max_visible?: number;
   show_healthy_toggle?: boolean;
   show_trend?: boolean;
-  notify_service?: string[];
-  notify_threshold?: number;
+  // notify_service / notify_mode / notify_time / notify_weekday /
+  // notify_automation_id come from NotifyConfigBase — see shared/notify-editor.
   notify_mode?: BatteryNotifyMode;
-  notify_time?: string;
-  notify_weekday?: string;
+  notify_threshold?: number;
   notify_exclude_entities?: string[];
   name?: string;
   icon?: string;
