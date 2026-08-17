@@ -7,45 +7,68 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 ## [1.7.0]
 
 ### Hinzugefügt
-- **M3 Battery Card**: Benachrichtigung bei schwachen Batterien, direkt aus
-  dem Kachel-Editor einrichtbar. Im neuen Abschnitt „Benachrichtigung"
-  lassen sich Ziel-Geräte (aus den eigenen `notify.*`-Diensten), ein
-  frei wählbarer Schwellwert (Standard 1 %) und der Rhythmus einstellen:
-  täglich oder wöchentlich als Sammelnachricht, oder sofort beim
-  Unterschreiten. Ein Klick legt eine echte Home-Assistant-Automatisierung
-  an, die auch ohne geöffnetes Dashboard benachrichtigt.
-- **M3 Battery Card**: neue Option `notify_exclude_entities` — einzelne
-  Geräte von der Benachrichtigung ausnehmen, ohne sie aus der Kachel zu
-  entfernen. Gedacht für Sensoren, die dauerhaft 1 % melden.
-- Die Benachrichtigung überwacht genau die Geräte, die die Kachel auflistet
-  (manuelle Liste oder Auto-Discovery inkl. Bereichs-/Label-Filtern). Die
-  Liste wird beim Einrichten aufgelöst und in die Automatisierung
-  übernommen; nach dem Hinzufügen neuer Geräte den Button erneut drücken.
+- **Benachrichtigungen direkt aus dem Kachel-Editor.** Acht Karten können
+  jetzt eine echte Home-Assistant-Automatisierung anlegen, die auch
+  benachrichtigt, wenn kein Dashboard geöffnet ist. Jede hat im Editor einen
+  Abschnitt „Benachrichtigung" mit Ein/Aus-Schalter (standardmäßig aus),
+  Empfängerauswahl aus den eigenen `notify.*`-Diensten und einer Statuszeile,
+  die den tatsächlichen Zustand der Automatisierung anzeigt:
+  - **M3 Battery Card** — schwache Batterien; täglich oder wöchentlich als
+    Sammelnachricht, oder sofort beim Unterschreiten. Freier Schwellwert
+    (Standard 1 %), plus `notify_exclude_entities`, um einzelne Geräte
+    stummzuschalten, ohne sie aus der Kachel zu entfernen.
+  - **M3 Energy Card** — Tagesertrag bzw. Monatsabschluss.
+  - **M3 Cost Card** — Warnung bei fast erreichtem Budget (Standard 90 %)
+    und Monatsabschluss.
+  - **M3 Progress Card** — „Gerät ist fertig", ausgelöst nur beim echten
+    Übergang von einem Lauf- in einen Fertig-Zustand.
+  - **M3 Power List Card** — „Gerät läuft seit N Stunden", mit Schwellwert,
+    Dauer und Ausschlussliste für Dauerläufer.
+  - **M3 Climate Overview Card** — täglicher Digest zum Schimmelrisiko,
+    exakt nach derselben Regel wie das Warnsymbol der Kachel.
+  - **M3 Top Consumers Card** — Wochenrangliste, sofern die Verbraucher über
+    wöchentliche `utility_meter`-Helfer laufen (siehe Einschränkung unten).
+  - **M3 Aquarium Card** — die bestehende Reinigungs-Erinnerung nutzt jetzt
+    dieselbe Basis und denselben Schalter.
 
-### Behoben
-- **M3 Battery Card**: `notify_service` war als Konfigurationsfeld
-  deklariert, wurde aber nirgends ausgewertet — es hatte schlicht keine
-  Wirkung. Das Feld ist jetzt tatsächlich in Gebrauch (und akzeptiert
-  mehrere Ziele statt nur eines).
-
-## [1.6.1]
+### Geändert
+- Die Benachrichtigungs-Mechanik liegt jetzt in einem gemeinsamen Modul
+  (`shared/notify-editor.ts`) statt je Karte dupliziert zu sein.
+- Das Empfängerfeld hieß „Benachrichtigung an", was sich im Deutschen wie
+  ein Ein-Schalter liest. Es heißt jetzt „Empfänger".
 
 ### Behoben
 - **M3 Power List Card**: Mit gesetztem `max_visible` wurden alle
-  ausgeblendeten Geräte als inaktiv behandelt — auch die, die gerade
-  Strom verbrauchen und nur wegen des Limits nach unten gerutscht sind.
-  Sie erschienen im Aufklappbereich ausgegraut mit durchgestrichenem
-  Stecker-Symbol, und der Zähler am Umschalter zählte sie als „inaktive
-  Geräte" mit. Aktive Geräte behalten jetzt auch im Aufklappbereich ihre
-  normale Darstellung (Geräte-Icon, Balken, Akzentfarbe) und stehen dort
-  oben, die tatsächlich inaktiven darunter. Der Umschalter heißt in
-  diesem Fall „N weitere Geräte anzeigen" statt „N inaktive Geräte
-  anzeigen"; ohne `max_visible` bleibt der bisherige Text.
+  ausgeblendeten Geräte als inaktiv behandelt — auch die, die gerade Strom
+  verbrauchen und nur wegen des Limits nach unten gerutscht sind. Sie
+  erschienen ausgegraut mit durchgestrichenem Stecker-Symbol, und der Zähler
+  am Umschalter zählte sie als „inaktive Geräte" mit. Aktive Geräte behalten
+  jetzt auch aufgeklappt ihre normale Darstellung und stehen dort oben; der
+  Umschalter heißt in dem Fall „N weitere Geräte anzeigen".
 - **M3 Power List Card**: Die Balkenlängen richten sich jetzt nach dem
-  stärksten Verbraucher insgesamt statt nur nach dem stärksten der
-  sichtbaren Zeilen — dadurch bleiben aufgeklappte Zeilen vergleichbar,
-  und bei Sortierung nach Name oder aufsteigender Leistung kann der
-  größte Verbraucher nicht mehr aus der Skala fallen.
+  stärksten Verbraucher insgesamt statt nur nach dem der sichtbaren Zeilen —
+  bei Sortierung nach Name oder aufsteigender Leistung konnte der größte
+  Verbraucher sonst aus der Skala fallen.
+- **M3 Battery Card**: `notify_service` war als Konfigurationsfeld
+  deklariert, wurde aber nirgends ausgewertet und hatte keine Wirkung.
+- Automatisierungs-IDs wurden aus dem Kartennamen abgeleitet, wodurch zwei
+  gleichnamige Karten dieselbe Automatisierung überschrieben. Sie werden
+  jetzt einmalig erzeugt und in der Kartenkonfiguration abgelegt; bestehende
+  Automatisierungen werden dabei übernommen, nicht verwaist.
+- **M3 Energy Card**: Der Meldungstext behauptete „Heute verbraucht", sobald
+  die Karte nicht ausdrücklich im Solar-Modus lief — falsch für den
+  häufigen Fall, eine Standard-Karte auf einen Erzeugungszähler zu richten.
+  Der Text ist jetzt neutral („Heute:"), im Solar-Modus weiterhin „Heute
+  erzeugt:".
+
+### Einschränkungen
+Ein Jinja-Template in einer Automatisierung kann die Langzeitstatistik nicht
+lesen — nur den aktuellen Zustand einer Entität. Energy, Cost und Top
+Consumers beziehen ihre Zahlen aber genau daher. Diese drei funktionieren
+deshalb nur, wenn eine Entität den Periodenwert bereits als Zustand hält,
+also ein periodengebundener `utility_meter`. Ist das nicht der Fall, bleibt
+der Schalter gesperrt und der Editor nennt den Grund, statt eine
+Automatisierung zu erzeugen, die plausible, aber falsche Zahlen meldet.
 
 ## [1.6.0]
 
