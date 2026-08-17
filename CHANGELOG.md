@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.6.1]
+
+### Behoben
+- **M3 Power List Card**: Mit gesetztem `max_visible` wurden alle
+  ausgeblendeten Geräte als inaktiv behandelt — auch die, die gerade
+  Strom verbrauchen und nur wegen des Limits nach unten gerutscht sind.
+  Sie erschienen im Aufklappbereich ausgegraut mit durchgestrichenem
+  Stecker-Symbol, und der Zähler am Umschalter zählte sie als „inaktive
+  Geräte" mit. Aktive Geräte behalten jetzt auch im Aufklappbereich ihre
+  normale Darstellung (Geräte-Icon, Balken, Akzentfarbe) und stehen dort
+  oben, die tatsächlich inaktiven darunter. Der Umschalter heißt in
+  diesem Fall „N weitere Geräte anzeigen" statt „N inaktive Geräte
+  anzeigen"; ohne `max_visible` bleibt der bisherige Text.
+- **M3 Power List Card**: Die Balkenlängen richten sich jetzt nach dem
+  stärksten Verbraucher insgesamt statt nur nach dem stärksten der
+  sichtbaren Zeilen — dadurch bleiben aufgeklappte Zeilen vergleichbar,
+  und bei Sortierung nach Name oder aufsteigender Leistung kann der
+  größte Verbraucher nicht mehr aus der Skala fallen.
+
 ## [1.6.0]
 
 ### Hinzugefügt

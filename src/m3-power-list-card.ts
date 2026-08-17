@@ -237,11 +237,18 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
 
     const maxVisible = this._config.max_visible ?? 0;
     const visibleActive = maxVisible > 0 ? activeConsumers.slice(0, maxVisible) : activeConsumers;
+    // Active consumers pushed out by max_visible stay active — they're only
+    // collapsed, not idle. They keep the active row styling when expanded, and
+    // the toggle wording switches to a neutral "weitere" so they aren't
+    // mislabelled as idle in the count.
     const overflowActive = maxVisible > 0 ? activeConsumers.slice(maxVisible) : [];
-    const hiddenRows = [...overflowActive, ...idleConsumers];
+    const hiddenCount = overflowActive.length + idleConsumers.length;
 
     const totalPower = consumers.reduce((sum, r) => sum + r.power, 0);
-    const maxRowPower = Math.max(...visibleActive.map((r) => r.power), 1);
+    // Scale bars against every active consumer, not just the visible slice, so
+    // an overflow row's bar stays comparable to the ones above it (and so a
+    // non-power_desc sort can't put the largest consumer outside the scale).
+    const maxRowPower = Math.max(...activeConsumers.map((r) => r.power), 1);
 
     const subtitle =
       this._config.subtitle ||
@@ -302,29 +309,48 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
                   )}
                 </div>
 
-                ${showIdleToggle && hiddenRows.length > 0
+                ${showIdleToggle && hiddenCount > 0
                   ? html`
                       <button
                         class="idle-toggle ${this._expanded ? "open" : ""}"
                         @click=${() => (this._expanded = !this._expanded)}
                       >
                         <span
-                          >${hiddenRows.length}
-                          ${this._expanded
-                            ? this._t("power_list_hide_idle")
-                            : this._t("power_list_show_idle")}</span
+                          >${hiddenCount}
+                          ${overflowActive.length > 0
+                            ? this._expanded
+                              ? this._t("power_list_hide_more")
+                              : this._t("power_list_show_more")
+                            : this._expanded
+                              ? this._t("power_list_hide_idle")
+                              : this._t("power_list_show_idle")}</span
                         >
                         <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
                       </button>
                       ${this._expanded
                         ? html`
-                            <div class="row-list idle-list">
-                              ${repeat(
-                                hiddenRows,
-                                (r) => r.key,
-                                (r) => this._renderIdleRow(r),
-                              )}
-                            </div>
+                            ${overflowActive.length > 0
+                              ? html`
+                                  <div class="row-list overflow-list">
+                                    ${repeat(
+                                      overflowActive,
+                                      (r) => r.key,
+                                      (r) => this._renderActiveRow(r, maxRowPower),
+                                    )}
+                                  </div>
+                                `
+                              : nothing}
+                            ${idleConsumers.length > 0
+                              ? html`
+                                  <div class="row-list idle-list">
+                                    ${repeat(
+                                      idleConsumers,
+                                      (r) => r.key,
+                                      (r) => this._renderIdleRow(r),
+                                    )}
+                                  </div>
+                                `
+                              : nothing}
                           `
                         : nothing}
                     `
