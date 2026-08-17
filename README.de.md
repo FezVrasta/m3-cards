@@ -1161,6 +1161,30 @@ oben. `thresholds` (kritisch/niedrig/mittel) bestimmen Balken- und
 Textfarbe; `max_visible` + `show_healthy_toggle` blenden gesunde Geräte
 hinter einem „N weitere anzeigen“-Button aus, ähnlich der Power List Card.
 
+### Benachrichtigung bei schwachen Batterien
+
+Die Kachel warnt nur, solange man sie ansieht — deshalb kann der Abschnitt
+**Benachrichtigung** im Editor eine Home-Assistant-Automatisierung anlegen,
+die unabhängig davon benachrichtigt. Ein oder mehrere Ziele auswählen (aus
+den eigenen `notify.*`-Diensten), Schwellwert setzen (`notify_threshold`,
+Standard 1 %), Rhythmus wählen, dann „Benachrichtigung einrichten“:
+
+- **`daily`** / **`weekly`** — eine Sammelnachricht zur Zeit `notify_time`
+  mit allen schwachen Batterien („5 Batterien schwach: …“), damit aus zwölf
+  leeren Geräten nicht zwölf Pushes werden. `weekly` löst zusätzlich nur am
+  Tag `notify_weekday` aus.
+- **`on_change`** — meldet sofort, sobald eine Batterie den Schwellwert
+  unterschreitet, eine Nachricht pro Gerät. Scharf wird es von selbst
+  wieder, sobald die Batterie wieder darüber liegt.
+
+Überwacht werden genau die Geräte, die die Kachel auflistet — die manuelle
+`entities`-Liste oder die Auto-Discovery inklusive Bereichs-/Label-Filter.
+Diese Auswahl wird beim Drücken des Buttons aufgelöst und in die
+Automatisierung geschrieben; **nach dem Hinzufügen neuer Geräte den Button
+erneut drücken**, damit sie mit abgedeckt sind. `notify_exclude_entities`
+schaltet einzelne Geräte stumm, ohne sie aus der Kachel zu entfernen —
+praktisch für Sensoren, die dauerhaft 1 % melden.
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -1173,6 +1197,12 @@ hinter einem „N weitere anzeigen“-Button aus, ähnlich der Power List Card.
 | `thresholds` | Objekt (`critical`/`low`/`medium`) | `10`/`20`/`50` | Prozent-Schwellwerte für die Einfärbung |
 | `max_visible` | number | – | Anzahl direkt sichtbarer Zeilen, Rest hinter „mehr anzeigen“ |
 | `show_healthy_toggle` | boolean | `true` | Aufklappbereich für Geräte über dem `medium`-Schwellwert |
+| `notify_service` | Liste\<string\> | – | Benachrichtigungsziele (ohne `notify.`-Präfix) |
+| `notify_threshold` | number | `1` | Prozentwert, ab dem eine Batterie als schwach gilt |
+| `notify_mode` | `daily` \| `weekly` \| `on_change` | `daily` | Sammelnachricht zur festen Zeit, wöchentlich, oder sofort beim Unterschreiten |
+| `notify_time` | string | `18:00:00` | Uhrzeit der Sammelnachricht (nur `daily`/`weekly`) |
+| `notify_weekday` | string | `mon` | Wochentag der Sammelnachricht (nur `weekly`) |
+| `notify_exclude_entities` | Liste\<string\> | – | Geräte, die keine Benachrichtigung auslösen |
 | `name` / `icon` | string | „Batterien“ / `mdi:battery` | Header |
 | `critical_color` / `low_color` / `medium_color` / `ok_color` / `unavailable_color` | string | Theme-Standard | Stufenfarben |
 | `text_color` / `secondary_text_color` | string | Theme-Standard | Name / Werte |

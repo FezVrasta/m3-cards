@@ -7,6 +7,7 @@ import {
   DEFAULT_BATTERY_THRESHOLD_LOW,
   DEFAULT_BATTERY_THRESHOLD_MEDIUM,
   DEFAULT_BATTERY_NAME_STRIP,
+  DEFAULT_BATTERY_NOTIFY_THRESHOLD,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { discoverBatteryEntities } from "./shared/ha-registry";
@@ -34,6 +35,9 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
   @state() private _config?: M3BatteryCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
   @state() private _discoveredCount?: number;
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
 
   public setConfig(config: M3BatteryCardConfig): void {
     this._config = config;
@@ -62,6 +66,136 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     const entities: BatteryEntityConfig[] = ids.map((id) => existingByEntity.get(id) ?? { entity: id });
     this._config = { ...this._config, auto_discover: false, entities };
     fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _slug(text: string): string {
+    return (
+      text
+        .toLowerCase()
+        .replace(/ä/g, "ae")
+        .replace(/ö/g, "oe")
+        .replace(/ü/g, "ue")
+        .replace(/ß/g, "ss")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "batterien"
+    );
+  }
+
+  // The notification has to cover exactly the devices the card lists, and that
+  // set differs per card (manual list vs. auto-discovery with area/label
+  // filters). Resolving it here and baking the result into the automation
+  // keeps the two in sync; pressing the button again re-resolves after new
+  // devices are added.
+  private async _resolveNotifyEntities(): Promise<string[]> {
+    const cfg = this._config;
+    if (!cfg || !this.hass) return [];
+    const ids = (cfg.auto_discover ?? true)
+      ? await discoverBatteryEntities(this.hass, {
+          excludeEntities: cfg.exclude_entities,
+          includeAreas: cfg.include_area,
+          includeLabels: cfg.include_label,
+        })
+      : (cfg.entities ?? []).map((e) => e.entity);
+    const muted = new Set(cfg.notify_exclude_entities ?? []);
+    return ids.filter((id) => !muted.has(id));
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_battery_notify_missing");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const ids = await this._resolveNotifyEntities();
+      if (ids.length === 0) throw new Error("no battery entities");
+      const numeric = ids.filter((id) => !id.startsWith("binary_sensor."));
+      const binary = ids.filter((id) => id.startsWith("binary_sensor."));
+      const threshold = cfg.notify_threshold ?? DEFAULT_BATTERY_NOTIFY_THRESHOLD;
+      const mode = cfg.notify_mode ?? "daily";
+      const cardName = cfg.name || this._t("battery_default_name");
+      const automationId = `m3_battery_low_${this._slug(cardName)}`;
+      const jsonIds = JSON.stringify(ids);
+
+      const base = {
+        alias: `${cardName}: ${this._t("editor_battery_notify_alias")}`,
+        description: this._t("editor_battery_notify_description"),
+        mode: "single",
+      };
+
+      let automation: Record<string, unknown>;
+      if (mode === "on_change") {
+        const triggers: Record<string, unknown>[] = [];
+        if (numeric.length) triggers.push({ trigger: "numeric_state", entity_id: numeric, below: threshold });
+        if (binary.length) triggers.push({ trigger: "state", entity_id: binary, to: "on" });
+        automation = {
+          ...base,
+          triggers,
+          conditions: [],
+          actions: targets.map((target) => ({
+            action: `notify.${target}`,
+            data: {
+              title: cardName,
+              message:
+                `{% set s = trigger.to_state %}` +
+                `{{ s.name }}: ` +
+                `{% if s.entity_id.startswith('binary_sensor.') %}` +
+                `${this._t("editor_battery_notify_single_empty")}` +
+                `{% else %}` +
+                `${this._t("editor_battery_notify_single_pct").replace("{x}", "{{ s.state }}")}` +
+                `{% endif %}`,
+            },
+          })),
+        };
+      } else {
+        // One digest listing every weak battery, so a dozen low devices don't
+        // turn into a dozen separate pushes.
+        const listTemplate =
+          `{% set ids = ${jsonIds} %}` +
+          `{% set ns = namespace(items=[]) %}` +
+          `{% for e in ids %}{% set s = states[e] %}` +
+          `{% if s is not none and s.state not in ['unknown', 'unavailable'] %}` +
+          `{% if e.startswith('binary_sensor.') %}` +
+          `{% if s.state == 'on' %}{% set ns.items = ns.items + [s.name] %}{% endif %}` +
+          `{% elif s.state | float(101) <= ${threshold} %}` +
+          `{% set ns.items = ns.items + [s.name ~ ' (' ~ s.state ~ ' %)'] %}` +
+          `{% endif %}{% endif %}{% endfor %}` +
+          `{{ ns.items }}`;
+        automation = {
+          ...base,
+          variables: { low_items: listTemplate },
+          triggers: [{ trigger: "time", at: cfg.notify_time || "18:00:00" }],
+          conditions: [
+            ...(mode === "weekly"
+              ? [{ condition: "time", weekday: [cfg.notify_weekday || "mon"] }]
+              : []),
+            { condition: "template", value_template: "{{ low_items | count > 0 }}" },
+          ],
+          actions: targets.map((target) => ({
+            action: `notify.${target}`,
+            data: {
+              title: cardName,
+              message: `{{ low_items | count }} ${this._t("editor_battery_notify_digest")}\n• {{ low_items | join('\n• ') }}`,
+            },
+          })),
+        };
+      }
+
+      await this.hass.callApi("POST", `config/automation/config/${automationId}`, automation);
+      this._notifyStatus = "success";
+      this._notifyDetail = `${ids.length}`;
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
   }
 
   private get _language(): string {
@@ -109,6 +243,70 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     ];
   }
 
+  // Built from the live service registry so every notify target the user
+  // actually has shows up without the card knowing about it.
+  private _notifySchema(): SchemaEntry[] {
+    const targets = Object.keys(this.hass?.services?.notify ?? {})
+      .filter((name) => name !== "send_message")
+      .sort()
+      .map((name) => ({
+        value: name,
+        label: name.startsWith("mobile_app_")
+          ? name.slice("mobile_app_".length).replace(/_/g, " ")
+          : name.replace(/_/g, " "),
+      }));
+    const mode = this._config?.notify_mode ?? "daily";
+    const schema: SchemaEntry[] = [
+      { name: "notify_service", selector: { select: { mode: "dropdown", multiple: true, options: targets } } },
+      {
+        name: "notify_threshold",
+        selector: { number: { min: 0, max: 100, step: 1, mode: "box", unit_of_measurement: "%" } },
+      },
+      {
+        name: "notify_mode",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "daily", label: this._t("editor_battery_notify_mode_daily") },
+              { value: "weekly", label: this._t("editor_battery_notify_mode_weekly") },
+              { value: "on_change", label: this._t("editor_battery_notify_mode_on_change") },
+            ],
+          },
+        },
+      },
+    ];
+    // Time only matters for the scheduled digests; on_change fires the moment
+    // a battery crosses the threshold, so a check time would be misleading.
+    if (mode !== "on_change") {
+      schema.push({ name: "notify_time", selector: { time: {} } });
+    }
+    if (mode === "weekly") {
+      schema.push({
+        name: "notify_weekday",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "mon", label: this._t("editor_battery_weekday_mon") },
+              { value: "tue", label: this._t("editor_battery_weekday_tue") },
+              { value: "wed", label: this._t("editor_battery_weekday_wed") },
+              { value: "thu", label: this._t("editor_battery_weekday_thu") },
+              { value: "fri", label: this._t("editor_battery_weekday_fri") },
+              { value: "sat", label: this._t("editor_battery_weekday_sat") },
+              { value: "sun", label: this._t("editor_battery_weekday_sun") },
+            ],
+          },
+        },
+      });
+    }
+    schema.push({
+      name: "notify_exclude_entities",
+      selector: { entity: { domain: ["sensor", "binary_sensor"], device_class: "battery", multiple: true } },
+    });
+    return schema;
+  }
+
   private _contentSchema(): SchemaEntry[] {
     return [
       { name: "name", selector: { text: {} } },
@@ -150,6 +348,12 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       medium: "editor_battery_threshold_medium",
       max_visible: "editor_battery_max_visible",
       show_healthy_toggle: "editor_battery_show_healthy_toggle",
+      notify_service: "editor_battery_notify_service",
+      notify_threshold: "editor_battery_notify_threshold",
+      notify_mode: "editor_battery_notify_mode",
+      notify_time: "editor_battery_notify_time",
+      notify_weekday: "editor_battery_notify_weekday",
+      notify_exclude_entities: "editor_battery_notify_exclude",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -296,6 +500,14 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
       show_healthy_toggle: this._config.show_healthy_toggle ?? true,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+      notify_threshold: this._config.notify_threshold ?? DEFAULT_BATTERY_NOTIFY_THRESHOLD,
+      notify_mode: this._config.notify_mode ?? "daily",
+      notify_time: this._config.notify_time ?? "18:00:00",
+      notify_weekday: this._config.notify_weekday ?? "mon",
+      notify_exclude_entities: this._config.notify_exclude_entities ?? [],
+    };
     const overrides = this._config.entities ?? [];
 
     return html`
@@ -361,6 +573,39 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               .computeLabel=${this._computeLabel}
               @value-changed=${this._thresholdsChanged}
             ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_battery_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_battery_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_battery_notify_exclude_hint")}</div>
+            <button
+              class="notify-btn"
+              ?disabled=${this._notifyBusy || !this._config.notify_service?.length}
+              @click=${() => this._setupNotify()}
+            >
+              <ha-icon icon="mdi:bell-plus-outline"></ha-icon>
+              ${this._t("editor_battery_notify_button")}
+            </button>
+            ${this._notifyStatus === "success"
+              ? html`<div class="notify-status success">
+                  ${this._t("editor_battery_notify_success_prefix")} ${this._notifyDetail}
+                  ${this._t("editor_battery_notify_success_suffix")}
+                </div>`
+              : this._notifyStatus === "error"
+                ? html`<div class="notify-status error">
+                    ${this._t("editor_battery_notify_error")} ${this._notifyDetail}
+                  </div>`
+                : nothing}
           </div>
         </ha-expansion-panel>
 
@@ -470,6 +715,39 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
         gap: 6px;
         font-size: 14px;
         font-family: inherit;
+      }
+
+      .notify-btn {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+
+      .notify-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .notify-status {
+        font-size: 13px;
+      }
+
+      .notify-status.success {
+        color: var(--success-color, #4caf50);
+      }
+
+      .notify-status.error {
+        color: var(--error-color, #db4437);
       }
     `,
   ];

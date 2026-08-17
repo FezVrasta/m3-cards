@@ -576,6 +576,8 @@ export interface BatteryThresholds {
   medium?: number;
 }
 
+export type BatteryNotifyMode = "daily" | "weekly" | "on_change";
+
 export interface M3BatteryCardConfig {
   type: string;
   entities?: BatteryEntityConfig[];
@@ -588,7 +590,12 @@ export interface M3BatteryCardConfig {
   max_visible?: number;
   show_healthy_toggle?: boolean;
   show_trend?: boolean;
-  notify_service?: string;
+  notify_service?: string[];
+  notify_threshold?: number;
+  notify_mode?: BatteryNotifyMode;
+  notify_time?: string;
+  notify_weekday?: string;
+  notify_exclude_entities?: string[];
   name?: string;
   icon?: string;
   critical_color?: string;

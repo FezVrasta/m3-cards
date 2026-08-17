@@ -433,6 +433,10 @@ export const LIGHT_MEMBER_ROW_HEIGHT = 44;
 export const DEFAULT_BATTERY_RADIUS = RADIUS.card;
 export const DEFAULT_BATTERY_ICON_OK = "mdi:battery-70";
 export const DEFAULT_BATTERY_ICON_CRITICAL = "mdi:battery-alert-variant-outline";
+// Deliberately lower than the "critical" display stage: the card colors a
+// battery red well before it dies, but a push notification should only fire
+// when it actually needs swapping.
+export const DEFAULT_BATTERY_NOTIFY_THRESHOLD = 1;
 export const DEFAULT_BATTERY_THRESHOLD_CRITICAL = 10;
 export const DEFAULT_BATTERY_THRESHOLD_LOW = 20;
 export const DEFAULT_BATTERY_THRESHOLD_MEDIUM = 40;

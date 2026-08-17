@@ -4,6 +4,30 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.7.0]
+
+### Hinzugefügt
+- **M3 Battery Card**: Benachrichtigung bei schwachen Batterien, direkt aus
+  dem Kachel-Editor einrichtbar. Im neuen Abschnitt „Benachrichtigung"
+  lassen sich Ziel-Geräte (aus den eigenen `notify.*`-Diensten), ein
+  frei wählbarer Schwellwert (Standard 1 %) und der Rhythmus einstellen:
+  täglich oder wöchentlich als Sammelnachricht, oder sofort beim
+  Unterschreiten. Ein Klick legt eine echte Home-Assistant-Automatisierung
+  an, die auch ohne geöffnetes Dashboard benachrichtigt.
+- **M3 Battery Card**: neue Option `notify_exclude_entities` — einzelne
+  Geräte von der Benachrichtigung ausnehmen, ohne sie aus der Kachel zu
+  entfernen. Gedacht für Sensoren, die dauerhaft 1 % melden.
+- Die Benachrichtigung überwacht genau die Geräte, die die Kachel auflistet
+  (manuelle Liste oder Auto-Discovery inkl. Bereichs-/Label-Filtern). Die
+  Liste wird beim Einrichten aufgelöst und in die Automatisierung
+  übernommen; nach dem Hinzufügen neuer Geräte den Button erneut drücken.
+
+### Behoben
+- **M3 Battery Card**: `notify_service` war als Konfigurationsfeld
+  deklariert, wurde aber nirgends ausgewertet — es hatte schlicht keine
+  Wirkung. Das Feld ist jetzt tatsächlich in Gebrauch (und akzeptiert
+  mehrere Ziele statt nur eines).
+
 ## [1.6.1]
 
 ### Behoben
