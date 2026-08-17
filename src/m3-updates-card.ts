@@ -33,6 +33,15 @@ import {
   UPDATES_ROW_ICON_RADIUS,
   UPDATES_TOGGLE_HEIGHT,
   UPDATES_TOGGLE_RADIUS,
+  UPDATES_CORE_PADDING,
+  UPDATES_CORE_RADIUS,
+  UPDATES_CORE_ICON_SIZE,
+  UPDATES_CORE_ICON_RADIUS,
+  UPDATES_BUTTON_SIZE,
+  UPDATES_BUTTON_RADIUS,
+  UPDATES_BUTTON_RADIUS_BUSY,
+  UPDATES_PROGRESS_HEIGHT,
+  UPDATES_CONFIRM_TIMEOUT_MS,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
@@ -89,6 +98,31 @@ const GROUP_ICONS: Record<UpdateGroup, string> = {
   other: "mdi:package-variant",
 };
 
+// The three components that make up Home Assistant itself. They get their own
+// boxes with a version jump and an install button; everything else is a row.
+const CORE_GROUPS = new Set<UpdateGroup>(["core", "os", "supervisor"]);
+
+// Home Assistant ships calendar versions (2026.8.1), most add-ons and HACS
+// repos ship SemVer. A leading four-digit number that looks like a year is the
+// only reliable way to tell them apart, and it decides which position counts
+// as "the big jump": year/month for calendar, the first number for SemVer.
+function versionParts(version: string): number[] {
+  return version
+    .split(/[.\-+_]/)
+    .map((part) => parseInt(part, 10))
+    .filter((n) => Number.isFinite(n));
+}
+
+function isMajorJump(installed?: string, latest?: string): boolean {
+  if (!installed || !latest) return false;
+  const a = versionParts(installed);
+  const b = versionParts(latest);
+  if (!a.length || !b.length) return false;
+  const calendar = a[0] >= 2000 && a[0] <= 2100 && b[0] >= 2000 && b[0] <= 2100;
+  if (calendar) return a[0] !== b[0] || (a[1] ?? 0) !== (b[1] ?? 0);
+  return a[0] !== b[0];
+}
+
 const GROUP_LABELS: Record<UpdateGroup, TranslationKey> = {
   core: "updates_group_core",
   os: "updates_group_os",
@@ -107,7 +141,15 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
   @state() private _config?: M3UpdatesCardConfig;
   @state() private _expanded = false;
   @state() private _platforms: Record<string, string> = {};
+  /** Entity whose install button is currently asking "are you sure?". */
+  @state() private _confirming?: string;
   private _unavailable = 0;
+  private _confirmTimer?: number;
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._confirmTimer) window.clearTimeout(this._confirmTimer);
+  }
 
   public setConfig(config: M3UpdatesCardConfig): void {
     this._config = stampVersion({
@@ -246,6 +288,38 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     return () => fireEvent(this, "hass-more-info", { entityId });
   }
 
+  // A core update reboots the instance, so by default the button asks once
+  // before firing. The armed state resets itself — a stray tap must not leave
+  // a one-tap-installs-Home-Assistant button sitting on the dashboard.
+  private _install(row: UpdateRow): void {
+    if (!this.hass) return;
+    if ((this._config?.require_confirm ?? true) && this._confirming !== row.entity) {
+      this._confirming = row.entity;
+      if (this._confirmTimer) window.clearTimeout(this._confirmTimer);
+      this._confirmTimer = window.setTimeout(() => {
+        this._confirming = undefined;
+      }, UPDATES_CONFIRM_TIMEOUT_MS);
+      return;
+    }
+    if (this._confirmTimer) window.clearTimeout(this._confirmTimer);
+    this._confirming = undefined;
+    this.hass.callService("update", "install", {}, { entity_id: row.entity });
+  }
+
+  // HA's own more-info dialog renders release_summary and release_url, so the
+  // version line just opens it rather than shipping a second changelog view.
+  private _openReleaseNotes(entityId: string): void {
+    if (this._config?.show_release_notes === false) return;
+    fireEvent(this, "hass-more-info", { entityId });
+  }
+
+  private _releaseNotesClick(entityId: string): (e: Event) => void {
+    return (e: Event) => {
+      e.stopPropagation();
+      this._openReleaseNotes(entityId);
+    };
+  }
+
   private _groupColor(group: UpdateGroup): string {
     const c = this._config;
     switch (group) {
@@ -280,9 +354,13 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_UPDATES_RADIUS, this._config.corners);
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
 
+    // Core, OS and Supervisor get their own boxes above the list, so they must
+    // not also appear as rows — and max_visible only limits the rest.
+    const corePending = pending.filter((r) => CORE_GROUPS.has(r.group));
+    const restPending = pending.filter((r) => !CORE_GROUPS.has(r.group));
     const maxVisible = this._config.max_visible ?? DEFAULT_UPDATES_MAX_VISIBLE;
-    const visible = maxVisible > 0 ? pending.slice(0, maxVisible) : pending;
-    const overflow = maxVisible > 0 ? pending.slice(maxVisible) : [];
+    const visible = maxVisible > 0 ? restPending.slice(0, maxVisible) : restPending;
+    const overflow = maxVisible > 0 ? restPending.slice(maxVisible) : [];
 
     const title = running
       ? this._t("updates_status_running").replace("{name}", running.name)
@@ -299,6 +377,9 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       "upd-status": statusColor,
       "upd-status-bg": tintBackground(statusColor, this._config.accent_opacity, 14),
       "upd-status-icon-bg": tintBackground(statusColor, undefined, 24),
+      "upd-accent": updColor,
+      "upd-core-bg": tintBackground(updColor, undefined, 9),
+      "upd-core-icon-bg": tintBackground(updColor, undefined, 20),
     });
 
     return html`
@@ -327,6 +408,12 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
           ${rows.length === 0
             ? html`<div class="empty-state">${this._t("updates_empty")}</div>`
+            : nothing}
+
+          ${corePending.length
+            ? html`<div class="core-list">
+                ${repeat(corePending, (r) => r.entity, (r) => this._renderCoreBox(r))}
+              </div>`
             : nothing}
 
           ${visible.length
@@ -372,6 +459,64 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
             : nothing}
         </div>
       </ha-card>
+    `;
+  }
+
+  private _renderCoreBox(row: UpdateRow) {
+    const major = isMajorJump(row.installed, row.latest);
+    const readOnly = !this._installAllowed(row.group);
+    const armed = this._confirming === row.entity;
+    const percent = row.percentage;
+    const notes = this._config?.show_release_notes !== false;
+    return html`
+      <div class="core-box">
+        <div class="core-icon">
+          <ha-icon icon=${GROUP_ICONS[row.group]}></ha-icon>
+        </div>
+        <div class="core-text">
+          <div class="core-title">
+            ${this._t(GROUP_LABELS[row.group])}
+            ${row.autoUpdate
+              ? html`<ha-icon class="auto" icon="mdi:autorenew" title=${this._t("updates_auto_update")}></ha-icon>`
+              : nothing}
+            ${major ? html`<span class="major">${this._t("updates_major")}</span>` : nothing}
+          </div>
+          <div
+            class="core-version ${notes ? "tappable" : ""}"
+            role=${notes ? "button" : nothing}
+            tabindex=${notes ? 0 : nothing}
+            @click=${this._releaseNotesClick(row.entity)}
+            @keydown=${activateOnKey(() => this._openReleaseNotes(row.entity))}
+          >
+            <span class="from">${row.installed ?? "?"}</span>
+            <ha-icon class="arrow" icon="mdi:arrow-right"></ha-icon>
+            <span class="to">${row.latest ?? "?"}</span>
+          </div>
+        </div>
+        ${row.autoUpdate || readOnly
+          ? nothing
+          : html`
+              <button
+                class="core-btn ${row.inProgress ? "busy" : ""} ${armed ? "armed" : ""}"
+                ?disabled=${row.inProgress}
+                title=${this._t(armed ? "updates_confirm" : "updates_install")}
+                @click=${() => this._install(row)}
+              >
+                ${row.inProgress
+                  ? html`<span class="btn-label"
+                      >${percent === undefined ? this._t("updates_installing") : `${Math.round(percent)} %`}</span
+                    >`
+                  : armed
+                    ? html`<span class="btn-label">${this._t("updates_confirm")}</span>`
+                    : html`<ha-icon icon="mdi:tray-arrow-down"></ha-icon>`}
+              </button>
+            `}
+        ${row.inProgress
+          ? html`<div class="core-progress">
+              <div class="core-progress-fill" style=${`width: ${percent ?? 0}%;`}></div>
+            </div>`
+          : nothing}
+      </div>
     `;
   }
 
@@ -456,6 +601,152 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         font-size: 12px;
         opacity: 0.65;
         color: var(--m3p-secondary-text);
+      }
+
+      .core-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .core-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: ${UPDATES_CORE_PADDING}px;
+        border-radius: ${UPDATES_CORE_RADIUS}px;
+        background: var(--upd-core-bg);
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .core-icon {
+        flex-shrink: 0;
+        width: ${UPDATES_CORE_ICON_SIZE}px;
+        height: ${UPDATES_CORE_ICON_SIZE}px;
+        border-radius: ${UPDATES_CORE_ICON_RADIUS}px;
+        background: var(--upd-core-icon-bg);
+        color: var(--upd-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .core-icon ha-icon {
+        --mdc-icon-size: 22px;
+      }
+
+      .core-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .core-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--m3p-text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .core-title .auto {
+        --mdc-icon-size: 13px;
+        opacity: 0.55;
+      }
+
+      .major {
+        flex-shrink: 0;
+        border-radius: 8px;
+        padding: 1px 6px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        background: var(--upd-core-icon-bg);
+        color: var(--upd-accent);
+      }
+
+      .core-version {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--m3p-secondary-text);
+      }
+
+      .core-version.tappable {
+        cursor: pointer;
+      }
+
+      .core-version .from {
+        opacity: 0.55;
+      }
+
+      .core-version .arrow {
+        --mdc-icon-size: 13px;
+        color: var(--upd-accent);
+      }
+
+      .core-version .to {
+        font-weight: 700;
+        color: var(--upd-accent);
+      }
+
+      .core-btn {
+        flex-shrink: 0;
+        min-width: ${UPDATES_BUTTON_SIZE}px;
+        height: ${UPDATES_BUTTON_SIZE}px;
+        padding: 0 12px;
+        border: none;
+        border-radius: ${UPDATES_BUTTON_RADIUS}px;
+        background: var(--upd-accent);
+        color: #14181c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-radius 350ms ${unsafeCSS(STANDARD_EASING)};
+      }
+
+      .core-btn.armed,
+      .core-btn.busy {
+        border-radius: ${UPDATES_BUTTON_RADIUS_BUSY}px;
+      }
+
+      .core-btn.busy {
+        cursor: default;
+        opacity: 0.75;
+      }
+
+      .core-btn ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .core-progress {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: ${UPDATES_PROGRESS_HEIGHT}px;
+        background: color-mix(in srgb, var(--upd-accent) 20%, transparent);
+      }
+
+      .core-progress-fill {
+        height: 100%;
+        background: var(--upd-accent);
+        transition: width 500ms ${unsafeCSS(STANDARD_EASING)};
+      }
+
+      .card-inner.no-animations .core-btn,
+      .card-inner.no-animations .core-progress-fill {
+        transition: none;
       }
 
       .row-list {

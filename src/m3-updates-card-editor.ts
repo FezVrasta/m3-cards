@@ -296,6 +296,8 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
       { name: "icon", selector: { icon: {} } },
       { name: "max_visible", selector: { number: { min: 0, step: 1, mode: "box" } } },
       { name: "show_uptodate", selector: { boolean: {} } },
+      { name: "show_release_notes", selector: { boolean: {} } },
+      { name: "require_confirm", selector: { boolean: {} } },
     ];
   }
 
@@ -328,6 +330,8 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
       icon: "editor_icon",
       max_visible: "editor_updates_max_visible",
       show_uptodate: "editor_updates_show_uptodate",
+      show_release_notes: "editor_updates_show_release_notes",
+      require_confirm: "editor_updates_require_confirm",
       notify_service: "editor_updates_notify_service",
       notify_mode: "editor_updates_notify_mode",
       notify_time: "editor_updates_notify_time",
@@ -439,6 +443,8 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
       icon: this._config.icon,
       max_visible: this._config.max_visible ?? DEFAULT_UPDATES_MAX_VISIBLE,
       show_uptodate: this._config.show_uptodate ?? true,
+      show_release_notes: this._config.show_release_notes ?? true,
+      require_confirm: this._config.require_confirm ?? true,
     };
     const notifyData = {
       notify_service: this._config.notify_service ?? [],
@@ -570,6 +576,7 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_updates_max_visible_helper")}</div>
+            <div class="hint">${this._t("editor_updates_require_confirm_helper")}</div>
           </div>
         </ha-expansion-panel>
 

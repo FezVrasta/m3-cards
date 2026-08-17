@@ -669,6 +669,13 @@ export const UPDATES_TOGGLE_HEIGHT = 44;
 export const UPDATES_TOGGLE_RADIUS = 18;
 export const UPDATES_COMPACT_ROW_HEIGHT = 36;
 export const UPDATES_COMPACT_ROW_RADIUS = 14;
+export const UPDATES_BUTTON_SIZE = 38;
+export const UPDATES_BUTTON_RADIUS = 19;
+/** Radius the install button morphs to while it runs. */
+export const UPDATES_BUTTON_RADIUS_BUSY = 12;
+export const UPDATES_PROGRESS_HEIGHT = 3;
+/** How long an armed "are you sure?" button stays armed. */
+export const UPDATES_CONFIRM_TIMEOUT_MS = 5000;
 
 // Default display order; group_order may override it.
 export const UPDATES_GROUP_ORDER = [

@@ -71,6 +71,11 @@ const translations = {
     updates_group_firmware: "Firmware",
     updates_group_remote: "Zweite Instanz",
     updates_group_other: "Sonstiges",
+    updates_install: "Update installieren",
+    updates_confirm: "Sicher?",
+    updates_installing: "läuft",
+    updates_major: "MAJOR",
+    updates_auto_update: "Aktualisiert sich automatisch",
     editor_updates_auto_discover: "Alle Update-Entitäten automatisch finden",
     editor_updates_auto_discover_helper:
       "Die Karte nimmt alles aus der Domain update.* auf. Nicht erreichbare Entitäten werden nur gezählt, nicht gelistet.",
@@ -94,6 +99,10 @@ const translations = {
     editor_updates_max_visible_helper:
       "Alles darüber klappt hinter einem Button auf. 0 zeigt immer alle Updates.",
     editor_updates_show_uptodate: "Hinweis „x Komponenten aktuell“ anzeigen",
+    editor_updates_require_confirm: "Kern-Updates erst bestätigen",
+    editor_updates_require_confirm_helper:
+      "Der Update-Button fragt einmal nach, bevor Core, Betriebssystem oder Supervisor installiert werden – die Instanz startet dabei neu.",
+    editor_updates_show_release_notes: "Versionszeile öffnet die Release Notes",
     editor_updates_notify_hint:
       "Legt eine Home-Assistant-Automatisierung an, die dich über verfügbare Updates informiert.",
     editor_updates_notify_service: "Benachrichtigen über",
@@ -948,6 +957,11 @@ const translations = {
     updates_group_firmware: "Firmware",
     updates_group_remote: "Second instance",
     updates_group_other: "Other",
+    updates_install: "Install update",
+    updates_confirm: "Sure?",
+    updates_installing: "running",
+    updates_major: "MAJOR",
+    updates_auto_update: "Updates itself automatically",
     editor_updates_auto_discover: "Find all update entities automatically",
     editor_updates_auto_discover_helper:
       "The card picks up everything in the update.* domain. Unreachable entities are only counted, not listed.",
@@ -971,6 +985,10 @@ const translations = {
     editor_updates_max_visible_helper:
       "Anything beyond this collapses behind a button. 0 always shows every update.",
     editor_updates_show_uptodate: "Show the \"x components up to date\" note",
+    editor_updates_require_confirm: "Confirm core updates",
+    editor_updates_require_confirm_helper:
+      "The install button asks once before core, operating system or supervisor is installed — the instance restarts for it.",
+    editor_updates_show_release_notes: "Version line opens the release notes",
     editor_updates_notify_hint:
       "Creates a Home Assistant automation that tells you when updates are available.",
     editor_updates_notify_service: "Notify via",
