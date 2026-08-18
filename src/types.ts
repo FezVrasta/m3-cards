@@ -874,8 +874,12 @@ export interface NasDiskConfig {
   icon?: string;
 }
 
+export type HostSource = "glances" | "systemmonitor";
+
 export interface M3NasCardConfig extends NotifyConfigBase {
   type: string;
+  /** Which integration supplies the metrics. Defaults per card type. */
+  source?: HostSource;
   /** Pick up every Glances entity of the chosen host automatically. */
   auto_discover?: boolean;
   /** Restrict discovery to one Glances config entry when several NAS exist. */

@@ -4,6 +4,7 @@ import { repeat } from "lit/directives/repeat.js";
 import type {
   HomeAssistant,
   M3NasCardConfig,
+  HostSource,
   LovelaceCard,
   LovelaceCardEditor,
   LovelaceGridOptions,
@@ -65,6 +66,35 @@ type GlanceKey =
   | "network_tx"
   | "uptime";
 
+// Both integrations expose the same concepts under different registry keys,
+// so each source maps its own vocabulary onto the internal one. System Monitor
+// leaves last_boot without a translation_key, hence the unique_id fallback.
+const SOURCE_KEYS: Record<HostSource, Record<string, GlanceKey>> = {
+  glances: {
+    disk_usage: "disk_usage",
+    disk_used: "disk_used",
+    disk_size: "disk_size",
+    disk_free: "disk_free",
+    temperature: "temperature",
+    memory_usage: "memory_usage",
+    cpu_usage: "cpu_usage",
+    network_rx: "network_rx",
+    network_tx: "network_tx",
+    uptime: "uptime",
+  },
+  systemmonitor: {
+    disk_use_percent: "disk_usage",
+    disk_use: "disk_used",
+    disk_free: "disk_free",
+    processor_temperature: "temperature",
+    memory_use_percent: "memory_usage",
+    processor_use: "cpu_usage",
+    throughput_network_in: "network_rx",
+    throughput_network_out: "network_tx",
+    last_boot: "uptime",
+  },
+};
+
 interface GlanceEntity {
   entityId: string;
   /** Mount point for disks, sensor name for temperatures, iface for network. */
@@ -90,6 +120,8 @@ interface DiskRow {
   percent: number;
   usedEntity?: string;
   sizeEntity?: string;
+  /** Free space, when the source has no total-size sensor to read instead. */
+  freeValue?: number;
   percentEntity: string;
 }
 
@@ -119,6 +151,18 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1e3).toFixed(0)} kB`;
 }
 
+/**
+ * System Monitor unique_ids are `<key>` for the primary target and
+ * `<key>_<target>` for the others (disk_use_media, throughput_network_in_end0).
+ * Stripping the key is what lets "used" and "free" of the same volume find
+ * each other — keeping the raw unique_id gives every sensor its own label and
+ * the volume never assembles.
+ */
+function systemMonitorLabel(uniqueId: string, signal: string): string {
+  if (!uniqueId.startsWith(signal)) return uniqueId;
+  return uniqueId.slice(signal.length).replace(/^_/, "") || "/";
+}
+
 export function prettyMount(mount: string): string {
   const stripped = mount.replace(/^\/rootfs/, "") || "/";
   const uuid = stripped.match(/dev-disk-by-uuid-([0-9a-f]{8})/i);
@@ -130,7 +174,7 @@ export function prettyMount(mount: string): string {
 export class M3NasCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @state() private _config?: M3NasCardConfig;
+  @state() protected _config?: M3NasCardConfig;
   @state() private _expanded = false;
   /** translation_key → entities, built once from the entity registry. */
   @state() private _byKey: Partial<Record<GlanceKey, GlanceEntity[]>> = {};
@@ -190,15 +234,23 @@ export class M3NasCard extends LitElement implements LovelaceCard {
       >({ type: "config/entity_registry/list" });
 
       const wanted = this._config?.config_entry_id;
+      const source = this._source;
+      const map = SOURCE_KEYS[source];
       const out: Partial<Record<GlanceKey, GlanceEntity[]>> = {};
       const sync: string[] = [];
       for (const e of reg) {
         if (e.platform === "syncthing" && !e.disabled_by) sync.push(e.entity_id);
-        if (e.platform !== "glances" || e.disabled_by) continue;
+        if (e.platform !== source || e.disabled_by) continue;
         if (wanted && e.config_entry_id !== wanted) continue;
-        const key = e.translation_key as GlanceKey | undefined;
+        // System Monitor's last_boot carries no translation_key, so the
+        // unique_id doubles as the signal.
+        const signal = e.translation_key ?? e.unique_id;
+        const key = map[signal];
         if (!key) continue;
-        const label = e.config_entry_id ? labelFromUniqueId(e.unique_id, e.config_entry_id) : undefined;
+        const label =
+          source === "glances"
+            ? (e.config_entry_id ? labelFromUniqueId(e.unique_id, e.config_entry_id) : undefined)
+            : systemMonitorLabel(e.unique_id, signal);
         (out[key] ||= []).push({ entityId: e.entity_id, label: label ?? e.entity_id });
       }
       this._byKey = out;
@@ -207,6 +259,10 @@ export class M3NasCard extends LitElement implements LovelaceCard {
       this._byKey = {}; // no registry access — the card renders its empty state
       this._syncEntities = [];
     }
+  }
+
+  protected get _source(): HostSource {
+    return this._config?.source ?? "glances";
   }
 
   private get _language(): string {
@@ -257,6 +313,27 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         percent,
         percentEntity: e.entityId,
       });
+    }
+
+    // System Monitor ships its percentage sensor disabled by default, so with
+    // only "used" and "free" the ratio is derived rather than the volume being
+    // dropped from the card entirely.
+    if (!byMount.size) {
+      const free = new Map((this._byKey.disk_free ?? []).map((e) => [e.label, e]));
+      for (const e of this._byKey.disk_used ?? []) {
+        if (excluded.has(e.label)) continue;
+        const used = this._num(e.entityId);
+        const freeVal = this._num(free.get(e.label)?.entityId);
+        if (used === undefined || freeVal === undefined || used + freeVal <= 0) continue;
+        byMount.set(e.label, {
+          mount: e.label,
+          name: cfg.mount_names?.[e.label] ?? prettyMount(e.label),
+          percent: (used / (used + freeVal)) * 100,
+          percentEntity: e.entityId,
+          usedEntity: e.entityId,
+          freeValue: freeVal,
+        });
+      }
     }
     for (const e of this._byKey.disk_used ?? []) {
       const row = byMount.get(e.label);
@@ -492,7 +569,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
   private _renderDisk(row: DiskRow) {
     const color = this._diskColor(row.percent);
     const used = this._num(row.usedEntity);
-    const size = this._num(row.sizeEntity);
+    const size = this._num(row.sizeEntity) ?? (used !== undefined ? used + (row.freeValue ?? NaN) : undefined);
     const unit = this._unit(row.sizeEntity) || this._unit(row.usedEntity);
     const detail =
       used !== undefined && size !== undefined
@@ -580,10 +657,14 @@ export class M3NasCard extends LitElement implements LovelaceCard {
       });
     }
     if (cfg.show_network !== false && (rx !== undefined || tx !== undefined)) {
+      // Glances reports Mbit/s, System Monitor MB/s — printing a fixed unit
+      // would be off by a factor of eight on one of them.
+      const unit = this._unit(this._byKey.network_rx?.[0]?.entityId) || this._unit(this._byKey.network_tx?.[0]?.entityId);
+      const digits = unit.startsWith("MB") ? 2 : 1;
       tiles.push({
         icon: "mdi:swap-vertical",
-        label: this._t("nas_network"),
-        value: `${(rx ?? 0).toFixed(1)} / ${(tx ?? 0).toFixed(1)}`,
+        label: unit || this._t("nas_network"),
+        value: `${(rx ?? 0).toFixed(digits)} / ${(tx ?? 0).toFixed(digits)}`,
       });
     }
 
