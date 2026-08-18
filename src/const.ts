@@ -557,7 +557,14 @@ export const DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP = [
   "^Thermostat\\s+",
 ];
 export const CLIMATE_OVERVIEW_SCALE_MIN_SPAN = 8;
-export const CLIMATE_OVERVIEW_SCALE_MAX_LABELS = 8;
+/**
+ * Label sizing for the comparison scale. Widths are estimated rather than
+ * measured per label: at 9px the average glyph is about 5px, and the estimate
+ * only has to be good enough to decide whether two names collide.
+ */
+export const CLIMATE_OVERVIEW_LABEL_CHAR_PX = 5;
+export const CLIMATE_OVERVIEW_LABEL_MAX_PX = 70;
+export const CLIMATE_OVERVIEW_LABEL_GAP_PX = 8;
 export const CLIMATE_OVERVIEW_DOT_SIZE = 14;
 export const CLIMATE_OVERVIEW_DOT_RADIUS = 5;
 export const CLIMATE_OVERVIEW_DOT_TRANSITION_MS = DURATION_MS.flip;

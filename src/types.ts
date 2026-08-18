@@ -768,6 +768,8 @@ export interface M3ClimateOverviewCardConfig extends NotifyConfigBase {
   icon?: string;
   sort?: ClimateOverviewSort;
   show_scale?: boolean;
+  /** Room names along the comparison scale; off leaves only the dots. */
+  show_scale_labels?: boolean;
   show_outlier_chip?: boolean;
   show_trend?: boolean;
   show_mold_warning?: boolean;

@@ -75,6 +75,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   stillschweigend zu verschwinden — ein Tippfehler fällt so in der Nachricht
   auf, statt eine Lücke zu hinterlassen.
 
+### Behoben
+- **M3 Climate Overview Card**: Die Namen an der Vergleichsskala waren
+  entweder alle weg oder unlesbar übereinander. Bis acht Räume wurde jeder
+  Name gezeichnet — mittig auf seinem Punkt, ohne Prüfung, ob daneben schon
+  einer steht; ab neun Räumen fiel die Beschriftung komplett weg. Liegen
+  Räume dicht beieinander, überlagerten sich die Namen zu Buchstabensalat.
+  Jetzt werden die Namen kollisionsfrei auf zwei Reihen verteilt: kältester
+  und wärmster Raum zuerst, damit die Enden der Skala nie ihren Namen
+  verlieren, der Rest von links nach rechts, solange Platz ist. Namen am
+  Rand rutschen nach innen statt aus der Karte zu ragen. Neue Option
+  `show_scale_labels`, falls nur die Punkte gewünscht sind.
+
 ## [1.7.0]
 
 ### Hinzugefügt

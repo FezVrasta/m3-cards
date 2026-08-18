@@ -25,7 +25,9 @@ import {
   CLIMATE_OVERVIEW_COLOR_HOT,
   CLIMATE_OVERVIEW_HUMIDITY_WARN_COLOR,
   CLIMATE_OVERVIEW_SCALE_MIN_SPAN,
-  CLIMATE_OVERVIEW_SCALE_MAX_LABELS,
+  CLIMATE_OVERVIEW_LABEL_CHAR_PX,
+  CLIMATE_OVERVIEW_LABEL_MAX_PX,
+  CLIMATE_OVERVIEW_LABEL_GAP_PX,
   CLIMATE_OVERVIEW_DOT_SIZE,
   CLIMATE_OVERVIEW_DOT_RADIUS,
   CLIMATE_OVERVIEW_DOT_TRANSITION_MS,
@@ -164,6 +166,13 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
       window.clearInterval(this._trendRefreshTimer);
       this._trendRefreshTimer = undefined;
     }
+    this._trackObserver?.disconnect();
+    this._trackObserver = undefined;
+    this._observedTrack = undefined;
+    if (this._remeasureTimer !== undefined) {
+      window.clearTimeout(this._remeasureTimer);
+      this._remeasureTimer = undefined;
+    }
   }
 
   private get _language(): string {
@@ -178,6 +187,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     super.updated(changed);
     this._maybeDiscover();
     this._maybeFetchTrend();
+    if (this._config?.show_scale !== false) this._observeTrack();
   }
 
   private _maybeFetchTrend(): void {
@@ -396,6 +406,54 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     return best;
   }
 
+  /**
+   * Width of the comparison track in px. Label collision has to be decided in
+   * pixels — two rooms 0.1 °C apart sit at nearly the same percentage, but
+   * whether their names overlap depends on how wide the card actually is.
+   */
+  @state() private _trackWidth = 0;
+  private _trackObserver?: ResizeObserver;
+  private _observedTrack?: HTMLElement;
+  private _remeasureTimer?: number;
+
+  private _setTrackWidth(w: number): void {
+    if (w > 0 && Math.abs(w - this._trackWidth) > 1) this._trackWidth = w;
+  }
+
+  private _observeTrack(): void {
+    const track = this.renderRoot?.querySelector(".compare-track-wrap") as HTMLElement | null;
+    if (!track) return;
+
+    // Lit replaces this node on re-render, so the observer is re-attached only
+    // when it actually changed — disconnecting on every update would drop the
+    // observer's initial callback before it ever fires.
+    if (this._observedTrack !== track) {
+      this._trackObserver?.disconnect();
+      this._trackObserver ??= new ResizeObserver((entries) =>
+        this._setTrackWidth(entries[0]?.contentRect.width ?? 0),
+      );
+      this._trackObserver.observe(track);
+      this._observedTrack = track;
+    }
+
+    const w = track.getBoundingClientRect().width;
+    if (w > 0) {
+      this._setTrackWidth(w);
+      return;
+    }
+    // Freshly attached cards have no layout yet. A timer rather than
+    // requestAnimationFrame: a card rendered in a background tab would
+    // otherwise never get its width, because animation frames and
+    // ResizeObserver callbacks are both suspended while the tab is hidden.
+    if (this._remeasureTimer === undefined) {
+      this._remeasureTimer = window.setTimeout(() => {
+        this._remeasureTimer = undefined;
+        const el = this.renderRoot?.querySelector(".compare-track-wrap") as HTMLElement | null;
+        if (el) this._setTrackWidth(el.getBoundingClientRect().width);
+      }, 0);
+    }
+  }
+
   private _scaleRange(tiles: ClimateOverviewTile[]): [number, number] {
     const temps = tiles.filter((t) => t.temperature !== undefined).map((t) => t.temperature!);
     let autoMin = temps.length ? Math.floor(Math.min(...temps)) : 16;
@@ -410,15 +468,59 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     return max > min ? [min, max] : [min, min + CLIMATE_OVERVIEW_SCALE_MIN_SPAN];
   }
 
+  /**
+   * Decides which names fit without overlapping. Labels are placed greedily
+   * into the two rows above and below the track, coldest and warmest first so
+   * the ends of the scale — the interesting ones — never lose their name.
+   * Anything that still collides is left off; the dot keeps its tooltip.
+   */
+  private _placeLabels(
+    points: { pct: number; name: string }[],
+  ): Map<number, { row: "above" | "below"; shiftPx: number }> {
+    const placed = new Map<number, { row: "above" | "below"; shiftPx: number }>();
+    const width = this._trackWidth;
+    if (!width) return placed; // not measured yet — first paint draws dots only
+
+    const rows: Record<"above" | "below", { from: number; to: number }[]> = { above: [], below: [] };
+    // Priority: the two extremes, then the rest left to right. The ends of the
+    // scale are the ones worth naming, so they must never lose to a neighbour.
+    const order = [...points.keys()].sort((a, b) => {
+      const extreme = (i: number) => (i === 0 || i === points.length - 1 ? 0 : 1);
+      return extreme(a) - extreme(b) || a - b;
+    });
+
+    for (const i of order) {
+      const p = points[i];
+      const halfPx = Math.min(p.name.length * CLIMATE_OVERVIEW_LABEL_CHAR_PX, CLIMATE_OVERVIEW_LABEL_MAX_PX) / 2;
+      const centre = (p.pct / 100) * width;
+      // A label centred on a dot at 0 % or 100 % would hang off the card, so
+      // it is nudged inwards and the collision test uses the nudged position.
+      const shiftPx = Math.max(0, halfPx - centre) - Math.max(0, centre + halfPx - width);
+      const from = centre + shiftPx - halfPx - CLIMATE_OVERVIEW_LABEL_GAP_PX / 2;
+      const to = centre + shiftPx + halfPx + CLIMATE_OVERVIEW_LABEL_GAP_PX / 2;
+      const row = (["above", "below"] as const).find((r) =>
+        rows[r].every((s) => to <= s.from || from >= s.to),
+      );
+      if (!row) continue;
+      rows[row].push({ from, to });
+      placed.set(i, { row, shiftPx });
+    }
+    return placed;
+  }
+
   private _renderCompareScale(tiles: ClimateOverviewTile[]) {
     const withTemp = tiles.filter((t) => t.temperature !== undefined);
     if (withTemp.length < 2) return nothing;
 
     const [min, max] = this._scaleRange(tiles);
     const span = max - min;
-    const showLabels = withTemp.length <= CLIMATE_OVERVIEW_SCALE_MAX_LABELS;
     const unit = this._tempUnit();
     const sorted = [...withTemp].sort((a, b) => a.temperature! - b.temperature!);
+    const points = sorted.map((t) => ({
+      pct: Math.max(0, Math.min(100, ((t.temperature! - min) / span) * 100)),
+      name: t.name,
+    }));
+    const labelRows = this._config?.show_scale_labels === false ? new Map() : this._placeLabels(points);
 
     return html`
       <div class="compare-section">
@@ -429,11 +531,15 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
             style=${`background: linear-gradient(to right, ${CLIMATE_OVERVIEW_COLOR_COLD}, ${CLIMATE_OVERVIEW_COLOR_COOL}, ${CLIMATE_OVERVIEW_COLOR_COMFORTABLE}, ${CLIMATE_OVERVIEW_COLOR_WARM}, ${CLIMATE_OVERVIEW_COLOR_HOT});`}
           ></div>
           ${sorted.map((t, i) => {
-            const pct = Math.max(0, Math.min(100, ((t.temperature! - min) / span) * 100));
+            const pct = points[i].pct;
+            const row = labelRows.get(i);
             return html`
-              ${showLabels
+              ${row
                 ? html`
-                    <div class="compare-label ${i % 2 === 0 ? "above" : "below"}" style=${`left: ${pct}%;`}>
+                    <div
+                      class="compare-label ${row.row}"
+                      style=${`left: ${pct}%; transform: translateX(calc(-50% + ${Math.round(row.shiftPx)}px));`}
+                    >
                       ${t.name}
                     </div>
                   `
