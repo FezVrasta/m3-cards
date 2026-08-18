@@ -18,3 +18,4 @@ export * from "./m3-media-card";
 export * from "./m3-climate-overview-card";
 export * from "./m3-aquarium-card";
 export * from "./m3-updates-card";
+export * from "./m3-nas-card";

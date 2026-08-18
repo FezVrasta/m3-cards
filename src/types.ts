@@ -866,6 +866,57 @@ export type UpdateGroup =
   | "remote"
   | "other";
 
+/** One volume row on the NAS card. */
+export interface NasDiskConfig {
+  /** Mount point as Glances reports it, e.g. "/rootfs/srv/dev-disk-by-uuid-...". */
+  mount: string;
+  name?: string;
+  icon?: string;
+}
+
+export interface M3NasCardConfig extends NotifyConfigBase {
+  type: string;
+  /** Pick up every Glances entity of the chosen host automatically. */
+  auto_discover?: boolean;
+  /** Restrict discovery to one Glances config entry when several NAS exist. */
+  config_entry_id?: string;
+  /** Explicit volume list; overrides discovery order and naming. */
+  disks?: NasDiskConfig[];
+  exclude_mounts?: string[];
+  /** Mount point → display name, applied on top of discovery. */
+  mount_names?: Record<string, string>;
+  disk_warn?: number;
+  disk_critical?: number;
+  temp_warn?: number;
+  temp_critical?: number;
+  /** Temperature sensors to average/max over; empty = all discovered ones. */
+  temperature_labels?: string[];
+  show_cpu?: boolean;
+  show_memory?: boolean;
+  show_temperature?: boolean;
+  show_network?: boolean;
+  show_uptime?: boolean;
+  /** Syncthing folder sensors; empty falls back to every discovered one. */
+  sync_entities?: string[];
+  show_sync?: boolean;
+  max_visible?: number;
+  name?: string;
+  icon?: string;
+  ok_color?: string;
+  warn_color?: string;
+  critical_color?: string;
+  offline_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
 export interface M3UpdatesCardConfig extends NotifyConfigBase {
   type: string;
   auto_discover?: boolean;
@@ -933,7 +984,8 @@ export type M3CardConfig =
   | M3MediaCardConfig
   | M3ClimateOverviewCardConfig
   | M3AquariumCardConfig
-  | M3UpdatesCardConfig;
+  | M3UpdatesCardConfig
+  | M3NasCardConfig;
 
 export interface LovelaceCardEditor<
   T extends M3CardConfig = M3CardConfig,

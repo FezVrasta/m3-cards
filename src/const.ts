@@ -669,6 +669,36 @@ export const UPDATES_TOGGLE_HEIGHT = 44;
 export const UPDATES_TOGGLE_RADIUS = 18;
 export const UPDATES_COMPACT_ROW_HEIGHT = 36;
 export const UPDATES_COMPACT_ROW_RADIUS = 14;
+// ---- M3 NAS Card ----------------------------------------------------
+export const DEFAULT_NAS_RADIUS = RADIUS.card;
+export const DEFAULT_NAS_ICON = "mdi:nas";
+export const DEFAULT_NAS_MAX_VISIBLE = 4;
+/** Percent full at which a volume turns amber / red. */
+export const DEFAULT_NAS_DISK_WARN = 80;
+export const DEFAULT_NAS_DISK_CRITICAL = 90;
+/** Drive temperature considered warm / hot, in °C. */
+export const DEFAULT_NAS_TEMP_WARN = 55;
+export const DEFAULT_NAS_TEMP_CRITICAL = 65;
+
+export const NAS_COLOR_OK = "#81c784";
+export const NAS_COLOR_WARN = "#f0a24a";
+export const NAS_COLOR_CRITICAL = "#e57368";
+export const NAS_COLOR_OFFLINE = "#8fa3b8";
+export const NAS_COLOR_ACCENT = "#85b7eb";
+
+export const NAS_ROW_HEIGHT = 52;
+export const NAS_ROW_RADIUS = 18;
+export const NAS_ROW_RADIUS_ACTIVE = 12;
+export const NAS_ICON_SIZE = 34;
+export const NAS_ICON_RADIUS = 12;
+export const NAS_ROW_GAP = 6;
+export const NAS_BAR_HEIGHT = 5;
+export const NAS_BAR_RADIUS = 3;
+export const NAS_TILE_RADIUS = 16;
+export const NAS_TILE_PADDING = 10;
+export const NAS_TOGGLE_HEIGHT = 44;
+export const NAS_TOGGLE_RADIUS = 18;
+
 export const UPDATES_BUTTON_SIZE = 38;
 export const UPDATES_BUTTON_RADIUS = 19;
 /** Radius the install button morphs to while it runs. */
