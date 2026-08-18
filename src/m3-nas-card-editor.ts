@@ -181,7 +181,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
         mode: "queued" as const,
         triggers,
         conditions: [],
-        // The raw friendly_name is unusable here ("Syncthing (http://...) AXGQUEQ
+        // The raw friendly_name is unusable here ("Syncthing (http://...) ABCDEFG
         // HA Share HA Share"), so the names the card displays are resolved once
         // and written into the automation as a lookup.
         variables: { nas_names: JSON.stringify(this._prettyNames) },

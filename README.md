@@ -1744,7 +1744,7 @@ disabled by default — the card derives usage from "used" and "free" rather
 than dropping the volume.
 
 Mount paths are shortened for display (`/rootfs` stripped, UUID volumes become
-"Volume 43abd133"). `mount_names` overrides this per path, `exclude_mounts`
+"Volume a1b2c3d4"). `mount_names` overrides this per path, `exclude_mounts`
 hides individual ones.
 
 ### Temperature
@@ -1773,7 +1773,7 @@ The **Notification** section creates an automation with up to three triggers:
   it fires on every restart.
 
 Messages use the names the card displays. The raw entity names would be
-unusable ("Syncthing (http://…) AXGQUEQ HA Share HA Share"), so the mapping is
+unusable ("Syncthing (http://…) ABCDEFG HA Share HA Share"), so the mapping is
 written into the automation during setup.
 
 ### Configuration options

@@ -1782,7 +1782,7 @@ standardmäßig deaktiviert — rechnet die Karte die Belegung aus „belegt“ 
 „frei“, statt das Volume wegzulassen.
 
 Mount-Pfade werden für die Anzeige gekürzt (`/rootfs` entfällt,
-UUID-Volumes werden zu „Volume 43abd133“). `mount_names` überschreibt das
+UUID-Volumes werden zu „Volume a1b2c3d4“). `mount_names` überschreibt das
 pro Pfad, `exclude_mounts` blendet einzelne aus.
 
 ### Temperatur
@@ -1812,7 +1812,7 @@ Auslösern an:
   aus, weil das bei jedem Neustart feuert.
 
 Die Nachrichten nutzen die Namen, die auch die Kachel anzeigt. Die rohen
-Entity-Namen wären unbrauchbar („Syncthing (http://…) AXGQUEQ HA Share HA
+Entity-Namen wären unbrauchbar („Syncthing (http://…) ABCDEFG HA Share HA
 Share“), deshalb wird die Zuordnung beim Einrichten in die Automatisierung
 geschrieben.
 

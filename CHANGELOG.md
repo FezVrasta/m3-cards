@@ -54,7 +54,7 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   - Laufwerkssensoren haben Vorrang vor SoC-Thermals — sonst zeigt die Karte
     49 °C, während die Platten bei 32 °C liegen.
   - Mount-Pfade werden gekürzt (`/rootfs` entfällt, UUID-Volumes werden zu
-    „Volume 43abd133“), `mount_names` überschreibt das.
+    „Volume a1b2c3d4“), `mount_names` überschreibt das.
   - **Benachrichtigungen** für Sync-Fehler (inklusive `pull_errors`, die auch
     bei Zustand `idle` auftreten), volle Platten und ausbleibende Daten.
     Pausierte Ordner lösen bewusst nichts aus.
