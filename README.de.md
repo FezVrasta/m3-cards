@@ -69,8 +69,9 @@ TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
   Wasserstand und fällige Reinigung
 - **M3 Updates Card** (`custom:m3-updates-card`) — Übersicht aller
   verfügbaren Updates (Core, Betriebssystem, Supervisor, Add-ons, HACS,
-  Firmware) mit Statusbanner, eigenen Kern-Boxen inklusive Versionssprung und
-  Install-Button, Backup-Chip und optionaler Benachrichtigung
+  Firmware) mit Statuszeile im Header, eigenen Kern-Boxen inklusive
+  Versionssprung und Install-Button, Backup-Chip und optionaler
+  Benachrichtigung
 
 *Screenshots der ersten achtzehn Karten mit Demo-Daten (die M3 Aquarium
 Card kam danach hinzu — ihr eigener Screenshot ist weiter unten in ihrem
@@ -1583,7 +1584,7 @@ Changelog).
 
 ## M3 Updates Card
 
-Übersicht aller verfügbaren Updates in einer Kachel: Statusbanner, eigene
+Übersicht aller verfügbaren Updates in einer Kachel: Status im Header, eigene
 Boxen für Core/Betriebssystem/Supervisor mit Versionssprung und
 Install-Button, Zeilen für Add-ons, HACS und Firmware, dazu ein
 Aufklappbereich für alles, was bereits aktuell ist.

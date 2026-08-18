@@ -9,8 +9,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 ### Hinzugefügt
 - **Neue Karte: M3 Updates Card** (`custom:m3-updates-card`). Übersicht aller
   verfügbaren Updates in einer Kachel.
-  - **Statusbanner** mit „Alles aktuell“ / „{n} Updates verfügbar“ /
-    „{name} wird installiert“ und der Zahl der überwachten Komponenten.
+  - **Header** in der gemeinsamen Designsprache der Listen-Karten: Icon
+    links, Kartenname als Titel, Status als Untertitel („Alles aktuell“ /
+    „{n} Updates verfügbar“ / „{name} wird installiert“) und ein Zähler-Chip
+    rechts.
   - **Kern-Boxen** für Core, Betriebssystem und Supervisor mit
     `{installed} → {latest}`, MAJOR-Badge und Install-Button. Die
     MAJOR-Erkennung versteht beide Versionsschemata: bei
@@ -24,7 +26,7 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
     ununterscheidbare Core-Boxen erzeugt; die zweite Instanz bekommt jetzt
     eine eigene Gruppe. Reihenfolge und Sichtbarkeit der Gruppen sind im
     Editor per Pfeiltasten bzw. `include_types` einstellbar.
-  - **Backup-Chip** im Banner (`backup_entity`), grün bis `backup_warn_days`,
+  - **Backup-Chip** im Header (`backup_entity`), grün bis `backup_warn_days`,
     danach orange, ohne Zeitstempel rot.
   - **Übersprungene Updates** stehen gedimmt am Ende mit eigenem Button zum
     Wiederanzeigen — und zählen nicht mehr als „aktuell“.

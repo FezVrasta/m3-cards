@@ -1231,7 +1231,7 @@ windowWithCards.customCards.push({
   type: "m3-updates-card",
   name: "M3 Updates Card",
   description:
-    "Übersicht aller verfügbaren Updates (Core, OS, Supervisor, Add-ons, HACS, Firmware) mit Statusbanner.",
+    "Übersicht aller verfügbaren Updates (Core, OS, Supervisor, Add-ons, HACS, Firmware) mit Statuszeile und Install-Buttons.",
   preview: true,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

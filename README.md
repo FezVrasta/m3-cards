@@ -70,8 +70,9 @@ TypeScript + [Lit](https://lit.dev), **without** any dependency on
   level, and maintenance due
 - **M3 Updates Card** (`custom:m3-updates-card`) — overview of every
   available update (core, operating system, supervisor, add-ons, HACS,
-  firmware) with a status banner, dedicated core boxes showing the version
-  jump and an install button, a backup chip, and optional notifications
+  firmware) with the status in the header, dedicated core boxes showing the
+  version jump and an install button, a backup chip, and optional
+  notifications
 
 *Screenshots of the first eighteen cards with demo data (M3 Aquarium Card
 was added afterwards — see its own screenshot in that section below):*
@@ -1554,8 +1555,8 @@ Changelog).
 
 ## M3 Updates Card
 
-Every available update in one tile: a status banner, dedicated boxes for
-core/operating system/supervisor with the version jump and an install button,
+Every available update in one tile: the status in the header, dedicated boxes
+for core/operating system/supervisor with the version jump and an install button,
 rows for add-ons, HACS and firmware, plus an expander for everything that is
 already up to date.
 
