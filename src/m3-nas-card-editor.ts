@@ -8,10 +8,26 @@ import {
   DEFAULT_NAS_DISK_CRITICAL,
   DEFAULT_NAS_TEMP_WARN,
   DEFAULT_NAS_TEMP_CRITICAL,
+  DEFAULT_NAS_NOTIFY_DISK,
+  DEFAULT_NAS_OFFLINE_MINUTES,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { labelFromUniqueId, prettyMount } from "./m3-nas-card";
 import { fireEvent, colorRow, opacityRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
+import {
+  notifyServiceSchema,
+  notifyTitleSchema,
+  notifyMessageSchema,
+  notifyTokenHint,
+  renderNotifyControls,
+  setAutomationEnabled,
+  saveNotifyAutomation,
+  notifyActions,
+  resolveAutomationId,
+  notifyStyles,
+  type NotifyAutomationSpec,
+} from "./shared/notify-editor";
 import {
   initAppearanceState,
   radiusPresetPatch,
@@ -20,16 +36,211 @@ import {
   type AppearanceState,
 } from "./shared/appearance-editor";
 
+// Resolves the display name for whichever entity fired, falling back to the
+// entity's own name if it was added after the automation was written.
+const NAME_EXPR = "{{ nas_names.get(trigger.entity_id, trigger.to_state.name) }}";
+
 @customElement("m3-nas-card-editor")
 export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3NasCardConfig;
   @state() private _appearance: AppearanceState = { showCustomRadius: false, showCorners: false, cornerCustom: {} };
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: "idle" | "success" | "error" = "idle";
+  @state() private _notifyDetail = "";
+  @state() private _syncEntities: string[] = [];
+  @state() private _diskEntities: string[] = [];
+  /** entity_id → the name the card shows, baked into the notification. */
+  @state() private _prettyNames: Record<string, string> = {};
+  private _registryLoaded = false;
 
   public setConfig(config: M3NasCardConfig): void {
     this._config = config;
     this._appearance = initAppearanceState(config, DEFAULT_NAS_RADIUS);
+    this._loadRegistry();
+  }
+
+  protected updated(): void {
+    if (this.hass && !this._registryLoaded) this._loadRegistry();
+  }
+
+  // The automation has to watch exactly the entities the card lists, so the
+  // editor resolves them the same way the card does — by platform, not by
+  // display name.
+  private async _loadRegistry(): Promise<void> {
+    if (!this.hass || this._registryLoaded) return;
+    this._registryLoaded = true;
+    try {
+      const reg = await this.hass.callWS<
+        Array<{
+          entity_id: string;
+          platform: string;
+          translation_key?: string;
+          unique_id: string;
+          config_entry_id?: string;
+          disabled_by?: string | null;
+        }>
+      >({ type: "config/entity_registry/list" });
+      const names: Record<string, string> = {};
+      const sync = reg.filter((e) => e.platform === "syncthing" && !e.disabled_by);
+      for (const e of sync) {
+        // Syncthing's friendly_name is the whole connection string plus the
+        // device id plus the folder twice — the label attribute is the part a
+        // person recognises.
+        names[e.entity_id] = this.hass!.states[e.entity_id]?.attributes.label || e.entity_id;
+      }
+      const disks = reg.filter(
+        (e) => e.platform === "glances" && !e.disabled_by && e.translation_key === "disk_usage",
+      );
+      for (const e of disks) {
+        const mount = e.config_entry_id ? labelFromUniqueId(e.unique_id, e.config_entry_id) : undefined;
+        names[e.entity_id] =
+          (mount && this._config?.mount_names?.[mount]) || (mount ? prettyMount(mount) : e.entity_id);
+      }
+      this._syncEntities = sync.map((e) => e.entity_id);
+      this._diskEntities = disks.map((e) => e.entity_id);
+      this._prettyNames = names;
+    } catch {
+      this._syncEntities = [];
+      this._diskEntities = [];
+      this._prettyNames = {};
+    }
+  }
+
+  private async _toggleNotify(enabled: boolean): Promise<void> {
+    if (!this._config || !this.hass) return;
+    this._config = { ...this._config, notify_enabled: enabled };
+    fireEvent(this, "config-changed", { config: this._config });
+    if (enabled) {
+      await this._setupNotify();
+      return;
+    }
+    const id = this._config.notify_automation_id;
+    if (id) await setAutomationEnabled(this.hass, id, false);
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_notify_missing");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const cardName = cfg.name || this._t("nas_default_name");
+      const wantSync = cfg.notify_sync_errors !== false && this._syncEntities.length > 0;
+      const wantDisk = cfg.notify_disk_full !== false && this._diskEntities.length > 0;
+      const wantOffline = cfg.notify_offline === true && this._diskEntities.length > 0;
+      const threshold = cfg.notify_disk_threshold ?? DEFAULT_NAS_NOTIFY_DISK;
+      const offlineMinutes = cfg.notify_offline_minutes ?? DEFAULT_NAS_OFFLINE_MINUTES;
+
+      const triggers: Record<string, unknown>[] = [];
+      if (wantSync) {
+        // "paused" is a deliberate user choice, never a fault — only real
+        // errors trigger. A folder can also accumulate pull errors while its
+        // state stays "idle", so the attributes are watched separately.
+        triggers.push({ trigger: "state", entity_id: this._syncEntities, to: "error", id: "sync" });
+        triggers.push({
+          trigger: "numeric_state",
+          entity_id: this._syncEntities,
+          attribute: "pull_errors",
+          above: 0,
+          id: "sync",
+        });
+        triggers.push({
+          trigger: "numeric_state",
+          entity_id: this._syncEntities,
+          attribute: "errors",
+          above: 0,
+          id: "sync",
+        });
+      }
+      if (wantDisk) {
+        triggers.push({ trigger: "numeric_state", entity_id: this._diskEntities, above: threshold, id: "disk" });
+      }
+      if (wantOffline) {
+        triggers.push({
+          trigger: "state",
+          entity_id: this._diskEntities,
+          to: "unavailable",
+          for: { minutes: offlineMinutes },
+          id: "offline",
+        });
+      }
+      if (!triggers.length) throw new Error("no trigger selected");
+
+      const automation = {
+        alias: `${cardName}: ${this._t("editor_nas_notify_alias")}`,
+        description: this._t("editor_nas_notify_description"),
+        mode: "queued" as const,
+        triggers,
+        conditions: [],
+        // The raw friendly_name is unusable here ("Syncthing (http://...) AXGQUEQ
+        // HA Share HA Share"), so the names the card displays are resolved once
+        // and written into the automation as a lookup.
+        variables: { nas_names: JSON.stringify(this._prettyNames) },
+        actions: notifyActions(
+          targets,
+          cardName,
+          `{% if trigger.id == 'disk' %}${this._t("editor_nas_notify_disk")}` +
+            `{% elif trigger.id == 'offline' %}${this._t("editor_nas_notify_offline")}` +
+            `{% else %}${this._t("editor_nas_notify_sync")}{% endif %}`,
+          {
+            title: cfg.notify_title,
+            message: cfg.notify_message,
+            tokens: {
+              name: NAME_EXPR,
+              wert: "{{ trigger.to_state.state }}",
+              zustand: "{{ trigger.to_state.state }}",
+            },
+          },
+        ),
+      };
+
+      const automationId = resolveAutomationId("nas", cfg.notify_automation_id);
+      await saveNotifyAutomation(this.hass, { id: automationId, ...automation } as NotifyAutomationSpec);
+      if (cfg.notify_automation_id !== automationId) {
+        this._config = { ...cfg, notify_automation_id: automationId };
+        fireEvent(this, "config-changed", { config: this._config });
+      }
+      await setAutomationEnabled(this.hass, automationId, true);
+      this._notifyStatus = "success";
+      this._notifyDetail = `${triggers.length}`;
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
+  }
+
+  private _notifySchema(): SchemaEntry[] {
+    const schema: SchemaEntry[] = [
+      notifyServiceSchema(this.hass),
+      { name: "notify_sync_errors", selector: { boolean: {} } },
+      { name: "notify_disk_full", selector: { boolean: {} } },
+    ];
+    if (this._config?.notify_disk_full !== false) {
+      schema.push({
+        name: "notify_disk_threshold",
+        selector: { number: { min: 1, max: 100, step: 1, mode: "box", unit_of_measurement: "%" } },
+      });
+    }
+    schema.push({ name: "notify_offline", selector: { boolean: {} } });
+    if (this._config?.notify_offline === true) {
+      schema.push({
+        name: "notify_offline_minutes",
+        selector: { number: { min: 1, max: 120, step: 1, mode: "box", unit_of_measurement: "min" } },
+      });
+    }
+    schema.push(notifyTitleSchema(), notifyMessageSchema());
+    return schema;
   }
 
   private get _language(): string {
@@ -111,6 +322,14 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
       show_network: "editor_nas_show_network",
       show_uptime: "editor_nas_show_uptime",
       show_sync: "editor_nas_show_sync",
+      notify_service: "editor_updates_notify_service",
+      notify_sync_errors: "editor_nas_notify_sync_errors",
+      notify_disk_full: "editor_nas_notify_disk_full",
+      notify_disk_threshold: "editor_nas_notify_disk_threshold",
+      notify_offline: "editor_nas_notify_offline_enable",
+      notify_offline_minutes: "editor_nas_notify_offline_minutes",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -218,6 +437,16 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
       show_sync: this._config.show_sync ?? true,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+      notify_sync_errors: this._config.notify_sync_errors ?? true,
+      notify_disk_full: this._config.notify_disk_full ?? true,
+      notify_disk_threshold: this._config.notify_disk_threshold ?? DEFAULT_NAS_NOTIFY_DISK,
+      notify_offline: this._config.notify_offline ?? false,
+      notify_offline_minutes: this._config.notify_offline_minutes ?? DEFAULT_NAS_OFFLINE_MINUTES,
+      notify_title: this._config.notify_title ?? "",
+      notify_message: this._config.notify_message ?? "",
+    };
 
     return html`
       <div class="editor">
@@ -261,6 +490,35 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_nas_sync_helper")}</div>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_battery_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_nas_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_nas_notify_paused_hint")}</div>
+            <div class="hint">${notifyTokenHint(this._language, ["name", "zustand", "wert"])}</div>
+            ${renderNotifyControls({
+              hass: this.hass,
+              language: this._language,
+              enabled: this._config.notify_enabled ?? false,
+              automationId: this._config.notify_automation_id,
+              busy: this._notifyBusy,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              blockedReason: this._config.notify_service?.length ? undefined : this._t("editor_notify_missing"),
+              successText: `${this._t("editor_nas_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_nas_notify_success_suffix")}`,
+              onToggle: (on) => this._toggleNotify(on),
+              onSetup: () => this._setupNotify(),
+            })}
           </div>
         </ha-expansion-panel>
 
@@ -308,7 +566,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
     `;
   }
 
-  static styles = [editorStyles];
+  static styles = [editorStyles, notifyStyles];
 }
 
 declare global {

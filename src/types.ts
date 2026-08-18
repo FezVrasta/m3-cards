@@ -899,6 +899,13 @@ export interface M3NasCardConfig extends NotifyConfigBase {
   /** Syncthing folder sensors; empty falls back to every discovered one. */
   sync_entities?: string[];
   show_sync?: boolean;
+  /** Alert when a Syncthing folder errors out. Paused is never an alert. */
+  notify_sync_errors?: boolean;
+  notify_disk_full?: boolean;
+  notify_disk_threshold?: number;
+  /** Alert when Glances stops reporting, i.e. the NAS is unreachable. */
+  notify_offline?: boolean;
+  notify_offline_minutes?: number;
   max_visible?: number;
   name?: string;
   icon?: string;

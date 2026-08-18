@@ -698,6 +698,9 @@ export const NAS_TILE_RADIUS = 16;
 export const NAS_TILE_PADDING = 10;
 export const NAS_TOGGLE_HEIGHT = 44;
 export const NAS_TOGGLE_RADIUS = 18;
+export const DEFAULT_NAS_NOTIFY_DISK = 90;
+/** How long Glances must stay silent before the NAS counts as offline. */
+export const DEFAULT_NAS_OFFLINE_MINUTES = 10;
 
 export const UPDATES_BUTTON_SIZE = 38;
 export const UPDATES_BUTTON_RADIUS = 19;

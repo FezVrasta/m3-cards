@@ -98,7 +98,7 @@ interface DiskRow {
  * can itself contain dashes (`/rootfs/srv/dev-disk-by-uuid-43ab...`) but the
  * sensor key never does, so cutting at the last dash is unambiguous.
  */
-function labelFromUniqueId(uniqueId: string, configEntryId: string): string | undefined {
+export function labelFromUniqueId(uniqueId: string, configEntryId: string): string | undefined {
   const prefix = `${configEntryId}-`;
   if (!uniqueId.startsWith(prefix)) return undefined;
   const rest = uniqueId.slice(prefix.length);
@@ -119,7 +119,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1e3).toFixed(0)} kB`;
 }
 
-function prettyMount(mount: string): string {
+export function prettyMount(mount: string): string {
   const stripped = mount.replace(/^\/rootfs/, "") || "/";
   const uuid = stripped.match(/dev-disk-by-uuid-([0-9a-f]{8})/i);
   if (uuid) return `Volume ${uuid[1]}`;
