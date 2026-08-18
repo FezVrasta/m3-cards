@@ -30,10 +30,6 @@ import {
   UPDATES_COMPACT_ROW_RADIUS,
   DEFAULT_UPDATES_BACKUP_WARN_DAYS,
   UPDATES_GROUP_ORDER,
-  UPDATES_BANNER_PADDING,
-  UPDATES_BANNER_RADIUS,
-  UPDATES_BANNER_ICON_SIZE,
-  UPDATES_BANNER_ICON_RADIUS,
   UPDATES_ROW_HEIGHT,
   UPDATES_ROW_RADIUS,
   UPDATES_ROW_ICON_SIZE,
@@ -53,6 +49,7 @@ import {
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
+import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { stampVersion } from "./shared/config-migration";
@@ -396,12 +393,34 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
           )
         : this._t("updates_status_ok");
 
+    const statusIcon = installingOffline
+      ? "mdi:lan-disconnect"
+      : running
+        ? "mdi:progress-download"
+        : pending.length
+          ? "mdi:package-up"
+          : "mdi:check-circle-outline";
+
+    // Same header grammar as the other list cards: the card's own name on the
+    // left with the status as subtitle, counters on the right.
+    const backupChip = this._renderBackupChip();
+    const countChip = pending.length
+      ? html`<div class="count-chip">
+          <ha-icon icon="mdi:package-up"></ha-icon>
+          <span>${pending.length}</span>
+        </div>`
+      : nothing;
+    const headerChips =
+      backupChip === nothing && countChip === nothing
+        ? undefined
+        : html`<div class="header-chips">${backupChip}${countChip}</div>`;
+
     const cssVars = buildCssVars({
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
+      "m3p-icon-color": statusColor,
+      "m3p-icon-bg": tintBackground(statusColor, this._config.accent_opacity, 18),
       "upd-status": statusColor,
-      "upd-status-bg": tintBackground(statusColor, this._config.accent_opacity, 14),
-      "upd-status-icon-bg": tintBackground(statusColor, undefined, 24),
       "upd-accent": updColor,
       "upd-core-bg": tintBackground(updColor, undefined, 9),
       "upd-core-icon-bg": tintBackground(updColor, undefined, 20),
@@ -413,28 +432,12 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
           class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
         >
-          <div class="banner">
-            <div class="banner-icon">
-              <ha-icon
-                icon=${installingOffline
-                  ? "mdi:lan-disconnect"
-                  : running
-                    ? "mdi:progress-download"
-                    : pending.length
-                      ? "mdi:package-up"
-                      : "mdi:check-circle-outline"}
-              ></ha-icon>
-            </div>
-            <div class="banner-text">
-              <div class="banner-title">${title}</div>
-              <div class="banner-sub">
-                ${installingOffline
-                  ? this._t("updates_offline_hint")
-                  : this._t("updates_watched").replace("{n}", String(rows.length))}
-              </div>
-            </div>
-            ${this._renderBackupChip()}
-          </div>
+          ${renderCardHeader({
+            icon: this._config.icon ?? statusIcon,
+            name: this._config.name || this._t("updates_default_name"),
+            subtitle: installingOffline ? this._t("updates_offline_hint") : title,
+            right: headerChips,
+          })}
 
           ${rows.length === 0
             ? html`<div class="empty-state">${this._t("updates_empty")}</div>`
@@ -455,9 +458,10 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
           ${overflow.length
             ? html`
                 <button
-                  class="toggle ${this._expanded ? "open" : ""}"
+                  class="toggle accent-toggle ${this._expanded ? "open" : ""}"
                   @click=${() => (this._expanded = !this._expanded)}
                 >
+                  <ha-icon icon="mdi:package-up"></ha-icon>
                   <span>
                     ${overflow.length}
                     ${this._expanded
@@ -481,7 +485,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
             : nothing}
 
           ${this._unavailable
-            ? html`<div class="uptodate-note">
+            ? html`<div class="note-pill">
                 <ha-icon icon="mdi:cloud-off-outline"></ha-icon>
                 <span>${this._t("updates_unavailable").replace("{n}", String(this._unavailable))}</span>
               </div>`
@@ -700,6 +704,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
   static styles = [
     glassCardStyles,
+    cardHeaderStyles,
     css`
       :host {
         display: block;
@@ -714,30 +719,29 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         min-width: 0;
       }
 
-      .banner {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: ${UPDATES_BANNER_PADDING}px;
-        border-radius: ${UPDATES_BANNER_RADIUS}px;
-        background: var(--upd-status-bg);
-      }
-
-      .banner-icon {
+      .header-chips {
         flex-shrink: 0;
-        width: ${UPDATES_BANNER_ICON_SIZE}px;
-        height: ${UPDATES_BANNER_ICON_SIZE}px;
-        border-radius: ${UPDATES_BANNER_ICON_RADIUS}px;
-        background: var(--upd-status-icon-bg);
-        color: var(--upd-status);
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 6px;
       }
 
-      .banner-text {
-        flex: 1;
-        min-width: 0;
+      .count-chip {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: ${UPDATES_CHIP_HEIGHT}px;
+        padding: 0 10px;
+        border-radius: ${UPDATES_CHIP_RADIUS}px;
+        background: var(--m3p-icon-bg);
+        color: var(--m3p-icon-color);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .count-chip ha-icon {
+        --mdc-icon-size: 16px;
       }
 
       .backup-chip {
@@ -756,18 +760,6 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
       .backup-chip ha-icon {
         --mdc-icon-size: 15px;
-      }
-
-      .banner-title {
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--m3p-text);
-      }
-
-      .banner-sub {
-        font-size: 12px;
-        opacity: 0.65;
-        color: var(--m3p-secondary-text);
       }
 
       .core-list {
@@ -1005,6 +997,15 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         transition: border-radius 350ms ${unsafeCSS(STANDARD_EASING)};
       }
 
+      .toggle.accent-toggle {
+        background: color-mix(in srgb, var(--upd-accent) 14%, transparent);
+        color: var(--upd-accent);
+      }
+
+      .toggle ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
       .toggle.open {
         border-radius: 12px;
       }
@@ -1055,19 +1056,12 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       }
 
       .uptodate-toggle {
-        gap: 8px;
-        font-size: 12px;
-        opacity: 0.75;
-      }
-
-      .uptodate-toggle .ok-check {
-        --mdc-icon-size: 16px;
+        background: color-mix(in srgb, ${unsafeCSS(UPDATES_COLOR_OK)} 14%, transparent);
         color: ${unsafeCSS(UPDATES_COLOR_OK)};
       }
 
-      .uptodate-toggle span {
-        flex: 1;
-        text-align: left;
+      .uptodate-toggle .ok-check {
+        --mdc-icon-size: 18px;
       }
 
       .compact-list {
@@ -1112,16 +1106,20 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         color: var(--m3p-secondary-text);
       }
 
-      .uptodate-note {
+      .note-pill {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 6px;
+        height: ${UPDATES_COMPACT_ROW_HEIGHT}px;
+        border-radius: ${UPDATES_TOGGLE_RADIUS}px;
+        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
         font-size: 12px;
         opacity: 0.6;
         color: var(--m3p-secondary-text);
       }
 
-      .uptodate-note ha-icon {
+      .note-pill ha-icon {
         --mdc-icon-size: 16px;
       }
 
