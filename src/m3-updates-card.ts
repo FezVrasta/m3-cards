@@ -145,10 +145,16 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
   @state() private _config?: M3UpdatesCardConfig;
   @state() private _expanded = false;
   @state() private _expandedOk = false;
+  @state() private _expandedOff = false;
   @state() private _platforms: Record<string, string> = {};
   /** Entity whose install button is currently asking "are you sure?". */
   @state() private _confirming?: string;
-  private _unavailable = 0;
+  /**
+   * Entities Home Assistant restored from the registry but never got a value
+   * for — a disconnected remote instance, an offline device. Kept as rows so
+   * they can be listed on demand, not just counted.
+   */
+  private _unavailableRows: UpdateRow[] = [];
   private _confirmTimer?: number;
   /**
    * Name of the update that was installing when the connection was last up.
@@ -253,7 +259,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
     const include = cfg.include_types?.length ? new Set(cfg.include_types) : undefined;
     const rows: UpdateRow[] = [];
-    this._unavailable = 0;
+    this._unavailableRows = [];
     for (const id of ids) {
       const st = this.hass.states[id];
       if (!st) continue;
@@ -262,7 +268,17 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       // and listing them would add nameless rows, so they are surfaced as a
       // note instead.
       if (st.attributes.restored || st.state === "unavailable" || st.state === "unknown") {
-        this._unavailable += 1;
+        // No title and no friendly_name is normal here — the integration never
+        // reported one — so the entity_id is the only usable label.
+        this._unavailableRows.push({
+          entity: id,
+          name: st.attributes.title || st.attributes.friendly_name || id,
+          group: this._groupFor(id, st),
+          pending: false,
+          inProgress: false,
+          autoUpdate: false,
+          skipped: false,
+        });
         continue;
       }
       const group = this._groupFor(id, st);
@@ -484,13 +500,6 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
               </div>`
             : nothing}
 
-          ${this._unavailable
-            ? html`<div class="note-pill">
-                <ha-icon icon="mdi:cloud-off-outline"></ha-icon>
-                <span>${this._t("updates_unavailable").replace("{n}", String(this._unavailable))}</span>
-              </div>`
-            : nothing}
-
           ${this._config.show_uptodate !== false && upToDate.length
             ? html`
                 <button
@@ -504,6 +513,30 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
                 ${this._expandedOk
                   ? html`<div class="compact-list">
                       ${repeat(upToDate, (r) => r.entity, (r) => this._renderCompactRow(r))}
+                    </div>`
+                  : nothing}
+              `
+            : nothing}
+
+          ${this._unavailableRows.length
+            ? html`
+                <button
+                  class="note-pill ${this._expandedOff ? "open" : ""}"
+                  @click=${() => (this._expandedOff = !this._expandedOff)}
+                >
+                  <ha-icon icon="mdi:cloud-off-outline"></ha-icon>
+                  <span>
+                    ${this._t("updates_unavailable").replace("{n}", String(this._unavailableRows.length))}
+                  </span>
+                  <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
+                </button>
+                ${this._expandedOff
+                  ? html`<div class="compact-list">
+                      ${repeat(
+                        this._unavailableRows,
+                        (r) => r.entity,
+                        (r) => this._renderUnavailableRow(r),
+                      )}
                     </div>`
                   : nothing}
               `
@@ -579,6 +612,23 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         <ha-icon class="ok-check" icon="mdi:check"></ha-icon>
         <span class="compact-name">${row.name}</span>
         <span class="compact-version">${row.installed ?? ""}</span>
+      </div>
+    `;
+  }
+
+  private _renderUnavailableRow(row: UpdateRow) {
+    return html`
+      <div
+        class="compact-row unreachable"
+        role="button"
+        tabindex="0"
+        title=${row.entity}
+        @click=${this._moreInfo(row.entity)}
+        @keydown=${activateOnKey(this._moreInfo(row.entity))}
+      >
+        <ha-icon class="off-icon" icon="mdi:cloud-off-outline"></ha-icon>
+        <span class="compact-name">${row.name}</span>
+        <span class="compact-version">${this._t(GROUP_LABELS[row.group])}</span>
       </div>
     `;
   }
@@ -1107,20 +1157,54 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       }
 
       .note-pill {
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 6px;
         height: ${UPDATES_COMPACT_ROW_HEIGHT}px;
+        border: none;
         border-radius: ${UPDATES_TOGGLE_RADIUS}px;
         background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
         font-size: 12px;
+        font-family: inherit;
         opacity: 0.6;
         color: var(--m3p-secondary-text);
+        cursor: pointer;
+        transition: border-radius 350ms ${unsafeCSS(STANDARD_EASING)};
+      }
+
+      .note-pill.open {
+        border-radius: 12px;
       }
 
       .note-pill ha-icon {
         --mdc-icon-size: 16px;
+      }
+
+      .note-pill .chevron {
+        --mdc-icon-size: 18px;
+        transition: transform 350ms ${unsafeCSS(STANDARD_EASING)};
+      }
+
+      .note-pill.open .chevron {
+        transform: rotate(180deg);
+      }
+
+      .card-inner.no-animations .note-pill,
+      .card-inner.no-animations .note-pill .chevron {
+        transition: none;
+      }
+
+      .compact-row.unreachable .off-icon {
+        flex-shrink: 0;
+        --mdc-icon-size: 15px;
+        opacity: 0.5;
+        color: var(--m3p-secondary-text);
+      }
+
+      .compact-row.unreachable {
+        opacity: 0.75;
       }
 
       .empty-state {

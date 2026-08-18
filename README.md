@@ -1580,8 +1580,11 @@ group ("Second instance"). `type_patterns` overrides the mapping per
 `entity_id` fragment if the automatic assignment gets something wrong.
 
 Entities Home Assistant could not reach on startup (`restored`/`unavailable`)
-are neither counted nor listed, but surfaced as a separate note — otherwise
-the card would claim coverage it does not have.
+do not count as "up to date" — otherwise the card would claim coverage it does
+not have. They sit behind their own expander below the reachable components,
+labelled with their group instead of a version, so it is obvious at a glance
+*why* something is missing (e.g. "52 × second instance" = that connection is
+delivering nothing right now).
 
 `include_types` limits the display to certain groups (empty = all), and
 `group_order` sets the order and therefore which updates stay visible when

@@ -34,8 +34,9 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
     Freitextfeldern wie die übrigen Karten.
   - **Verbindungsverlust** während eines Core-Updates wird als solcher
     angezeigt statt als eingefrorenes Banner.
-  - Nicht erreichbare Update-Entities werden separat ausgewiesen statt
-    mitgezählt.
+  - Nicht erreichbare Update-Entities zählen nicht als „aktuell“ und lassen
+    sich unter den erreichbaren Komponenten aufklappen — mit Gruppe statt
+    Version, damit sichtbar wird, welche Integration gerade nichts liefert.
 - **Eigene Benachrichtigungstexte.** Jedes Benachrichtigungs-Panel hat jetzt
   zwei Freitextfelder für Titel und Nachricht. Leer lassen behält den
   bisherigen Text, sodass sich für bestehende Konfigurationen nichts ändert.

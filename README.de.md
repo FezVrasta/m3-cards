@@ -1611,9 +1611,12 @@ bekommt deshalb eine eigene Gruppe („Zweite Instanz"). `type_patterns`
 etwas falsch einsortiert.
 
 Entities, die Home Assistant beim Start nicht erreichen konnte
-(`restored`/`unavailable`), werden weder gezählt noch gelistet, sondern als
-eigener Hinweis ausgewiesen — sonst würde die Kachel eine Abdeckung
-behaupten, die sie nicht hat.
+(`restored`/`unavailable`), zählen nicht als „aktuell" — sonst würde die
+Kachel eine Abdeckung behaupten, die sie nicht hat. Sie stehen stattdessen
+hinter einem eigenen Aufklapper unter den erreichbaren Komponenten, mit
+Gruppe statt Version, damit auf einen Blick erkennbar ist, *warum* etwas
+fehlt (z.B. „52 × Zweite Instanz" = die Verbindung dorthin liefert gerade
+nichts).
 
 `include_types` beschränkt die Anzeige auf bestimmte Gruppen (leer = alle),
 `group_order` bestimmt die Reihenfolge und damit auch, welche Updates bei
