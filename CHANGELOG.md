@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.8.1]
+
+### Geändert
+- Nur Dokumentation, keine Änderung am ausgelieferten `m3-cards.js` — das
+  Bundle ist byte-identisch mit v1.8.0.
+- Neues Übersichtsbild mit allen 22 Karten; das bisherige zeigte noch die
+  ersten achtzehn.
+- Eigene Screenshots für die M3 Updates Card, die M3 NAS Card und die
+  M3 System Card in ihren jeweiligen Abschnitten.
+- Die Bildunterschrift des Übersichtsbilds behauptete, alle Namen seien
+  generische Demo-Daten. Das stimmte für die Aufnahme nicht; sie nennt jetzt
+  die Karten, die für das Bild simulierte Zustände zeigen.
+
+Grund für das Release: HACS rendert das README des veröffentlichten Stands,
+nicht das des Standard-Branches. Die Bilder wurden nach dem Tag v1.8.0
+ergänzt und waren dort deshalb nicht sichtbar.
+
 ## [1.8.0]
 
 ### Hinzugefügt
