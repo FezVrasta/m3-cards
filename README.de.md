@@ -79,14 +79,15 @@ TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
   aus der System-Monitor-Integration: die Werte der eigenen
   Home-Assistant-Instanz
 
-*Screenshots der ersten achtzehn Karten mit Demo-Daten (Aquarium, Updates,
-NAS und System kamen danach hinzu — ihre Screenshots stehen jeweils in ihrem
-eigenen Abschnitt):*
+*Alle 22 Karten auf einen Blick:*
 
 ![Übersicht](docs/images/cards-overview.png)
 
-<sub>Karten- und Sensornamen in den Screenshots sind generische Demo-Daten
-(HA-Demo-Integration + Platzhalter-Helfer), keine echten Geräte.</sub>
+<sub>Aufgenommen auf einer echten Home-Assistant-Instanz. Waschmaschine,
+Stehlampe, Lautsprecher, Klimaanlage und die Updates zeigen simulierte
+Zustände, damit die aktiven Darstellungen (Wellenindikator, Versionssprung,
+laufende Installation) im Bild sichtbar sind — alles andere sind
+Live-Werte.</sub>
 
 🇬🇧 [English README](README.md)
 

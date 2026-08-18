@@ -79,14 +79,14 @@ TypeScript + [Lit](https://lit.dev), **without** any dependency on
 - **M3 System Card** (`custom:m3-system-card`) — the same card fed by the
   System Monitor integration: the numbers of your own Home Assistant host
 
-*Screenshots of the first eighteen cards with demo data (Aquarium, Updates,
-NAS and System were added afterwards — each has its own screenshot in its own
-section below):*
+*All 22 cards at a glance:*
 
 ![Overview](docs/images/cards-overview.png)
 
-<sub>Card and sensor names in the screenshots are generic demo data (HA
-demo integration + placeholder helpers), not real devices.</sub>
+<sub>Taken on a real Home Assistant instance. The washing machine, floor lamp,
+speaker, air conditioner and the updates show simulated states so the active
+renderings (wave indicator, version jump, running installation) are visible in
+the image — everything else is live data.</sub>
 
 🇩🇪 [Deutsches README](README.de.md)
 
