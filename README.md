@@ -79,8 +79,9 @@ TypeScript + [Lit](https://lit.dev), **without** any dependency on
 - **M3 System Card** (`custom:m3-system-card`) — the same card fed by the
   System Monitor integration: the numbers of your own Home Assistant host
 
-*Screenshots of the first eighteen cards with demo data (M3 Aquarium Card
-was added afterwards — see its own screenshot in that section below):*
+*Screenshots of the first eighteen cards with demo data (Aquarium, Updates,
+NAS and System were added afterwards — each has its own screenshot in its own
+section below):*
 
 ![Overview](docs/images/cards-overview.png)
 
@@ -1565,6 +1566,11 @@ for core/operating system/supervisor with the version jump and an install button
 rows for add-ons, HACS and firmware, plus an expander for everything that is
 already up to date.
 
+![M3 Updates Card](docs/images/updates-card.png)
+
+<sub>Screenshot with simulated update data, so the core boxes, the MAJOR badge
+and a running installation are visible at the same time.</sub>
+
 ```yaml
 type: custom:m3-updates-card
 auto_discover: true
@@ -1697,6 +1703,14 @@ temperature and network as compact status tiles below, and optionally the
 state of your Syncthing folders. The NAS Card reads the **Glances**
 integration, the System Card the **System Monitor** integration — otherwise
 they are identical.
+
+![M3 NAS Card](docs/images/nas-card.png)
+
+![M3 System Card](docs/images/system-card.png)
+
+<sub>The NAS Card on top with two volumes and the Syncthing folders, the
+System Card for your own instance below. Drive names come from `mount_names` —
+Glances otherwise reports paths like `/rootfs/srv/dev-disk-by-uuid-…`.</sub>
 
 ```yaml
 type: custom:m3-nas-card

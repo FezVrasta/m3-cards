@@ -79,9 +79,9 @@ TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
   aus der System-Monitor-Integration: die Werte der eigenen
   Home-Assistant-Instanz
 
-*Screenshots der ersten achtzehn Karten mit Demo-Daten (die M3 Aquarium
-Card kam danach hinzu — ihr eigener Screenshot ist weiter unten in ihrem
-Abschnitt):*
+*Screenshots der ersten achtzehn Karten mit Demo-Daten (Aquarium, Updates,
+NAS und System kamen danach hinzu — ihre Screenshots stehen jeweils in ihrem
+eigenen Abschnitt):*
 
 ![Übersicht](docs/images/cards-overview.png)
 
@@ -1595,6 +1595,11 @@ Boxen für Core/Betriebssystem/Supervisor mit Versionssprung und
 Install-Button, Zeilen für Add-ons, HACS und Firmware, dazu ein
 Aufklappbereich für alles, was bereits aktuell ist.
 
+![M3 Updates Card](docs/images/updates-card.png)
+
+<sub>Screenshot mit simulierten Update-Daten, damit Kern-Boxen, MAJOR-Badge
+und laufende Installation gleichzeitig sichtbar sind.</sub>
+
 ```yaml
 type: custom:m3-updates-card
 auto_discover: true
@@ -1735,6 +1740,15 @@ darunter CPU, RAM, Temperatur und Netzwerk als kompakte Statuskacheln,
 optional der Zustand der Syncthing-Ordner. Die NAS Card liest die
 **Glances**-Integration, die System Card die **System-Monitor**-Integration —
 sonst sind sie identisch.
+
+![M3 NAS Card](docs/images/nas-card.png)
+
+![M3 System Card](docs/images/system-card.png)
+
+<sub>Oben die NAS Card mit zwei Volumes und den Syncthing-Ordnern, darunter
+die System Card für die eigene Instanz. Die Laufwerksnamen stammen aus
+`mount_names` — Glances meldet sonst Pfade wie
+`/rootfs/srv/dev-disk-by-uuid-…`.</sub>
 
 ```yaml
 type: custom:m3-nas-card
