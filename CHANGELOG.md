@@ -39,6 +39,25 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   - Nicht erreichbare Update-Entities zählen nicht als „aktuell“ und lassen
     sich unter den erreichbaren Komponenten aufklappen — mit Gruppe statt
     Version, damit sichtbar wird, welche Integration gerade nichts liefert.
+- **Neue Karten: M3 NAS Card und M3 System Card** (`custom:m3-nas-card`,
+  `custom:m3-system-card`). Speicherbelegung pro Volume mit Balken, darunter
+  CPU, RAM, Temperatur und Netzwerk als Statuskacheln, dazu der Zustand der
+  Syncthing-Ordner. Beide teilen sich eine Implementierung und unterscheiden
+  sich nur in der Datenquelle: Glances für ein NAS, System Monitor für die
+  eigene Instanz.
+  - Entitäten werden über den `translation_key` der Entity-Registry erkannt,
+    nicht über den Anzeigenamen — den übersetzt Home Assistant, eine
+    Namensregel funktioniert nur in einer Sprache.
+  - Fehlt ein Prozent-Sensor (System Monitor liefert `disk_use_percent`
+    standardmäßig deaktiviert), wird die Belegung aus „belegt“ und „frei“
+    berechnet, statt das Volume wegzulassen.
+  - Laufwerkssensoren haben Vorrang vor SoC-Thermals — sonst zeigt die Karte
+    49 °C, während die Platten bei 32 °C liegen.
+  - Mount-Pfade werden gekürzt (`/rootfs` entfällt, UUID-Volumes werden zu
+    „Volume 43abd133“), `mount_names` überschreibt das.
+  - **Benachrichtigungen** für Sync-Fehler (inklusive `pull_errors`, die auch
+    bei Zustand `idle` auftreten), volle Platten und ausbleibende Daten.
+    Pausierte Ordner lösen bewusst nichts aus.
 - **Eigene Benachrichtigungstexte.** Jedes Benachrichtigungs-Panel hat jetzt
   zwei Freitextfelder für Titel und Nachricht. Leer lassen behält den
   bisherigen Text, sodass sich für bestehende Konfigurationen nichts ändert.
