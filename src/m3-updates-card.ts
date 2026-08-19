@@ -138,6 +138,15 @@ const GROUP_LABELS: Record<UpdateGroup, TranslationKey> = {
   other: "updates_group_other",
 };
 
+// `friendly_name` on an update entity reads "M3 Cards Update", repeating the
+// word the card already says in its own heading. Add-ons and integrations
+// carry a clean `title`; HACS entities do not, so there the suffix is trimmed.
+// Kept in step with the notification template in the editor.
+function updateName(attrs: Record<string, any>, id: string): string {
+  const friendly: string | undefined = attrs.friendly_name;
+  return attrs.title || friendly?.replace(/ Update$/, "") || friendly || id;
+}
+
 @customElement("m3-updates-card")
 export class M3UpdatesCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
@@ -272,7 +281,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         // reported one — so the entity_id is the only usable label.
         this._unavailableRows.push({
           entity: id,
-          name: st.attributes.title || st.attributes.friendly_name || id,
+          name: updateName(st.attributes, id),
           group: this._groupFor(id, st),
           pending: false,
           inProgress: false,
@@ -286,7 +295,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       const a = st.attributes;
       rows.push({
         entity: id,
-        name: a.title || a.friendly_name || id,
+        name: updateName(a, id),
         group,
         installed: a.installed_version,
         latest: a.latest_version,
