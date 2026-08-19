@@ -4,6 +4,29 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.8.2]
+
+### Behoben
+- **Alle Karten mit Benachrichtigung** (Updates, Akku, Steckdosen, NAS): Die
+  vom Editor erzeugte Automatisierung stürzte ab, sobald man sie im
+  Automatisierungs-Menü von Hand ausführte — also genau bei dem Versuch, das
+  Ankommen der Push zu testen. „Ausführen“ überspringt den Auslöser und
+  startet die Aktionen ohne Auslöser-Kontext; jede Textvorlage las aber
+  `trigger.to_state` und lief in einen `UndefinedError`, ohne dass eine
+  Benachrichtigung rausging. Die Vorlagen greifen jetzt auf `s` zu — beim
+  echten Auslöser die auslösende Entität, beim Handstart eine
+  Beispiel-Entität. Bevorzugt wird eine, auf die die Bedingung gerade
+  zutrifft, damit der Test die echte Formulierung mit echten Werten zeigt
+  statt eines Geräts, dem nichts fehlt.
+- **M3 Updates Card**: Meldung und Liste sagten „Update“ doppelt („AdGuard
+  Home Update: Update auf 6.2.1 verfügbar“, Zeile „M3 Cards Update“). Der
+  `friendly_name` einer Update-Entität endet auf das Wort, das die Karte mit
+  Überschrift und Versionsspalte ohnehin sagt. Add-ons und Integrationen
+  liefern ein sauberes `title`-Attribut, HACS-Einträge nicht — dort wird die
+  Endung jetzt abgeschnitten. Betrifft Einzelmeldung, Sammelmeldung, die
+  Update-Liste und die Liste der nicht erreichbaren Komponenten, die einen
+  Namen ab sofort alle gleich bilden.
+
 ## [1.8.1]
 
 ### Geändert
