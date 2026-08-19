@@ -203,7 +203,11 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
         // The raw friendly_name is unusable here ("Syncthing (http://...) ABCDEFG
         // HA Share HA Share"), so the names the card displays are resolved once
         // and written into the automation as a lookup.
-        variables: { nas_names: JSON.stringify(this._prettyNames) },
+        // Wrapped in a template on purpose: Home Assistant renders `variables`
+        // and parses the result, so `{{ {...} }}` arrives as a real dict. A
+        // bare JSON string stays a string, and `nas_names.get(...)` then dies
+        // with "NodeStrClass object has no attribute 'get'" on every run.
+        variables: { nas_names: `{{ ${JSON.stringify(this._prettyNames)} }}` },
         actions: notifyActions(
           targets,
           cardName,
