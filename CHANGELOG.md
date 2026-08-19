@@ -18,6 +18,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Beispiel-Entität. Bevorzugt wird eine, auf die die Bedingung gerade
   zutrifft, damit der Test die echte Formulierung mit echten Werten zeigt
   statt eines Geräts, dem nichts fehlt.
+- **M3 NAS Card**: Die Benachrichtigung ging nie raus — bei keinem Auslöser.
+  Die Namenstabelle wurde als roher JSON-Text in `variables` geschrieben;
+  Home Assistant reicht so etwas als Zeichenkette weiter, und der Zugriff
+  `nas_names.get(...)` scheiterte an „NodeStrClass object has no attribute
+  'get'“. In `{{ }}` gefasst rendert HA sie zu einem echten Dictionary.
 - **M3 Updates Card**: Meldung und Liste sagten „Update“ doppelt („AdGuard
   Home Update: Update auf 6.2.1 verfügbar“, Zeile „M3 Cards Update“). Der
   `friendly_name` einer Update-Entität endet auf das Wort, das die Karte mit
