@@ -36,6 +36,8 @@ import {
   setAutomationEnabled,
   saveNotifyAutomation,
   notifyActions,
+  triggerStatePrelude,
+  notifySampleEntity,
   resolveAutomationId,
   notifyStyles,
   type NotifyAutomationSpec,
@@ -170,15 +172,19 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
           actions: notifyActions(
             targets,
             cardName,
-            `{% set s = trigger.to_state %}{{ s.name }}: ` +
+            `{{ s.name }}: ` +
               `${this._t("editor_updates_notify_single").replace("{version}", "{{ s.attributes.latest_version }}")}`,
             {
               title: cfg.notify_title,
               message: cfg.notify_message,
+              // A pending update makes the better sample for a hand-run test.
+              prelude: triggerStatePrelude(
+                notifySampleEntity(this.hass, ids, (st) => st.state === "on"),
+              ),
               tokens: {
-                komponente: "{{ trigger.to_state.name }}",
-                version: "{{ trigger.to_state.attributes.latest_version }}",
-                aktuell: "{{ trigger.to_state.attributes.installed_version }}",
+                komponente: "{{ s.name }}",
+                version: "{{ s.attributes.latest_version }}",
+                aktuell: "{{ s.attributes.installed_version }}",
               },
             },
           ),

@@ -1,5 +1,5 @@
 import { html, css, nothing, type TemplateResult } from "lit";
-import type { HomeAssistant } from "../types";
+import type { HomeAssistant, HassEntity } from "../types";
 import type { SchemaEntry } from "./editor-helpers";
 import { localize, type TranslationKey } from "../localize";
 
@@ -84,6 +84,34 @@ export type NotifyTokens = Record<string, string>;
 // same replace could mangle an expression like `{{ d }}`.
 // Unknown placeholders are left visible rather than silently dropped, so a
 // typo shows up in the notification instead of vanishing.
+// Running an automation by hand ("Ausführen" in the automation menu) skips the
+// trigger and executes the actions with an empty trigger context, so every
+// template reading `trigger.to_state` dies with UndefinedError instead of
+// sending the test message the button was pressed for. The prelude binds `s`
+// to the triggering state when there is one and to a sample entity otherwise,
+// so a hand-run renders the real wording with real values.
+export function triggerStatePrelude(sample: string): string {
+  return (
+    "{% set s = trigger.to_state if trigger is defined and trigger.to_state is defined" +
+    ` else states['${sample}'] %}`
+  );
+}
+
+// Picks the entity a hand-run demonstrates with: one that currently meets the
+// notify condition if there is such a one, so the test message shows a real
+// case rather than a device that is perfectly fine.
+export function notifySampleEntity(
+  hass: HomeAssistant,
+  ids: string[],
+  interesting?: (state: HassEntity) => boolean,
+): string {
+  if (interesting) {
+    const hit = ids.find((id) => hass.states[id] && interesting(hass.states[id]));
+    if (hit) return hit;
+  }
+  return ids[0];
+}
+
 export function applyNotifyTemplate(
   custom: string | undefined,
   fallback: string,
@@ -294,6 +322,8 @@ export interface NotifyTextOverrides {
   message?: string;
   /** Placeholders the user may use in the custom texts. */
   tokens?: NotifyTokens;
+  /** Jinja prepended to both texts, e.g. triggerStatePrelude(). */
+  prelude?: string;
 }
 
 export function notifyActions(
@@ -303,8 +333,12 @@ export function notifyActions(
   overrides?: NotifyTextOverrides,
 ): Record<string, unknown>[] {
   const tokens = overrides?.tokens ?? {};
-  const finalTitle = applyNotifyTemplate(overrides?.title, title, tokens);
-  const finalMessage = applyNotifyTemplate(overrides?.message, message, tokens);
+  const prelude = overrides?.prelude ?? "";
+  // The default title is a plain card name, so it only needs the prelude when
+  // the user wrote their own title with tokens in it.
+  const customTitle = !!overrides?.title?.trim();
+  const finalTitle = (customTitle ? prelude : "") + applyNotifyTemplate(overrides?.title, title, tokens);
+  const finalMessage = prelude + applyNotifyTemplate(overrides?.message, message, tokens);
   return targets.map((target) => ({
     action: `notify.${target}`,
     data: { title: finalTitle, message: finalMessage },

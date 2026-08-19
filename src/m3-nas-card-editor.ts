@@ -24,6 +24,7 @@ import {
   setAutomationEnabled,
   saveNotifyAutomation,
   notifyActions,
+  triggerStatePrelude,
   resolveAutomationId,
   notifyStyles,
   type NotifyAutomationSpec,
@@ -38,7 +39,7 @@ import {
 
 // Resolves the display name for whichever entity fired, falling back to the
 // entity's own name if it was added after the automation was written.
-const NAME_EXPR = "{{ nas_names.get(trigger.entity_id, trigger.to_state.name) }}";
+const NAME_EXPR = "{{ nas_names.get(s.entity_id, s.name) }}";
 
 @customElement("m3-nas-card-editor")
 export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
@@ -175,6 +176,16 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
       }
       if (!triggers.length) throw new Error("no trigger selected");
 
+      // Run by hand from the automation menu there is no trigger context, so
+      // `s` and `tid` fall back to the first branch that is actually enabled —
+      // the test message then reads like the real one.
+      const sample = (wantSync ? this._syncEntities : this._diskEntities)[0];
+      const fallbackId = wantSync ? "sync" : wantDisk ? "disk" : "offline";
+      const prelude =
+        triggerStatePrelude(sample) +
+        `{% set tid = trigger.id if trigger is defined and trigger.id is defined` +
+        ` else '${fallbackId}' %}`;
+
       const automation = {
         alias: `${cardName}: ${this._t("editor_nas_notify_alias")}`,
         description: this._t("editor_nas_notify_description"),
@@ -188,16 +199,17 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
         actions: notifyActions(
           targets,
           cardName,
-          `{% if trigger.id == 'disk' %}${this._t("editor_nas_notify_disk")}` +
-            `{% elif trigger.id == 'offline' %}${this._t("editor_nas_notify_offline")}` +
+          `{% if tid == 'disk' %}${this._t("editor_nas_notify_disk")}` +
+            `{% elif tid == 'offline' %}${this._t("editor_nas_notify_offline")}` +
             `{% else %}${this._t("editor_nas_notify_sync")}{% endif %}`,
           {
             title: cfg.notify_title,
             message: cfg.notify_message,
+            prelude,
             tokens: {
               name: NAME_EXPR,
-              wert: "{{ trigger.to_state.state }}",
-              zustand: "{{ trigger.to_state.state }}",
+              wert: "{{ s.state }}",
+              zustand: "{{ s.state }}",
             },
           },
         ),

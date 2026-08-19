@@ -39,6 +39,8 @@ import {
   notifyMessageSchema,
   saveNotifyAutomation,
   notifyActions,
+  triggerStatePrelude,
+  notifySampleEntity,
   resolveAutomationId,
   slugifyForId,
   type NotifyAutomationSpec,
@@ -172,17 +174,24 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
           triggers,
           conditions: [],
           actions: notifyActions(targets, cardName,
-            `{% set s = trigger.to_state %}` +
-                `{{ s.name }}: ` +
+            `{{ s.name }}: ` +
                 `{% if s.entity_id.startswith('binary_sensor.') %}` +
                 `${this._t("editor_battery_notify_single_empty")}` +
                 `{% else %}` +
                 `${this._t("editor_battery_notify_single_pct").replace("{x}", "{{ s.state }}")}` +
                 `{% endif %}`,
-            { title: cfg.notify_title, message: cfg.notify_message, tokens: {
-              geraet: "{{ trigger.to_state.name }}",
-              wert: "{{ trigger.to_state.state }}",
-            } }),
+            { title: cfg.notify_title, message: cfg.notify_message,
+              // An already weak battery makes the better sample for a hand-run.
+              prelude: triggerStatePrelude(
+                notifySampleEntity(this.hass, ids, (st) =>
+                  st.entity_id.startsWith("binary_sensor.")
+                    ? st.state === "on"
+                    : Number(st.state) <= threshold),
+              ),
+              tokens: {
+                geraet: "{{ s.name }}",
+                wert: "{{ s.state }}",
+              } }),
         };
       } else {
         // One digest listing every weak battery, so a dozen low devices don't

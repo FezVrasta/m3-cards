@@ -26,6 +26,8 @@ import {
 import {
   notifyServiceSchema,
   notifyActions,
+  triggerStatePrelude,
+  notifySampleEntity,
   notifyTokenHint,
   renderNotifyControls,
   setAutomationEnabled,
@@ -114,9 +116,14 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
       const automationId = resolveAutomationId("power_left_running", cfg.notify_automation_id);
 
       const message = this._t("editor_power_list_notify_message")
-        .replace("{name}", "{{ trigger.to_state.name }}")
+        .replace("{name}", "{{ s.name }}")
         .replace("{h}", String(hours))
-        .replace("{w}", "{{ trigger.to_state.state | float(0) | round(0) }}");
+        .replace("{w}", "{{ s.state | float(0) | round(0) }}");
+      // A device that is drawing power right now makes the better sample for
+      // a hand-run test.
+      const prelude = triggerStatePrelude(
+        notifySampleEntity(this.hass, ids, (st) => Number(st.state) > threshold),
+      );
 
       await saveNotifyAutomation(this.hass, {
         id: automationId,
@@ -136,9 +143,9 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
         ],
         conditions: [],
         actions: notifyActions(targets, cardName, message,
-        { title: cfg.notify_title, message: cfg.notify_message, tokens: {
-          geraet: "{{ trigger.to_state.name }}",
-          watt: "{{ trigger.to_state.state | float(0) | round(0) }}",
+        { title: cfg.notify_title, message: cfg.notify_message, prelude, tokens: {
+          geraet: "{{ s.name }}",
+          watt: "{{ s.state | float(0) | round(0) }}",
           stunden: String(hours),
         } }),
       } as NotifyAutomationSpec);
