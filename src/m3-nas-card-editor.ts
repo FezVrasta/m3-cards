@@ -25,6 +25,7 @@ import {
   saveNotifyAutomation,
   notifyActions,
   triggerStatePrelude,
+  notifySampleEntity,
   resolveAutomationId,
   notifyStyles,
   type NotifyAutomationSpec,
@@ -179,7 +180,14 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
       // Run by hand from the automation menu there is no trigger context, so
       // `s` and `tid` fall back to the first branch that is actually enabled —
       // the test message then reads like the real one.
-      const sample = (wantSync ? this._syncEntities : this._diskEntities)[0];
+      // Like the other cards: demo with something that is actually in trouble,
+      // so the test message does not read "sync problem on X: idle".
+      const sample = wantSync
+        ? notifySampleEntity(this.hass, this._syncEntities, (st) =>
+            st.state === "error" ||
+            Number(st.attributes.pull_errors ?? 0) > 0 ||
+            Number(st.attributes.errors ?? 0) > 0)
+        : notifySampleEntity(this.hass, this._diskEntities, (st) => Number(st.state) > threshold);
       const fallbackId = wantSync ? "sync" : wantDisk ? "disk" : "offline";
       const prelude =
         triggerStatePrelude(sample) +
