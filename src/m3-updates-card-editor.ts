@@ -43,6 +43,11 @@ import {
   type NotifyAutomationSpec,
 } from "./shared/notify-editor";
 
+// `s.name` on an update entity reads "AdGuard Home Update", which would make
+// the message say "Update" twice. Add-ons and integrations carry a clean
+// `title`; HACS entities do not, so there the suffix is trimmed instead.
+const NAME_EXPR = "s.attributes.title or (s.name | regex_replace(' Update$', ''))";
+
 const GROUP_LABEL_KEYS: Record<UpdateGroup, TranslationKey> = {
   core: "updates_group_core",
   os: "updates_group_os",
@@ -172,7 +177,7 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
           actions: notifyActions(
             targets,
             cardName,
-            `{{ s.name }}: ` +
+            `{{ ${NAME_EXPR} }}: ` +
               `${this._t("editor_updates_notify_single").replace("{version}", "{{ s.attributes.latest_version }}")}`,
             {
               title: cfg.notify_title,
@@ -182,7 +187,7 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
                 notifySampleEntity(this.hass, ids, (st) => st.state === "on"),
               ),
               tokens: {
-                komponente: "{{ s.name }}",
+                komponente: `{{ ${NAME_EXPR} }}`,
                 version: "{{ s.attributes.latest_version }}",
                 aktuell: "{{ s.attributes.installed_version }}",
               },
@@ -197,7 +202,7 @@ export class M3UpdatesCardEditor extends LitElement implements LovelaceCardEdito
           `{% set ns = namespace(items=[]) %}` +
           `{% for e in ids %}{% set s = states[e] %}` +
           `{% if s is not none and s.state == 'on' %}` +
-          `{% set ns.items = ns.items + [(s.attributes.title or s.name) ~ ' ' ~ (s.attributes.latest_version or '')] %}` +
+          `{% set ns.items = ns.items + [(${NAME_EXPR}) ~ ' ' ~ (s.attributes.latest_version or '')] %}` +
           `{% endif %}{% endfor %}` +
           `{{ ns.items }}`;
         automation = {
