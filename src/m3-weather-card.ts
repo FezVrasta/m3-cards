@@ -40,7 +40,6 @@ import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/g
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { computeBarHeights } from "./shared/bar-chart";
-import { stampVersion } from "./shared/config-migration";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 
@@ -176,7 +175,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
     if (!config.entity) {
       throw new Error("Bitte eine weather-Entität auswählen / Please select a weather entity");
     }
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       hours: DEFAULT_WEATHER_HOURS,
@@ -185,7 +184,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       show_sun: true,
       show_days_toggle: true,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

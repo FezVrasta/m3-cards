@@ -49,7 +49,6 @@ import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
 import { discoverBatteryEntities } from "./shared/ha-registry";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
 
@@ -111,14 +110,14 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3BatteryCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       auto_discover: config.entities ? false : true,
       show_healthy_toggle: true,
       max_visible: 3,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

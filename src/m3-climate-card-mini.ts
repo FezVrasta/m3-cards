@@ -20,7 +20,7 @@ import {
 import { localize, type TranslationKey } from "./localize";
 import { renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate } from "./shared/animation";
-import { migrateAnimationsField, stampVersion } from "./shared/config-migration";
+import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { tintBackground } from "./shared/color-config";
 
@@ -62,12 +62,10 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
         "Bitte eine climate-Entität auswählen / Please select a climate entity",
       );
     }
-    this._config = stampVersion(
-      migrateAnimationsField({
-        glass_background: true,
-        ...config,
-      }),
-    );
+    this._config = migrateAnimationsField({
+      glass_background: true,
+      ...config,
+    });
   }
 
   public getCardSize(): number {

@@ -41,7 +41,6 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { renderListRow, listRowStyles } from "./shared/list-row";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
-import { stampVersion } from "./shared/config-migration";
 import { localize, type TranslationKey } from "./localize";
 
 console.info(
@@ -183,7 +182,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
   private _registryLoaded = false;
 
   public setConfig(config: M3NasCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       auto_discover: true,
       max_visible: DEFAULT_NAS_MAX_VISIBLE,
       show_cpu: true,
@@ -192,7 +191,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
       show_network: true,
       show_uptime: true,
       ...config,
-    });
+    };
     this._registryLoaded = false;
     this._loadRegistry();
   }

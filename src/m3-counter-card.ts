@@ -32,7 +32,6 @@ import {
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
@@ -90,13 +89,13 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
     if (!config.entity) {
       throw new Error("m3-counter-card: 'entity' is required");
     }
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       decimals: DEFAULT_COUNTER_DECIMALS,
       digits: "auto",
       ...config,
-    });
+    };
     if (typeof this._config.digits === "number") {
       this._minIntegerDigits = Math.max(1, this._config.digits);
     } else {

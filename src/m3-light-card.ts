@@ -50,7 +50,6 @@ import { shouldAnimate, isReducedMotion, STANDARD_EASING } from "./shared/animat
 import { fireEvent } from "./shared/editor-helpers";
 import { buildWavePath } from "./shared/wave";
 import { hexToHs, hsToRgb, rgbToHex, rgbToHs } from "./shared/color-picker";
-import { stampVersion } from "./shared/config-migration";
 import { localize, type TranslationKey } from "./localize";
 
 console.info(
@@ -163,14 +162,14 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         "Bitte eine Licht-Entität auswählen / Please select a light entity",
       );
     }
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       wave_style: "wavy",
       use_light_color: true,
       color_temp_style: "presets",
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

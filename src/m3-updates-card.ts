@@ -52,7 +52,6 @@ import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
 
@@ -178,7 +177,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3UpdatesCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       auto_discover: true,
       max_visible: DEFAULT_UPDATES_MAX_VISIBLE,
       show_uptodate: true,
@@ -186,7 +185,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       show_release_notes: true,
       require_confirm: true,
       ...config,
-    });
+    };
     this._loadPlatforms();
   }
 

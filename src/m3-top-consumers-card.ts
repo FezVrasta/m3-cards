@@ -40,7 +40,6 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { captureRowRects, flipRows } from "./shared/list-row";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { getEnergyDeviceEntities } from "./shared/ha-energy";
 import { fetchPeriodChangeByEntity } from "./shared/ha-statistics";
@@ -130,7 +129,7 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3TopConsumersCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       source: "energy",
@@ -138,7 +137,7 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
       top_count: DEFAULT_TOP_CONSUMERS_COUNT,
       rest_mode: "collapse",
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

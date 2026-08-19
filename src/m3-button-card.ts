@@ -20,7 +20,7 @@ import {
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { shouldAnimate } from "./shared/animation";
-import { migrateAnimationsField, stampVersion } from "./shared/config-migration";
+import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { tintBackground } from "./shared/color-config";
 
@@ -81,15 +81,13 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3ButtonCardConfig): void {
-    this._config = stampVersion(
-      migrateAnimationsField({
-        show_state: true,
-        show_icon_background: true,
-        glass_background: true,
-        vertical: false,
-        ...config,
-      }),
-    );
+    this._config = migrateAnimationsField({
+      show_state: true,
+      show_icon_background: true,
+      glass_background: true,
+      vertical: false,
+      ...config,
+    });
   }
 
   public getCardSize(): number {

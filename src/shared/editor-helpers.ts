@@ -1,4 +1,5 @@
 import { html, css, nothing } from "lit";
+import { stampVersion } from "./config-migration";
 
 export interface SchemaEntry {
   name: string;
@@ -7,9 +8,20 @@ export interface SchemaEntry {
   default?: unknown;
 }
 
+// The version stamp belongs on the way out of an editor, because that is the
+// only path that writes a config back to the dashboard. Stamping in a card's
+// setConfig — as this used to — only ever touched the in-memory copy and never
+// reached stored YAML, so no config ever carried the field.
+function stampConfigDetail(detail: unknown): unknown {
+  if (!detail || typeof detail !== "object") return detail;
+  const d = detail as { config?: unknown };
+  if (!d.config || typeof d.config !== "object") return detail;
+  return { ...d, config: stampVersion(d.config as { card_version?: string }) };
+}
+
 export function fireEvent(node: HTMLElement, type: string, detail: unknown): void {
   const event = new CustomEvent(type, {
-    detail,
+    detail: type === "config-changed" ? stampConfigDetail(detail) : detail,
     bubbles: true,
     composed: true,
   });

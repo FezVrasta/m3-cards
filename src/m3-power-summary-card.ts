@@ -33,7 +33,6 @@ import {
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { shouldAnimate } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
@@ -82,7 +81,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     if (!config.grid_entity) {
       throw new Error("m3-power-summary-card: 'grid_entity' is required");
     }
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       grid_sign: "negative_is_export",
@@ -91,7 +90,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
       zero_threshold: DEFAULT_SUMMARY_ZERO_THRESHOLD,
       kw_threshold: DEFAULT_SUMMARY_KW_THRESHOLD,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

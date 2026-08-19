@@ -38,7 +38,6 @@ import {
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import {
@@ -166,7 +165,6 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
       higher_is_better: false,
       ...config,
     };
-    this._config = stampVersion(this._config);
   }
 
   public getCardSize(): number {

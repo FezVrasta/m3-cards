@@ -46,7 +46,6 @@ import { activateOnKey } from "./shared/a11y";
 import { fireEvent } from "./shared/editor-helpers";
 import { discoverClimateRooms, type DiscoveredClimateRoom } from "./shared/ha-registry";
 import { fetchValueHoursAgo } from "./shared/ha-statistics";
-import { stampVersion } from "./shared/config-migration";
 import { formatNumber } from "./shared/formatting";
 import { localize, type TranslationKey } from "./localize";
 
@@ -129,7 +128,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3ClimateOverviewCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       auto_discover: config.rooms?.length ? false : true,
@@ -137,7 +136,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
       show_scale: true,
       show_outlier_chip: true,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

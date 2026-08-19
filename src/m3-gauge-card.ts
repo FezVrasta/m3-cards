@@ -25,7 +25,6 @@ import {
   resolveCommonColors,
   tintBackground,
 } from "./shared/color-config";
-import { stampVersion } from "./shared/config-migration";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { getGridEntities, fetchTodayChangeSum } from "./shared/ha-energy";
@@ -93,12 +92,12 @@ export class M3GaugeCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3GaugeCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       source: "energy",
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

@@ -61,7 +61,6 @@ import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { fireEvent } from "./shared/editor-helpers";
-import { stampVersion } from "./shared/config-migration";
 import { formatNumber } from "./shared/formatting";
 import { localize, type TranslationKey } from "./localize";
 
@@ -269,7 +268,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3AquariumCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       target_range: DEFAULT_AQUARIUM_TARGET_RANGE,
@@ -279,7 +278,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
       camera_live_on_tap: true,
       show_schedule: true,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

@@ -30,7 +30,6 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { discoverPersonEntities } from "./shared/ha-registry";
-import { stampVersion } from "./shared/config-migration";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 
@@ -77,7 +76,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3PresenceCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       auto_discover: config.entities ? false : true,
@@ -86,7 +85,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
       show_since: true,
       show_map: false,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

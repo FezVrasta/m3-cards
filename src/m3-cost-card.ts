@@ -47,7 +47,6 @@ import {
   proratedBaseFee,
   getGridCostEntities,
 } from "./shared/pricing";
-import { stampVersion } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
 
@@ -157,7 +156,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3CostCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       price_source: "energy_dashboard",
@@ -166,7 +165,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       show_projection: true,
       show_comparison: true,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

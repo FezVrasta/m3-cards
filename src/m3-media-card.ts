@@ -29,7 +29,6 @@ import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/g
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { buildWavePath } from "./shared/wave";
-import { stampVersion } from "./shared/config-migration";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 
@@ -155,14 +154,14 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     if (!config.entity) {
       throw new Error("Bitte eine media_player-Entität auswählen / Please select a media_player entity");
     }
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       use_artwork_color: true,
       show_source_select: false,
       show_shuffle_repeat: false,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

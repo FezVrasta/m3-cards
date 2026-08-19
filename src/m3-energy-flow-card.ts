@@ -39,7 +39,6 @@ import {
   tintBackground,
 } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
-import { stampVersion } from "./shared/config-migration";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { getEnergyDashboardEntities, fetchTodayChangeSum } from "./shared/ha-energy";
@@ -126,7 +125,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3EnergyFlowCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       source: "energy",
@@ -134,7 +133,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
       show_battery: "auto",
       flow_speed: "normal",
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

@@ -38,7 +38,6 @@ import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { discoverPowerEntities } from "./shared/ha-registry";
 import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
-import { stampVersion } from "./shared/config-migration";
 import { localize, type TranslationKey } from "./localize";
 
 console.info(
@@ -88,7 +87,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
   }
 
   public setConfig(config: M3PowerListCardConfig): void {
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       threshold: DEFAULT_POWER_LIST_THRESHOLD,
@@ -96,7 +95,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       max_visible: 3,
       show_idle_toggle: true,
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

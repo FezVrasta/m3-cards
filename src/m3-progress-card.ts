@@ -28,7 +28,6 @@ import { localize, type TranslationKey } from "./localize";
 import { buildWavePath } from "./shared/wave";
 import { resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
-import { stampVersion } from "./shared/config-migration";
 
 console.info(
   `%c M3-PROGRESS-CARD %c v${CARD_VERSION} `,
@@ -86,12 +85,12 @@ export class M3ProgressCard extends LitElement implements LovelaceCard {
         "Bitte eine Status-Entität auswählen / Please select a status entity",
       );
     }
-    this._config = stampVersion({
+    this._config = {
       glass_background: true,
       animation: "auto",
       wave_style: "wavy",
       ...config,
-    });
+    };
   }
 
   public getCardSize(): number {

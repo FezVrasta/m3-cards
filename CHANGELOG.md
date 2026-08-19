@@ -18,6 +18,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Beispiel-Entität. Bevorzugt wird eine, auf die die Bedingung gerade
   zutrifft, damit der Test die echte Formulierung mit echten Werten zeigt
   statt eines Geräts, dem nichts fehlt.
+- **Versionsstempel**: `CARD_VERSION` stand seit dem ersten Release auf
+  `1.0.0`. Die Konsolen-Zeile jeder Karte (`M3-BATTERY-CARD v1.0.0`) nannte
+  damit eine Version, die es nie gab — ausgerechnet die Angabe, nach der man
+  bei einer Fehlermeldung als Erstes fragt. Steht jetzt auf `1.8.2`.
+- **Versionsstempel in der Konfiguration**: `stampVersion()` lief im
+  `setConfig()` der Karte und beschrieb damit nur die Kopie im
+  Arbeitsspeicher — gespeichert wurde der Stempel nie, kein einziges
+  `card_version` landete je in einem Dashboard. Gestempelt wird jetzt beim
+  Verlassen des Editors, also auf dem einzigen Weg, auf dem eine
+  Konfiguration tatsächlich geschrieben wird.
+
 - **M3 NAS Card**: Die Benachrichtigung ging nie raus — bei keinem Auslöser.
   Die Namenstabelle wurde als roher JSON-Text in `variables` geschrieben;
   Home Assistant reicht so etwas als Zeichenkette weiter, und der Zugriff
