@@ -116,9 +116,11 @@ Live-Werte.</sub>
 
 ### HACS (empfohlen)
 
-1. HACS → Frontend → Menü (⋮) → *Benutzerdefinierte Repositories*
-2. Repository-URL eintragen, Kategorie **Lovelace** wählen
-3. „M3 Cards“ installieren und Home Assistant neu laden
+1. HACS → Menü (⋮) oben rechts → *Benutzerdefinierte Repositories*
+2. Repository-URL eintragen, als Typ **Dashboard** wählen, dann *Hinzufügen*
+   (**nicht** *Integration* — das hier ist eine Lovelace-Karte, keine Integration)
+3. „M3 Cards“ suchen, öffnen und auf *Herunterladen* klicken
+4. Home Assistant neu laden
 
 ### Manuell
 

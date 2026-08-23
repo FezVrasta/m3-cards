@@ -118,9 +118,11 @@ the image — everything else is live data.</sub>
 
 ### HACS (recommended)
 
-1. HACS → Frontend → menu (⋮) → *Custom repositories*
-2. Enter the repository URL, choose category **Lovelace**
-3. Install "M3 Cards" and reload Home Assistant
+1. HACS → menu (⋮) in the top right → *Custom repositories*
+2. Enter the repository URL, pick type **Dashboard**, then *Add*
+   (**not** *Integration* — this is a Lovelace card, not an integration)
+3. Search for "M3 Cards", open it and press *Download*
+4. Reload Home Assistant
 
 ### Manual
 
