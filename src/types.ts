@@ -999,7 +999,8 @@ export type M3CardConfig =
   | M3AquariumCardConfig
   | M3UpdatesCardConfig
   | M3NasCardConfig
-  | M3SupplyCardConfig;
+  | M3SupplyCardConfig
+  | M3TodoCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1052,6 +1053,35 @@ export interface M3SupplyCardConfig extends NotifyConfigBase {
   low_color?: string;
   critical_color?: string;
   unavailable_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export type TodoAddPosition = "top" | "bottom";
+export type TodoQuickAddMode = "none" | "fixed" | "recent" | "supplies";
+
+export interface M3TodoCardConfig {
+  type: string;
+  entity: string;
+  name?: string;
+  icon?: string;
+  add_position?: TodoAddPosition;
+  prevent_duplicates?: boolean;
+  quick_add_mode?: TodoQuickAddMode;
+  quick_add?: string[];
+  max_quick_add?: number;
+  show_completed?: boolean;
+  show_clear_completed?: boolean;
+  group_by_category?: boolean;
+  reorderable?: boolean;
+  accent_color?: string;
   accent_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;

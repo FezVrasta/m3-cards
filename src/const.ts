@@ -1,7 +1,7 @@
 import type { CornerRadiusConfig, HvacMode, WeatherChipType, ClimateOverviewTempThresholds } from "./types";
 import { RADIUS, HEIGHT, SPACING, DURATION_MS, PALETTE } from "./shared/tokens";
 
-export const CARD_VERSION = "1.9.0";
+export const CARD_VERSION = "1.9.1";
 
 export const DEFAULT_CLIMATE_RADIUS = RADIUS.cardHero;
 export const DEFAULT_MINI_RADIUS = RADIUS.card;
@@ -784,3 +784,40 @@ export const SUPPLY_RATE_REFRESH_MS = 60 * 60 * 1000;
 // the suite's FLIP duration so reordering feels the same across every card.
 export const SUPPLY_FLIP_DURATION_MS = DURATION_MS.flip;
 export const SUPPLY_CHIP_RADIUS = RADIUS.chip;
+
+// ---- Todo card ------------------------------------------------------------
+export const DEFAULT_TODO_RADIUS = RADIUS.card;
+export const DEFAULT_TODO_ICON = "mdi:cart-outline";
+export const DEFAULT_TODO_ACCENT = PALETTE.dryAuto;
+export const TODO_HEADER_ICON_SIZE = 46;
+export const TODO_HEADER_ICON_RADIUS = 17;
+export const TODO_COUNT_CHIP_SIZE = 30;
+export const TODO_COUNT_CHIP_RADIUS = RADIUS.chip;
+// Input field and its add button share a height so the row reads as one unit.
+export const TODO_INPUT_HEIGHT = 50;
+export const TODO_INPUT_RADIUS = 25;
+export const TODO_INPUT_RADIUS_FOCUS = 16;
+export const TODO_ADD_BUTTON_SIZE = 50;
+export const TODO_ADD_BUTTON_RADIUS = 18;
+export const TODO_ADD_BUTTON_RADIUS_ACTIVE = 12;
+export const TODO_ROW_HEIGHT = 50;
+export const TODO_ROW_RADIUS = 17;
+export const TODO_ROW_GAP = SPACING.rowGap;
+export const TODO_CHECK_SIZE = 24;
+// The checkbox morphs from a ring (circle) to a filled squircle when ticked.
+export const TODO_CHECK_RADIUS_OPEN = 12;
+export const TODO_CHECK_RADIUS_DONE = 7;
+export const TODO_CHECK_MORPH_MS = 350;
+export const TODO_TOGGLE_HEIGHT = 42;
+export const TODO_TOGGLE_RADIUS = 18;
+export const TODO_TOGGLE_RADIUS_OPEN = 12;
+export const TODO_DONE_ROW_HEIGHT = 40;
+export const TODO_DONE_ROW_RADIUS = 14;
+export const TODO_QUICK_CHIP_HEIGHT = 30;
+export const TODO_QUICK_CHIP_RADIUS = RADIUS.chip;
+export const TODO_QUICK_CHIP_RADIUS_ACTIVE = 9;
+export const TODO_QUICK_MORPH_MS = 400;
+export const TODO_DEFAULT_MAX_QUICK_ADD = 4;
+// How long "clear completed" stays armed after the first tap before it
+// quietly disarms itself again.
+export const TODO_CLEAR_ARM_MS = 4000;

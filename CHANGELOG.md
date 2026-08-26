@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.9.1]
+
+### Neu
+- **M3 Todo Card** (`custom:m3-todo-card`): Einkaufs- und Aufgabenlisten im
+  Designsystem des Projekts, als Ersatz für HAs eingebaute `todo-list`-Karte.
+  Header mit Zähler-Chip, Eingabezeile mit Radius-Morph beim Fokus, Einträge
+  mit Häkchen-Morph vom Ring zum gefüllten Squircle, und ein Aufklappbereich
+  für Erledigtes samt „Erledigte löschen".
+- Einträge landen wahlweise oben oder unten in der Liste (`add_position`), und
+  doppelte Einträge werden abgefangen: statt einer zweiten identischen Zeile
+  pulst der vorhandene Eintrag kurz auf (`prevent_duplicates`).
+
 ## [1.9.0]
 
 ### Neu
