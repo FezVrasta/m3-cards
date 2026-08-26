@@ -821,3 +821,6 @@ export const TODO_DEFAULT_MAX_QUICK_ADD = 4;
 // How long "clear completed" stays armed after the first tap before it
 // quietly disarms itself again.
 export const TODO_CLEAR_ARM_MS = 4000;
+// Long press to rename. Long enough not to fire on a normal tap-to-tick,
+// short enough not to feel like the card is ignoring you.
+export const TODO_LONG_PRESS_MS = 500;

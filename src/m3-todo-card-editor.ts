@@ -93,6 +93,8 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
     return [
       { name: "show_completed", selector: { boolean: {} } },
       { name: "show_clear_completed", selector: { boolean: {} } },
+      { name: "group_by_category", selector: { boolean: {} } },
+      { name: "reorderable", selector: { boolean: {} } },
     ];
   }
 
@@ -125,6 +127,8 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
       max_quick_add: "editor_todo_max_quick_add",
       show_completed: "editor_todo_show_completed",
       show_clear_completed: "editor_todo_show_clear_completed",
+      group_by_category: "editor_todo_group_by_category",
+      reorderable: "editor_todo_reorderable",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -203,6 +207,8 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
     const displayData = {
       show_completed: this._config.show_completed ?? true,
       show_clear_completed: this._config.show_clear_completed ?? true,
+      group_by_category: this._config.group_by_category ?? false,
+      reorderable: this._config.reorderable ?? false,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
 

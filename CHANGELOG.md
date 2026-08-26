@@ -15,6 +15,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Einträge landen wahlweise oben oder unten in der Liste (`add_position`), und
   doppelte Einträge werden abgefangen: statt einer zweiten identischen Zeile
   pulst der vorhandene Eintrag kurz auf (`prevent_duplicates`).
+- Schnellwahl-Chips über der Liste, gespeist aus einer festen Liste, aus zuvor
+  abgehakten Einträgen oder aus den M3 Supply Cards des Dashboards — dort
+  hinterlegte Einkaufstexte erscheinen als Chip, der knappste Vorrat zuerst.
+- Langes Drücken öffnet eine Zeile zum Umbenennen oder Löschen. Optional
+  Gruppierung nach `Kategorie: Artikel` und Umsortieren per Ziehgriff.
 
 ## [1.9.0]
 

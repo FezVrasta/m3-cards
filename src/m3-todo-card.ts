@@ -41,6 +41,7 @@ import {
   TODO_QUICK_CHIP_RADIUS_ACTIVE,
   TODO_QUICK_MORPH_MS,
   TODO_DEFAULT_MAX_QUICK_ADD,
+  TODO_LONG_PRESS_MS,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
@@ -59,6 +60,15 @@ console.info(
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
+// Under a "Obst" heading, a row reading "Obst: Äpfel" says the category
+// twice. The full text stays in the title attribute either way, and the
+// stored entry is never touched — only what the row displays.
+function stripCategory(summary: string, label?: string): string {
+  if (!label) return summary;
+  const prefix = `${label}:`;
+  return summary.startsWith(prefix) ? summary.slice(prefix.length).trim() : summary;
+}
+
 @customElement("m3-todo-card")
 export class M3TodoCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
@@ -75,6 +85,9 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
   @state() private _supplyChips: string[] = [];
   /** Chip currently confirming a tap with its morph. */
   @state() private _chipMorph?: string;
+  /** uid of the row currently open for renaming. */
+  @state() private _editing?: string;
+  @state() private _dragging?: string;
 
   @query(".todo-input") private _input?: HTMLInputElement;
 
@@ -85,6 +98,9 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
   private _clearTimer?: number;
   private _chipTimer?: number;
   private _suppliesLoaded = false;
+  private _pressTimer?: number;
+  /** Set once a long press fires, so the release does not also toggle. */
+  private _longPressed = false;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-todo-card-editor");
@@ -125,6 +141,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
     if (this._duplicateTimer) clearTimeout(this._duplicateTimer);
     if (this._clearTimer) clearTimeout(this._clearTimer);
     if (this._chipTimer) clearTimeout(this._chipTimer);
+    if (this._pressTimer) clearTimeout(this._pressTimer);
   }
 
   protected updated(changed: PropertyValues): void {
@@ -316,6 +333,56 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
     }
   };
 
+  // ---- editing ----------------------------------------------------------
+
+  // A long press opens the row for renaming. The press has to cancel the tap
+  // that follows it, or letting go would immediately tick the item off.
+  private _pressHandlers(item: TodoItem) {
+    return {
+      down: () => {
+        if (!this._available) return;
+        this._longPressed = false;
+        if (this._pressTimer) clearTimeout(this._pressTimer);
+        this._pressTimer = window.setTimeout(() => {
+          this._longPressed = true;
+          this._editing = item.uid;
+        }, TODO_LONG_PRESS_MS);
+      },
+      up: () => {
+        if (this._pressTimer) clearTimeout(this._pressTimer);
+      },
+    };
+  }
+
+  private _rename(item: TodoItem, value: string): void {
+    const text = value.trim();
+    this._editing = undefined;
+    if (!text || text === item.summary) return;
+    this._call("update_item", { item: item.uid, rename: text });
+  }
+
+  private _remove(item: TodoItem): void {
+    this._editing = undefined;
+    this._call("remove_item", { item: item.uid });
+  }
+
+  private _dropOn(target: TodoItem): (e: DragEvent) => void {
+    return (e: DragEvent) => {
+      e.preventDefault();
+      const uid = this._dragging;
+      this._dragging = undefined;
+      if (!uid || uid === target.uid) return;
+      const open = this._open;
+      const targetIndex = open.findIndex((i) => i.uid === target.uid);
+      const from = open.findIndex((i) => i.uid === uid);
+      // previous_uid names the item to land after; dropping onto the first row
+      // from below means "move to the very top", which is previous_uid unset.
+      const previous =
+        targetIndex === 0 && from > 0 ? undefined : open[Math.max(0, targetIndex - (from < targetIndex ? 0 : 1))]?.uid;
+      this._move(uid, previous === uid ? undefined : previous);
+    };
+  }
+
   // ---- quick add --------------------------------------------------------
 
   private get _quickAddChips(): string[] {
@@ -418,9 +485,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
           ${available ? this._renderInput() : html`<div class="hint">${this._t("todo_unavailable")}</div>`}
           ${available ? this._renderQuickAdd() : nothing}
           ${open.length
-            ? html`<div class="rows">
-                ${repeat(open, (i) => i.uid, (i) => this._renderRow(i))}
-              </div>`
+            ? this._renderOpen(open)
             : html`<div class="empty">${this._t("todo_empty")}</div>`}
           ${cfg.show_completed !== false && done.length ? this._renderDone(done) : nothing}
         </div>
@@ -479,6 +544,35 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _renderOpen(open: TodoItem[]): TemplateResult {
+    if (!this._config?.group_by_category) {
+      return html`<div class="rows">
+        ${repeat(open, (i) => i.uid, (i) => this._renderRow(i))}
+      </div>`;
+    }
+    // Entries written as "Category: item" get grouped under that category;
+    // anything without a prefix stays in one unlabelled group at the end.
+    const groups = new Map<string, TodoItem[]>();
+    for (const item of open) {
+      const split = item.summary.indexOf(":");
+      const key = split > 0 ? item.summary.slice(0, split).trim() : "";
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    const ordered = [...groups.entries()].sort(([a], [b]) =>
+      a === "" ? 1 : b === "" ? -1 : a.localeCompare(b),
+    );
+    return html`
+      ${ordered.map(
+        ([label, items]) => html`
+          ${label ? html`<div class="group-label">${label}</div>` : nothing}
+          <div class="rows">
+            ${repeat(items, (i) => i.uid, (i) => this._renderRow(i, label))}
+          </div>
+        `,
+      )}
+    `;
+  }
+
   private _renderQuickAdd() {
     const chips = this._quickAddChips;
     if (!chips.length) return nothing;
@@ -501,22 +595,73 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _renderRow(item: TodoItem): TemplateResult {
+  private _renderRow(item: TodoItem, label?: string): TemplateResult {
+    if (this._editing === item.uid) return this._renderEditRow(item);
     const done = item.status === "completed";
+    const press = this._pressHandlers(item);
+    const reorder = this._config?.reorderable && todoSupports(this.hass, this._config!.entity, TODO_FEATURE.move);
     return html`
       <div
-        class="row ${this._duplicate === item.uid ? "pulse" : ""}"
+        class="row ${this._duplicate === item.uid ? "pulse" : ""} ${this._dragging === item.uid ? "dragging" : ""}"
         role="button"
         tabindex="0"
         aria-label=${this._t("todo_toggle_item")}
         aria-pressed=${done ? "true" : "false"}
-        @click=${this._toggle(item)}
+        draggable=${reorder ? "true" : nothing}
+        @dragstart=${reorder ? () => (this._dragging = item.uid) : nothing}
+        @dragover=${reorder ? (e: DragEvent) => e.preventDefault() : nothing}
+        @drop=${reorder ? this._dropOn(item) : nothing}
+        @click=${(e: Event) => {
+          // Swallow the click that ends a long press, otherwise opening the
+          // rename field would tick the item off at the same time.
+          if (this._longPressed) {
+            this._longPressed = false;
+            e.stopPropagation();
+            return;
+          }
+          this._toggle(item)();
+        }}
         @keydown=${activateOnKey(this._toggle(item))}
+        @pointerdown=${press.down}
+        @pointerup=${press.up}
+        @pointerleave=${press.up}
+        @pointercancel=${press.up}
       >
         <div class="check ${done ? "done" : ""}">
           <ha-icon icon="mdi:check"></ha-icon>
         </div>
-        <div class="row-text ${done ? "done" : ""}" title=${item.summary}>${item.summary}</div>
+        <div class="row-text ${done ? "done" : ""}" title=${item.summary}>
+          ${stripCategory(item.summary, label)}
+        </div>
+        ${reorder ? html`<ha-icon class="grip" icon="mdi:drag-horizontal-variant"></ha-icon>` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderEditRow(item: TodoItem): TemplateResult {
+    return html`
+      <div class="row editing">
+        <input
+          class="edit-input"
+          type="text"
+          .value=${item.summary}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter") this._rename(item, (e.target as HTMLInputElement).value);
+            if (e.key === "Escape") this._editing = undefined;
+          }}
+          @blur=${(e: Event) => this._rename(item, (e.target as HTMLInputElement).value)}
+          autofocus
+        />
+        <ha-icon
+          class="row-delete"
+          icon="mdi:trash-can-outline"
+          role="button"
+          tabindex="0"
+          aria-label=${this._t("todo_delete_item")}
+          @mousedown=${(e: Event) => e.preventDefault()}
+          @click=${() => this._remove(item)}
+          @keydown=${activateOnKey(() => this._remove(item))}
+        ></ha-icon>
       </div>
     `;
   }
@@ -879,6 +1024,49 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         opacity: 0.55;
         text-decoration: line-through;
         text-decoration-color: color-mix(in srgb, var(--m3t-text) 45%, transparent);
+      }
+
+      .row.dragging {
+        opacity: 0.4;
+      }
+
+      .grip {
+        flex-shrink: 0;
+        --mdc-icon-size: 18px;
+        color: var(--m3t-secondary-text);
+        opacity: 0.35;
+        cursor: grab;
+      }
+
+      .row.editing {
+        gap: 8px;
+      }
+
+      .edit-input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: inherit;
+        color: var(--m3t-text);
+      }
+
+      .row-delete {
+        flex-shrink: 0;
+        --mdc-icon-size: 18px;
+        color: var(--error-color, #e57368);
+        cursor: pointer;
+      }
+
+      .group-label {
+        font-size: 11px;
+        font-weight: 600;
+        opacity: 0.5;
+        color: var(--m3t-secondary-text);
+        padding: 2px 4px 0;
       }
 
       /* ---- completed ---- */
