@@ -231,6 +231,24 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
           },
         },
       },
+      {
+        name: "notify_items",
+        selector: {
+          select: {
+            mode: "dropdown",
+            multiple: true,
+            options: this._items
+              .filter((i) => i.entity)
+              .map((i) => ({
+                value: i.entity,
+                label:
+                  i.name ??
+                  (this.hass?.states[i.entity]?.attributes.friendly_name as string | undefined) ??
+                  i.entity,
+              })),
+          },
+        },
+      },
       notifyModeSchema([
         { value: "daily", label: this._t("editor_supply_notify_mode_daily") },
         { value: "weekly", label: this._t("editor_supply_notify_mode_weekly") },
@@ -256,20 +274,69 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
     if (id) await setAutomationEnabled(this.hass, id, false);
   }
 
-  /** entity id, display name and the count it must fall to, per item. */
-  private _notifyTargets(): { e: string; n: string; l: number }[] {
+  /** entity id, display name, shopping text and the count it must fall to. */
+  private _notifyTargets(): { e: string; n: string; s: string; l: number }[] {
     const level = this._config?.notify_level ?? "empty";
+    // An empty selection means "every supply" rather than "none": that is the
+    // useful default, and it keeps configs written before this option existed
+    // behaving exactly as they did.
+    const only = this._config?.notify_items ?? [];
     return this._items
       .filter((item) => item.entity && this.hass?.states[item.entity])
+      .filter((item) => only.length === 0 || only.includes(item.entity))
       .map((item) => {
         const st = this.hass!.states[item.entity];
         const packSize = supplyPackSize(item, st);
+        const name = item.name ?? (st.attributes.friendly_name as string | undefined) ?? item.entity;
         return {
           e: item.entity,
-          n: item.name ?? (st.attributes.friendly_name as string | undefined) ?? item.entity,
+          n: name,
+          s: item.shopping_item?.trim() || name,
           l: supplyNotifyLimit(level, supplyLimits(packSize, item)),
         };
       });
+  }
+
+  // Appends the item(s) to the configured todo list. Reads the list first and
+  // only adds what is missing: todo.add_item happily creates duplicates, and a
+  // daily reminder would otherwise pile up one copy per day. `if/then` rather
+  // than a bare condition — a failing condition inside `repeat` aborts the
+  // whole loop instead of skipping one entry.
+  private _todoActions(itemsExpr: string): Record<string, unknown>[] {
+    const todo = this._config?.todo_entity;
+    if (!todo || !this._config?.auto_add_to_list) return [];
+    return [
+      {
+        action: "todo.get_items",
+        target: { entity_id: todo },
+        data: { status: "needs_action" },
+        response_variable: "vorhandene",
+      },
+      {
+        repeat: {
+          for_each: itemsExpr,
+          sequence: [
+            {
+              if: [
+                {
+                  condition: "template",
+                  value_template:
+                    `{{ repeat.item not in (vorhandene['${todo}']['items']` +
+                    ` | map(attribute='summary') | list) }}`,
+                },
+              ],
+              then: [
+                {
+                  action: "todo.add_item",
+                  target: { entity_id: todo },
+                  data: { item: "{{ repeat.item }}" },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ];
   }
 
   private async _setupNotify(): Promise<void> {
@@ -310,13 +377,17 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
           below: limit + 0.5,
         }));
         const names = Object.fromEntries(items.map((it) => [it.e, it.n]));
+        const shopping = Object.fromEntries(items.map((it) => [it.e, it.s]));
         automation = {
           ...base,
           // Wrapped in a template on purpose: Home Assistant renders
           // `variables` and parses the result, so `{{ {...} }}` arrives as a
           // real dict. A bare JSON string stays a string and `.get(...)` then
           // fails on every run.
-          variables: { supply_names: `{{ ${JSON.stringify(names)} }}` },
+          variables: {
+            supply_names: `{{ ${JSON.stringify(names)} }}`,
+            shopping_names: `{{ ${JSON.stringify(shopping)} }}`,
+          },
           triggers,
           conditions: [],
           actions: notifyActions(
@@ -343,23 +414,31 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
                 rest: "{{ s.state }}",
               },
             },
+          ).concat(
+            this._todoActions("{{ [shopping_names.get(s.entity_id, s.name)] }}"),
           ),
         };
       } else {
         // One evening digest listing everything that ran out, so five empty
         // supplies do not turn into five separate pushes.
-        const listTemplate =
+        // `field` picks which text each entry contributes: `n` is the display
+        // name used in the message, `s` the shopping text used for the list, so
+        // the notification can stay readable while the list entry says whatever
+        // the user wants to see in the shop.
+        const collect = (field: "n" | "s") =>
           `{% set items = ${JSON.stringify(items)} %}` +
           `{% set ns = namespace(items=[]) %}` +
           `{% for it in items %}{% set s = states[it.e] %}` +
           `{% if s is not none and s.state not in ['unknown', 'unavailable'] %}` +
           `{% if s.state | float(1e9) <= it.l %}` +
-          `{% set ns.items = ns.items + [it.n] %}` +
+          `{% set ns.items = ns.items + [it.${field}] %}` +
           `{% endif %}{% endif %}{% endfor %}` +
           `{{ ns.items }}`;
+        const listTemplate = collect("n");
+        const shoppingTemplate = collect("s");
         automation = {
           ...base,
-          variables: { leere_vorraete: listTemplate },
+          variables: { leere_vorraete: listTemplate, einkauf_items: shoppingTemplate },
           triggers: [{ trigger: "time", at: cfg.notify_time || "18:00:00" }],
           conditions: [
             ...(mode === "weekly"
@@ -379,7 +458,7 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
                 liste: "{{ leere_vorraete | join(', ') }}",
               },
             },
-          ),
+          ).concat(this._todoActions("{{ einkauf_items }}")),
         };
       }
 
@@ -435,6 +514,7 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
       auto_add_to_list: "editor_supply_auto_add",
       notify_service: "editor_notify_service",
       notify_level: "editor_supply_notify_level",
+      notify_items: "editor_supply_notify_items",
       notify_mode: "editor_supply_notify_mode",
       notify_time: "editor_notify_time",
       notify_weekday: "editor_notify_weekday",
@@ -534,6 +614,7 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
     const notifyData = {
       notify_service: this._config.notify_service ?? [],
       notify_level: this._config.notify_level ?? "empty",
+      notify_items: this._config.notify_items ?? [],
       notify_mode: this._config.notify_mode ?? "daily",
       notify_time: this._config.notify_time ?? "18:00:00",
       notify_weekday: this._config.notify_weekday ?? "mon",

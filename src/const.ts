@@ -783,3 +783,4 @@ export const SUPPLY_RATE_REFRESH_MS = 60 * 60 * 1000;
 // Hero swap: rows glide to their new slot while the new hero fades in. Shares
 // the suite's FLIP duration so reordering feels the same across every card.
 export const SUPPLY_FLIP_DURATION_MS = DURATION_MS.flip;
+export const SUPPLY_CHIP_RADIUS = RADIUS.chip;

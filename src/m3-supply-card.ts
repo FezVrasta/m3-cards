@@ -42,6 +42,7 @@ import {
   SUPPLY_MIN_EVENTS,
   SUPPLY_MIN_SPAN_DAYS,
   SUPPLY_FLIP_DURATION_MS,
+  SUPPLY_CHIP_RADIUS,
   SUPPLY_RATE_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
@@ -93,6 +94,8 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
   @state() private _morphing = false;
 
   @state() private _rates = new Map<string, ConsumptionRate>();
+  /** Items put on the todo list from this card, so the chip can confirm it. */
+  @state() private _addedToList = new Set<string>();
 
   private _rowRects: Map<string, DOMRect> = new Map();
   private _repeatTimer?: number;
@@ -423,6 +426,26 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
     }
   };
 
+  /** Free text for the list; the item name is the obvious default. */
+  private _shoppingText(entry: SupplyEntry): string {
+    return entry.config.shopping_item?.trim() || entry.name;
+  }
+
+  private _addToList(entry: SupplyEntry): void {
+    const todo = this._config?.todo_entity;
+    if (!this.hass || !todo) return;
+    this.hass.callService(
+      "todo",
+      "add_item",
+      { item: this._shoppingText(entry) },
+      { entity_id: todo },
+    );
+    // Marked locally rather than by reading the list back: the chip only has
+    // to stop inviting a second tap in this session, and a todo list has no
+    // state attribute listing its entries.
+    this._addedToList = new Set(this._addedToList).add(entry.entityId);
+  }
+
   private _onRowTap(entry: SupplyEntry): () => void {
     return () => {
       if (this._config?.list_tap_action === "more-info") {
@@ -524,6 +547,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         </div>
 
         ${this._renderFill(entry)}
+        ${this._renderShoppingChip(entry)}
 
         <div class="actions">
           <div
@@ -569,6 +593,27 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
             <ha-icon icon="mdi:plus"></ha-icon>
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  // Only offered once a supply actually needs restocking, and only when a list
+  // is configured — an always-visible button would be noise on a full pack.
+  private _renderShoppingChip(entry: SupplyEntry) {
+    if (!this._config?.todo_entity || !entry.available) return nothing;
+    if (entry.stage !== "critical" && entry.value > 0) return nothing;
+    const done = this._addedToList.has(entry.entityId);
+    return html`
+      <div
+        class="shop-chip ${done ? "done" : ""}"
+        role=${done ? nothing : "button"}
+        tabindex=${done ? nothing : "0"}
+        aria-label=${this._t("supply_add_to_list")}
+        @click=${done ? nothing : () => this._addToList(entry)}
+        @keydown=${done ? nothing : activateOnKey(() => this._addToList(entry))}
+      >
+        <ha-icon icon=${done ? "mdi:check" : "mdi:cart-plus"}></ha-icon>
+        <span>${this._t(done ? "supply_added_to_list" : "supply_add_to_list")}</span>
       </div>
     `;
   }
@@ -673,8 +718,12 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         }
       }
 
+      /* filter, not opacity: hero-enter fills forwards with opacity 1, and an
+         animation's filled value outranks a normal declaration in the cascade,
+         so an opacity declaration here would simply never apply once the swap
+         animation had run. filter is untouched by those keyframes. */
       .hero.dimmed {
-        opacity: 0.45;
+        filter: opacity(0.45);
         pointer-events: none;
       }
 
@@ -811,6 +860,36 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
 
       .card-inner.no-animations .fill-bar-value {
         transition: none;
+      }
+
+      .shop-chip {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 28px;
+        padding: 0 12px;
+        border-radius: ${SUPPLY_CHIP_RADIUS}px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        color: var(--m3s-accent);
+        background: color-mix(in srgb, var(--m3s-accent) 16%, transparent);
+      }
+
+      .shop-chip.done {
+        cursor: default;
+        opacity: 0.7;
+      }
+
+      .shop-chip ha-icon {
+        --mdc-icon-size: 15px;
+      }
+
+      .shop-chip:focus-visible {
+        outline: 2px solid var(--m3s-accent);
+        outline-offset: 2px;
       }
 
       /* ---- actions ---- */

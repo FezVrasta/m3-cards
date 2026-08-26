@@ -4,6 +4,31 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Neu
+- **M3 Supply Card** (`custom:m3-supply-card`): Vorratsverwaltung für
+  Verbrauchsmaterial. Ein Vorrat steht groß als Hero mit einem Punkt je
+  verbleibender Einheit (ab 40 Stück ein Balken), Stepper mit Wiederholung
+  beim Halten und ein „Packung nachgefüllt"-Knopf; weitere Vorräte folgen als
+  Zeilen mit Füllstandsbalken, ein Tap macht sie zum Hero. Zustandsfarben und
+  Schwellwerte sind pro Artikel einstellbar.
+- Reichweiten-Schätzung aus der Historie des Helfers. Geteilt wird durch den
+  Zeitraum, den die Daten tatsächlich abdecken, nicht durch das angefragte
+  Fenster — der Recorder bewahrt standardmäßig nur 10 Tage auf, sonst
+  verspräche die Karte die dreifache Reichweite. Eine Schätzung erscheint erst
+  nach mindestens 3 Verbrauchsereignissen und 2 Tagen Beobachtung; wer sofort
+  eine Zahl will, setzt `usage_per_week`.
+- Benachrichtigung, wenn ein Vorrat zur Neige geht: als Abend-Digest mit allen
+  Vorräten in einer Nachricht, wöchentlich oder sofort beim Unterschreiten.
+  Auslöse-Niveau wählbar zwischen leer, kritisch und knapp, jeweils über die
+  Schwellwerte des einzelnen Artikels. Über `notify_items` lässt sich die
+  Meldung auf einzelne Vorräte begrenzen statt auf alle der Karte.
+- Anbindung an die To-do-Listen von Home Assistant: ein Chip im Hero schreibt
+  den Vorrat auf die Einkaufsliste, `auto_add_to_list` erledigt es ungefragt
+  in der Automatisierung — inklusive Dublettenprüfung, damit eine tägliche
+  Erinnerung die Liste nicht vollschreibt.
+
 ## [1.8.2]
 
 ### Behoben

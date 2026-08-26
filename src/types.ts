@@ -1033,6 +1033,8 @@ export interface M3SupplyCardConfig extends NotifyConfigBase {
   // notify_service / notify_mode / notify_time / notify_weekday /
   // notify_automation_id come from NotifyConfigBase — see shared/notify-editor.
   notify_level?: SupplyNotifyLevel;
+  /** Which supplies the notification covers. Empty or unset means all of them. */
+  notify_items?: string[];
   /** Index into `items`, or an entity id. Unset picks the item with the
    * shortest remaining range. */
   hero?: number | string;
