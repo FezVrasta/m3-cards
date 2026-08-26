@@ -474,7 +474,10 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
     const heroIndex = this._pickHero(entries);
     const hero = heroIndex >= 0 ? entries[heroIndex] : undefined;
     const layout = cfg.layout ?? "hero_and_list";
-    const rest = entries.filter((_, i) => i !== heroIndex);
+    // With no hero on screen, nothing may be held back for it — filtering the
+    // hero out regardless would silently drop one supply from the card.
+    const rest =
+      layout === "list_only" ? entries : entries.filter((_, i) => i !== heroIndex);
 
     const cssVars = buildCssVars({
       "m3s-text": textColorCss,
