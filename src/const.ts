@@ -725,3 +725,51 @@ export const UPDATES_GROUP_ORDER = [
 // Zigbee/device firmware flashing can brick hardware, so these are listed
 // read-only by default and installed deliberately from the device page.
 export const DEFAULT_UPDATES_NO_INSTALL: string[] = ["firmware"];
+
+// ---- Supply card ----------------------------------------------------------
+export const DEFAULT_SUPPLY_RADIUS = RADIUS.card;
+export const DEFAULT_SUPPLY_ICON = "mdi:package-variant-closed";
+export const DEFAULT_SUPPLY_PACK_SIZE = 24;
+// Reference design: the hero header uses a slightly larger squircle than the
+// shared 44px card-header, matching the cost/summary "hero" scale.
+export const SUPPLY_HERO_ICON_SIZE = 46;
+export const SUPPLY_HERO_ICON_RADIUS = 17;
+export const SUPPLY_ROW_HEIGHT = 48;
+export const SUPPLY_ROW_RADIUS = 16;
+export const SUPPLY_ICON_SIZE = 30;
+export const SUPPLY_ICON_RADIUS = RADIUS.squircle30;
+export const SUPPLY_ROW_GAP = SPACING.rowGap;
+// Above this pack size a per-unit dot row stops being readable (dots get
+// thinner than their gap), so the hero switches to a single filled bar.
+export const SUPPLY_DOTS_MAX = 40;
+export const SUPPLY_DOT_HEIGHT = 12;
+export const SUPPLY_DOT_RADIUS = 4;
+export const SUPPLY_DOT_GAP = 3;
+export const SUPPLY_BAR_HEIGHT = 12;
+export const SUPPLY_BAR_RADIUS = 6;
+export const SUPPLY_ACTION_HEIGHT = 52;
+export const SUPPLY_ACTION_GAP = 8;
+export const SUPPLY_STEPPER_WIDTH = 56;
+// Asymmetric stepper corners, mirrored left/right around the centre button —
+// same shape language as the climate card's temperature stepper.
+export const SUPPLY_STEPPER_RADIUS_OUTER = 26;
+export const SUPPLY_STEPPER_RADIUS_INNER = 11;
+export const SUPPLY_REFILL_RADIUS = 11;
+export const SUPPLY_REFILL_RADIUS_ACTIVE = 22;
+export const SUPPLY_REFILL_MORPH_MS = 400;
+export const SUPPLY_REPEAT_MS = 300;
+export const SUPPLY_COLOR_OK = PALETTE.home;
+export const SUPPLY_COLOR_LOW = PALETTE.solar;
+export const SUPPLY_COLOR_CRITICAL = PALETTE.heat;
+export const SUPPLY_COLOR_UNAVAILABLE = PALETTE.off;
+// Fractions of pack_size used when an item sets no explicit thresholds.
+export const SUPPLY_LOW_FRACTION = 0.25;
+export const SUPPLY_CRITICAL_FRACTION = 0.1;
+// A floor of 1, not 3: with a floor of 3 every pack of 30 or fewer would sit
+// at "critical" from the moment it is opened — a 4-filter pack would never
+// leave the red state at all.
+export const SUPPLY_CRITICAL_FLOOR = 1;
+export const SUPPLY_DEFAULT_RATE_WINDOW_DAYS = 30;
+// Below this many observed decrements the sample is too thin to extrapolate
+// a range from, so the subtitle falls back to a plain "{n} of {max}".
+export const SUPPLY_MIN_EVENTS = 3;

@@ -998,7 +998,62 @@ export type M3CardConfig =
   | M3ClimateOverviewCardConfig
   | M3AquariumCardConfig
   | M3UpdatesCardConfig
-  | M3NasCardConfig;
+  | M3NasCardConfig
+  | M3SupplyCardConfig;
+
+export interface SupplyItemConfig {
+  /** A `counter.*` or `input_number.*` helper holding the remaining count. */
+  entity: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+  /** Units in one full pack. Defaults to the helper's own maximum, then to
+   * DEFAULT_SUPPLY_PACK_SIZE. */
+  pack_size?: number;
+  /** Plural noun shown under the hero value, e.g. "Pods". */
+  unit?: string;
+  low_threshold?: number;
+  critical_threshold?: number;
+  /** Text added to the todo list when this item runs critical. */
+  shopping_item?: string;
+  /** Overrides the history-derived consumption rate for this item. */
+  usage_per_week?: number;
+}
+
+export type SupplyLayout = "hero_and_list" | "list_only" | "hero_only";
+export type SupplyRefillMode = "set" | "add";
+export type SupplyListTapAction = "hero" | "more-info";
+
+export interface M3SupplyCardConfig {
+  type: string;
+  items?: SupplyItemConfig[];
+  /** Index into `items`, or an entity id. Unset picks the item with the
+   * shortest remaining range. */
+  hero?: number | string;
+  layout?: SupplyLayout;
+  refill_mode?: SupplyRefillMode;
+  list_tap_action?: SupplyListTapAction;
+  /** Days of history to derive the consumption rate from. */
+  rate_window?: number;
+  usage_per_week?: number;
+  todo_entity?: string;
+  auto_add_to_list?: boolean;
+  name?: string;
+  icon?: string;
+  ok_color?: string;
+  low_color?: string;
+  critical_color?: string;
+  unavailable_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
 
 export interface LovelaceCardEditor<
   T extends M3CardConfig = M3CardConfig,
