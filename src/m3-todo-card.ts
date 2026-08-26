@@ -36,6 +36,11 @@ import {
   TODO_DONE_ROW_HEIGHT,
   TODO_DONE_ROW_RADIUS,
   TODO_CLEAR_ARM_MS,
+  TODO_QUICK_CHIP_HEIGHT,
+  TODO_QUICK_CHIP_RADIUS,
+  TODO_QUICK_CHIP_RADIUS_ACTIVE,
+  TODO_QUICK_MORPH_MS,
+  TODO_DEFAULT_MAX_QUICK_ADD,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
@@ -43,6 +48,7 @@ import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/g
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { fetchTodoItems, todoSupports, TODO_FEATURE, type TodoItem } from "./shared/ha-todo";
+import { collectSupplyChips } from "./shared/supply-chips";
 import { localize, type TranslationKey } from "./localize";
 
 console.info(
@@ -65,6 +71,10 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
   /** uid of an item pulsing because the user tried to add it twice. */
   @state() private _duplicate?: string;
   @state() private _clearArmed = false;
+  /** Chip labels gathered from the supply cards on this dashboard. */
+  @state() private _supplyChips: string[] = [];
+  /** Chip currently confirming a tap with its morph. */
+  @state() private _chipMorph?: string;
 
   @query(".todo-input") private _input?: HTMLInputElement;
 
@@ -73,6 +83,8 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
   private _morphTimer?: number;
   private _duplicateTimer?: number;
   private _clearTimer?: number;
+  private _chipTimer?: number;
+  private _suppliesLoaded = false;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-todo-card-editor");
@@ -96,6 +108,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
       ...config,
     };
     this._lastStateKey = undefined;
+    this._suppliesLoaded = false;
   }
 
   public getCardSize(): number {
@@ -111,11 +124,13 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
     if (this._morphTimer) clearTimeout(this._morphTimer);
     if (this._duplicateTimer) clearTimeout(this._duplicateTimer);
     if (this._clearTimer) clearTimeout(this._clearTimer);
+    if (this._chipTimer) clearTimeout(this._chipTimer);
   }
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     this._maybeFetch();
+    this._loadSupplyChips();
   }
 
   private get _language(): string {
@@ -301,6 +316,75 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
     }
   };
 
+  // ---- quick add --------------------------------------------------------
+
+  private get _quickAddChips(): string[] {
+    const cfg = this._config;
+    if (!cfg) return [];
+    const max = cfg.max_quick_add ?? TODO_DEFAULT_MAX_QUICK_ADD;
+    const openNames = new Set(this._open.map((i) => i.summary.toLowerCase()));
+    let candidates: string[] = [];
+
+    switch (cfg.quick_add_mode) {
+      case "fixed":
+        candidates = cfg.quick_add ?? [];
+        break;
+      case "recent":
+        // There is no completion timestamp in the todo API, so "recent" can
+        // only mean "latest in list order" — a good enough stand-in, since
+        // backends append rather than reshuffle.
+        candidates = [...this._done].reverse().map((i) => i.summary);
+        break;
+      case "supplies":
+        candidates = this._supplyChips;
+        break;
+      default:
+        return [];
+    }
+
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of candidates) {
+      const text = raw.trim();
+      const key = text.toLowerCase();
+      // Suggesting something already on the list would just trigger the
+      // duplicate pulse, so those are dropped rather than shown.
+      if (!text || seen.has(key) || openNames.has(key)) continue;
+      seen.add(key);
+      out.push(text);
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+
+  private async _loadSupplyChips(): Promise<void> {
+    if (this._suppliesLoaded || !this.hass) return;
+    if (this._config?.quick_add_mode !== "supplies") return;
+    this._suppliesLoaded = true;
+    this._supplyChips = await collectSupplyChips(this.hass);
+  }
+
+  private _quickAdd(text: string): () => void {
+    return async () => {
+      if (!this._available) return;
+      if (shouldAnimate(this._config?.animation)) {
+        this._chipMorph = text;
+        if (this._chipTimer) clearTimeout(this._chipTimer);
+        this._chipTimer = window.setTimeout(() => {
+          this._chipMorph = undefined;
+        }, TODO_QUICK_MORPH_MS);
+      }
+      await this._call("add_item", { item: text });
+      if (
+        this._config?.add_position === "top" &&
+        todoSupports(this.hass, this._config.entity, TODO_FEATURE.move)
+      ) {
+        const added = this._items.find((i) => i.summary === text && i.status === "needs_action");
+        if (added) await this._move(added.uid);
+      }
+    };
+  }
+
   // ---- render -----------------------------------------------------------
 
   protected render() {
@@ -332,6 +416,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         >
           ${this._renderHeader(open.length, done.length)}
           ${available ? this._renderInput() : html`<div class="hint">${this._t("todo_unavailable")}</div>`}
+          ${available ? this._renderQuickAdd() : nothing}
           ${open.length
             ? html`<div class="rows">
                 ${repeat(open, (i) => i.uid, (i) => this._renderRow(i))}
@@ -390,6 +475,28 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         >
           <ha-icon icon="mdi:plus"></ha-icon>
         </div>
+      </div>
+    `;
+  }
+
+  private _renderQuickAdd() {
+    const chips = this._quickAddChips;
+    if (!chips.length) return nothing;
+    return html`
+      <div class="quick-row">
+        ${chips.map(
+          (text) => html`
+            <div
+              class="quick-chip ${this._chipMorph === text ? "morph" : ""}"
+              role="button"
+              tabindex="0"
+              @click=${this._quickAdd(text)}
+              @keydown=${activateOnKey(this._quickAdd(text))}
+            >
+              <span class="quick-plus">+</span>${text}
+            </div>
+          `,
+        )}
       </div>
     `;
   }
@@ -634,6 +741,50 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
       .clear-btn:focus-visible {
         outline: 2px solid var(--m3t-accent);
         outline-offset: 2px;
+      }
+
+      .quick-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .quick-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: ${TODO_QUICK_CHIP_HEIGHT}px;
+        padding: 0 12px;
+        box-sizing: border-box;
+        border-radius: ${TODO_QUICK_CHIP_RADIUS}px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+        color: var(--m3t-text);
+        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+        transition:
+          border-radius ${TODO_QUICK_MORPH_MS}ms ${EASING},
+          background ${TODO_QUICK_MORPH_MS}ms ${EASING};
+      }
+
+      .quick-chip.morph {
+        border-radius: ${TODO_QUICK_CHIP_RADIUS_ACTIVE}px;
+        background: var(--m3t-accent-tint);
+      }
+
+      .card-inner.no-animations .quick-chip {
+        transition: none;
+      }
+
+      .quick-chip:focus-visible {
+        outline: 2px solid var(--m3t-accent);
+        outline-offset: 2px;
+      }
+
+      .quick-plus {
+        opacity: 0.5;
+        font-weight: 700;
       }
 
       /* ---- rows ---- */

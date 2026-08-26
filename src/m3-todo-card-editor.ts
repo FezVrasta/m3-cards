@@ -1,9 +1,9 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3TodoCardConfig } from "./types";
-import { DEFAULT_TODO_RADIUS } from "./const";
+import { DEFAULT_TODO_RADIUS, TODO_DEFAULT_MAX_QUICK_ADD } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { fireEvent, colorRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -51,7 +51,7 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   private _inputSchema(): SchemaEntry[] {
-    return [
+    const schema: SchemaEntry[] = [
       {
         name: "add_position",
         selector: {
@@ -65,7 +65,28 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
         },
       },
       { name: "prevent_duplicates", selector: { boolean: {} } },
+      {
+        name: "quick_add_mode",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "none", label: this._t("editor_todo_quick_none") },
+              { value: "fixed", label: this._t("editor_todo_quick_fixed") },
+              { value: "recent", label: this._t("editor_todo_quick_recent") },
+              { value: "supplies", label: this._t("editor_todo_quick_supplies") },
+            ],
+          },
+        },
+      },
     ];
+    if ((this._config?.quick_add_mode ?? "none") !== "none") {
+      schema.push({
+        name: "max_quick_add",
+        selector: { number: { min: 1, max: 12, mode: "box" } },
+      });
+    }
+    return schema;
   }
 
   private _displaySchema(): SchemaEntry[] {
@@ -100,6 +121,8 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
       icon: "editor_icon",
       add_position: "editor_todo_add_position",
       prevent_duplicates: "editor_todo_prevent_duplicates",
+      quick_add_mode: "editor_todo_quick_add_mode",
+      max_quick_add: "editor_todo_max_quick_add",
       show_completed: "editor_todo_show_completed",
       show_clear_completed: "editor_todo_show_clear_completed",
       animation: "editor_progress_animation",
@@ -174,6 +197,8 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
     const inputData = {
       add_position: this._config.add_position ?? "top",
       prevent_duplicates: this._config.prevent_duplicates ?? true,
+      quick_add_mode: this._config.quick_add_mode ?? "none",
+      max_quick_add: this._config.max_quick_add ?? TODO_DEFAULT_MAX_QUICK_ADD,
     };
     const displayData = {
       show_completed: this._config.show_completed ?? true,
@@ -206,6 +231,14 @@ export class M3TodoCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            ${this._config.quick_add_mode === "fixed"
+              ? listRow(this._t("editor_todo_quick_add"), this._config.quick_add ?? [], (v) =>
+                  this._emit({ ...this._config!, quick_add: v }),
+                )
+              : nothing}
+            ${this._config.quick_add_mode === "supplies"
+              ? html`<div class="hint">${this._t("editor_todo_quick_supplies_hint")}</div>`
+              : nothing}
           </div>
         </ha-expansion-panel>
 
