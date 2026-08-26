@@ -12,7 +12,6 @@ import {
   CARD_VERSION,
   DEFAULT_SUPPLY_RADIUS,
   DEFAULT_SUPPLY_ICON,
-  DEFAULT_SUPPLY_PACK_SIZE,
   SUPPLY_HERO_ICON_SIZE,
   SUPPLY_HERO_ICON_RADIUS,
   SUPPLY_ROW_HEIGHT,
@@ -39,11 +38,9 @@ import {
   SUPPLY_COLOR_LOW,
   SUPPLY_COLOR_CRITICAL,
   SUPPLY_COLOR_UNAVAILABLE,
-  SUPPLY_LOW_FRACTION,
-  SUPPLY_CRITICAL_FRACTION,
-  SUPPLY_CRITICAL_FLOOR,
   resolveCornerRadius,
 } from "./const";
+import { supplyPackSize, supplyLimits } from "./shared/supply-thresholds";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderListRow, listRowStyles } from "./shared/list-row";
@@ -165,9 +162,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
       const min = ((attrs.minimum ?? attrs.min) as number | undefined) ?? 0;
       const step = ((attrs.step as number | undefined) ?? 1) || 1;
 
-      const packSize =
-        item.pack_size ??
-        (typeof max === "number" && max > 0 ? max : DEFAULT_SUPPLY_PACK_SIZE);
+      const packSize = supplyPackSize(item, st);
 
       const stage = this._stageFor(value, packSize, item, available);
       return {
@@ -198,10 +193,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
     available: boolean,
   ): SupplyStage {
     if (!available || isNaN(value)) return "unavailable";
-    const critical =
-      item.critical_threshold ??
-      Math.max(SUPPLY_CRITICAL_FLOOR, Math.round(packSize * SUPPLY_CRITICAL_FRACTION));
-    const low = item.low_threshold ?? Math.round(packSize * SUPPLY_LOW_FRACTION);
+    const { low, critical } = supplyLimits(packSize, item);
     if (value <= critical) return "critical";
     if (value <= low) return "low";
     return "ok";

@@ -1024,9 +1024,15 @@ export type SupplyLayout = "hero_and_list" | "list_only" | "hero_only";
 export type SupplyRefillMode = "set" | "add";
 export type SupplyListTapAction = "hero" | "more-info";
 
-export interface M3SupplyCardConfig {
+/** Which state an item must reach before it is worth notifying about. */
+export type SupplyNotifyLevel = "empty" | "critical" | "low";
+
+export interface M3SupplyCardConfig extends NotifyConfigBase {
   type: string;
   items?: SupplyItemConfig[];
+  // notify_service / notify_mode / notify_time / notify_weekday /
+  // notify_automation_id come from NotifyConfigBase — see shared/notify-editor.
+  notify_level?: SupplyNotifyLevel;
   /** Index into `items`, or an entity id. Unset picks the item with the
    * shortest remaining range. */
   hero?: number | string;

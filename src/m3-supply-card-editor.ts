@@ -12,6 +12,26 @@ import {
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { supplyPackSize, supplyLimits, supplyNotifyLimit } from "./shared/supply-thresholds";
+import {
+  notifyServiceSchema,
+  notifyModeSchema,
+  notifyTimeSchema,
+  notifyTitleSchema,
+  notifyMessageSchema,
+  notifyWeekdaySchema,
+  notifyTokenHint,
+  notifyActions,
+  notifyStyles,
+  renderNotifyControls,
+  saveNotifyAutomation,
+  setAutomationEnabled,
+  resolveAutomationId,
+  triggerStatePrelude,
+  notifySampleEntity,
+  type NotifyStatus,
+  type NotifyAutomationSpec,
+} from "./shared/notify-editor";
 import { radiusLabelMap } from "./shared/radius-editor";
 import {
   initAppearanceState,
@@ -31,6 +51,9 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
     showCorners: false,
     cornerCustom: {},
   };
+  @state() private _notifyBusy = false;
+  @state() private _notifyStatus: NotifyStatus = "idle";
+  @state() private _notifyDetail = "";
 
   public setConfig(config: M3SupplyCardConfig): void {
     this._config = config;
@@ -191,6 +214,207 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
     ];
   }
 
+  private _notifySchema(): SchemaEntry[] {
+    const mode = this._config?.notify_mode ?? "daily";
+    const schema: SchemaEntry[] = [
+      notifyServiceSchema(this.hass),
+      {
+        name: "notify_level",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "empty", label: this._t("editor_supply_notify_level_empty") },
+              { value: "critical", label: this._t("editor_supply_notify_level_critical") },
+              { value: "low", label: this._t("editor_supply_notify_level_low") },
+            ],
+          },
+        },
+      },
+      notifyModeSchema([
+        { value: "daily", label: this._t("editor_supply_notify_mode_daily") },
+        { value: "weekly", label: this._t("editor_supply_notify_mode_weekly") },
+        { value: "on_change", label: this._t("editor_supply_notify_mode_on_change") },
+      ]),
+    ];
+    if (mode !== "on_change") schema.push(notifyTimeSchema());
+    if (mode === "weekly") schema.push(notifyWeekdaySchema(this._language));
+    schema.push(notifyTitleSchema(), notifyMessageSchema());
+    return schema;
+  }
+
+  // Turning it on runs the full setup; turning it off pauses the automation
+  // rather than deleting it, so the wording survives a toggle round-trip.
+  private async _toggleNotify(enabled: boolean): Promise<void> {
+    if (!this._config || !this.hass) return;
+    this._emit({ ...this._config, notify_enabled: enabled });
+    if (enabled) {
+      await this._setupNotify();
+      return;
+    }
+    const id = this._config.notify_automation_id;
+    if (id) await setAutomationEnabled(this.hass, id, false);
+  }
+
+  /** entity id, display name and the count it must fall to, per item. */
+  private _notifyTargets(): { e: string; n: string; l: number }[] {
+    const level = this._config?.notify_level ?? "empty";
+    return this._items
+      .filter((item) => item.entity && this.hass?.states[item.entity])
+      .map((item) => {
+        const st = this.hass!.states[item.entity];
+        const packSize = supplyPackSize(item, st);
+        return {
+          e: item.entity,
+          n: item.name ?? (st.attributes.friendly_name as string | undefined) ?? item.entity,
+          l: supplyNotifyLimit(level, supplyLimits(packSize, item)),
+        };
+      });
+  }
+
+  private async _setupNotify(): Promise<void> {
+    const cfg = this._config;
+    if (!this.hass || !cfg) return;
+    const targets = cfg.notify_service ?? [];
+    if (targets.length === 0) {
+      this._notifyStatus = "error";
+      this._notifyDetail = this._t("editor_supply_notify_missing");
+      return;
+    }
+    this._notifyBusy = true;
+    this._notifyStatus = "idle";
+    this._notifyDetail = "";
+    try {
+      const items = this._notifyTargets();
+      if (items.length === 0) throw new Error("no supply entities");
+      const mode = cfg.notify_mode ?? "daily";
+      const cardName = cfg.name || this._t("supply_notify_default_title");
+      const automationId = resolveAutomationId("supply_low", cfg.notify_automation_id);
+
+      const base = {
+        alias: `${cardName}: ${this._t("editor_supply_notify_alias")}`,
+        description: this._t("editor_supply_notify_description"),
+        mode: "single",
+      };
+
+      let automation: Record<string, unknown>;
+      if (mode === "on_change") {
+        // numeric_state fires on `value < below`, so the limit is nudged by
+        // half a unit to mean "at or below" for countable supplies. Items are
+        // grouped by limit so each distinct threshold needs only one trigger.
+        const byLimit = new Map<number, string[]>();
+        for (const it of items) byLimit.set(it.l, [...(byLimit.get(it.l) ?? []), it.e]);
+        const triggers = [...byLimit.entries()].map(([limit, ids]) => ({
+          trigger: "numeric_state",
+          entity_id: ids,
+          below: limit + 0.5,
+        }));
+        const names = Object.fromEntries(items.map((it) => [it.e, it.n]));
+        automation = {
+          ...base,
+          // Wrapped in a template on purpose: Home Assistant renders
+          // `variables` and parses the result, so `{{ {...} }}` arrives as a
+          // real dict. A bare JSON string stays a string and `.get(...)` then
+          // fails on every run.
+          variables: { supply_names: `{{ ${JSON.stringify(names)} }}` },
+          triggers,
+          conditions: [],
+          actions: notifyActions(
+            targets,
+            cardName,
+            `{{ supply_names.get(s.entity_id, s.name) }} ${this._t("editor_supply_notify_single")}`,
+            {
+              title: cfg.notify_title,
+              message: cfg.notify_message,
+              // A supply that already meets the limit makes the better sample
+              // for a hand-run than one that is perfectly well stocked.
+              prelude: triggerStatePrelude(
+                notifySampleEntity(
+                  this.hass,
+                  items.map((it) => it.e),
+                  (st) => {
+                    const hit = items.find((it) => it.e === st.entity_id);
+                    return !!hit && Number(st.state) <= hit.l;
+                  },
+                ),
+              ),
+              tokens: {
+                vorrat: "{{ supply_names.get(s.entity_id, s.name) }}",
+                rest: "{{ s.state }}",
+              },
+            },
+          ),
+        };
+      } else {
+        // One evening digest listing everything that ran out, so five empty
+        // supplies do not turn into five separate pushes.
+        const listTemplate =
+          `{% set items = ${JSON.stringify(items)} %}` +
+          `{% set ns = namespace(items=[]) %}` +
+          `{% for it in items %}{% set s = states[it.e] %}` +
+          `{% if s is not none and s.state not in ['unknown', 'unavailable'] %}` +
+          `{% if s.state | float(1e9) <= it.l %}` +
+          `{% set ns.items = ns.items + [it.n] %}` +
+          `{% endif %}{% endif %}{% endfor %}` +
+          `{{ ns.items }}`;
+        automation = {
+          ...base,
+          variables: { leere_vorraete: listTemplate },
+          triggers: [{ trigger: "time", at: cfg.notify_time || "18:00:00" }],
+          conditions: [
+            ...(mode === "weekly"
+              ? [{ condition: "time", weekday: [cfg.notify_weekday || "mon"] }]
+              : []),
+            { condition: "template", value_template: "{{ leere_vorraete | count > 0 }}" },
+          ],
+          actions: notifyActions(
+            targets,
+            cardName,
+            `{{ leere_vorraete | count }} ${this._t("editor_supply_notify_digest")}\n• {{ leere_vorraete | join('\n• ') }}`,
+            {
+              title: cfg.notify_title,
+              message: cfg.notify_message,
+              tokens: {
+                anzahl: "{{ leere_vorraete | count }}",
+                liste: "{{ leere_vorraete | join(', ') }}",
+              },
+            },
+          ),
+        };
+      }
+
+      await saveNotifyAutomation(this.hass, { id: automationId, ...automation } as NotifyAutomationSpec);
+      if (cfg.notify_automation_id !== automationId) {
+        this._emit({ ...this._config!, notify_automation_id: automationId });
+      }
+      await setAutomationEnabled(this.hass, automationId, true);
+      this._notifyStatus = "success";
+      this._notifyDetail = `${items.length}`;
+    } catch (e) {
+      this._notifyStatus = "error";
+      this._notifyDetail = e instanceof Error ? e.message : String(e);
+    } finally {
+      this._notifyBusy = false;
+    }
+  }
+
+  // A counter's `maximum` is a hard ceiling, not a label: Home Assistant
+  // refuses to store a higher value. Configuring a pack larger than that
+  // would make "pack refilled" silently stop at the helper's own limit, so
+  // the mismatch is called out where it is created instead of showing up as
+  // a refill that quietly does the wrong thing.
+  private _packSizeWarning(item: SupplyItemConfig) {
+    const st = item.entity ? this.hass?.states[item.entity] : undefined;
+    if (!st || !item.pack_size) return nothing;
+    const max = (st.attributes.maximum ?? st.attributes.max) as number | undefined;
+    if (typeof max !== "number" || item.pack_size <= max) return nothing;
+    return html`<div class="notify-blocked">
+      ${this._t("editor_supply_pack_size_warning")
+        .replace("{pack}", String(item.pack_size))
+        .replace("{max}", String(max))}
+    </div>`;
+  }
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       entity: "editor_supply_item_entity",
@@ -209,6 +433,13 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
       usage_per_week: "editor_supply_usage_per_week",
       todo_entity: "editor_supply_todo_entity",
       auto_add_to_list: "editor_supply_auto_add",
+      notify_service: "editor_notify_service",
+      notify_level: "editor_supply_notify_level",
+      notify_mode: "editor_supply_notify_mode",
+      notify_time: "editor_notify_time",
+      notify_weekday: "editor_notify_weekday",
+      notify_title: "editor_notify_title",
+      notify_message: "editor_notify_message",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -300,6 +531,16 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
       auto_add_to_list: this._config.auto_add_to_list ?? false,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const notifyData = {
+      notify_service: this._config.notify_service ?? [],
+      notify_level: this._config.notify_level ?? "empty",
+      notify_mode: this._config.notify_mode ?? "daily",
+      notify_time: this._config.notify_time ?? "18:00:00",
+      notify_weekday: this._config.notify_weekday ?? "mon",
+      notify_title: this._config.notify_title,
+      notify_message: this._config.notify_message,
+    };
+    const digest = (this._config.notify_mode ?? "daily") !== "on_change";
 
     return html`
       <div class="editor">
@@ -317,6 +558,7 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
                     .computeLabel=${this._computeLabel}
                     @value-changed=${(ev: CustomEvent) => this._itemChanged(index, ev)}
                   ></ha-form>
+                  ${this._packSizeWarning(item)}
                   ${colorRow(this._t("editor_supply_item_color"), item.color, (v) =>
                     this._itemColorChanged(index, v),
                   )}
@@ -358,6 +600,41 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_supply_rate_window_helper")}</div>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_supply_notify")}>
+          <ha-icon slot="leading-icon" icon="mdi:bell-outline"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_supply_notify_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${notifyData}
+              .schema=${this._notifySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">
+              ${notifyTokenHint(
+                this._language,
+                digest ? ["anzahl", "liste"] : ["vorrat", "rest"],
+              )}
+            </div>
+            ${renderNotifyControls({
+              hass: this.hass,
+              language: this._language,
+              enabled: this._config.notify_enabled ?? false,
+              automationId: this._config.notify_automation_id,
+              busy: this._notifyBusy,
+              status: this._notifyStatus,
+              detail: this._notifyDetail,
+              blockedReason: this._config.notify_service?.length
+                ? undefined
+                : this._t("editor_supply_notify_missing"),
+              successText: `${this._t("editor_supply_notify_success_prefix")} ${this._notifyDetail} ${this._t("editor_supply_notify_success_suffix")}`,
+              onToggle: (on) => this._toggleNotify(on),
+              onSetup: () => this._setupNotify(),
+            })}
           </div>
         </ha-expansion-panel>
 
@@ -418,7 +695,7 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
     `;
   }
 
-  static styles = editorStyles;
+  static styles = [editorStyles, notifyStyles];
 }
 
 declare global {
