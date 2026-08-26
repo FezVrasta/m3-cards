@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, unsafeCSS, type TemplateResult } from "lit";
+import { LitElement, html, css, nothing, unsafeCSS, type PropertyValues, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -38,12 +38,19 @@ import {
   SUPPLY_COLOR_LOW,
   SUPPLY_COLOR_CRITICAL,
   SUPPLY_COLOR_UNAVAILABLE,
+  SUPPLY_DEFAULT_RATE_WINDOW_DAYS,
+  SUPPLY_MIN_EVENTS,
+  SUPPLY_MIN_SPAN_DAYS,
+  SUPPLY_FLIP_DURATION_MS,
+  SUPPLY_RATE_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
 import { supplyPackSize, supplyLimits } from "./shared/supply-thresholds";
+import { fetchConsumptionRates, type ConsumptionRate } from "./shared/supply-history";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
-import { renderListRow, listRowStyles } from "./shared/list-row";
+import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
+import { repeat } from "lit/directives/repeat.js";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
@@ -85,8 +92,14 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
   @state() private _heroOverride?: string;
   @state() private _morphing = false;
 
+  @state() private _rates = new Map<string, ConsumptionRate>();
+
+  private _rowRects: Map<string, DOMRect> = new Map();
   private _repeatTimer?: number;
   private _morphTimer?: number;
+  private _refreshTimer?: number;
+  private _lastRateKey?: string;
+  private _rateInFlight = false;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-supply-card-editor");
@@ -130,6 +143,73 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     this._stopRepeat();
     if (this._morphTimer) clearTimeout(this._morphTimer);
+    if (this._refreshTimer !== undefined) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = undefined;
+    }
+  }
+
+  protected willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    // Snapshot where every row sits before this render, so the rows that move
+    // when the hero changes can be animated from their old position instead
+    // of jumping straight to the new layout.
+    this._rowRects = captureRowRects(this.renderRoot);
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (shouldAnimate(this._config?.animation)) {
+      flipRows(this.renderRoot, this._rowRects, SUPPLY_FLIP_DURATION_MS);
+    }
+    this._ensureRefreshTimer();
+    this._maybeFetchRates();
+  }
+
+  private _ensureRefreshTimer(): void {
+    if (this._refreshTimer !== undefined) return;
+    // Consumption moves over days, so a slow refresh is plenty; the counter
+    // value itself updates live through hass, independent of this.
+    this._refreshTimer = window.setInterval(() => {
+      this._lastRateKey = undefined;
+      this._maybeFetchRates();
+    }, SUPPLY_RATE_REFRESH_MS);
+  }
+
+  private _maybeFetchRates(): void {
+    if (!this.hass || !this._config) return;
+    const ids = this._rateEntityIds();
+    if (!ids.length) return;
+    const window = this._config.rate_window ?? SUPPLY_DEFAULT_RATE_WINDOW_DAYS;
+    const key = `${ids.join(",")}|${window}`;
+    if (key === this._lastRateKey) return;
+    this._lastRateKey = key;
+    this._fetchRates(ids, window);
+  }
+
+  // Items with an explicit usage_per_week never need history, so they are left
+  // out of the request rather than fetched and discarded.
+  private _rateEntityIds(): string[] {
+    const cardOverride = this._config?.usage_per_week;
+    return (this._config?.items ?? [])
+      .filter((item) => item.entity && !(item.usage_per_week ?? cardOverride))
+      .map((item) => item.entity);
+  }
+
+  private async _fetchRates(ids: string[], windowDays: number): Promise<void> {
+    if (!this.hass || this._rateInFlight) return;
+    this._rateInFlight = true;
+    try {
+      this._rates = await fetchConsumptionRates(
+        this.hass,
+        ids,
+        windowDays,
+        SUPPLY_MIN_EVENTS,
+        SUPPLY_MIN_SPAN_DAYS,
+      );
+    } finally {
+      this._rateInFlight = false;
+    }
   }
 
   private get _language(): string {
@@ -139,7 +219,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
   private _t(key: TranslationKey, vars?: Record<string, string | number>): string {
     let out = localize(key, this._language);
     for (const [k, v] of Object.entries(vars ?? {})) {
-      out = out.replace(`{${k}}`, String(v));
+      out = out.replaceAll(`{${k}}`, String(v));
     }
     return out;
   }
@@ -242,22 +322,27 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
 
   // ---- subtitle ---------------------------------------------------------
 
-  // Range estimation from history lands in a later step; for now an explicit
-  // usage_per_week is honoured and everything else falls back to "n of max".
   private _subtitle(entry: SupplyEntry): string {
     if (!entry.available) return this._t("unavailable");
     if (entry.value <= 0) return this._t("supply_empty");
     if (entry.stage === "critical") {
       return this._t("supply_critical", { n: this._formatCount(entry.value) });
     }
-    const perWeek = entry.config.usage_per_week ?? this._config?.usage_per_week;
-    if (perWeek && perWeek > 0) {
-      return this._formatRange(entry.value / (perWeek / 7));
-    }
+    const perDay = this._perDay(entry);
+    if (perDay && perDay > 0) return this._formatRange(entry.value / perDay);
+    // Too little history to extrapolate from — a bare count beats a made-up
+    // estimate, and the number is what the user would check anyway.
     return this._t("supply_of", {
       n: this._formatCount(entry.value),
       max: this._formatCount(entry.packSize),
     });
+  }
+
+  /** Configured usage wins over the measured rate; both are per day here. */
+  private _perDay(entry: SupplyEntry): number | undefined {
+    const perWeek = entry.config.usage_per_week ?? this._config?.usage_per_week;
+    if (perWeek && perWeek > 0) return perWeek / 7;
+    return this._rates.get(entry.entityId)?.perDay;
   }
 
   private _formatCount(value: number): string {
@@ -392,7 +477,13 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
           ${!entries.length
             ? html`<div class="empty">${this._t("supply_no_items")}</div>`
             : nothing}
-          ${hero && layout !== "list_only" ? this._renderHero(hero) : nothing}
+          ${hero && layout !== "list_only"
+            ? // Keyed on the entity so switching hero replaces the node rather
+              // than patching it in place — a CSS entry animation only runs on
+              // a freshly mounted element, and a value change on the same
+              // supply must not restart it.
+              repeat([hero], (h) => h.entityId, (h) => this._renderHero(h))
+            : nothing}
           ${rest.length && layout !== "hero_only"
             ? html`
                 <div class="section-title">${this._t("supply_more")}</div>
@@ -558,6 +649,28 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         display: flex;
         flex-direction: column;
         gap: 10px;
+        animation: hero-enter ${SUPPLY_FLIP_DURATION_MS}ms ${EASING} both;
+      }
+
+      @keyframes hero-enter {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .card-inner.no-animations .hero {
+        animation: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hero {
+          animation: none;
+        }
       }
 
       .hero.dimmed {

@@ -773,3 +773,13 @@ export const SUPPLY_DEFAULT_RATE_WINDOW_DAYS = 30;
 // Below this many observed decrements the sample is too thin to extrapolate
 // a range from, so the subtitle falls back to a plain "{n} of {max}".
 export const SUPPLY_MIN_EVENTS = 3;
+// Three taps on "−" in one sitting satisfy MIN_EVENTS but span minutes, and
+// dividing by minutes yields a rate of hundreds per day. An estimate needs to
+// have watched for at least this long before it means anything.
+export const SUPPLY_MIN_SPAN_DAYS = 2;
+// Consumption shifts over days, not minutes; the counter value itself already
+// updates live via hass, so re-reading history hourly is more than enough.
+export const SUPPLY_RATE_REFRESH_MS = 60 * 60 * 1000;
+// Hero swap: rows glide to their new slot while the new hero fades in. Shares
+// the suite's FLIP duration so reordering feels the same across every card.
+export const SUPPLY_FLIP_DURATION_MS = DURATION_MS.flip;
