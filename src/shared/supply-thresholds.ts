@@ -16,9 +16,17 @@ export function supplyPackSize(
   item: SupplyItemConfig,
   state: HassEntity | undefined,
 ): number {
-  if (item.pack_size) return item.pack_size;
   const max = (state?.attributes?.maximum ?? state?.attributes?.max) as number | undefined;
-  return typeof max === "number" && max > 0 ? max : DEFAULT_SUPPLY_PACK_SIZE;
+  const ceiling = typeof max === "number" && max > 0 ? max : undefined;
+  if (!item.pack_size) return ceiling ?? DEFAULT_SUPPLY_PACK_SIZE;
+  // A helper's maximum is a hard ceiling, not a label — Home Assistant refuses
+  // to store anything above it. Showing a larger pack would promise a capacity
+  // that can never be reached: the dot row could never fill, and "pack
+  // refilled" would set the ceiling and appear to do nothing. Cap the display
+  // at what the helper can actually hold; the editor tells the user to raise
+  // the helper's maximum if they really do keep a larger pack.
+  if (ceiling !== undefined && item.pack_size > ceiling) return ceiling;
+  return item.pack_size;
 }
 
 export interface SupplyLimits {

@@ -410,8 +410,8 @@ export class M3SupplyCardEditor extends LitElement implements LovelaceCardEditor
     if (typeof max !== "number" || item.pack_size <= max) return nothing;
     return html`<div class="notify-blocked">
       ${this._t("editor_supply_pack_size_warning")
-        .replace("{pack}", String(item.pack_size))
-        .replace("{max}", String(max))}
+        .replaceAll("{pack}", String(item.pack_size))
+        .replaceAll("{max}", String(max))}
     </div>`;
   }
 
