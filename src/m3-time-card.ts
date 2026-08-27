@@ -82,6 +82,17 @@ const EASING = unsafeCSS(STANDARD_EASING);
 
 type Field = "hours" | "minutes";
 
+// Dashboard-wide swipe plugins (hass-swipe-navigation and friends) listen for
+// touch and mouse drags on an ancestor of the card, in the bubble phase. A
+// drag on a wheel is scrolling, never navigation, so it is kept from reaching
+// them — a flick with any sideways drift would otherwise change the view out
+// from under the value being set. Verified against hass-swipe-navigation
+// 1.16.0: its listeners sit on haAppLayout with no capture flag, so stopping
+// propagation here is enough.
+function stopSwipe(e: Event): void {
+  e.stopPropagation();
+}
+
 /** The hour as the wheel lists it: 1..12 in 12h mode, 0..23 otherwise. */
 function to12HourOrRaw(hours: number, twelveHour: boolean): number {
   return twelveHour ? to12Hour(hours).display : hours;
@@ -790,6 +801,10 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         aria-valuemax=${values[values.length - 1]}
         aria-label=${this._t(field === "hours" ? "time_hours" : "time_minutes")}
         @scroll=${this._onWheelScroll(field)}
+        @touchstart=${stopSwipe}
+        @touchmove=${stopSwipe}
+        @mousedown=${stopSwipe}
+        @mousemove=${stopSwipe}
         @keydown=${this._onFieldKey(field)}
         @focus=${() => (this._focus = field)}
         @blur=${() => {
@@ -1119,6 +1134,9 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         height: 100%;
         overflow-y: auto;
         scroll-snap-type: y mandatory;
+        /* Tells the browser this surface owns vertical panning, so a gesture
+           here is never handed to a horizontal pager. */
+        touch-action: pan-y;
         scrollbar-width: none;
         -ms-overflow-style: none;
         outline: none;
