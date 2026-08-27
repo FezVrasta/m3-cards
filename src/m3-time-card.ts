@@ -22,6 +22,14 @@ import {
   TIME_PRESET_HEIGHT,
   TIME_PRESET_RADIUS,
   TIME_PRESET_RADIUS_ACTIVE,
+  TIME_WHEEL_HEIGHT,
+  TIME_WHEEL_RADIUS,
+  TIME_WHEEL_ITEM_HEIGHT,
+  TIME_WHEEL_PAD,
+  TIME_WHEEL_BAND_RADIUS,
+  TIME_WHEEL_ACTIVE_FONT_SIZE,
+  TIME_WHEEL_IDLE_FONT_SIZE,
+  TIME_WHEEL_SETTLE_MS,
   TIME_HEADER_ICON_SIZE,
   TIME_HEADER_ICON_RADIUS,
   TIME_FIELD_WIDTH,
@@ -74,6 +82,11 @@ const EASING = unsafeCSS(STANDARD_EASING);
 
 type Field = "hours" | "minutes";
 
+/** The hour as the wheel lists it: 1..12 in 12h mode, 0..23 otherwise. */
+function to12HourOrRaw(hours: number, twelveHour: boolean): number {
+  return twelveHour ? to12Hour(hours).display : hours;
+}
+
 @customElement("m3-time-card")
 export class M3TimeCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
@@ -96,6 +109,9 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
   private _digitBuffer = "";
   private _digitTimer?: number;
   private _resizeObserver?: ResizeObserver;
+  /** Columns the card is scrolling itself, whose scroll events must be ignored. */
+  private _wheelSyncing = new Set<Field>();
+  private _wheelTimers = new Map<Field, number>();
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-time-card-editor");
@@ -151,11 +167,17 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
     for (const t of [this._morphTimer, this._debounceTimer, this._digitTimer]) {
       if (t) clearTimeout(t);
     }
+    for (const t of this._wheelTimers.values()) clearTimeout(t);
   }
 
   protected willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
     this._syncDraft();
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    this._syncWheels();
   }
 
   private get _language(): string {
@@ -433,7 +455,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
             ? this._renderCompactRow()
             : html`${this._renderHeader()}
                 ${this._external ? this._renderExternalNotice() : nothing}
-                ${this._renderStepper()}
+                ${cfg.style === "wheel" ? this._renderWheels() : this._renderStepper()}
                 ${this._twelveHour ? this._renderHalfPills() : nothing}`}
           ${cfg.style === "compact" && this._external ? this._renderExternalNotice() : nothing}
           ${this._presets.length ? this._renderPresets() : nothing}
@@ -660,6 +682,128 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
             </div>
           `;
         })}
+      </div>
+    `;
+  }
+
+  // ---- wheel ------------------------------------------------------------
+
+  private _wheelValues(field: Field): number[] {
+    if (field === "minutes") return Array.from({ length: 60 }, (_, i) => i);
+    // 12h shows 1..12 in wheel order, so index 0 is 12 rather than a gap.
+    if (this._twelveHour) return [12, ...Array.from({ length: 11 }, (_, i) => i + 1)];
+    return Array.from({ length: 24 }, (_, i) => i);
+  }
+
+  private _wheelIndex(field: Field): number {
+    const draft = this._draft ?? { hours: 0, minutes: 0 };
+    const value = field === "minutes" ? draft.minutes : to12HourOrRaw(draft.hours, this._twelveHour);
+    const index = this._wheelValues(field).indexOf(value);
+    return index < 0 ? 0 : index;
+  }
+
+  private _onWheelScroll(field: Field): (e: Event) => void {
+    return (e: Event) => {
+      // Ignore the scroll the card itself just performed to follow the value.
+      if (this._wheelSyncing.has(field)) return;
+      const el = e.currentTarget as HTMLElement;
+      const existing = this._wheelTimers.get(field);
+      if (existing) clearTimeout(existing);
+      // Read only once the wheel has settled: mid-flick positions are between
+      // entries, and snapping has not had its say yet.
+      this._wheelTimers.set(
+        field,
+        window.setTimeout(() => {
+          this._wheelTimers.delete(field);
+          const values = this._wheelValues(field);
+          const index = Math.max(
+            0,
+            Math.min(values.length - 1, Math.round(el.scrollTop / TIME_WHEEL_ITEM_HEIGHT)),
+          );
+          this._commitWheel(field, values[index]);
+        }, TIME_WHEEL_SETTLE_MS),
+      );
+    };
+  }
+
+  private _commitWheel(field: Field, value: number): void {
+    if (!this._draft || !this._available) return;
+    if (field === "minutes") {
+      if (this._draft.minutes === value) return;
+      this._setDraft({ ...this._draft, minutes: value });
+      return;
+    }
+    const hours = this._twelveHour
+      ? from12Hour(value, to12Hour(this._draft.hours).pm)
+      : value;
+    if (this._draft.hours === hours) return;
+    this._setDraft({ ...this._draft, hours });
+  }
+
+  // Keeps each wheel parked on the current value when it changed from
+  // anywhere other than that wheel — a stepper elsewhere, a revert, or the
+  // helper itself.
+  private _syncWheels(attempt = 0): void {
+    if (this._config?.style !== "wheel") return;
+    let pending = false;
+    for (const field of ["hours", "minutes"] as Field[]) {
+      if (this._wheelTimers.has(field)) continue;
+      const el = this.renderRoot?.querySelector<HTMLElement>(`.wheel[data-field="${field}"]`);
+      if (!el) continue;
+      const target = this._wheelIndex(field) * TIME_WHEEL_ITEM_HEIGHT;
+      if (Math.abs(el.scrollTop - target) < 1) continue;
+      this._wheelSyncing.add(field);
+      el.scrollTop = target;
+      // On the first render the card may not be laid out yet, and assigning
+      // scrollTop to an element that cannot scroll is silently dropped. Read
+      // it back and try again rather than leaving the wheel parked at zero.
+      if (Math.abs(el.scrollTop - target) >= 1) pending = true;
+      window.setTimeout(() => this._wheelSyncing.delete(field), 60);
+    }
+    if (pending && attempt < 5) {
+      window.setTimeout(() => this._syncWheels(attempt + 1), 50);
+    }
+  }
+
+  private _renderWheels(): TemplateResult {
+    return html`
+      <div class="wheel-box">
+        <div class="wheel-band"></div>
+        ${this._renderWheel("hours")}
+        <div class="wheel-separator">:</div>
+        ${this._renderWheel("minutes")}
+      </div>
+    `;
+  }
+
+  private _renderWheel(field: Field): TemplateResult {
+    const values = this._wheelValues(field);
+    const current = values[this._wheelIndex(field)];
+    return html`
+      <div
+        class="wheel"
+        data-field=${field}
+        role="spinbutton"
+        tabindex="0"
+        aria-valuenow=${current}
+        aria-valuemin=${values[0]}
+        aria-valuemax=${values[values.length - 1]}
+        aria-label=${this._t(field === "hours" ? "time_hours" : "time_minutes")}
+        @scroll=${this._onWheelScroll(field)}
+        @keydown=${this._onFieldKey(field)}
+        @focus=${() => (this._focus = field)}
+        @blur=${() => {
+          if (this._focus === field) this._focus = undefined;
+          this._digitBuffer = "";
+        }}
+      >
+        <div class="wheel-pad"></div>
+        ${values.map(
+          (value) => html`
+            <div class="wheel-item ${value === current ? "on" : ""}">${pad2(value)}</div>
+          `,
+        )}
+        <div class="wheel-pad"></div>
       </div>
     `;
   }
@@ -941,6 +1085,94 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         border-radius: 9px;
         color: var(--m3ti-accent);
         background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
+      }
+
+      /* ---- wheel ---- */
+
+      .wheel-box {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 4px;
+        height: ${TIME_WHEEL_HEIGHT}px;
+        border-radius: ${TIME_WHEEL_RADIUS}px;
+        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
+        overflow: hidden;
+      }
+
+      .wheel-band {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        top: ${TIME_WHEEL_PAD}px;
+        height: ${TIME_WHEEL_ITEM_HEIGHT}px;
+        border-radius: ${TIME_WHEEL_BAND_RADIUS}px;
+        background: var(--m3ti-accent-tint);
+        /* Purely a backdrop — every pointer event belongs to the wheels. */
+        pointer-events: none;
+      }
+
+      .wheel {
+        position: relative;
+        flex: 0 1 92px;
+        height: 100%;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        outline: none;
+      }
+
+      .wheel::-webkit-scrollbar {
+        display: none;
+      }
+
+      .wheel:focus-visible {
+        outline: 2px solid var(--m3ti-accent);
+        outline-offset: -2px;
+        border-radius: ${TIME_WHEEL_BAND_RADIUS}px;
+      }
+
+      .wheel-pad {
+        height: ${TIME_WHEEL_PAD}px;
+      }
+
+      .wheel-item {
+        height: ${TIME_WHEEL_ITEM_HEIGHT}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        scroll-snap-align: center;
+        font-size: ${TIME_WHEEL_IDLE_FONT_SIZE}px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        opacity: 0.55;
+        color: var(--m3ti-text);
+        transition:
+          font-size 150ms ${EASING},
+          opacity 150ms ${EASING},
+          color 150ms ${EASING};
+      }
+
+      .wheel-item.on {
+        font-size: ${TIME_WHEEL_ACTIVE_FONT_SIZE}px;
+        font-weight: 700;
+        opacity: 1;
+        color: var(--m3ti-accent);
+      }
+
+      .card-inner.no-animations .wheel-item {
+        transition: none;
+      }
+
+      .wheel-separator {
+        align-self: center;
+        font-size: ${TIME_SEPARATOR_FONT_SIZE}px;
+        font-weight: 700;
+        opacity: 0.35;
+        color: var(--m3ti-text);
+        pointer-events: none;
       }
 
       /* ---- compact ---- */

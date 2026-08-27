@@ -873,3 +873,15 @@ export const TIME_PRESET_RADIUS_ACTIVE = 11;
 // The compact variant defaults to a bigger jump: it is the "set it roughly"
 // layout, where 5-minute steps would mean a lot of tapping.
 export const DEFAULT_TIME_MINUTE_STEP_COMPACT = 15;
+// Wheel variant: a 132px window over 40px entries, so three are visible and
+// the middle one sits in the selection band. The 46px pads above and below
+// let the first and last entry reach that band.
+export const TIME_WHEEL_HEIGHT = 132;
+export const TIME_WHEEL_RADIUS = 20;
+export const TIME_WHEEL_ITEM_HEIGHT = 40;
+export const TIME_WHEEL_PAD = 46;
+export const TIME_WHEEL_BAND_RADIUS = 14;
+export const TIME_WHEEL_ACTIVE_FONT_SIZE = 22;
+export const TIME_WHEEL_IDLE_FONT_SIZE = 20;
+// How long the wheel must sit still before its position counts as a choice.
+export const TIME_WHEEL_SETTLE_MS = 140;
