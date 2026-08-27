@@ -13,6 +13,15 @@ import {
   DEFAULT_TIME_ICON,
   DEFAULT_TIME_ACCENT,
   DEFAULT_TIME_MINUTE_STEP,
+  DEFAULT_TIME_MINUTE_STEP_COMPACT,
+  TIME_COMPACT_BUTTON_WIDTH,
+  TIME_COMPACT_HEIGHT,
+  TIME_COMPACT_RADIUS_OUTER,
+  TIME_COMPACT_RADIUS_INNER,
+  TIME_COMPACT_VALUE_FONT_SIZE,
+  TIME_PRESET_HEIGHT,
+  TIME_PRESET_RADIUS,
+  TIME_PRESET_RADIUS_ACTIVE,
   TIME_HEADER_ICON_SIZE,
   TIME_HEADER_ICON_RADIUS,
   TIME_FIELD_WIDTH,
@@ -51,6 +60,7 @@ import {
   formatTime,
   stepTime,
   writeTime,
+  parsePresetTime,
 } from "./shared/ha-time";
 import { localize, type TranslationKey } from "./localize";
 
@@ -107,7 +117,8 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
       animation: "auto",
       style: "stepper",
       apply_mode: "button",
-      minute_step: DEFAULT_TIME_MINUTE_STEP,
+      // Deliberately not defaulted here: _minuteStep picks a different value
+      // per variant, which a default set at this point would mask.
       keep_seconds: true,
       ...config,
     };
@@ -223,10 +234,26 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
     this._debounceTimer = window.setTimeout(() => this._apply(), TIME_INSTANT_DEBOUNCE_MS);
   }
 
+  // The compact variant is the "set it roughly" layout, so it jumps further
+  // by default than the stepper, where fine control is the point.
+  private get _minuteStep(): number {
+    const configured = this._config?.minute_step;
+    if (configured) return configured;
+    return this._config?.style === "compact"
+      ? DEFAULT_TIME_MINUTE_STEP_COMPACT
+      : DEFAULT_TIME_MINUTE_STEP;
+  }
+
   private _step(field: Field, direction: 1 | -1): void {
     if (!this._available || !this._draft) return;
-    const amount = field === "minutes" ? (this._config?.minute_step ?? DEFAULT_TIME_MINUTE_STEP) : 1;
+    const amount = field === "minutes" ? this._minuteStep : 1;
     this._setDraft(stepTime(this._draft, field, direction * amount));
+  }
+
+  /** Compact steps the whole time by minute_step, carrying into the hour. */
+  private _nudge(direction: 1 | -1): void {
+    if (!this._available || !this._draft) return;
+    this._setDraft(stepTime(this._draft, "minutes", direction * this._minuteStep));
   }
 
   private _startRepeat(field: Field, direction: 1 | -1): (e: Event) => void {
@@ -345,6 +372,22 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
     this._setDraft({ ...this._draft, hours });
   }
 
+  private get _presets(): { label: string; hours: number; minutes: number }[] {
+    return (this._config?.presets ?? [])
+      .map((raw) => {
+        const parsed = parsePresetTime(raw);
+        return parsed ? { label: raw.trim(), ...parsed } : undefined;
+      })
+      .filter((p): p is { label: string; hours: number; minutes: number } => !!p);
+  }
+
+  private _applyPreset(preset: { hours: number; minutes: number }): void {
+    if (!this._available) return;
+    // In button mode this only preselects — the chip shows the choice and the
+    // apply button still has to confirm it.
+    this._setDraft({ hours: preset.hours, minutes: preset.minutes });
+  }
+
   private _setHalf(pm: boolean): void {
     if (!this._draft) return;
     const { display } = to12Hour(this._draft.hours);
@@ -386,14 +429,29 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         <div
           class="card-inner ${glassCardClass(cfg.glass_background)} ${shouldAnimate(cfg.animation) ? "" : "no-animations"} ${this._available ? "" : "dimmed"}"
         >
-          ${this._renderHeader()}
-          ${this._external ? this._renderExternalNotice() : nothing}
-          ${this._renderStepper()}
-          ${this._twelveHour ? this._renderHalfPills() : nothing}
-          ${(cfg.apply_mode ?? "button") === "button" ? this._renderApplyRow() : nothing}
+          ${cfg.style === "compact"
+            ? this._renderCompactRow()
+            : html`${this._renderHeader()}
+                ${this._external ? this._renderExternalNotice() : nothing}
+                ${this._renderStepper()}
+                ${this._twelveHour ? this._renderHalfPills() : nothing}`}
+          ${cfg.style === "compact" && this._external ? this._renderExternalNotice() : nothing}
+          ${this._presets.length ? this._renderPresets() : nothing}
+          ${this._showApplyRow ? this._renderApplyRow() : nothing}
         </div>
       </ha-card>
     `;
+  }
+
+  // "always" keeps the row on screen with an inert "Unchanged" label;
+  // "when_changed" keeps the card compact and slides the button in on the
+  // first edit. Compact defaults to the latter, the stepper to the former.
+  private get _showApplyRow(): boolean {
+    const cfg = this._config;
+    if (!cfg || (cfg.apply_mode ?? "button") !== "button") return false;
+    const visibility =
+      cfg.apply_visibility ?? (cfg.style === "compact" ? "when_changed" : "always");
+    return visibility === "always" || (this._dirty && this._available);
   }
 
   private _renderHeader(): TemplateResult {
@@ -496,6 +554,112 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         >
           <ha-icon icon="mdi:menu-down"></ha-icon>
         </div>
+      </div>
+    `;
+  }
+
+  private _renderCompactRow(): TemplateResult {
+    const cfg = this._config!;
+    const st = this._state;
+    const name = cfg.name ?? (st?.attributes.friendly_name as string | undefined) ?? cfg.entity;
+    const draft = this._draft ?? { hours: 0, minutes: 0 };
+    const subtitle = !this._available
+      ? this._t("unavailable")
+      : (cfg.subtitle ?? this._t("time_current", {
+          zeit: this._entityTime
+            ? formatTime(this._entityTime.hours, this._entityTime.minutes, this._twelveHour)
+            : "-",
+        }));
+    return html`
+      <div class="compact">
+        <div class="header-icon">
+          <ha-icon icon=${cfg.icon ?? DEFAULT_TIME_ICON}></ha-icon>
+        </div>
+        <div class="header-text">
+          <div class="header-name">${name}</div>
+          <div class="header-sub">${subtitle}</div>
+        </div>
+        <div class="nudge-group">
+          <div
+            class="nudge minus"
+            role="button"
+            tabindex="0"
+            aria-label=${this._t("time_minute_down")}
+            @pointerdown=${this._startNudge(-1)}
+            @pointerup=${this._stopRepeat}
+            @pointerleave=${this._stopRepeat}
+            @pointercancel=${this._stopRepeat}
+            @keydown=${activateOnKey(() => this._nudge(-1))}
+          >
+            <ha-icon icon="mdi:minus"></ha-icon>
+          </div>
+          <div
+            class="nudge-value"
+            role="spinbutton"
+            tabindex="0"
+            aria-valuenow=${draft.hours * 60 + draft.minutes}
+            aria-valuemin="0"
+            aria-valuemax="1439"
+            aria-label=${this._t("time_hours")}
+            @keydown=${(e: KeyboardEvent) => {
+              if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                e.preventDefault();
+                this._nudge(e.key === "ArrowUp" ? 1 : -1);
+              }
+            }}
+          >
+            ${formatTime(draft.hours, draft.minutes, this._twelveHour)}
+          </div>
+          <div
+            class="nudge plus"
+            role="button"
+            tabindex="0"
+            aria-label=${this._t("time_minute_up")}
+            @pointerdown=${this._startNudge(1)}
+            @pointerup=${this._stopRepeat}
+            @pointerleave=${this._stopRepeat}
+            @pointercancel=${this._stopRepeat}
+            @keydown=${activateOnKey(() => this._nudge(1))}
+          >
+            <ha-icon icon="mdi:plus"></ha-icon>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _startNudge(direction: 1 | -1): (e: Event) => void {
+    return (e: Event) => {
+      e.preventDefault();
+      this._nudge(direction);
+      this._stopRepeat();
+      this._repeatTimer = window.setInterval(() => this._nudge(direction), TIME_REPEAT_MS);
+      this._accelerateTimer = window.setTimeout(() => {
+        if (this._repeatTimer) clearInterval(this._repeatTimer);
+        this._repeatTimer = window.setInterval(() => this._nudge(direction), TIME_REPEAT_FAST_MS);
+      }, TIME_REPEAT_ACCELERATE_AFTER_MS);
+    };
+  }
+
+  private _renderPresets(): TemplateResult {
+    const draft = this._draft;
+    return html`
+      <div class="presets">
+        ${this._presets.map((preset) => {
+          const on = !!draft && draft.hours === preset.hours && draft.minutes === preset.minutes;
+          return html`
+            <div
+              class="preset ${on ? "on" : ""}"
+              role="button"
+              tabindex="0"
+              aria-pressed=${on ? "true" : "false"}
+              @click=${() => this._applyPreset(preset)}
+              @keydown=${activateOnKey(() => this._applyPreset(preset))}
+            >
+              ${preset.label}
+            </div>
+          `;
+        })}
       </div>
     `;
   }
@@ -777,6 +941,108 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         border-radius: 9px;
         color: var(--m3ti-accent);
         background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
+      }
+
+      /* ---- compact ---- */
+
+      .compact {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .nudge-group {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .nudge {
+        width: ${TIME_COMPACT_BUTTON_WIDTH}px;
+        height: ${TIME_COMPACT_HEIGHT}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        color: var(--m3ti-secondary-text);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      }
+
+      .nudge.minus {
+        border-radius: ${TIME_COMPACT_RADIUS_OUTER}px ${TIME_COMPACT_RADIUS_INNER}px
+          ${TIME_COMPACT_RADIUS_INNER}px ${TIME_COMPACT_RADIUS_OUTER}px;
+      }
+
+      .nudge.plus {
+        border-radius: ${TIME_COMPACT_RADIUS_INNER}px ${TIME_COMPACT_RADIUS_OUTER}px
+          ${TIME_COMPACT_RADIUS_OUTER}px ${TIME_COMPACT_RADIUS_INNER}px;
+      }
+
+      .nudge ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .nudge-value {
+        height: ${TIME_COMPACT_HEIGHT}px;
+        padding: 0 12px;
+        border-radius: ${TIME_COMPACT_RADIUS_INNER}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: ${TIME_COMPACT_VALUE_FONT_SIZE}px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--m3ti-accent);
+        background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
+      }
+
+      .nudge:focus-visible,
+      .nudge-value:focus-visible,
+      .preset:focus-visible {
+        outline: 2px solid var(--m3ti-accent);
+        outline-offset: 2px;
+      }
+
+      /* ---- presets ---- */
+
+      .presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .preset {
+        flex: 1 1 auto;
+        min-width: 64px;
+        height: ${TIME_PRESET_HEIGHT}px;
+        border-radius: ${TIME_PRESET_RADIUS}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--m3ti-text);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        transition:
+          border-radius 250ms ${EASING},
+          background 250ms ${EASING},
+          color 250ms ${EASING};
+      }
+
+      .preset.on {
+        border-radius: ${TIME_PRESET_RADIUS_ACTIVE}px;
+        color: #1c1c1c;
+        background: var(--m3ti-accent);
+      }
+
+      .card-inner.no-animations .preset {
+        transition: none;
       }
 
       /* ---- apply ---- */

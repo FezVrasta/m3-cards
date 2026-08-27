@@ -103,3 +103,13 @@ export async function writeTime(
   const data = next.date ? { datetime: `${next.date} ${time}` } : { time };
   await hass.callService("input_datetime", "set_datetime", data, { entity_id: entityId });
 }
+
+/** Parses a preset written as "HH:MM" (or "H:MM"); anything else is ignored. */
+export function parsePresetTime(raw: string): { hours: number; minutes: number } | undefined {
+  const match = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(raw);
+  if (!match) return undefined;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return undefined;
+  return { hours, minutes };
+}

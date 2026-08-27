@@ -1096,6 +1096,8 @@ export interface M3TodoCardConfig {
 
 export type TimeCardStyle = "stepper" | "wheel" | "compact";
 export type TimeApplyMode = "button" | "instant";
+/** Whether the apply button is always on screen or only once something changed. */
+export type TimeApplyVisibility = "always" | "when_changed";
 
 export interface M3TimeCardConfig {
   type: string;
@@ -1106,6 +1108,7 @@ export interface M3TimeCardConfig {
   style?: TimeCardStyle;
   minute_step?: number;
   apply_mode?: TimeApplyMode;
+  apply_visibility?: TimeApplyVisibility;
   show_revert?: boolean;
   presets?: string[];
   show_date?: boolean;

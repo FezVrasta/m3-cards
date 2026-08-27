@@ -1,7 +1,12 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3TimeCardConfig } from "./types";
-import { DEFAULT_TIME_RADIUS, DEFAULT_TIME_MINUTE_STEP, TIME_MINUTE_STEPS } from "./const";
+import {
+  DEFAULT_TIME_RADIUS,
+  DEFAULT_TIME_MINUTE_STEP,
+  DEFAULT_TIME_MINUTE_STEP_COMPACT,
+  TIME_MINUTE_STEPS,
+} from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
@@ -86,6 +91,18 @@ export class M3TimeCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
+      {
+        name: "apply_visibility",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "always", label: this._t("editor_time_apply_always") },
+              { value: "when_changed", label: this._t("editor_time_apply_when_changed") },
+            ],
+          },
+        },
+      },
       { name: "show_revert", selector: { boolean: {} } },
     ];
   }
@@ -124,6 +141,7 @@ export class M3TimeCardEditor extends LitElement implements LovelaceCardEditor {
       style: "editor_time_style",
       minute_step: "editor_time_minute_step",
       apply_mode: "editor_time_apply_mode",
+      apply_visibility: "editor_time_apply_visibility",
       show_revert: "editor_time_show_revert",
       subtitle: "editor_time_subtitle",
       show_date: "editor_time_show_date",
@@ -203,8 +221,16 @@ export class M3TimeCardEditor extends LitElement implements LovelaceCardEditor {
     };
     const operationData = {
       style: this._config.style ?? "stepper",
-      minute_step: String(this._config.minute_step ?? DEFAULT_TIME_MINUTE_STEP),
+      minute_step: String(
+        this._config.minute_step ??
+          (this._config.style === "compact"
+            ? DEFAULT_TIME_MINUTE_STEP_COMPACT
+            : DEFAULT_TIME_MINUTE_STEP),
+      ),
       apply_mode: this._config.apply_mode ?? "button",
+      apply_visibility:
+        this._config.apply_visibility ??
+        (this._config.style === "compact" ? "when_changed" : "always"),
       show_revert: this._config.show_revert ?? true,
     };
     const displayData = {

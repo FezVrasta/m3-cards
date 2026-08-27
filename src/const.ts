@@ -860,3 +860,16 @@ export const TIME_FIELD_WIDTH_NARROW = 52;
 // second digit before it stands on its own.
 export const TIME_DIGIT_BUFFER_MS = 900;
 export const TIME_INSTANT_DEBOUNCE_MS = 800;
+// Compact variant: header on the left, a minus/value/plus unit on the right.
+// Outer corners round, inner ones tucked in, same shape logic as the stepper.
+export const TIME_COMPACT_BUTTON_WIDTH = 38;
+export const TIME_COMPACT_HEIGHT = 44;
+export const TIME_COMPACT_RADIUS_OUTER = 22;
+export const TIME_COMPACT_RADIUS_INNER = 9;
+export const TIME_COMPACT_VALUE_FONT_SIZE = 20;
+export const TIME_PRESET_HEIGHT = 34;
+export const TIME_PRESET_RADIUS = 17;
+export const TIME_PRESET_RADIUS_ACTIVE = 11;
+// The compact variant defaults to a bigger jump: it is the "set it roughly"
+// layout, where 5-minute steps would mean a lot of tapping.
+export const DEFAULT_TIME_MINUTE_STEP_COMPACT = 15;
