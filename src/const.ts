@@ -888,3 +888,44 @@ export const TIME_WHEEL_SETTLE_MS = 140;
 // Counter card: the inline "correct the reading" editor.
 export const COUNTER_ADJUST_HEIGHT = 44;
 export const COUNTER_ADJUST_RADIUS = 14;
+
+// ---- Occupancy card -------------------------------------------------------
+export const DEFAULT_OCCUPANCY_RADIUS = RADIUS.card;
+export const DEFAULT_OCCUPANCY_ICON = "mdi:motion-sensor";
+export const DEFAULT_OCCUPANCY_ACCENT = PALETTE.dryAuto;
+// A dead presence sensor is worth more attention than a quiet room, so these
+// strip patterns only tidy the common vendor prefixes/suffixes.
+export const DEFAULT_OCCUPANCY_NAME_STRIP = [
+  "^Präsenzsensor \\d+ ?",
+  " Occupancy$",
+  " Bewegung$",
+];
+export const OCCUPANCY_HEADER_ICON_SIZE = 44;
+export const OCCUPANCY_HEADER_ICON_RADIUS = RADIUS.squircle44;
+export const OCCUPANCY_ROW_RADIUS = RADIUS.row;
+export const OCCUPANCY_ROW_RADIUS_ACTIVE = RADIUS.rowActive;
+export const OCCUPANCY_ROW_PADDING_Y = 11;
+export const OCCUPANCY_ROW_PADDING_X = 12;
+export const OCCUPANCY_ROW_GAP = SPACING.rowGap;
+export const OCCUPANCY_ICON_SIZE = 36;
+export const OCCUPANCY_ICON_RADIUS = 13;
+// The live dot that marks an occupied room, and its breathing animation.
+export const OCCUPANCY_DOT_SIZE = 9;
+export const OCCUPANCY_PULSE_MS = 2000;
+export const OCCUPANCY_TINT_OCCUPIED = 9;
+export const OCCUPANCY_TINT_FREE = 5;
+export const OCCUPANCY_CHIP_RADIUS = RADIUS.chip;
+export const DEFAULT_OCCUPANCY_TIMELINE_HOURS = 3;
+export const DEFAULT_OCCUPANCY_TIMELINE_SEGMENTS = 24;
+export const OCCUPANCY_TIMELINE_HOURS_MIN = 1;
+export const OCCUPANCY_TIMELINE_HOURS_MAX = 24;
+export const OCCUPANCY_SEGMENT_HEIGHT = 14;
+export const OCCUPANCY_SEGMENT_RADIUS = 3;
+export const OCCUPANCY_SEGMENT_GAP = 2;
+export const OCCUPANCY_SEGMENT_FADED_OPACITY = 0.6;
+export const DEFAULT_OCCUPANCY_BATTERY_WARN = 40;
+export const DEFAULT_OCCUPANCY_BATTERY_CRITICAL = 20;
+export const DEFAULT_OCCUPANCY_LQI_WARN = 50;
+// State changes are pushed by hass, but "seit 12 Min." only stays honest if
+// the card re-renders on its own as the clock moves.
+export const OCCUPANCY_TICK_MS = 60000;

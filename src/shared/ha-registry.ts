@@ -274,3 +274,130 @@ export async function discoverClimateRooms(
   }
   return rooms;
 }
+
+// ---- occupancy sensors ----------------------------------------------------
+
+export interface DiscoverOccupancyOptions {
+  includeAreas?: string[];
+  excludeEntities?: string[];
+  nameStrip?: string[];
+}
+
+export interface DiscoveredOccupancyRoom {
+  key: string;
+  areaId?: string;
+  name: string;
+  icon?: string;
+  /**
+   * Every occupancy sensor in this room. A room is occupied when any of them
+   * is — a camera that exposes person/pet/cell detection as three entities
+   * would otherwise fill the card with three identical rows.
+   */
+  entities: string[];
+  /** Sibling sensors found on the same device, when it exposes them. */
+  illuminanceEntity?: string;
+  batteryEntity?: string;
+  signalEntity?: string;
+  timeoutEntity?: string;
+}
+
+const OCCUPANCY_DEVICE_CLASSES = new Set(["occupancy", "motion", "presence"]);
+
+// Finds motion/occupancy/presence binary sensors and names each one after the
+// area it sits in, falling back to its own cleaned friendly name. The side
+// sensors (illuminance, battery, signal, motion timeout) are looked up on the
+// same device: a Zigbee presence sensor publishes them as separate entities,
+// and pairing them by device is the only link that survives renaming.
+export async function discoverOccupancyRooms(
+  hass: HomeAssistant,
+  opts: DiscoverOccupancyOptions,
+): Promise<DiscoveredOccupancyRoom[]> {
+  const exclude = new Set(opts.excludeEntities ?? []);
+  const nameStrip = opts.nameStrip ?? [];
+
+  const candidates = Object.keys(hass.states).filter((id) => {
+    if (!id.startsWith("binary_sensor.") || exclude.has(id)) return false;
+    const deviceClass = hass.states[id]?.attributes?.device_class;
+    return typeof deviceClass === "string" && OCCUPANCY_DEVICE_CLASSES.has(deviceClass);
+  });
+  if (candidates.length === 0) return [];
+
+  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
+    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
+    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
+    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
+  ]);
+  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
+  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
+  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+
+  // entity id -> device id, for every entity, so siblings resolve in one pass.
+  const byDevice = new Map<string, string[]>();
+  for (const entry of entityEntries) {
+    if (!entry.device_id) continue;
+    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entry.entity_id]);
+  }
+
+  const includeAreas = opts.includeAreas?.length ? new Set(opts.includeAreas) : undefined;
+
+  const sibling = (
+    deviceId: string | undefined,
+    match: (entityId: string) => boolean,
+  ): string | undefined => {
+    if (!deviceId) return undefined;
+    return (byDevice.get(deviceId) ?? []).find((id) => hass.states[id] && match(id));
+  };
+
+  const hasClass = (id: string, deviceClass: string): boolean =>
+    hass.states[id]?.attributes?.device_class === deviceClass;
+
+  const rooms = new Map<string, DiscoveredOccupancyRoom>();
+  for (const entity of candidates) {
+    const entry = entryByEntityId.get(entity);
+    const device = entry?.device_id ? deviceById.get(entry.device_id) : undefined;
+    const areaId = entry?.area_id ?? device?.area_id ?? undefined;
+    if (includeAreas && !(areaId && includeAreas.has(areaId))) continue;
+
+    const area = areaId ? areaById.get(areaId) : undefined;
+    const rawName =
+      area?.name ??
+      device?.name_by_user ??
+      device?.name ??
+      (hass.states[entity]?.attributes?.friendly_name as string | undefined) ??
+      entity;
+    const name = area?.name ? rawName : stripFallbackName(rawName, nameStrip);
+    const deviceId = entry?.device_id ?? undefined;
+
+    // Group by area, then by device, then stand alone — the same fallback
+    // ladder discoverClimateRooms uses, so a sensor with no area still shows
+    // up instead of being silently dropped.
+    const key = areaId ?? deviceId ?? entity;
+    const existing = rooms.get(key);
+    if (existing) {
+      existing.entities.push(entity);
+      existing.illuminanceEntity ??= sibling(deviceId, (id) => id.startsWith("sensor.") && hasClass(id, "illuminance"));
+      existing.batteryEntity ??= sibling(deviceId, (id) => id.startsWith("sensor.") && hasClass(id, "battery"));
+      existing.signalEntity ??= sibling(deviceId, (id) => id.startsWith("sensor.") && hasClass(id, "signal_strength"));
+      existing.timeoutEntity ??= sibling(deviceId, (id) => id.startsWith("number.") && /timeout|_delay(_|$)/i.test(id));
+      continue;
+    }
+    rooms.set(key, {
+      key,
+      entities: [entity],
+      areaId,
+      name,
+      icon: area?.icon ?? undefined,
+      illuminanceEntity: sibling(deviceId, (id) => id.startsWith("sensor.") && hasClass(id, "illuminance")),
+      batteryEntity: sibling(deviceId, (id) => id.startsWith("sensor.") && hasClass(id, "battery")),
+      // signal_strength is the device_class Zigbee2MQTT gives LQI/RSSI.
+      signalEntity: sibling(deviceId, (id) => id.startsWith("sensor.") && hasClass(id, "signal_strength")),
+      // Z2M exposes the motion-clear delay as a writable number, named
+      // differently per model, so it is matched by name. It must say "timeout"
+      // outright: matching "motion" alone also caught a camera's
+      // motion_detection_sensitivity, and offering that as a timeout stepper
+      // would have the user turning a completely different screw.
+      timeoutEntity: sibling(deviceId, (id) => id.startsWith("number.") && /timeout|_delay(_|$)/i.test(id)),
+    });
+  }
+  return [...rooms.values()];
+}

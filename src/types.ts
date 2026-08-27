@@ -1010,7 +1010,8 @@ export type M3CardConfig =
   | M3NasCardConfig
   | M3SupplyCardConfig
   | M3TodoCardConfig
-  | M3TimeCardConfig;
+  | M3TimeCardConfig
+  | M3OccupancyCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1122,6 +1123,48 @@ export interface M3TimeCardConfig {
   presets?: string[];
   show_date?: boolean;
   keep_seconds?: boolean;
+  accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export type OccupancySortMode = "occupied_first" | "name" | "last_active";
+
+export interface OccupancySensorConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+  illuminance_entity?: string;
+  battery_entity?: string;
+  signal_entity?: string;
+  timeout_entity?: string;
+}
+
+export interface M3OccupancyCardConfig {
+  type: string;
+  auto_discover?: boolean;
+  include_area?: string[];
+  exclude_entities?: string[];
+  sensors?: OccupancySensorConfig[];
+  name_strip?: string[];
+  show_timeline?: boolean;
+  timeline_hours?: number;
+  timeline_segments?: number;
+  sort?: OccupancySortMode;
+  max_visible?: number;
+  show_timeout?: boolean;
+  battery_warn?: number;
+  battery_critical?: number;
+  lqi_warn?: number;
+  name?: string;
+  icon?: string;
   accent_color?: string;
   accent_opacity?: number;
   text_color?: string;

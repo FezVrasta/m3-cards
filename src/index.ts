@@ -23,3 +23,4 @@ export * from "./m3-system-card";
 export * from "./m3-supply-card";
 export * from "./m3-todo-card";
 export * from "./m3-time-card";
+export * from "./m3-occupancy-card";
