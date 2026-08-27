@@ -253,26 +253,39 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
     }
   }
 
+  // Lives in the header beside the power chip rather than as a labelled row
+  // below the digits: a correction is a rare, deliberate act, and a full-width
+  // button for it competes with the reading itself for attention.
+  private _renderAdjustButton() {
+    if (!this._adjustTarget || this._adjusting) return nothing;
+    return html`
+      <div
+        class="adjust-open"
+        role="button"
+        tabindex="0"
+        aria-label=${this._t("counter_adjust")}
+        title=${this._t("counter_adjust")}
+        @click=${(e: Event) => {
+          // The header itself opens more-info, and this button sits inside it.
+          e.stopPropagation();
+          this._adjustError = "";
+          this._adjusting = true;
+        }}
+        @keydown=${activateOnKey((e: Event) => {
+          e.stopPropagation();
+          this._adjustError = "";
+          this._adjusting = true;
+        })}
+      >
+        <ha-icon icon="mdi:pencil-outline"></ha-icon>
+      </div>
+    `;
+  }
+
   private _renderAdjust(currentValue: number) {
     const target = this._adjustTarget;
     if (!target) return nothing;
-    if (!this._adjusting) {
-      return html`
-        <div
-          class="adjust-open"
-          role="button"
-          tabindex="0"
-          @click=${() => {
-            this._adjustError = "";
-            this._adjusting = true;
-          }}
-          @keydown=${activateOnKey(() => (this._adjusting = true))}
-        >
-          <ha-icon icon="mdi:pencil-outline"></ha-icon>
-          <span>${this._t("counter_adjust")}</span>
-        </div>
-      `;
-    }
+    if (!this._adjusting) return nothing;
     return html`
       <div class="adjust-row">
         <input
@@ -432,14 +445,21 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
             subtitle,
             onClick: moreInfo,
             right:
-              showPowerChip
+              showPowerChip || this._adjustTarget
                 ? html`
-                    <div
-                      class="power-chip"
-                      style=${`color: ${this._powerChipColor(powerValue)}; background: ${tintBackground(this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
-                    >
-                      <ha-icon icon="mdi:lightning-bolt"></ha-icon>
-                      <span>${this._formatNumber(powerValue, 0)} W</span>
+                    <div class="header-right">
+                      ${showPowerChip
+                        ? html`
+                            <div
+                              class="power-chip"
+                              style=${`color: ${this._powerChipColor(powerValue)}; background: ${tintBackground(this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
+                            >
+                              <ha-icon icon="mdi:lightning-bolt"></ha-icon>
+                              <span>${this._formatNumber(powerValue, 0)} W</span>
+                            </div>
+                          `
+                        : nothing}
+                      ${this._renderAdjustButton()}
                     </div>
                   `
                 : undefined,
@@ -636,23 +656,34 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
 
       /* ---- correcting the reading ---- */
 
-      .adjust-open {
-        align-self: flex-start;
-        display: inline-flex;
+      .header-right {
+        display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 6px 11px;
-        border-radius: 13px;
+        gap: 8px;
+      }
+
+      .adjust-open {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        opacity: 0.75;
+        opacity: 0.7;
         color: var(--m3p-secondary-text, var(--secondary-text-color));
-        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        transition: opacity 200ms ease;
+      }
+
+      .adjust-open:hover,
+      .adjust-open:focus-visible {
+        opacity: 1;
       }
 
       .adjust-open ha-icon {
-        --mdc-icon-size: 14px;
+        --mdc-icon-size: 15px;
       }
 
       .adjust-row {

@@ -790,6 +790,11 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
   private _renderWheel(field: Field): TemplateResult {
     const values = this._wheelValues(field);
     const current = values[this._wheelIndex(field)];
+    // In 12h the list starts at 12 and runs 1..11, so its first and last
+    // entries are not the range — a screen reader needs the actual bounds,
+    // not the scroll order.
+    const low = Math.min(...values);
+    const high = Math.max(...values);
     return html`
       <div
         class="wheel"
@@ -797,8 +802,8 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         role="spinbutton"
         tabindex="0"
         aria-valuenow=${current}
-        aria-valuemin=${values[0]}
-        aria-valuemax=${values[values.length - 1]}
+        aria-valuemin=${low}
+        aria-valuemax=${high}
         aria-label=${this._t(field === "hours" ? "time_hours" : "time_minutes")}
         @scroll=${this._onWheelScroll(field)}
         @touchstart=${stopSwipe}
