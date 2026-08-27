@@ -824,3 +824,39 @@ export const TODO_CLEAR_ARM_MS = 4000;
 // Long press to rename. Long enough not to fire on a normal tap-to-tick,
 // short enough not to feel like the card is ignoring you.
 export const TODO_LONG_PRESS_MS = 500;
+
+// ---- Time card ------------------------------------------------------------
+export const DEFAULT_TIME_RADIUS = RADIUS.card;
+export const DEFAULT_TIME_ICON = "mdi:clock-outline";
+export const DEFAULT_TIME_ACCENT = PALETTE.home;
+export const DEFAULT_TIME_MINUTE_STEP = 5;
+export const TIME_MINUTE_STEPS = [1, 5, 10, 15, 30] as const;
+export const TIME_HEADER_ICON_SIZE = 42;
+export const TIME_HEADER_ICON_RADIUS = 15;
+// Stepper column: a short button, a tall value field, a short button. The
+// outer corners stay round while the inner ones tuck in, so the three read as
+// one control rather than three separate buttons.
+export const TIME_FIELD_WIDTH = 62;
+export const TIME_FIELD_HEIGHT = 62;
+export const TIME_FIELD_RADIUS = 20;
+export const TIME_STEP_BUTTON_HEIGHT = 30;
+export const TIME_STEP_RADIUS_OUTER = 15;
+export const TIME_STEP_RADIUS_INNER = 8;
+export const TIME_DIGIT_FONT_SIZE = 30;
+export const TIME_SEPARATOR_FONT_SIZE = 26;
+export const TIME_APPLY_HEIGHT = 46;
+export const TIME_APPLY_RADIUS = 23;
+export const TIME_APPLY_RADIUS_ACTIVE = 14;
+export const TIME_APPLY_MORPH_MS = 400;
+// Long press: steady at first, then faster once it is clearly a hold rather
+// than a slow tap.
+export const TIME_REPEAT_MS = 300;
+export const TIME_REPEAT_FAST_MS = 120;
+export const TIME_REPEAT_ACCELERATE_AFTER_MS = 1000;
+// Below this width the 62px fields crowd the separator out.
+export const TIME_NARROW_BREAKPOINT = 280;
+export const TIME_FIELD_WIDTH_NARROW = 52;
+// Typing digits into a field: how long a half-entered number waits for its
+// second digit before it stands on its own.
+export const TIME_DIGIT_BUFFER_MS = 900;
+export const TIME_INSTANT_DEBOUNCE_MS = 800;

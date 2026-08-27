@@ -1000,7 +1000,8 @@ export type M3CardConfig =
   | M3UpdatesCardConfig
   | M3NasCardConfig
   | M3SupplyCardConfig
-  | M3TodoCardConfig;
+  | M3TodoCardConfig
+  | M3TimeCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1081,6 +1082,34 @@ export interface M3TodoCardConfig {
   show_clear_completed?: boolean;
   group_by_category?: boolean;
   reorderable?: boolean;
+  accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export type TimeCardStyle = "stepper" | "wheel" | "compact";
+export type TimeApplyMode = "button" | "instant";
+
+export interface M3TimeCardConfig {
+  type: string;
+  entity: string;
+  name?: string;
+  icon?: string;
+  subtitle?: string;
+  style?: TimeCardStyle;
+  minute_step?: number;
+  apply_mode?: TimeApplyMode;
+  show_revert?: boolean;
+  presets?: string[];
+  show_date?: boolean;
+  keep_seconds?: boolean;
   accent_color?: string;
   accent_opacity?: number;
   text_color?: string;
