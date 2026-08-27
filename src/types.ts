@@ -361,6 +361,15 @@ export interface M3CounterCardConfig {
   decimals?: number;
   digits?: number | "auto";
   show_ticker?: boolean;
+  /** Offers a control to correct the reading. */
+  adjustable?: boolean;
+  /**
+   * The writable entity the correction goes to. Left unset it is `entity`
+   * itself, which only works for a writable domain. Pointing it at a separate
+   * helper switches to offset mode: the helper is moved by the same amount
+   * the reading should move, which is what a template sensor needs.
+   */
+  adjust_entity?: string;
   accent_color?: string;
   accent_opacity?: number;
   cell_background?: string;

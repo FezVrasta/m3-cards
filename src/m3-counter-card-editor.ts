@@ -142,6 +142,13 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
       });
     }
     schema.push({ name: "show_ticker", selector: { boolean: {} } });
+    schema.push({ name: "adjustable", selector: { boolean: {} } });
+    if (this._config?.adjustable) {
+      schema.push({
+        name: "adjust_entity",
+        selector: { entity: { domain: ["input_number", "number"] } },
+      });
+    }
     return schema;
   }
 
@@ -175,6 +182,8 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
       digits_mode: "editor_counter_digits_mode",
       digits: "editor_counter_digits",
       show_ticker: "editor_counter_show_ticker",
+      adjustable: "editor_counter_adjustable",
+      adjust_entity: "editor_counter_adjust_entity",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -327,6 +336,8 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
       digits_mode: this._digitsMode,
       digits: typeof this._config.digits === "number" ? this._config.digits : 5,
       show_ticker: this._config.show_ticker ?? false,
+      adjustable: this._config.adjustable ?? false,
+      adjust_entity: this._config.adjust_entity,
     };
     const animationData = { animation: this._config.animation ?? "auto" };
 
@@ -355,6 +366,12 @@ export class M3CounterCardEditor extends LitElement implements LovelaceCardEdito
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            ${this._config.adjustable
+              ? html`
+                  <div class="hint">${this._t("editor_counter_adjust_hint")}</div>
+                  <div class="hint warn">${this._t("editor_counter_adjust_warning")}</div>
+                `
+              : nothing}
           </div>
         </ha-expansion-panel>
 

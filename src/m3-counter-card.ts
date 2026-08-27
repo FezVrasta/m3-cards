@@ -28,6 +28,8 @@ import {
   COUNTER_ROLL_DURATION_MS,
   COUNTER_ROLL_STAGGER_MS,
   COUNTER_POWER_CHIP_COLOR,
+  COUNTER_ADJUST_HEIGHT,
+  COUNTER_ADJUST_RADIUS,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
@@ -56,6 +58,8 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
 
   @state() private _config?: M3CounterCardConfig;
   @state() private _narrow = false;
+  @state() private _adjusting = false;
+  @state() private _adjustError = "";
 
   private _minIntegerDigits = DEFAULT_COUNTER_MIN_DIGITS;
   private _prevDigitByKey = new Map<string, string>();
@@ -205,6 +209,107 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
       this.requestUpdate();
     }, totalMs);
     this._animationTimers.set(key, timer);
+  }
+
+  // Which entity the correction is written to, and whether that means setting
+  // the value outright or shifting an offset by the difference.
+  private get _adjustTarget(): { entityId: string; mode: "value" | "offset" } | undefined {
+    const cfg = this._config;
+    if (!cfg?.adjustable) return undefined;
+    const target = cfg.adjust_entity || cfg.entity;
+    const domain = target.split(".")[0];
+    if (target !== cfg.entity) return { entityId: target, mode: "offset" };
+    // Writing the displayed entity only works where a set service exists;
+    // a plain sensor has none.
+    if (domain === "input_number" || domain === "number") return { entityId: target, mode: "value" };
+    return undefined;
+  }
+
+  private async _saveAdjust(raw: string): Promise<void> {
+    const target = this._adjustTarget;
+    const cfg = this._config;
+    if (!target || !cfg || !this.hass) return;
+    const wanted = parseFloat(raw.replace(",", "."));
+    if (Number.isNaN(wanted)) return;
+
+    const domain = target.entityId.split(".")[0];
+    let value = wanted;
+    if (target.mode === "offset") {
+      const shown = parseFloat(this.hass.states[cfg.entity]?.state ?? "");
+      const current = parseFloat(this.hass.states[target.entityId]?.state ?? "");
+      if (Number.isNaN(shown) || Number.isNaN(current)) return;
+      // The reading is sources + offset, so moving the offset by the shortfall
+      // moves the reading to the wanted value without the card needing to know
+      // what the sources are.
+      value = current + (wanted - shown);
+    }
+    try {
+      await this.hass.callService(domain, "set_value", { entity_id: target.entityId, value });
+      this._adjusting = false;
+      this._adjustError = "";
+    } catch (e) {
+      console.warn("m3-counter-card: could not write the correction", e);
+      this._adjustError = this._t("counter_adjust_failed");
+    }
+  }
+
+  private _renderAdjust(currentValue: number) {
+    const target = this._adjustTarget;
+    if (!target) return nothing;
+    if (!this._adjusting) {
+      return html`
+        <div
+          class="adjust-open"
+          role="button"
+          tabindex="0"
+          @click=${() => {
+            this._adjustError = "";
+            this._adjusting = true;
+          }}
+          @keydown=${activateOnKey(() => (this._adjusting = true))}
+        >
+          <ha-icon icon="mdi:pencil-outline"></ha-icon>
+          <span>${this._t("counter_adjust")}</span>
+        </div>
+      `;
+    }
+    return html`
+      <div class="adjust-row">
+        <input
+          class="adjust-input"
+          type="text"
+          inputmode="decimal"
+          .value=${Number.isNaN(currentValue) ? "" : String(currentValue)}
+          .placeholder=${this._t("counter_adjust_placeholder")}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter") this._saveAdjust((e.target as HTMLInputElement).value);
+            if (e.key === "Escape") this._adjusting = false;
+          }}
+        />
+        <div
+          class="adjust-btn save"
+          role="button"
+          tabindex="0"
+          @click=${(e: Event) => {
+            const input = (e.currentTarget as HTMLElement)
+              .parentElement?.querySelector<HTMLInputElement>(".adjust-input");
+            if (input) this._saveAdjust(input.value);
+          }}
+        >
+          ${this._t("counter_adjust_save")}
+        </div>
+        <div
+          class="adjust-btn"
+          role="button"
+          tabindex="0"
+          @click=${() => (this._adjusting = false)}
+        >
+          ${this._t("counter_adjust_cancel")}
+        </div>
+      </div>
+      <div class="adjust-caution">${this._t("counter_adjust_caution")}</div>
+      ${this._adjustError ? html`<div class="adjust-error">${this._adjustError}</div>` : nothing}
+    `;
   }
 
   protected render() {
@@ -366,6 +471,8 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
                 </div>
               `
             : nothing}
+
+          ${this._renderAdjust(rawValue)}
         </div>
       </ha-card>
     `;
@@ -525,6 +632,81 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
         font-size: 12px;
         opacity: 0.6;
         color: var(--m3p-secondary-text);
+      }
+
+      /* ---- correcting the reading ---- */
+
+      .adjust-open {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 11px;
+        border-radius: 13px;
+        cursor: pointer;
+        opacity: 0.75;
+        color: var(--m3p-secondary-text, var(--secondary-text-color));
+        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+      }
+
+      .adjust-open ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .adjust-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .adjust-input {
+        flex: 1;
+        min-width: 0;
+        height: ${COUNTER_ADJUST_HEIGHT}px;
+        box-sizing: border-box;
+        padding: 0 14px;
+        border: none;
+        outline: none;
+        border-radius: ${COUNTER_ADJUST_RADIUS}px;
+        font-size: 16px;
+        font-weight: 700;
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
+        color: var(--m3p-text, var(--primary-text-color));
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      }
+
+      .adjust-btn {
+        flex-shrink: 0;
+        height: ${COUNTER_ADJUST_HEIGHT}px;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        border-radius: ${COUNTER_ADJUST_RADIUS}px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--primary-text-color);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      }
+
+      .adjust-btn.save {
+        color: #1c1c1c;
+        background: var(--counter-accent);
+      }
+
+      .adjust-caution {
+        font-size: 10px;
+        line-height: 1.35;
+        opacity: 0.6;
+        color: var(--m3p-secondary-text, var(--secondary-text-color));
+      }
+
+      .adjust-error {
+        font-size: 11px;
+        color: var(--error-color, #e57368);
       }
     `,
   ];

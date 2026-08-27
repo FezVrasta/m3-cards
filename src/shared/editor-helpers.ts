@@ -123,6 +123,12 @@ export function listRow(
 // Shared editor chrome: expansion-panel spacing, ha-form block display,
 // hint text, and the color-row/list-row input styling above.
 export const editorStyles = css`
+  /* A hint that is a caution rather than an explanation. */
+  .hint.warn {
+    color: var(--error-color, #e57368);
+    opacity: 0.9;
+  }
+
   .editor {
     display: flex;
     flex-direction: column;

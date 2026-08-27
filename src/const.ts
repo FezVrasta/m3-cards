@@ -885,3 +885,6 @@ export const TIME_WHEEL_ACTIVE_FONT_SIZE = 22;
 export const TIME_WHEEL_IDLE_FONT_SIZE = 20;
 // How long the wheel must sit still before its position counts as a choice.
 export const TIME_WHEEL_SETTLE_MS = 140;
+// Counter card: the inline "correct the reading" editor.
+export const COUNTER_ADJUST_HEIGHT = 44;
+export const COUNTER_ADJUST_RADIUS = 14;
