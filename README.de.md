@@ -133,7 +133,7 @@ Live-Werte.</sub>
 Karte über den Dashboard-Editor hinzufügen (Suche nach „M3 Climate Card“) oder
 per YAML:
 
-![Climate Card](docs/images/climate-card.png)
+<img src="docs/images/climate-card.png" alt="Climate Card" width="440">
 
 ```yaml
 type: custom:m3-climate-card
@@ -233,7 +233,7 @@ oben, Name + „Ist-Temperatur · Modus“ darunter, Minus/Zieltemperatur/Plus-S
 unten. Kein Preset-, Sensor- oder Modus-Zeilen-Support — dafür passen zwei
 Kacheln bequem nebeneinander auf ein Handydisplay.
 
-![Climate Card Mini](docs/images/climate-card-mini.png)
+<img src="docs/images/climate-card-mini.png" alt="Climate Card Mini" width="440">
 
 ```yaml
 type: custom:m3-climate-card-mini
@@ -284,7 +284,7 @@ More-Info-Dialog.
 Generische Karte für Entities außerhalb von `climate` (Buttons, Schalter,
 Lichter, Szenen, Türsensoren, ...) im selben Design.
 
-![Button Card](docs/images/button-card.png)
+<img src="docs/images/button-card.png" alt="Button Card" width="440">
 
 ```yaml
 type: custom:m3-button-card
@@ -373,7 +373,7 @@ Fortschrittskarte für Haushaltsgeräte mit Status/Prozent/Restzeit-Sensoren
 ist ein Material-3-Expressive-„Wavy“-Indikator: ein wellenförmiger, animierter
 aktiver Teil, eine Lücke, ein flacher Track und ein Endpunkt-Dot.
 
-![Progress Card](docs/images/progress-card.png)
+<img src="docs/images/progress-card.png" alt="Progress Card" width="440">
 
 ```yaml
 type: custom:m3-progress-card
@@ -455,7 +455,7 @@ state_colors:
 Balkendiagramm für Energiewerte (Solarerzeugung, Verbrauch, ...). Über `mode`
 gibt es zwei grundsätzlich verschiedene Darstellungen:
 
-![Energy Card](docs/images/energy-card.png)
+<img src="docs/images/energy-card.png" alt="Energy Card" width="440">
 
 - **`mode: consumption`** (Standard) — Balken pro Tag oder pro Stunde für
   eine einzelne Entity, siehe `period` unten.
@@ -646,7 +646,7 @@ zweier Größen (z.B. Netzbezug vs. Einspeisung) als Halbkreis-Bogen mit
 Nettowert in der Mitte. Zwei Segmente mit einer kleinen Lücke am
 Übergangspunkt — die Lücke selbst ist der „Zeiger“, keine separate Nadel.
 
-![Gauge Card](docs/images/gauge-card.png)
+<img src="docs/images/gauge-card.png" alt="Gauge Card" width="440">
 
 ```yaml
 type: custom:m3-gauge-card
@@ -700,7 +700,7 @@ Knoten-Diagramm der heutigen Energieflüsse zwischen Solar, Netz, Batterie und
 Haus, mit animierten Fließpunkten entlang der Verbindungslinien und einem
 Autarkie-Balken darunter.
 
-![Energy Flow Card](docs/images/energy-flow-card.png)
+<img src="docs/images/energy-flow-card.png" alt="Energy Flow Card" width="440">
 
 ```yaml
 type: custom:m3-energy-flow-card
@@ -756,7 +756,7 @@ stehen. Nicht auf Strom beschränkt: Einheit und Nachkommastellen kommen von
 der Entity, `power_entity` (Leistungs-Chip) ist rein optional — genauso
 geeignet für Gas- oder Wasserzähler (m³) wie für Stromzähler (kWh).
 
-![Counter Card](docs/images/counter-card.png)
+<img src="docs/images/counter-card.png" alt="Counter Card" width="440">
 
 ```yaml
 type: custom:m3-counter-card
@@ -817,7 +817,7 @@ Ersetzt eine `entities`-Kachel für Steckdosen-/Leistungsübersichten: zeigt
 Leistungssensoren als sortierte Liste mit Anteilsbalken, blendet inaktive
 Geräte standardmäßig hinter einem Aufklappbereich aus.
 
-![Power List Card](docs/images/power-list-card.png)
+<img src="docs/images/power-list-card.png" alt="Power List Card" width="440">
 
 ```yaml
 type: custom:m3-power-list-card
@@ -882,7 +882,7 @@ Netzbilanz, Verbrauch, Erzeugung und optionale Teilsummen in einer Karte mit
 klarer Hierarchie zusammen. Reine Live-Werte aus `hass.states`, keine
 Statistik-Abfragen nötig.
 
-![Power Summary Card](docs/images/power-summary-card.png)
+<img src="docs/images/power-summary-card.png" alt="Power Summary Card" width="440">
 
 ```yaml
 type: custom:m3-power-summary-card
@@ -958,7 +958,7 @@ Ersetzt die native `energy-devices-graph`-Karte: zeigt die größten
 Einzelverbraucher eines Zeitraums als Ranking, standardmäßig gespeist aus
 der Geräte-Sektion des HA-Energie-Dashboards.
 
-![Top Consumers Card](docs/images/top-consumers-card.png)
+<img src="docs/images/top-consumers-card.png" alt="Top Consumers Card" width="440">
 
 ```yaml
 type: custom:m3-top-consumers-card
@@ -1047,7 +1047,7 @@ kann jeder kumulative Energie-Sensor sein (bei
 `price_source: energy_dashboard` wird die Netzbezugskosten-Statistik
 automatisch verwendet).
 
-![Cost Card](docs/images/cost-card.png)
+<img src="docs/images/cost-card.png" alt="Cost Card" width="440">
 
 ```yaml
 type: custom:m3-cost-card
@@ -1136,7 +1136,7 @@ Springen, Pfeiltasten für ±5 % (Shift für ±1 %). Der Slider nutzt
 `touch-action: none`, damit Wischen auf dem Handy nicht mit dem
 Seiten-Scroll kollidiert.
 
-![Light Card](docs/images/light-card.png)
+<img src="docs/images/light-card.png" alt="Light Card" width="440">
 
 ```yaml
 type: custom:m3-light-card
@@ -1171,7 +1171,7 @@ Power-Button, keinen Slider.
 Schwellwert-Einfärbung (kritisch/niedrig/mittel/ok), Balken pro Zeile und
 Aufklappbereich für die restlichen Geräte.
 
-![Battery Card](docs/images/battery-card.png)
+<img src="docs/images/battery-card.png" alt="Battery Card" width="440">
 
 ```yaml
 type: custom:m3-battery-card
@@ -1256,7 +1256,7 @@ Wetterkarte mit Header (Icon/Temperatur/Zustand/Chips), geglätteter
 Temperaturkurve mit Verlaufsfüllung, Niederschlagsbalken je Stunde,
 Sonnenauf-/-untergangsmarker in der Kurve und optionaler Tagesübersicht.
 
-![Weather Card](docs/images/weather-card.png)
+<img src="docs/images/weather-card.png" alt="Weather Card" width="440">
 
 ```yaml
 type: custom:m3-weather-card
@@ -1317,7 +1317,7 @@ Anwesenheitsübersicht als Avatar-Raster für `person`- und
 Initialen-Avatar, relativer Zeitangabe („seit 5 Min.“) und optional
 eingebetteter Karte (`hui-map-card`).
 
-![Presence Card](docs/images/presence-card.png)
+<img src="docs/images/presence-card.png" alt="Presence Card" width="440">
 
 ```yaml
 type: custom:m3-presence-card
@@ -1365,7 +1365,7 @@ interpolierter Fortschritts-Wellen-Slider, Transportsteuerung
 (feature-abhängig ein-/ausgeblendet), Lautstärke-Wellen-Slider und
 Quellenauswahl.
 
-![Media Card](docs/images/media-card.png)
+<img src="docs/images/media-card.png" alt="Media Card" width="440">
 
 ```yaml
 type: custom:m3-media-card
@@ -1401,7 +1401,7 @@ Raum: eine Kachel pro Raum (Temperatur + Feuchte zusammengeführt), eine
 waagerechte Vergleichsskala mit einem Punkt pro Raum, und ein Hinweis-Chip
 im Header für den Raum, der am weitesten vom Komfortbereich abweicht.
 
-![Climate Overview Card](docs/images/climate-overview-card.png)
+<img src="docs/images/climate-overview-card.png" alt="Climate Overview Card" width="440">
 
 ```yaml
 type: custom:m3-climate-overview-card
@@ -1484,7 +1484,7 @@ festes Geräte-Raster (Taglicht, Nachtlicht, Pumpe, Heizer, CO2), ein
 Tagesbogen-Beleuchtungsplan, optionale Kamera und Status-Chips für alles,
 was Aufmerksamkeit braucht.
 
-![M3 Aquarium Card](docs/images/aquarium-card.png)
+<img src="docs/images/aquarium-card.png" alt="M3 Aquarium Card" width="440">
 
 ```yaml
 type: custom:m3-aquarium-card
@@ -1631,7 +1631,7 @@ Boxen für Core/Betriebssystem/Supervisor mit Versionssprung und
 Install-Button, Zeilen für Add-ons, HACS und Firmware, dazu ein
 Aufklappbereich für alles, was bereits aktuell ist.
 
-![M3 Updates Card](docs/images/updates-card.png)
+<img src="docs/images/updates-card.png" alt="M3 Updates Card" width="440">
 
 <sub>Screenshot mit simulierten Update-Daten, damit Kern-Boxen, MAJOR-Badge
 und laufende Installation gleichzeitig sichtbar sind.</sub>
@@ -1777,9 +1777,9 @@ optional der Zustand der Syncthing-Ordner. Die NAS Card liest die
 **Glances**-Integration, die System Card die **System-Monitor**-Integration —
 sonst sind sie identisch.
 
-![M3 NAS Card](docs/images/nas-card.png)
+<img src="docs/images/nas-card.png" alt="M3 NAS Card" width="440">
 
-![M3 System Card](docs/images/system-card.png)
+<img src="docs/images/system-card.png" alt="M3 System Card" width="440">
 
 <sub>Oben die NAS Card mit zwei Volumes und den Syncthing-Ordnern, darunter
 die System Card für die eigene Instanz. Die Laufwerksnamen stammen aus
@@ -1906,7 +1906,7 @@ Verbrauchsmaterial — Waschmittel-Pods, Spülmaschinentabs, Filter, Tierfutter
 steht groß als Hero mit einem Punkt je verbleibender Einheit, der Rest folgt
 als kompakte Zeilen; ein Tap darauf macht ihn zum Hero.
 
-![Supply Card](docs/images/supply-card.png)
+<img src="docs/images/supply-card.png" alt="Supply Card" width="440">
 
 ```yaml
 type: custom:m3-supply-card
@@ -2041,7 +2041,7 @@ Einkaufs- und Aufgabenlisten im Designsystem des Projekts, als Ersatz für die
 eingebaute `todo-list`-Karte von Home Assistant. Eintragen in einer Zeile,
 Abhaken per Tap, und Erledigtes verschwindet in einem Aufklappbereich.
 
-![Todo Card](docs/images/todo-card.png)
+<img src="docs/images/todo-card.png" alt="Todo Card" width="440">
 
 ```yaml
 type: custom:m3-todo-card
@@ -2112,7 +2112,7 @@ mit `device_class: occupancy`/`motion`/`presence` nach Bereich (Fallback:
 Gerät, dann einzelner Sensor). Eine optionale Zeitleiste zeigt, wann ein Raum
 in den letzten Stunden belegt war.
 
-![Occupancy Card](docs/images/occupancy-card.png)
+<img src="docs/images/occupancy-card.png" alt="Occupancy Card" width="440">
 
 ```yaml
 type: custom:m3-occupancy-card
@@ -2147,7 +2147,7 @@ zwei Schaltern) laufen über `entity_type: switch_pair`. Ein `group`-Modus
 fasst mehrere Rollläden — oder Schalterpaare — mit Sammelsteuerung in einer
 Karte zusammen.
 
-![Cover Card](docs/images/cover-card.png)
+<img src="docs/images/cover-card.png" alt="Cover Card" width="440">
 
 ```yaml
 # Einzeln
@@ -2196,7 +2196,7 @@ trocken ist, unübersehbar im Alarm — inklusive direkter Absperrung. Erkennt
 Batterie-Sensor jedes Melders und färbt die ganze Karte rot, sobald einer
 Wasser meldet.
 
-![Leak Card](docs/images/leak-card.png)
+<img src="docs/images/leak-card.png" alt="Leak Card" width="440">
 
 ```yaml
 type: custom:m3-leak-card
@@ -2235,7 +2235,7 @@ Abholung ist (z. B. Waste Collection Schedule mit
 automatisch geleert — reine Information) und **reminder** (du stellst selbst
 raus — eskaliert kurz vor dem Termin mit einem Rausgestellt-Knopf).
 
-![Waste Card](docs/images/waste-card.png)
+<img src="docs/images/waste-card.png" alt="Waste Card" width="440">
 
 ```yaml
 type: custom:m3-waste-card
@@ -2268,7 +2268,7 @@ Eine kompakte Zeitauswahl für einen `input_datetime`-Helfer, mit optionalem
 Übernehmen-Knopf und Preset-Chips. Drei Eingabe-Varianten (Stepper,
 Scrollräder oder segmentierte Anzeige).
 
-![Time Card](docs/images/time-card.png)
+<img src="docs/images/time-card.png" alt="Time Card" width="440">
 
 ```yaml
 type: custom:m3-time-card
