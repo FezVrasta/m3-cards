@@ -4,9 +4,41 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
-## [1.9.1]
+## [2.0.0]
+
+Großes Funktions-Release: fünf neue Karten, optionale Benachrichtigungen für
+mehrere Karten und eine von Grund auf neu strukturierte README. Enthält alle
+seit 1.9.0 gesammelten Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat
+veröffentlicht und ist hier aufgegangen).
 
 ### Neu
+- **M3 Cover Card** (`custom:m3-cover-card`): Rollladen- und
+  Abdeckungssteuerung, die sich an die Fähigkeiten der Entität anpasst —
+  Position, Lamellen-Neigung oder nur Auf/Zu, je nach `supported_features`.
+  Einzel- und Gruppenmodus. Für Geräte ohne eigene Cover-Entität — etwa
+  FingerBot-Antriebe an getrennten Schaltern — gibt es den `switch_pair`-Modus
+  mit Auf-/Ab-/(optional) Stopp-Schalter; wo das Gerät keine Rückmeldung
+  liefert, zeigt ein kurzes Tastenfeedback den ausgelösten Befehl.
+- **M3 Leak Card** (`custom:m3-leak-card`): Überblick über Feuchte- und
+  Leck-Sensoren mit den Zuständen OK, Alarm und „veraltet" (kein aktuelles
+  Update). Optionaler Absperr-Knopf, der die Domäne der Absperr-Entität
+  erkennt (`valve` / `switch` / `cover`). Optionale Benachrichtigung bei
+  Wasseralarm.
+- **M3 Waste Card** (`custom:m3-waste-card`): Abfuhrtermine als Hero mit
+  „nächste Abfuhr in N Tagen", einer Zeitleiste über die nächsten zwei Wochen
+  und einer Zeile je Tonne. Info- und Erinnerungsmodus, Hero-Icon einzeln oder
+  mehrfach („N Tonnen"). Optionale Erinnerung zum Rausstellen zur eingestellten
+  Uhrzeit. Erwartet Sensoren mit den Tagen bis zur Abfuhr (z. B. aus der
+  Integration Waste Collection Schedule).
+- **M3 Occupancy Card** (`custom:m3-occupancy-card`): Belegung nach Räumen
+  statt nach einzelnen Sensoren. Fasst Präsenz-/Bewegungssensoren je Raum
+  zusammen, zeigt „X von Y Räumen belegt" und je Raum „belegt/frei seit …".
+  Automatische Erkennung über Bereiche oder eine manuelle Sensorliste.
+  Optionale Benachrichtigung, wenn ein überwachter Sensor auslöst.
+- **M3 Time Card** (`custom:m3-time-card`): Bearbeitet `input_datetime`-Helfer
+  im Designsystem des Projekts, in mehreren Darstellungsvarianten
+  (Stepper-Felder oder Scroll-Räder). Die Sichtbarkeit des
+  „Übernehmen"-Knopfs ist einstellbar.
 - **M3 Todo Card** (`custom:m3-todo-card`): Einkaufs- und Aufgabenlisten im
   Designsystem des Projekts, als Ersatz für HAs eingebaute `todo-list`-Karte.
   Header mit Zähler-Chip, Eingabezeile mit Radius-Morph beim Fokus, Einträge
@@ -15,11 +47,27 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Einträge landen wahlweise oben oder unten in der Liste (`add_position`), und
   doppelte Einträge werden abgefangen: statt einer zweiten identischen Zeile
   pulst der vorhandene Eintrag kurz auf (`prevent_duplicates`).
-- Schnellwahl-Chips über der Liste, gespeist aus einer festen Liste, aus zuvor
-  abgehakten Einträgen oder aus den M3 Supply Cards des Dashboards — dort
+- Schnellwahl-Chips über der Todo-Liste, gespeist aus einer festen Liste, aus
+  zuvor abgehakten Einträgen oder aus den M3 Supply Cards des Dashboards — dort
   hinterlegte Einkaufstexte erscheinen als Chip, der knappste Vorrat zuerst.
-- Langes Drücken öffnet eine Zeile zum Umbenennen oder Löschen. Optional
+- Langes Drücken öffnet eine Todo-Zeile zum Umbenennen oder Löschen. Optional
   Gruppierung nach `Kategorie: Artikel` und Umsortieren per Ziehgriff.
+- Gemeinsame Benachrichtigungs-Infrastruktur für Occupancy-, Leak- und
+  Waste-Karte: ein „Benachrichtigung"-Panel im Editor mit Dienst-Auswahl,
+  optionalem Titel/Text und einem Schalter. Es legt eine — standardmäßig
+  deaktivierte — Automatisierung an; Occupancy und Leak lösen bei einem
+  Sensorwechsel aus, Waste zeitgesteuert zur Erinnerungszeit.
+
+### Geändert
+- **M3 Counter Card**: Optionale Korrektur des Zählerstands direkt im Header
+  (opt-in und mit Warnhinweis), plus Fix der ARIA-Bereichsangabe im
+  12-Stunden-Format.
+- Rad-Drags der neuen Zeit-/Wähl-Elemente werden von Swipe-Plugins des
+  Dashboards abgeschirmt, damit ein Drehen am Rad nicht die Ansicht wechselt.
+- README von Grund auf neu strukturiert: ein Einsteiger-Katalog nach
+  Themenbereichen, je Karte Code, Erklärung und ein eigenes Bild sowie ein
+  aktualisiertes Gesamtbild mit allen Karten. Beispiel-Entitäts-IDs
+  anonymisiert.
 
 ## [1.9.0]
 
