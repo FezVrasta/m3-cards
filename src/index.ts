@@ -24,3 +24,6 @@ export * from "./m3-supply-card";
 export * from "./m3-todo-card";
 export * from "./m3-time-card";
 export * from "./m3-occupancy-card";
+export * from "./m3-cover-card";
+export * from "./m3-leak-card";
+export * from "./m3-waste-card";

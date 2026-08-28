@@ -986,6 +986,127 @@ export interface M3UpdatesCardConfig extends NotifyConfigBase {
   card_version?: string;
 }
 
+export interface SwitchPairConfig {
+  up_entity?: string;
+  down_entity?: string;
+  stop_entity?: string;
+}
+
+export interface CoverEntityConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+}
+
+export interface M3CoverCardConfig {
+  type: string;
+  mode?: "single" | "group";
+  /** single mode: the cover (or, with entity_type switch_pair, ignored). */
+  entity?: string;
+  /** group mode: one row per cover. */
+  entities?: (string | CoverEntityConfig)[];
+  /** "cover" (default) or "switch_pair" for up/down/stop switch relays. */
+  entity_type?: "cover" | "switch_pair";
+  up_entity?: string;
+  down_entity?: string;
+  stop_entity?: string;
+  name?: string;
+  icon?: string;
+  device_class?: string;
+  show_preview?: boolean;
+  slider_style?: "plain" | "wavy";
+  show_master?: boolean;
+  row_tap_action?: "more-info" | "toggle";
+  invert_position?: boolean;
+  tilt_step?: number;
+  /** Seconds a positionless cover takes end to end; drives optimistic UI. */
+  travel_time?: number;
+  accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export interface LeakSensorConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+  area?: string;
+  battery_entity?: string;
+}
+
+export interface M3LeakCardConfig {
+  type: string;
+  auto_discover?: boolean;
+  include_area?: string[];
+  exclude_entities?: string[];
+  sensors?: LeakSensorConfig[];
+  name_strip?: string[];
+  valve_entity?: string;
+  siren_entity?: string;
+  ack_entity?: string;
+  confirm_shutoff?: boolean;
+  stale_hours?: number;
+  battery_warn?: number;
+  battery_critical?: number;
+  test_interval_days?: number;
+  last_test_entity?: string;
+  collapse_ok?: boolean;
+  name?: string;
+  icon?: string;
+  accent_color?: string;
+  alarm_color?: string;
+  stale_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export interface WasteEntityConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface M3WasteCardConfig {
+  type: string;
+  mode?: "info" | "reminder";
+  entities?: (string | WasteEntityConfig)[];
+  auto_discover?: boolean;
+  name_strip?: string[];
+  hero_primary?: "days" | "weekday";
+  hero_icon?: "first" | "multi";
+  show_timeline?: boolean;
+  timeline_days?: number;
+  max_rows?: number;
+  reminder_offset?: number;
+  reminder_time?: string;
+  ack_entity?: string;
+  name?: string;
+  icon?: string;
+  accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
 export type M3CardConfig =
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
@@ -1011,7 +1132,10 @@ export type M3CardConfig =
   | M3SupplyCardConfig
   | M3TodoCardConfig
   | M3TimeCardConfig
-  | M3OccupancyCardConfig;
+  | M3OccupancyCardConfig
+  | M3CoverCardConfig
+  | M3LeakCardConfig
+  | M3WasteCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */

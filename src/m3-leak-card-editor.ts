@@ -3,10 +3,10 @@ import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
   LovelaceCardEditor,
-  M3OccupancyCardConfig,
-  OccupancySensorConfig,
+  M3LeakCardConfig,
+  LeakSensorConfig,
 } from "./types";
-import { DEFAULT_OCCUPANCY_RADIUS, DEFAULT_OCCUPANCY_NAME_STRIP } from "./const";
+import { DEFAULT_LEAK_RADIUS } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
@@ -18,33 +18,35 @@ import {
   type AppearanceState,
 } from "./shared/appearance-editor";
 
-@customElement("m3-occupancy-card-editor")
-export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEditor {
+@customElement("m3-leak-card-editor")
+export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @state() private _config?: M3OccupancyCardConfig;
+  @state() private _config?: M3LeakCardConfig;
   @state() private _appearance: AppearanceState = {
     showCustomRadius: false,
     showCorners: false,
     cornerCustom: {},
   };
 
-  public setConfig(config: M3OccupancyCardConfig): void {
+  public setConfig(config: M3LeakCardConfig): void {
     this._config = config;
-    this._appearance = initAppearanceState(config, DEFAULT_OCCUPANCY_RADIUS);
+    this._appearance = initAppearanceState(config, DEFAULT_LEAK_RADIUS);
   }
 
   private get _language(): string {
     return this.hass?.locale?.language ?? this.hass?.language ?? "en";
   }
-
   private _t(key: TranslationKey): string {
     return localize(key, this._language);
   }
-
-  private _emit(config: M3OccupancyCardConfig): void {
+  private _emit(config: M3LeakCardConfig): void {
     this._config = config;
     fireEvent(this, "config-changed", { config });
+  }
+
+  private get _sensors(): LeakSensorConfig[] {
+    return this._config?.sensors ?? [];
   }
 
   private _sensorsSchema(): SchemaEntry[] {
@@ -52,136 +54,107 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
     if (this._config?.auto_discover ?? true) {
       schema.push(
         { name: "include_area", selector: { area: { multiple: true } } },
-        {
-          name: "exclude_entities",
-          selector: { entity: { domain: "binary_sensor", multiple: true } },
-        },
+        { name: "exclude_entities", selector: { entity: { domain: "binary_sensor", multiple: true } } },
       );
     }
     return schema;
   }
 
-  // Manual sensors: one presence/motion binary_sensor per row. Shown only when
-  // auto-discovery is off — a manual `sensors:` list overrides discovery
-  // entirely in the card, so mixing the two would just hide the discovered set.
-  private get _sensors(): OccupancySensorConfig[] {
-    return this._config?.sensors ?? [];
-  }
-
   private _sensorSchema(): SchemaEntry[] {
     return [
-      {
-        name: "entity",
-        required: true,
-        selector: { entity: { domain: "binary_sensor" } },
-      },
+      { name: "entity", required: true, selector: { entity: { domain: "binary_sensor" } } },
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
+      { name: "battery_entity", selector: { entity: { domain: "sensor", device_class: "battery" } } },
     ];
   }
 
-  private _sensorChanged(index: number, ev: CustomEvent): void {
-    if (!this._config) return;
-    const sensors = [...this._sensors];
-    const value = ev.detail.value as OccupancySensorConfig;
-    // Keep the sibling entities the code editor may have set, but drop the
-    // basic fields when cleared so the YAML stays free of empty strings.
-    sensors[index] = {
-      ...sensors[index],
-      entity: value.entity,
-      ...(value.name ? { name: value.name } : { name: undefined }),
-      ...(value.icon ? { icon: value.icon } : { icon: undefined }),
-    };
-    if (!sensors[index].name) delete sensors[index].name;
-    if (!sensors[index].icon) delete sensors[index].icon;
-    this._emit({ ...this._config, sensors });
+  private _shutoffSchema(): SchemaEntry[] {
+    return [
+      { name: "valve_entity", selector: { entity: { domain: ["valve", "switch", "cover"] } } },
+      { name: "confirm_shutoff", selector: { boolean: {} } },
+      { name: "siren_entity", selector: { entity: { domain: ["siren", "switch"] } } },
+      { name: "ack_entity", selector: { entity: { domain: "input_boolean" } } },
+    ];
   }
 
-  private _addSensor(): void {
-    if (!this._config) return;
-    this._emit({ ...this._config, sensors: [...this._sensors, { entity: "" }] });
-  }
-
-  private _removeSensor(index: number): void {
-    if (!this._config) return;
-    this._emit({ ...this._config, sensors: this._sensors.filter((_, i) => i !== index) });
+  private _monitorSchema(): SchemaEntry[] {
+    return [
+      { name: "stale_hours", selector: { number: { min: 1, max: 168, mode: "box", unit_of_measurement: "h" } } },
+      { name: "battery_warn", selector: { number: { min: 0, max: 100, mode: "box", unit_of_measurement: "%" } } },
+      { name: "battery_critical", selector: { number: { min: 0, max: 100, mode: "box", unit_of_measurement: "%" } } },
+      { name: "test_interval_days", selector: { number: { min: 0, max: 365, mode: "box", unit_of_measurement: "d" } } },
+      { name: "last_test_entity", selector: { entity: { domain: "input_datetime" } } },
+    ];
   }
 
   private _displaySchema(): SchemaEntry[] {
     return [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
-      {
-        name: "sort",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "occupied_first", label: this._t("editor_occupancy_sort_occupied") },
-              { value: "name", label: this._t("editor_occupancy_sort_name") },
-              { value: "last_active", label: this._t("editor_occupancy_sort_last_active") },
-            ],
-          },
-        },
-      },
-      { name: "max_visible", selector: { number: { min: 1, max: 30, mode: "box" } } },
-    ];
-  }
-
-  private _animationSchema(): SchemaEntry[] {
-    return [
-      {
-        name: "animation",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "auto", label: this._t("editor_progress_animation_auto") },
-              { value: "on", label: this._t("editor_progress_animation_on") },
-              { value: "off", label: this._t("editor_progress_animation_off") },
-            ],
-          },
-        },
-      },
+      { name: "collapse_ok", selector: { boolean: {} } },
     ];
   }
 
   private _computeLabel = (schema: SchemaEntry): string => {
-    const labelMap: Record<string, TranslationKey> = {
-      auto_discover: "editor_occupancy_auto_discover",
+    const map: Record<string, TranslationKey> = {
+      auto_discover: "editor_leak_auto_discover",
       include_area: "editor_occupancy_include_area",
       exclude_entities: "editor_occupancy_exclude",
       entity: "editor_entity",
       name: "editor_name",
       icon: "editor_icon",
-      sort: "editor_occupancy_sort",
-      max_visible: "editor_occupancy_max_visible",
+      battery_entity: "editor_leak_battery_entity",
+      valve_entity: "editor_leak_valve_entity",
+      confirm_shutoff: "editor_leak_confirm_shutoff",
+      siren_entity: "editor_leak_siren_entity",
+      ack_entity: "editor_leak_ack_entity",
+      stale_hours: "editor_leak_stale_hours",
+      battery_warn: "editor_leak_battery_warn",
+      battery_critical: "editor_leak_battery_critical",
+      test_interval_days: "editor_leak_test_interval",
+      last_test_entity: "editor_leak_last_test",
+      collapse_ok: "editor_leak_collapse_ok",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
     };
-    const key = labelMap[schema.name];
+    const key = map[schema.name];
     return key ? this._t(key) : schema.name;
   };
 
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
-    this._emit({
-      ...this._config,
-      ...(ev.detail.value as Record<string, unknown>),
-    } as M3OccupancyCardConfig);
+    this._emit({ ...this._config, ...(ev.detail.value as Record<string, unknown>) } as M3LeakCardConfig);
   }
 
-  private _colorChanged(
-    field: "accent_color" | "text_color" | "secondary_text_color" | "card_background",
-    value: string,
-  ): void {
+  private _sensorChanged(index: number, ev: CustomEvent): void {
     if (!this._config) return;
-    if (value) {
-      this._emit({ ...this._config, [field]: value });
-    } else {
+    const sensors = [...this._sensors];
+    const value = ev.detail.value as LeakSensorConfig;
+    sensors[index] = {
+      entity: value.entity,
+      ...(value.name ? { name: value.name } : {}),
+      ...(value.icon ? { icon: value.icon } : {}),
+      ...(value.battery_entity ? { battery_entity: value.battery_entity } : {}),
+    };
+    this._emit({ ...this._config, sensors });
+  }
+  private _addSensor(): void {
+    if (!this._config) return;
+    this._emit({ ...this._config, sensors: [...this._sensors, { entity: "" }] });
+  }
+  private _removeSensor(index: number): void {
+    if (!this._config) return;
+    this._emit({ ...this._config, sensors: this._sensors.filter((_, i) => i !== index) });
+  }
+
+  private _colorChanged(field: "accent_color" | "text_color" | "secondary_text_color" | "card_background", value: string): void {
+    if (!this._config) return;
+    if (value) this._emit({ ...this._config, [field]: value });
+    else {
       const { [field]: _removed, ...rest } = this._config;
-      this._emit(rest as M3OccupancyCardConfig);
+      this._emit(rest as M3LeakCardConfig);
     }
   }
 
@@ -191,29 +164,21 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
     this._appearance = { ...this._appearance, showCustomRadius: patch.showCustomRadius };
     if (patch.radius !== undefined) this._emit({ ...this._config, radius: patch.radius });
   }
-
   private _cornersToggleChanged(ev: CustomEvent): void {
     if (!this._config) return;
     const showCorners = ev.detail.value.use_corners as boolean;
     this._appearance = { ...this._appearance, showCorners };
     if (!showCorners) {
       const { corners: _removed, ...rest } = this._config;
-      this._emit(rest as M3OccupancyCardConfig);
+      this._emit(rest as M3LeakCardConfig);
     }
   }
-
   private _cornerPresetChanged(key: string, ev: CustomEvent): void {
     if (!this._config) return;
     const patch = cornerPresetPatch(ev.detail.value[key] as string);
-    this._appearance = {
-      ...this._appearance,
-      cornerCustom: { ...this._appearance.cornerCustom, [key]: patch.custom },
-    };
-    if (patch.px !== undefined) {
-      this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: patch.px } });
-    }
+    this._appearance = { ...this._appearance, cornerCustom: { ...this._appearance.cornerCustom, [key]: patch.custom } };
+    if (patch.px !== undefined) this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: patch.px } });
   }
-
   private _cornerValueChanged(key: string, ev: CustomEvent): void {
     if (!this._config) return;
     const px = ev.detail.value[key] as number;
@@ -222,24 +187,34 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
 
   protected render() {
     if (!this.hass || !this._config) return nothing;
-
     const sensorsData = {
       auto_discover: this._config.auto_discover ?? true,
       include_area: this._config.include_area ?? [],
       exclude_entities: this._config.exclude_entities ?? [],
     };
+    const shutoffData = {
+      valve_entity: this._config.valve_entity,
+      confirm_shutoff: this._config.confirm_shutoff ?? false,
+      siren_entity: this._config.siren_entity,
+      ack_entity: this._config.ack_entity,
+    };
+    const monitorData = {
+      stale_hours: this._config.stale_hours ?? 6,
+      battery_warn: this._config.battery_warn ?? 40,
+      battery_critical: this._config.battery_critical ?? 20,
+      test_interval_days: this._config.test_interval_days ?? 0,
+      last_test_entity: this._config.last_test_entity,
+    };
     const displayData = {
       name: this._config.name,
       icon: this._config.icon,
-      sort: this._config.sort ?? "occupied_first",
-      max_visible: this._config.max_visible,
+      collapse_ok: this._config.collapse_ok ?? false,
     };
-    const animationData = { animation: this._config.animation ?? "auto" };
 
     return html`
       <div class="editor">
         <ha-expansion-panel outlined .header=${this._t("editor_occupancy_sensors")} expanded>
-          <ha-icon slot="leading-icon" icon="mdi:motion-sensor"></ha-icon>
+          <ha-icon slot="leading-icon" icon="mdi:water-alert-outline"></ha-icon>
           <div class="panel-content">
             <ha-form
               .hass=${this.hass}
@@ -251,7 +226,7 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
             ${(this._config.auto_discover ?? true)
               ? nothing
               : html`
-                  <div class="hint">${this._t("editor_occupancy_manual_hint")}</div>
+                  <div class="hint">${this._t("editor_leak_manual_hint")}</div>
                   ${this._sensors.map(
                     (sensor, index) => html`
                       <div class="sensor-row">
@@ -261,15 +236,13 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
                             entity: sensor.entity,
                             name: sensor.name ?? "",
                             icon: sensor.icon ?? "",
+                            battery_entity: sensor.battery_entity ?? "",
                           }}
                           .schema=${this._sensorSchema()}
                           .computeLabel=${this._computeLabel}
                           @value-changed=${(ev: CustomEvent) => this._sensorChanged(index, ev)}
                         ></ha-form>
-                        <button
-                          class="remove-btn"
-                          @click=${() => this._removeSensor(index)}
-                        >
+                        <button class="remove-btn" @click=${() => this._removeSensor(index)}>
                           <ha-icon icon="mdi:close"></ha-icon>
                         </button>
                       </div>
@@ -277,9 +250,40 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
                   )}
                   <button class="add-btn" @click=${() => this._addSensor()}>
                     <ha-icon icon="mdi:plus"></ha-icon>
-                    ${this._t("editor_occupancy_add_sensor")}
+                    ${this._t("editor_leak_add_sensor")}
                   </button>
                 `}
+            ${listRow(
+              this._t("editor_occupancy_name_strip"),
+              this._config.name_strip ?? [],
+              (v) => this._emit({ ...this._config!, name_strip: v }),
+            )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_leak_shutoff")}>
+          <ha-icon slot="leading-icon" icon="mdi:valve"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${shutoffData}
+              .schema=${this._shutoffSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_leak_monitoring")}>
+          <ha-icon slot="leading-icon" icon="mdi:clock-alert-outline"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${monitorData}
+              .schema=${this._monitorSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
           </div>
         </ha-expansion-panel>
 
@@ -293,11 +297,6 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
-            ${listRow(
-              this._t("editor_occupancy_name_strip"),
-              this._config.name_strip ?? DEFAULT_OCCUPANCY_NAME_STRIP,
-              (v) => this._emit({ ...this._config!, name_strip: v }),
-            )}
           </div>
         </ha-expansion-panel>
 
@@ -316,8 +315,22 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
           <div class="panel-content">
             <ha-form
               .hass=${this.hass}
-              .data=${animationData}
-              .schema=${this._animationSchema()}
+              .data=${{ animation: this._config.animation ?? "auto" }}
+              .schema=${[
+                {
+                  name: "animation",
+                  selector: {
+                    select: {
+                      mode: "dropdown",
+                      options: [
+                        { value: "auto", label: this._t("editor_progress_animation_auto") },
+                        { value: "on", label: this._t("editor_progress_animation_on") },
+                        { value: "off", label: this._t("editor_progress_animation_off") },
+                      ],
+                    },
+                  },
+                },
+              ]}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
@@ -329,7 +342,7 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
           hass: this.hass,
           language: this._language,
           config: this._config,
-          defaultRadius: DEFAULT_OCCUPANCY_RADIUS,
+          defaultRadius: DEFAULT_LEAK_RADIUS,
           state: this._appearance,
           computeLabel: this._computeLabel,
           onValueChanged: this._valueChanged.bind(this),
@@ -350,12 +363,10 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
         align-items: flex-start;
         gap: 8px;
       }
-
       .sensor-row ha-form {
         flex: 1;
         min-width: 0;
       }
-
       .remove-btn {
         flex-shrink: 0;
         width: 40px;
@@ -369,7 +380,6 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
         align-items: center;
         justify-content: center;
       }
-
       .add-btn {
         width: 100%;
         height: 40px;
@@ -391,6 +401,6 @@ export class M3OccupancyCardEditor extends LitElement implements LovelaceCardEdi
 
 declare global {
   interface HTMLElementTagNameMap {
-    "m3-occupancy-card-editor": M3OccupancyCardEditor;
+    "m3-leak-card-editor": M3LeakCardEditor;
   }
 }

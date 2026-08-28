@@ -401,3 +401,62 @@ export async function discoverOccupancyRooms(
   }
   return [...rooms.values()];
 }
+
+// ---- Leak sensors ---------------------------------------------------------
+export interface DiscoveredLeakSensor {
+  entity: string;
+  name: string;
+  areaName?: string;
+  batteryEntity?: string;
+}
+
+// Discovers moisture binary_sensors, one entry per sensor (not grouped into
+// rooms — a leak card lists individual sensors), resolving each sensor's area
+// name and a battery sibling on the same device.
+export async function discoverLeakSensors(
+  hass: HomeAssistant,
+  opts: { includeAreas?: string[]; excludeEntities?: string[] },
+): Promise<DiscoveredLeakSensor[]> {
+  const exclude = new Set(opts.excludeEntities ?? []);
+  const candidates = Object.keys(hass.states).filter((id) => {
+    if (!id.startsWith("binary_sensor.") || exclude.has(id)) return false;
+    return hass.states[id]?.attributes?.device_class === "moisture";
+  });
+  if (!candidates.length) return [];
+
+  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
+    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
+    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
+    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
+  ]);
+  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
+  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
+  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+  const byDevice = new Map<string, string[]>();
+  for (const entry of entityEntries) {
+    if (!entry.device_id) continue;
+    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entry.entity_id]);
+  }
+  const includeAreas = opts.includeAreas?.length ? new Set(opts.includeAreas) : undefined;
+
+  const out: DiscoveredLeakSensor[] = [];
+  for (const entity of candidates) {
+    const entry = entryByEntityId.get(entity);
+    const device = entry?.device_id ? deviceById.get(entry.device_id) : undefined;
+    const areaId = entry?.area_id ?? device?.area_id ?? undefined;
+    if (includeAreas && !(areaId && includeAreas.has(areaId))) continue;
+    const areaName = areaId ? areaById.get(areaId)?.name : undefined;
+    const battery = entry?.device_id
+      ? (byDevice.get(entry.device_id) ?? []).find(
+          (id) => id.startsWith("sensor.") && hass.states[id]?.attributes?.device_class === "battery",
+        )
+      : undefined;
+    out.push({
+      entity,
+      name: (hass.states[entity]?.attributes?.friendly_name as string) ?? entity,
+      areaName,
+      batteryEntity: battery,
+    });
+  }
+  return out;
+}

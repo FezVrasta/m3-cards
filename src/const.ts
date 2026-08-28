@@ -929,3 +929,113 @@ export const DEFAULT_OCCUPANCY_LQI_WARN = 50;
 // State changes are pushed by hass, but "seit 12 Min." only stays honest if
 // the card re-renders on its own as the clock moves.
 export const OCCUPANCY_TICK_MS = 60000;
+
+// ---- Cover card -----------------------------------------------------------
+export const DEFAULT_COVER_RADIUS = RADIUS.card;
+export const DEFAULT_COVER_ACCENT = PALETTE.cover;
+export const COVER_TILT_STEP = 15;
+export const COVER_POSITION_THROTTLE_MS = 200;
+export const COVER_DRAG_SETTLE_MS = 600;
+export const COVER_PRESS_FEEDBACK_MS = 800;
+export const COVER_MIN_FEEDBACK_MS = 1400;
+// Cover supported_features bit flags (from HA's CoverEntityFeature).
+export const COVER_FEATURE = {
+  OPEN: 1,
+  CLOSE: 2,
+  SET_POSITION: 4,
+  STOP: 8,
+  OPEN_TILT: 16,
+  CLOSE_TILT: 32,
+  STOP_TILT: 64,
+  SET_TILT_POSITION: 128,
+} as const;
+// device_class -> icon (open state); a "-closed" variant is not used, the
+// preview carries the open/closed signal.
+export const COVER_DEVICE_ICONS: Record<string, string> = {
+  shutter: "mdi:window-shutter",
+  blind: "mdi:blinds-horizontal",
+  curtain: "mdi:curtains",
+  awning: "mdi:awning-outline",
+  shade: "mdi:roller-shade",
+  garage: "mdi:garage",
+  gate: "mdi:gate",
+  door: "mdi:door",
+  window: "mdi:window-closed-variant",
+};
+export const DEFAULT_COVER_ICON = "mdi:window-shutter";
+
+// ---- Leak card ------------------------------------------------------------
+export const DEFAULT_LEAK_RADIUS = RADIUS.card;
+export const DEFAULT_LEAK_ACCENT = PALETTE.ok;
+export const LEAK_ALARM_COLOR = PALETTE.heat;
+export const LEAK_STALE_COLOR = PALETTE.solar;
+export const DEFAULT_LEAK_STALE_HOURS = 6;
+export const DEFAULT_LEAK_BATTERY_WARN = 40;
+export const DEFAULT_LEAK_BATTERY_CRITICAL = 20;
+export const LEAK_ROW_HEIGHT = 52;
+export const LEAK_ROW_RADIUS = RADIUS.row;
+export const LEAK_ROW_RADIUS_ACTIVE = RADIUS.rowActive;
+export const LEAK_ICON_SIZE = 32;
+export const LEAK_ICON_RADIUS = RADIUS.squircle32;
+export const LEAK_ROW_GAP = SPACING.rowGap;
+export const LEAK_PULSE_MS = 1600;
+export const LEAK_TICK_MS = 60000;
+export const LEAK_DEFAULT_NAME_STRIP = [
+  " Feuchte$",
+  " Water Leak$",
+  " Moisture$",
+  " Wassermelder$",
+  " Leak$",
+];
+// device_class-ish icons keyed by name hints for common leak spots.
+export const LEAK_ICON_RULES: Array<[RegExp, string]> = [
+  [/sp(ü|ue)le|k(ü|ue)che|kitchen|sink/i, "mdi:silverware-fork-knife"],
+  [/wasch|washing|laundry/i, "mdi:washing-machine"],
+  [/heiz|boiler|heating|furnace/i, "mdi:fire"],
+  [/dusche|shower|bad|bath/i, "mdi:shower"],
+  [/toilette|wc|toilet/i, "mdi:toilet"],
+  [/keller|basement/i, "mdi:home-floor-b"],
+  [/sp(ü|ue)lmaschine|dishwasher/i, "mdi:dishwasher"],
+];
+export const DEFAULT_LEAK_ICON = "mdi:water-outline";
+
+// ---- Waste card -----------------------------------------------------------
+export const DEFAULT_WASTE_RADIUS = RADIUS.card;
+export const WASTE_TIMELINE_DAYS = 14;
+export const WASTE_REMINDER_OFFSET = 1;
+export const WASTE_REMINDER_TIME = "18:00";
+export const WASTE_TICK_MS = 60000;
+export const DEFAULT_WASTE_ICON = "mdi:trash-can-outline";
+export const DEFAULT_WASTE_COLOR = "#9fb0c0";
+export const WASTE_DEFAULT_NAME_STRIP = [
+  " Abfuhr$",
+  " Collection$",
+  " Waste$",
+  " Tonne$",
+];
+// Name -> icon / default colour for the common German waste streams.
+export const WASTE_ICON_RULES: Array<[RegExp, string]> = [
+  [/(alt)?papier|paper|karton/i, "mdi:newspaper-variant-outline"],
+  [/bio|organic|grüngut|gruengut|compost/i, "mdi:leaf"],
+  [/rest(müll|muell)?|general|residual|schwarz/i, "mdi:trash-can-outline"],
+  [/wertstoff|gelb|plastik|plastic|verpackung|recycl|lvp/i, "mdi:recycle"],
+  [/glas|glass/i, "mdi:bottle-soda-outline"],
+  [/sperrm(ü|ue)ll|bulk/i, "mdi:sofa-outline"],
+];
+export const WASTE_COLOR_RULES: Array<[RegExp, string]> = [
+  [/(alt)?papier|paper|karton/i, "#6ba7dc"],
+  [/bio|organic|grüngut|gruengut|compost/i, "#81c784"],
+  [/rest(müll|muell)?|general|residual|schwarz/i, "#888780"],
+  [/wertstoff|gelb|plastik|plastic|verpackung|recycl|lvp/i, "#f0c46e"],
+  [/glas|glass/i, "#7bc4b0"],
+  [/sperrm(ü|ue)ll|bulk/i, "#b8946a"],
+];
+export const WASTE_HERO_ICON_SIZE = 56;
+export const WASTE_HERO_ICON_RADIUS = 20;
+export const WASTE_MULTI_ICON_SIZE = 26;
+export const WASTE_MULTI_ICON_RADIUS = 9;
+export const WASTE_ROW_HEIGHT = 56;
+export const WASTE_ROW_RADIUS = RADIUS.row;
+export const WASTE_ROW_ICON_SIZE = 32;
+export const WASTE_ROW_ICON_RADIUS = RADIUS.squircle32;
+export const WASTE_TIMELINE_DOT = 15;

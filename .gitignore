@@ -8,3 +8,5 @@ reference/
 .idea/
 .env
 .env.*
+# Graphify
+graphify-out/

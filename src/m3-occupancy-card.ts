@@ -30,6 +30,14 @@ import {
   OCCUPANCY_TINT_FREE,
   OCCUPANCY_CHIP_RADIUS,
   OCCUPANCY_TICK_MS,
+  DEFAULT_OCCUPANCY_TIMELINE_HOURS,
+  DEFAULT_OCCUPANCY_TIMELINE_SEGMENTS,
+  OCCUPANCY_TIMELINE_HOURS_MIN,
+  OCCUPANCY_TIMELINE_HOURS_MAX,
+  OCCUPANCY_SEGMENT_HEIGHT,
+  OCCUPANCY_SEGMENT_RADIUS,
+  OCCUPANCY_SEGMENT_GAP,
+  OCCUPANCY_SEGMENT_FADED_OPACITY,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
@@ -39,6 +47,7 @@ import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { formatSince } from "./shared/formatting";
 import { guessRoomIcon } from "./shared/room-icons";
 import { discoverOccupancyRooms, type DiscoveredOccupancyRoom } from "./shared/ha-registry";
+import { fetchOccupancySegments } from "./shared/occupancy-history";
 import { localize, type TranslationKey } from "./localize";
 
 console.info(
@@ -72,10 +81,14 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
   @state() private _discovered: DiscoveredOccupancyRoom[] = [];
   /** Bumped by the ticker so the elapsed-time text stays honest. */
   @state() private _tick = 0;
+  /** entity id -> which slices of the window had motion. */
+  @state() private _segments = new Map<string, boolean[]>();
 
   private _lastDiscoverKey?: string;
   private _discoverInFlight = false;
   private _tickTimer?: number;
+  private _historyKey?: string;
+  private _historyInFlight = false;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-occupancy-card-editor");
@@ -110,6 +123,10 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
     super.connectedCallback();
     this._tickTimer = window.setInterval(() => {
       this._tick++;
+      // Same cadence for both: the elapsed-time text and the strip should
+      // never disagree about how long ago something happened.
+      this._historyKey = undefined;
+      this._maybeFetchHistory();
     }, OCCUPANCY_TICK_MS);
   }
 
@@ -124,6 +141,11 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
   protected willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
     if (changed.has("hass") || changed.has("_config")) this._maybeDiscover();
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    this._maybeFetchHistory();
   }
 
   private get _language(): string {
@@ -253,6 +275,99 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
     return sorted;
   }
 
+  // ---- timeline ---------------------------------------------------------
+
+  private get _timelineHours(): number {
+    const raw = this._config?.timeline_hours ?? DEFAULT_OCCUPANCY_TIMELINE_HOURS;
+    return Math.min(OCCUPANCY_TIMELINE_HOURS_MAX, Math.max(OCCUPANCY_TIMELINE_HOURS_MIN, raw));
+  }
+
+  private get _timelineSegments(): number {
+    return Math.max(4, this._config?.timeline_segments ?? DEFAULT_OCCUPANCY_TIMELINE_SEGMENTS);
+  }
+
+  private _maybeFetchHistory(): void {
+    if (!this.hass || this._config?.show_timeline === false) return;
+    const ids = this._rooms.flatMap((r) => r.entities);
+    if (!ids.length) return;
+    // The state of every sensor is part of the key, so a room switching on or
+    // off refreshes the strip without waiting for the next minute tick.
+    const stamp = ids.map((id) => this.hass!.states[id]?.state ?? "?").join("");
+    const key = `${ids.join(",")}|${this._timelineHours}|${this._timelineSegments}|${stamp}`;
+    if (key === this._historyKey) return;
+    this._historyKey = key;
+    this._fetchHistory(ids);
+  }
+
+  private async _fetchHistory(ids: string[]): Promise<void> {
+    if (!this.hass || this._historyInFlight) return;
+    this._historyInFlight = true;
+    try {
+      this._segments = await fetchOccupancySegments(
+        this.hass,
+        ids,
+        this._timelineHours,
+        this._timelineSegments,
+      );
+    } finally {
+      this._historyInFlight = false;
+    }
+  }
+
+  /** A room's slice is active when any of its sensors was on during it. */
+  private _roomSegments(row: OccupancyRow): boolean[] {
+    const total = this._timelineSegments;
+    const merged = new Array<boolean>(total).fill(false);
+    for (const id of row.entities) {
+      const slots = this._segments.get(id);
+      if (!slots) continue;
+      for (let i = 0; i < total && i < slots.length; i++) {
+        if (slots[i]) merged[i] = true;
+      }
+    }
+    return merged;
+  }
+
+  private _hasHistory(row: OccupancyRow): boolean {
+    return row.entities.some((id) => this._segments.has(id));
+  }
+
+  private _renderTimeline(row: OccupancyRow): TemplateResult {
+    const slots = this._roomSegments(row);
+    const known = this._hasHistory(row);
+    return html`
+      <div
+        class="timeline ${known ? "" : "unknown"}"
+        title=${known ? nothing : this._t("occupancy_no_history")}
+      >
+        ${slots.map((active, i) => {
+          // The newest two slices stay at full strength while the room is
+          // occupied, so "right now" reads differently from "a while ago".
+          const fresh = row.occupied && i >= slots.length - 2;
+          return html`<div
+            class="segment ${active ? "on" : ""} ${active && !fresh ? "faded" : ""}"
+          ></div>`;
+        })}
+      </div>
+    `;
+  }
+
+  private _renderAxis(): TemplateResult {
+    const hours = this._timelineHours;
+    // Four labels across the strip: the window start, two thirds, and "now".
+    const labels = [0, 1, 2, 3].map((i) => {
+      const hoursAgo = Math.round((hours * (3 - i)) / 3);
+      return hoursAgo === 0
+        ? this._t("occupancy_axis_now")
+        : this._t("occupancy_axis_ago", { n: hoursAgo });
+    });
+    return html`
+      <div class="axis">
+        ${labels.map((label) => html`<span>${label}</span>`)}
+      </div>
+    `;
+  }
+
   // ---- render -----------------------------------------------------------
 
   private _statusText(row: OccupancyRow): string {
@@ -310,8 +425,9 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
           ${this._renderHeader(occupied, rows.length)}
           ${rows.length
             ? html`<div class="rows">
-                ${repeat(rows, (r) => r.key, (r) => this._renderRow(r))}
-              </div>`
+                  ${repeat(rows, (r) => r.key, (r) => this._renderRow(r))}
+                </div>
+                ${cfg.show_timeline === false ? nothing : this._renderAxis()}`
             : html`<div class="empty">${this._t("occupancy_none_found")}</div>`}
         </div>
       </ha-card>
@@ -360,6 +476,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
             <span class="row-name">${row.name}</span>
             <span class="row-status">${this._statusText(row)}</span>
           </div>
+          ${this._config?.show_timeline === false ? nothing : this._renderTimeline(row)}
         </div>
       </div>
     `;
@@ -555,6 +672,42 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         color: var(--m3o-text);
         white-space: nowrap;
+      }
+
+      .timeline {
+        display: flex;
+        align-items: stretch;
+        gap: ${OCCUPANCY_SEGMENT_GAP}px;
+        margin-top: 6px;
+      }
+
+      .timeline.unknown {
+        opacity: 0.4;
+      }
+
+      .segment {
+        flex: 1;
+        min-width: 0;
+        height: ${OCCUPANCY_SEGMENT_HEIGHT}px;
+        border-radius: ${OCCUPANCY_SEGMENT_RADIUS}px;
+        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+      }
+
+      .segment.on {
+        background: var(--m3o-accent);
+      }
+
+      .segment.on.faded {
+        opacity: ${OCCUPANCY_SEGMENT_FADED_OPACITY};
+      }
+
+      .axis {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        opacity: 0.35;
+        color: var(--m3o-secondary-text);
+        padding: 0 ${OCCUPANCY_ROW_PADDING_X}px;
       }
 
       .row-status {
