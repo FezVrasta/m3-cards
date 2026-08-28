@@ -136,6 +136,8 @@ the image — everything else is live data.</sub>
 Add the card via the dashboard editor (search for "M3 Climate Card") or via
 YAML:
 
+![Climate Card](docs/images/climate-card.png)
+
 ```yaml
 type: custom:m3-climate-card
 entity: climate.living_room
@@ -234,6 +236,8 @@ button on top, name + "current temperature · mode" below that, a
 minus/target-temperature/plus stepper at the bottom. No preset, sensor, or
 mode-row support — in exchange, two tiles comfortably fit side by side on a
 phone screen.
+
+![Climate Card Mini](docs/images/climate-card-mini.png)
 
 ```yaml
 type: custom:m3-climate-card-mini
@@ -371,6 +375,8 @@ time sensors (washing machine, dryer, dishwasher, 3D printer, ...). The
 progress bar is a Material 3 Expressive "wavy" indicator: a wave-shaped,
 animated active part, a gap, a flat track, and an end-point dot.
 
+![Progress Card](docs/images/progress-card.png)
+
 ```yaml
 type: custom:m3-progress-card
 entity: sensor.washing_machine_status
@@ -450,6 +456,8 @@ state_colors:
 
 A bar chart for energy values (solar generation, consumption, ...). `mode`
 provides two fundamentally different views:
+
+![Energy Card](docs/images/energy-card.png)
 
 - **`mode: consumption`** (default) — bars per day or per hour for a
   single entity, see `period` below.
@@ -636,6 +644,8 @@ quantities (e.g. grid import vs. export) as a semicircular arc with the net
 value in the middle. Two segments with a small gap at the transition point
 — the gap itself is the "pointer", not a separate needle.
 
+![Gauge Card](docs/images/gauge-card.png)
+
 ```yaml
 type: custom:m3-gauge-card
 name: Grid Balance
@@ -687,6 +697,8 @@ smoothly on later value changes — respects the `animation` option and
 A node diagram of today's energy flows between solar, grid, battery, and
 home, with animated flow dots along the connection lines and a
 self-sufficiency bar below.
+
+![Energy Flow Card](docs/images/energy-flow-card.png)
 
 ```yaml
 type: custom:m3-energy-flow-card
@@ -740,6 +752,8 @@ the digits that actually changed on the last update roll animated — the
 rest stay put. Not limited to electricity: unit and decimal places come
 from the entity, `power_entity` (power chip) is entirely optional — just as
 suitable for gas or water meters (m³) as for electricity meters (kWh).
+
+![Counter Card](docs/images/counter-card.png)
 
 ```yaml
 type: custom:m3-counter-card
@@ -797,6 +811,8 @@ name: Electricity Meter
 Replaces an `entities` card for smart-plug/power overviews: shows power
 sensors as a sorted list with share bars, hiding inactive devices behind a
 collapsible section by default.
+
+![Power List Card](docs/images/power-list-card.png)
 
 ```yaml
 type: custom:m3-power-list-card
@@ -859,6 +875,8 @@ Replaces a set of individual tile cards for instantaneous power: combines
 grid balance, consumption, generation, and optional sub-totals into one
 card with a clear hierarchy. Pure live values from `hass.states`, no
 statistics queries needed.
+
+![Power Summary Card](docs/images/power-summary-card.png)
 
 ```yaml
 type: custom:m3-power-summary-card
@@ -932,6 +950,8 @@ the card shows a neutral "Balanced" state instead of export/import.
 Replaces the native `energy-devices-graph` card: shows the biggest
 individual consumers for a time range as a ranking, by default fed from
 the devices section of the HA Energy dashboard.
+
+![Top Consumers Card](docs/images/top-consumers-card.png)
 
 ```yaml
 type: custom:m3-top-consumers-card
@@ -1018,6 +1038,8 @@ navigation to browse past months. Not limited to electricity — `entity`
 can be any cumulative energy sensor (with `price_source: energy_dashboard`
 the grid-import cost statistic is used automatically).
 
+![Cost Card](docs/images/cost-card.png)
+
 ```yaml
 type: custom:m3-cost-card
 price_source: energy_dashboard
@@ -1101,6 +1123,8 @@ for brightness — drag with mouse or finger, tap to jump, arrow keys for
 ±5% (Shift for ±1%). The slider uses `touch-action: none`, so swiping on a
 phone doesn't conflict with page scrolling.
 
+![Light Card](docs/images/light-card.png)
+
 ```yaml
 type: custom:m3-light-card
 entity: light.living_room
@@ -1133,6 +1157,8 @@ no slider.
 An overview of all battery-level sensors as a sorted list with threshold-
 based coloring (critical/low/medium/ok), a bar per row, and a collapsible
 section for the remaining devices.
+
+![Battery Card](docs/images/battery-card.png)
 
 ```yaml
 type: custom:m3-battery-card
@@ -1215,6 +1241,8 @@ A weather card with a header (icon/temperature/condition/chips), a smoothed
 temperature curve with gradient fill, hourly precipitation bars, sunrise/
 sunset markers on the curve, and an optional daily overview.
 
+![Weather Card](docs/images/weather-card.png)
+
 ```yaml
 type: custom:m3-weather-card
 entity: weather.forecast_home
@@ -1272,6 +1300,8 @@ entities, with a status ring (home/away/zone/unknown), an initials avatar,
 a relative time label ("since 5 min"), and an optional embedded map
 (`hui-map-card`).
 
+![Presence Card](docs/images/presence-card.png)
+
 ```yaml
 type: custom:m3-presence-card
 auto_discover: true
@@ -1317,6 +1347,8 @@ view: artwork with color extraction for the accent, a locally interpolated
 progress wave slider, transport controls (shown/hidden per feature),
 a volume wave slider, and source selection.
 
+![Media Card](docs/images/media-card.png)
+
 ```yaml
 type: custom:m3-media-card
 entity: media_player.living_room
@@ -1350,6 +1382,8 @@ A compact overview of every temperature/humidity sensor, grouped by room:
 one tile per room (temperature + humidity merged), a horizontal comparison
 scale with a dot per room, and a header chip pointing out whichever room
 deviates furthest from the comfortable range.
+
+![Climate Overview Card](docs/images/climate-overview-card.png)
 
 ```yaml
 type: custom:m3-climate-overview-card
@@ -1829,6 +1863,8 @@ amount left, an estimated range and one-tap refilling. One supply leads as
 the hero with a dot per remaining unit; the rest follow as compact rows, and
 tapping one promotes it to the hero.
 
+![Supply Card](docs/images/supply-card.png)
+
 ```yaml
 type: custom:m3-supply-card
 items:
@@ -1959,6 +1995,8 @@ Shopping and task lists in the project's design system, as a replacement for
 Home Assistant's built-in `todo-list` card. Add with one line, tick items off
 with a tap, and keep completed entries tucked away behind a collapsible
 block.
+
+![Todo Card](docs/images/todo-card.png)
 
 ```yaml
 type: custom:m3-todo-card
@@ -2179,6 +2217,8 @@ entities:
 A compact time picker for an `input_datetime` helper, with an optional apply
 button and preset chips. Three input variants (steppers, scroll wheels, or a
 segmented display).
+
+![Time Card](docs/images/time-card.png)
 
 ```yaml
 type: custom:m3-time-card
