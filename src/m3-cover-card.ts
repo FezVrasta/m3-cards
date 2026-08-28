@@ -182,7 +182,10 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     if (!m.available) return this._t("cover_status_unavailable");
     if (m.state === "opening") return this._t("cover_status_opening");
     if (m.state === "closing") return this._t("cover_status_closing");
-    if (!m.known) return this._t("cover_status_unknown");
+    // No position and no open/closed state (switch pairs, or a cover right
+    // after a restart): nothing meaningful to show, so leave the status line
+    // empty rather than a permanent "Unknown". The :empty CSS rule hides it.
+    if (!m.known) return "";
     if (m.position !== undefined) {
       if (m.position <= 0) return this._t("cover_status_closed");
       if (m.position >= 100) return this._t("cover_status_open");
@@ -534,7 +537,10 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
           : nothing}
         <div class="grp-text" role="button" tabindex="0" @click=${onName}>
           <div class="grp-name">${m.name}</div>
-          <div class="grp-status">${this._statusText(m)}</div>
+          ${(() => {
+            const s = this._statusText(m);
+            return s ? html`<div class="grp-status">${s}</div>` : nothing;
+          })()}
         </div>
         ${this._renderButtonRow(m, true)}
       </div>
@@ -620,6 +626,13 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     glassCardStyles,
     cardHeaderStyles,
     css`
+      /* No status text (e.g. a switch pair with no feedback) — hide the line
+         entirely instead of leaving a gap. */
+      .m3-subtitle:empty,
+      .grp-status:empty {
+        display: none;
+      }
+
       .pos-chip {
         flex-shrink: 0;
         height: 30px;
