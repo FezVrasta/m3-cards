@@ -1084,7 +1084,7 @@ export interface WasteEntityConfig {
   color?: string;
 }
 
-export interface M3WasteCardConfig {
+export interface M3WasteCardConfig extends NotifyConfigBase {
   type: string;
   mode?: "info" | "reminder";
   entities?: (string | WasteEntityConfig)[];
