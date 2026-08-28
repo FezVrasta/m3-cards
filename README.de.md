@@ -480,7 +480,7 @@ gesetzt), daher eignet sich der Modus genauso für Gas- oder Wasserzähler.
 
 ```yaml
 type: custom:m3-energy-card
-entity: sensor.solarenergie_gesamterzeugnis_daily
+entity: sensor.solarertrag_gesamt_daily
 name: Solarerzeugung
 icon: mdi:solar-power
 accent_color: "#66bb6a"
@@ -490,7 +490,7 @@ days: 7
 
 ```yaml
 type: custom:m3-energy-card
-entity: sensor.shelly_3em_gesamtverbrauch_hourly
+entity: sensor.netzverbrauch_stundlich
 name: Verbrauch pro Stunde
 icon: mdi:lightning-bolt
 period: hour
@@ -541,7 +541,7 @@ zweite Stunden-Label angezeigt, damit es nicht zu eng wird.
 
 ```yaml
 type: custom:m3-energy-card
-entity: sensor.shelly_3em_gesamtverbrauch_daily
+entity: sensor.netzverbrauch_taeglich
 name: Verbrauch pro Monat
 icon: mdi:calendar-month
 period: month
@@ -887,14 +887,14 @@ Statistik-Abfragen nötig.
 
 ```yaml
 type: custom:m3-power-summary-card
-grid_entity: sensor.gesamtstromverbrauch_2
+grid_entity: sensor.netzbezug_leistung
 consumption_entity: sensor.gesamtstromverbrauch_vor_solar
-solar_entity: sensor.steckdose_22_balkonkraftwerk_power
+solar_entity: sensor.balkonkraftwerk_leistung
 metrics:
   - entity: sensor.gesamtstromverbrauch_vor_solar
     name: Verbrauch
     icon: mdi:home-lightning-bolt
-  - entity: sensor.steckdose_22_balkonkraftwerk_power
+  - entity: sensor.balkonkraftwerk_leistung
     name: Balkonkraftwerk
     icon: mdi:solar-power-variant
     type: producer

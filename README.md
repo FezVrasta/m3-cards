@@ -494,7 +494,7 @@ days: 7
 
 ```yaml
 type: custom:m3-energy-card
-entity: sensor.shelly_3em_total_consumption_hourly
+entity: sensor.grid_consumption_hourly
 name: Consumption per Hour
 icon: mdi:lightning-bolt
 period: hour
@@ -543,7 +543,7 @@ hour label is shown, so it doesn't get too cramped.
 
 ```yaml
 type: custom:m3-energy-card
-entity: sensor.shelly_3em_total_consumption_daily
+entity: sensor.grid_consumption_daily
 name: Consumption per Month
 icon: mdi:calendar-month
 period: month
@@ -883,14 +883,14 @@ statistics queries needed.
 
 ```yaml
 type: custom:m3-power-summary-card
-grid_entity: sensor.total_power_consumption_2
+grid_entity: sensor.grid_power
 consumption_entity: sensor.total_power_consumption_pre_solar
-solar_entity: sensor.plug_22_balcony_solar_power
+solar_entity: sensor.balcony_solar_power
 metrics:
   - entity: sensor.total_power_consumption_pre_solar
     name: Consumption
     icon: mdi:home-lightning-bolt
-  - entity: sensor.plug_22_balcony_solar_power
+  - entity: sensor.balcony_solar_power
     name: Balcony Solar
     icon: mdi:solar-power-variant
     type: producer
