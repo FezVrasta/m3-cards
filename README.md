@@ -137,6 +137,7 @@ Add the card via the dashboard editor (search for "M3 Climate Card") or via
 YAML:
 
 <img src="docs/images/climate-card.png" alt="Climate Card" width="440">
+<img src="docs/images/climate-card-heating.png" alt="Climate Card (heating thermostat)" width="440">
 
 ```yaml
 type: custom:m3-climate-card

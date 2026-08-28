@@ -134,6 +134,7 @@ Karte über den Dashboard-Editor hinzufügen (Suche nach „M3 Climate Card“) 
 per YAML:
 
 <img src="docs/images/climate-card.png" alt="Climate Card" width="440">
+<img src="docs/images/climate-card-heating.png" alt="Klima-Karte (reiner Heizthermostat)" width="440">
 
 ```yaml
 type: custom:m3-climate-card
