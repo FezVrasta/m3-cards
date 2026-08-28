@@ -284,6 +284,8 @@ More-Info-Dialog.
 Generische Karte für Entities außerhalb von `climate` (Buttons, Schalter,
 Lichter, Szenen, Türsensoren, ...) im selben Design.
 
+![Button Card](docs/images/button-card.png)
+
 ```yaml
 type: custom:m3-button-card
 entity: button.hausflur_tur_offnen

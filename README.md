@@ -288,6 +288,8 @@ more-info dialog.
 A generic card for entities outside of `climate` (buttons, switches,
 lights, scenes, door sensors, ...) in the same design.
 
+![Button Card](docs/images/button-card.png)
+
 ```yaml
 type: custom:m3-button-card
 entity: button.front_door_open
