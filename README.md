@@ -7,84 +7,76 @@
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
 `button-card`, `card-mod`, `mod-card`, or `stack-in-card`. A single bundle
-(`m3-cards.js`) registers twenty-two cards:
+(`m3-cards.js`) registers **29 cards**, all sharing one design language.
 
-- **M3 Climate Card** (`custom:m3-climate-card`) — for `climate` entities
-  (AC units and heating thermostats)
-- **M3 Climate Card Mini** (`custom:m3-climate-card-mini`) — a compact
-  variant of the climate card for narrow screens (e.g. two tiles fit side
-  by side on a phone)
-- **M3 Button Card** (`custom:m3-button-card`) — a generic button/entity
-  card for any domain (buttons, switches, lights, scenes, doors, ...)
-- **M3 Progress Card** (`custom:m3-progress-card`) — a progress card for
-  household appliances (washing machine, dryer, dishwasher, ...) with a
-  Material 3 Expressive wavy indicator
-- **M3 Energy Card** (`custom:m3-energy-card`) — a bar chart for energy
-  values per day/hour/month (solar generation, consumption, ...) with a
-  prominent current value, monthly projection + comparison chips, or as a
-  solar day timeline with a forecast overlay (`mode: solar`)
-- **M3 Gauge Card** (`custom:m3-gauge-card`) — a semicircular gauge for the
-  ratio of two quantities (e.g. grid import vs. export), fed from the
-  Energy dashboard or two freely chosen sensors
-- **M3 Energy Flow Card** (`custom:m3-energy-flow-card`) — a node diagram
-  of today's energy flows between solar, grid, and home, fed from the
-  Energy dashboard
-- **M3 Counter Card** (`custom:m3-counter-card`) — a meter reading as a
-  digit display with a roll animation on value change (e.g. an electricity
-  meter), an optional power chip in the header, and a daily ticker
-- **M3 Power List Card** (`custom:m3-power-list-card`) — a sorted list of
-  power sensors (e.g. smart plugs) with a threshold filter, share bar, and
-  a collapsible section for inactive devices; `auto_discover` optionally
-  picks up every sensor with `device_class: power` automatically
-- **M3 Power Summary Card** (`custom:m3-power-summary-card`) — grid
-  balance, consumption, generation, and self-sufficiency as a quick
-  overview in a single card
-- **M3 Top Consumers Card** (`custom:m3-top-consumers-card`) — a ranking of
-  the largest individual consumers from the Energy dashboard's devices
-  section, optionally by cost instead of kWh
-- **M3 Cost Card** (`custom:m3-cost-card`) — a cost breakdown with
-  projection, comparison chip, and daily bars, three price sources (Energy
-  dashboard, an `input_number` helper with a stepper, or a fixed price)
-- **M3 Light Card** (`custom:m3-light-card`) — light control with a wave
-  slider for brightness (drag and tap, works on touch without scroll
-  conflicts)
-- **M3 Battery Card** (`custom:m3-battery-card`) — a battery-level overview
-  across all `device_class: battery` sensors, with threshold-based
-  coloring, sorting, and optional auto-discovery
-- **M3 Weather Card** (`custom:m3-weather-card`) — a weather card with a
-  smoothed temperature curve, precipitation bars, sunrise/sunset markers,
-  and a daily overview, fed from a `weather` entity
-- **M3 Presence Card** (`custom:m3-presence-card`) — a presence overview as
-  an avatar grid for `person`/`device_tracker` entities with a status ring,
-  zone colors, and an optional embedded map
-- **M3 Media Card** (`custom:m3-media-card`) — media player control with
-  artwork color extraction, progress and volume wave sliders, and source
-  selection
-- **M3 Climate Overview Card** (`custom:m3-climate-overview-card`) — a
-  room-by-room overview of all temperature/humidity sensors, grouped by
-  area, with color-coded tiles, a comparison scale, and an outlier chip
-- **M3 Aquarium Card** (`custom:m3-aquarium-card`) — a per-aquarium overview
-  with a device grid (light/pump/heater/CO2 + extra devices), a day-arc
-  lighting schedule, an optional camera (still image, banner, or live
-  stream), and chips for temperature deviation, no-power heater, water
-  level, and maintenance due
-- **M3 Updates Card** (`custom:m3-updates-card`) — overview of every
-  available update (core, operating system, supervisor, add-ons, HACS,
-  firmware) with the status in the header, dedicated core boxes showing the
-  version jump and an install button, a backup chip, and optional
-  notifications
-- **M3 NAS Card** (`custom:m3-nas-card`) — per-volume usage, CPU, RAM,
-  temperature, network and uptime of a NAS via the Glances integration, plus
-  the state of every Syncthing folder
-- **M3 System Card** (`custom:m3-system-card`) — the same card fed by the
-  System Monitor integration: the numbers of your own Home Assistant host
-- **M3 Supply Card** (`custom:m3-supply-card`) — consumables like detergent
-  pods or filters: amount left, estimated range, one-tap refilling and a
-  reminder when a supply runs out
-- **M3 Todo Card** (`custom:m3-todo-card`) — shopping and task lists in the
-  same design language, with quick-add chips fed from your supply cards
+New here? Start with the category that matches what you want to show — every
+card links to its full documentation further down.
 
-*All 24 cards at a glance:*
+### 🔌 Energy & power
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Energy](#m3-energy-card) | `m3-energy-card` | Bar chart per day/hour/month, or a solar day timeline with forecast |
+| [Cost](#m3-cost-card) | `m3-cost-card` | Cost breakdown with projection, comparison chip and daily bars |
+| [Gauge](#m3-gauge-card) | `m3-gauge-card` | Semicircular gauge for the ratio of two quantities |
+| [Energy Flow](#m3-energy-flow-card) | `m3-energy-flow-card` | Node diagram of today's solar/grid/home flows |
+| [Power Summary](#m3-power-summary-card) | `m3-power-summary-card` | Grid balance, consumption, generation and self-sufficiency |
+| [Power List](#m3-power-list-card) | `m3-power-list-card` | Sorted list of power sensors with threshold filter and share bar |
+| [Top Consumers](#m3-top-consumers-card) | `m3-top-consumers-card` | Ranking of the largest consumers, by kWh or cost |
+| [Counter](#m3-counter-card) | `m3-counter-card` | A meter reading as a rolling digit display |
+
+### 🌡️ Climate & weather
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Climate](#m3-climate-card) | `m3-climate-card` | Full control for a `climate` entity (AC / thermostat) |
+| [Climate Mini](#m3-climate-card-mini) | `m3-climate-card-mini` | Compact climate variant for narrow layouts |
+| [Climate Overview](#m3-climate-overview-card) | `m3-climate-overview-card` | Room-by-room temperature/humidity, grouped by area |
+| [Weather](#m3-weather-card) | `m3-weather-card` | Temperature curve, precipitation bars, sun markers |
+
+### 💡 Light, media & control
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Light](#m3-light-card) | `m3-light-card` | Light control with a wavy brightness slider, color temp and color wheel |
+| [Media](#m3-media-card) | `m3-media-card` | Media player with artwork colors, progress/volume sliders |
+| [Button](#m3-button-card) | `m3-button-card` | Generic button/entity card for any domain |
+| [Cover](#m3-cover-card) | `m3-cover-card` | Blinds/shutters that adapt to the device's capabilities, plus a group mode |
+
+### 🚪 Presence & safety
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Presence](#m3-presence-card) | `m3-presence-card` | Who's home — avatar grid for `person`/`device_tracker` |
+| [Occupancy](#m3-occupancy-card) | `m3-occupancy-card` | Room-by-room presence with an activity timeline |
+| [Leak](#m3-leak-card) | `m3-leak-card` | Water-sensor overview with a quiet OK state and a loud alarm + shut-off |
+
+### 🧺 Household & planning
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Progress](#m3-progress-card) | `m3-progress-card` | Appliance progress with a Material 3 wavy indicator |
+| [Supply](#m3-supply-card) | `m3-supply-card` | Consumables: amount left, range estimate, one-tap refill |
+| [Todo](#m3-todo-card) | `m3-todo-card` | Shopping and task lists with quick-add chips |
+| [Waste](#m3-waste-card) | `m3-waste-card` | Bin-collection schedule with a two-week timeline and reminder mode |
+| [Time](#m3-time-card) | `m3-time-card` | Time picker for an `input_datetime` helper |
+
+### 🛠️ System & maintenance
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Battery](#m3-battery-card) | `m3-battery-card` | Battery levels across all `device_class: battery` sensors |
+| [Updates](#m3-updates-card) | `m3-updates-card` | Every available update (core, OS, add-ons, HACS, firmware) |
+| [NAS](#m3-nas-card--m3-system-card) | `m3-nas-card` | NAS volumes, CPU, RAM, network via Glances + Syncthing |
+| [System](#m3-nas-card--m3-system-card) | `m3-system-card` | The same, fed by the System Monitor integration |
+
+### 🐠 Special
+
+| Card | Type | What it does |
+| --- | --- | --- |
+| [Aquarium](#m3-aquarium-card) | `m3-aquarium-card` | Per-aquarium devices, lighting arc, camera and maintenance |
+
+*All cards at a glance:*
 
 ![Overview](docs/images/cards-overview.png)
 
@@ -2026,6 +2018,172 @@ stored as "Fruit: apples" reads as "apples" beneath a "Fruit" heading.
 | `animation` | `auto` \| `on` \| `off` | `auto` | Morph animations |
 | `glass_background` | boolean | `true` | Frosted glass background |
 | `radius` / `corners` | number / object | `28` | Corner radius, optional per corner |
+
+## M3 Occupancy Card
+
+Room-by-room presence. Each row is a room; it counts as occupied when any of
+its sensors is `on`. Auto-discovery groups `binary_sensor`s of
+`device_class: occupancy`/`motion`/`presence` by area (falling back to device,
+then to the individual sensor), and an optional activity timeline shows when
+each room was busy over the last few hours.
+
+![Occupancy Card](docs/images/occupancy-card.png)
+
+```yaml
+type: custom:m3-occupancy-card
+auto_discover: true
+# or a manual list (turn auto_discover off):
+# sensors:
+#   - entity: binary_sensor.living_room_presence
+#     name: Living room
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `auto_discover` | boolean | `true` | Find occupancy/motion/presence sensors automatically |
+| `include_area` | list | – | Restrict discovery to these areas |
+| `exclude_entities` | list | – | Sensors to skip |
+| `sensors` | list | – | Manual rooms: `{ entity, name, icon }` (wins over discovery) |
+| `sort` | `occupied_first` \| `name` \| `last_active` | `occupied_first` | Row order |
+| `show_timeline` | boolean | `true` | Activity timeline under the rows |
+| `timeline_hours` | number | `3` | Hours the timeline covers (1–24) |
+| `max_visible` | number | – | Cap visible rows, rest collapsible |
+| `notify_service` / `notify_enabled` | – | – | Optional per-sensor "occupancy detected" push (off by default) |
+
+## M3 Cover Card
+
+Control for `cover` entities that adapts to the device: it reads
+`supported_features` and only renders the controls the entity actually
+supports — open/stop/close buttons, a position slider with a window preview,
+and tilt controls. Devices without a `cover` integration (e.g. a FingerBot on
+two switches) work via `entity_type: switch_pair`. A `group` mode puts several
+covers — or switch pairs — in one card with shared master controls.
+
+![Cover Card](docs/images/cover-card.png)
+
+```yaml
+# Single cover
+type: custom:m3-cover-card
+entity: cover.living_room
+
+# A switch pair (up/down relays, e.g. a FingerBot)
+# type: custom:m3-cover-card
+# entity_type: switch_pair
+# up_entity: switch.blind_up
+# down_entity: switch.blind_down
+
+# Group
+# type: custom:m3-cover-card
+# mode: group
+# entities:
+#   - cover.living_room
+#   - { entity_type: switch_pair, up_entity: switch.kitchen_up, down_entity: switch.kitchen_down, name: Kitchen }
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `mode` | `single` \| `group` | `single` | One cover in detail, or a list |
+| `entity` | string | – | The cover (single mode) |
+| `entity_type` | `cover` \| `switch_pair` | `cover` | Use up/down/stop switches instead of a cover |
+| `up_entity` / `down_entity` / `stop_entity` | string | – | Switches for `switch_pair` |
+| `entities` | list | – | Group rows: a cover id or a `switch_pair` object |
+| `show_preview` | boolean | `true` | Window preview with fill level |
+| `slider_style` | `plain` \| `wavy` | `plain` | Position slider style |
+| `invert_position` | boolean | `false` | For integrations with reversed position |
+| `tilt_step` | number | `15` | Tilt stepper size (°) |
+| `travel_time` | number | `0` | Seconds end-to-end for position-less devices (optimistic feedback) |
+| `show_master` | boolean | `true` | Master controls in group mode |
+| `row_tap_action` | `more-info` \| `toggle` | `more-info` | Tap on a group row |
+
+> **No cover integration?** A Home Assistant template cover can bundle two
+> switches into one `cover` entity, unlocking the position/preview features.
+
+## M3 Leak Card
+
+Water-sensor overview with two clearly separated states: quiet when everything
+is dry, unmistakable on alarm — including a direct shut-off. Auto-discovers
+`binary_sensor`s of `device_class: moisture`, finds each sensor's battery
+sibling, and colours the whole card red the moment one reports water.
+
+![Leak Card](docs/images/leak-card.png)
+
+```yaml
+type: custom:m3-leak-card
+auto_discover: true
+valve_entity: valve.main_water        # optional: valve / switch / cover
+# siren_entity: siren.alarm           # optional, for the acknowledge button
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `auto_discover` | boolean | `true` | Find `device_class: moisture` sensors |
+| `include_area` / `exclude_entities` | list | – | Narrow discovery |
+| `sensors` | list | – | Manual list: `{ entity, name, icon, battery_entity }` |
+| `valve_entity` | string | – | Shut-off valve (valve/switch/cover) — only then is the shut-off button shown |
+| `confirm_shutoff` | boolean | `false` | Ask before shutting off |
+| `siren_entity` / `ack_entity` | string | – | Silenced / acknowledged on the ack button |
+| `stale_hours` | number | `6` | A sensor silent longer than this counts as "stale" |
+| `battery_warn` / `battery_critical` | number | `40` / `20` | Battery chip thresholds |
+| `test_interval_days` | number | `0` | Show a "test due" chip after N days (with `last_test_entity`) |
+| `collapse_ok` | boolean | `false` | Collapse the list while all dry |
+| `notify_service` / `notify_enabled` | – | – | Optional push on water detection (off by default) |
+
+> The card is the **overview**, not the alarm. Pair it with an automation that
+> sends a critical push (`push: sound: critical` on iOS, a high-priority
+> channel on Android) so you're notified even with the dashboard closed.
+
+## M3 Waste Card
+
+Bin-collection schedule: a hero with the next pickup, a two-week timeline, and
+a row per bin. Feed it sensors whose state is the number of days until
+collection (e.g. Waste Collection Schedule with
+`value_template: '{{ value.daysTo }}'`). Two modes: **info** (bins are
+collected automatically — pure information) and **reminder** (you put them out
+yourself — escalates near the date with a "put out" acknowledge button).
+
+![Waste Card](docs/images/waste-card.png)
+
+```yaml
+type: custom:m3-waste-card
+mode: info            # or: reminder
+entities:
+  - sensor.paper
+  - sensor.bio
+  - { entity: sensor.recycling, name: Recycling, color: '#f0c46e' }
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `mode` | `info` \| `reminder` | `info` | Information only, or escalate + acknowledge |
+| `entities` | list | – | Sensors (days-until-collection): id or `{ entity, name, icon, color }` |
+| `hero_primary` | `days` \| `weekday` | `days` | Hero shows "in 3 days" or "Monday" |
+| `hero_icon` | `first` \| `multi` | `first` | Single icon or overlapping bin icons |
+| `show_timeline` | boolean | `true` | Two-week timeline |
+| `timeline_days` | number | `14` | Timeline span (7–28) |
+| `max_rows` | number | `0` | Cap rows, rest collapsible (0 = all) |
+| `reminder_offset` | number | `1` | Days before pickup to start reminding (reminder mode) |
+| `reminder_time` | string | `18:00` | Only remind after this time the day before |
+| `ack_entity` | string | – | `input_boolean`/`input_datetime` storing "put out" |
+| `notify_service` / `notify_enabled` | – | – | Optional put-out reminder push (off by default) |
+
+## M3 Time Card
+
+A compact time picker for an `input_datetime` helper, with an optional apply
+button and preset chips. Three input variants (steppers, scroll wheels, or a
+segmented display).
+
+```yaml
+type: custom:m3-time-card
+entity: input_datetime.wake_up
+```
 
 ## Development
 
