@@ -116,7 +116,12 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         available: !!st && st.state !== "unavailable",
         known: false,
         state: "unknown",
-        features: COVER_FEATURE.OPEN | COVER_FEATURE.CLOSE | COVER_FEATURE.STOP,
+        // Only offer the buttons whose switch is actually configured — a
+        // FingerBot pair often has no stop relay.
+        features:
+          (this._config?.up_entity ? COVER_FEATURE.OPEN : 0) |
+          (this._config?.down_entity ? COVER_FEATURE.CLOSE : 0) |
+          (this._config?.stop_entity ? COVER_FEATURE.STOP : 0),
         isSwitchPair: true,
       };
     }
@@ -306,9 +311,9 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
 
   private _renderButtonRow(m: CoverModel, compact: boolean): unknown {
     const f = m.features;
-    const canOpen = m.isSwitchPair || f & COVER_FEATURE.OPEN;
-    const canClose = m.isSwitchPair || f & COVER_FEATURE.CLOSE;
-    const canStop = m.isSwitchPair || f & COVER_FEATURE.STOP;
+    const canOpen = f & COVER_FEATURE.OPEN;
+    const canClose = f & COVER_FEATURE.CLOSE;
+    const canStop = f & COVER_FEATURE.STOP;
     const posKnown = m.position !== undefined;
     const atOpen = posKnown && (m.position as number) >= 100;
     const atClosed = posKnown && (m.position as number) <= 0;
