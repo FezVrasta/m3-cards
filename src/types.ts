@@ -1045,7 +1045,7 @@ export interface LeakSensorConfig {
   battery_entity?: string;
 }
 
-export interface M3LeakCardConfig {
+export interface M3LeakCardConfig extends NotifyConfigBase {
   type: string;
   auto_discover?: boolean;
   include_area?: string[];
