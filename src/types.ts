@@ -993,7 +993,11 @@ export interface SwitchPairConfig {
 }
 
 export interface CoverEntityConfig {
-  entity: string;
+  entity?: string;
+  entity_type?: "cover" | "switch_pair";
+  up_entity?: string;
+  down_entity?: string;
+  stop_entity?: string;
   name?: string;
   icon?: string;
 }

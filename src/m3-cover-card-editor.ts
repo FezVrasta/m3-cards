@@ -98,12 +98,32 @@ export class M3CoverCardEditor extends LitElement implements LovelaceCardEditor 
     return schema;
   }
 
-  private _entityRowSchema(): SchemaEntry[] {
-    return [
-      { name: "entity", required: true, selector: { entity: { domain: "cover" } } },
-      { name: "name", selector: { text: {} } },
-      { name: "icon", selector: { icon: {} } },
+  private _entityRowSchema(entry: CoverEntityConfig): SchemaEntry[] {
+    const schema: SchemaEntry[] = [
+      {
+        name: "entity_type",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "cover", label: this._t("editor_cover_type_cover") },
+              { value: "switch_pair", label: this._t("editor_cover_type_switch") },
+            ],
+          },
+        },
+      },
     ];
+    if (entry.entity_type === "switch_pair") {
+      schema.push(
+        { name: "up_entity", selector: { entity: { domain: ["switch", "input_boolean"] } } },
+        { name: "down_entity", selector: { entity: { domain: ["switch", "input_boolean"] } } },
+        { name: "stop_entity", selector: { entity: { domain: ["switch", "input_boolean"] } } },
+      );
+    } else {
+      schema.push({ name: "entity", required: true, selector: { entity: { domain: "cover" } } });
+    }
+    schema.push({ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} } });
+    return schema;
   }
 
   private _displaySchema(): SchemaEntry[] {
@@ -191,8 +211,16 @@ export class M3CoverCardEditor extends LitElement implements LovelaceCardEditor 
     if (!this._config) return;
     const entities = [...this._entities];
     const value = ev.detail.value as CoverEntityConfig;
+    const isSwitch = value.entity_type === "switch_pair";
     entities[index] = {
-      entity: value.entity,
+      ...(value.entity_type ? { entity_type: value.entity_type } : {}),
+      ...(isSwitch
+        ? {
+            ...(value.up_entity ? { up_entity: value.up_entity } : {}),
+            ...(value.down_entity ? { down_entity: value.down_entity } : {}),
+            ...(value.stop_entity ? { stop_entity: value.stop_entity } : {}),
+          }
+        : { entity: value.entity }),
       ...(value.name ? { name: value.name } : {}),
       ...(value.icon ? { icon: value.icon } : {}),
     };
@@ -302,8 +330,16 @@ export class M3CoverCardEditor extends LitElement implements LovelaceCardEditor 
                       <div class="sensor-row">
                         <ha-form
                           .hass=${this.hass}
-                          .data=${{ entity: e.entity, name: e.name ?? "", icon: e.icon ?? "" }}
-                          .schema=${this._entityRowSchema()}
+                          .data=${{
+                            entity_type: e.entity_type ?? "cover",
+                            entity: e.entity ?? "",
+                            up_entity: e.up_entity ?? "",
+                            down_entity: e.down_entity ?? "",
+                            stop_entity: e.stop_entity ?? "",
+                            name: e.name ?? "",
+                            icon: e.icon ?? "",
+                          }}
+                          .schema=${this._entityRowSchema(e)}
                           .computeLabel=${this._computeLabel}
                           @value-changed=${(ev: CustomEvent) => this._entityChanged(index, ev)}
                         ></ha-form>

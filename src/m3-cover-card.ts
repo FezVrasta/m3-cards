@@ -47,6 +47,11 @@ interface CoverModel {
   tilt?: number; // 0..100
   features: number;
   isSwitchPair: boolean;
+  // switch_pair models carry their own relays, so a group row acts on its
+  // own switches rather than the card-level config.
+  up?: string;
+  down?: string;
+  stop?: string;
 }
 
 @customElement("m3-cover-card")
@@ -102,29 +107,38 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     return this._config?.entity_type === "switch_pair";
   }
 
-  private _model(cfg: CoverEntityConfig | { entity: string; name?: string; icon?: string }): CoverModel | undefined {
+  // A spec is either the card-level config (single mode) or one group entry.
+  // Each can be a cover entity or a switch_pair carrying its own relays.
+  private _model(cfg: CoverEntityConfig): CoverModel | undefined {
     const hass = this.hass;
     if (!hass) return undefined;
-    const switchPair = this._isSwitchPair();
+    const switchPair =
+      cfg.entity_type === "switch_pair" || (!cfg.entity && !!(cfg.up_entity || cfg.down_entity));
     if (switchPair) {
-      const up = this._config?.up_entity;
-      const st = up ? hass.states[up] : undefined;
+      const up = cfg.up_entity;
+      const down = cfg.down_entity;
+      const stop = cfg.stop_entity;
+      const ref = up ? hass.states[up] : down ? hass.states[down] : undefined;
       return {
-        entity: up ?? cfg.entity ?? "",
+        entity: up ?? down ?? cfg.entity ?? "",
         name: cfg.name || this._config?.name || this._t("cover_default_name"),
-        icon: cfg.icon || this._config?.icon || DEFAULT_COVER_ICON,
-        available: !!st && st.state !== "unavailable",
+        icon: cfg.icon || this._config?.icon || COVER_DEVICE_ICONS[this._deviceClass()] || DEFAULT_COVER_ICON,
+        available: !!ref && ref.state !== "unavailable",
         known: false,
         state: "unknown",
         // Only offer the buttons whose switch is actually configured — a
         // FingerBot pair often has no stop relay.
         features:
-          (this._config?.up_entity ? COVER_FEATURE.OPEN : 0) |
-          (this._config?.down_entity ? COVER_FEATURE.CLOSE : 0) |
-          (this._config?.stop_entity ? COVER_FEATURE.STOP : 0),
+          (up ? COVER_FEATURE.OPEN : 0) |
+          (down ? COVER_FEATURE.CLOSE : 0) |
+          (stop ? COVER_FEATURE.STOP : 0),
         isSwitchPair: true,
+        up,
+        down,
+        stop,
       };
     }
+    if (!cfg.entity) return undefined;
     const st = hass.states[cfg.entity];
     if (!st) return undefined;
     const attrs = st.attributes ?? {};
@@ -183,16 +197,11 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     const hass = this.hass;
     if (!hass) return;
     if (m.isSwitchPair) {
-      const map: Record<CoverDir, string | undefined> = {
-        up: this._config?.up_entity,
-        down: this._config?.down_entity,
-        stop: this._config?.stop_entity,
-      };
+      const map: Record<CoverDir, string | undefined> = { up: m.up, down: m.down, stop: m.stop };
       const target = map[dir];
       if (target) {
         const [domain] = target.split(".");
-        const service = domain === "switch" || domain === "input_boolean" ? "turn_on" : "turn_on";
-        hass.callService(domain, service, { entity_id: target }).catch(() => undefined);
+        hass.callService(domain, "turn_on", { entity_id: target }).catch(() => undefined);
       }
       this._pulseFeedback(m.entity, dir);
       return;
@@ -497,10 +506,18 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
   private _callAll(dir: CoverDir): void {
     const hass = this.hass;
     if (!hass) return;
-    const ids = this._groupModels().map((m) => m.entity);
-    if (!ids.length) return;
-    const service = dir === "up" ? "open_cover" : dir === "down" ? "close_cover" : "stop_cover";
-    hass.callService("cover", service, { entity_id: ids }).catch(() => undefined);
+    const models = this._groupModels();
+    // Batch real covers into one service call; switch_pairs act per row on
+    // their own relays.
+    const coverIds = models.filter((m) => !m.isSwitchPair).map((m) => m.entity);
+    if (coverIds.length) {
+      const service = dir === "up" ? "open_cover" : dir === "down" ? "close_cover" : "stop_cover";
+      hass.callService("cover", service, { entity_id: coverIds }).catch(() => undefined);
+    }
+    for (const m of models) {
+      if (m.isSwitchPair && (m.features & (dir === "up" ? COVER_FEATURE.OPEN : dir === "down" ? COVER_FEATURE.CLOSE : COVER_FEATURE.STOP)))
+        this._callDir(m, dir);
+    }
   }
 
   private _renderGroupRow(m: CoverModel): unknown {
@@ -577,10 +594,13 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     if (group) {
       body = this._renderGroup();
     } else {
-      const cfg = this._isSwitchPair()
-        ? { entity: this._config.up_entity ?? "" }
-        : { entity: this._config.entity ?? "" };
-      const m = this._model(cfg);
+      const m = this._model({
+        entity_type: this._config.entity_type,
+        entity: this._config.entity,
+        up_entity: this._config.up_entity,
+        down_entity: this._config.down_entity,
+        stop_entity: this._config.stop_entity,
+      });
       body = m ? this._renderSingle(m) : html`<div class="empty">${this._t("cover_no_entity")}</div>`;
     }
 
