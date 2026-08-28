@@ -370,6 +370,9 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
 
   private _renderPreview(m: CoverModel): unknown {
     if (this._config?.show_preview === false) return nothing;
+    // A switch pair has no position or open/closed state, so the preview could
+    // only ever show a static "unknown" hatch — hide it rather than confuse.
+    if (m.isSwitchPair) return nothing;
     const dc = this._deviceClass();
     const curtain = dc === "curtain";
     const accent = this._accent();
