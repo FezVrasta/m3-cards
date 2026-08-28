@@ -1018,6 +1018,14 @@ const translations = {
     editor_occupancy_manual_hint:
       "Bei ausgeschalteter Automatik werden nur die hier hinzugefügten Sensoren angezeigt.",
     editor_occupancy_add_sensor: "Sensor hinzufügen",
+    editor_occupancy_notify: "Benachrichtigung",
+    editor_occupancy_notify_hint:
+      "Sendet eine Push-Nachricht, sobald ein Sensor Belegung meldet (je Sensor).",
+    editor_occupancy_notify_alias: "Belegung erkannt",
+    editor_occupancy_notify_description: "Von der M3 Occupancy Card erzeugt.",
+    editor_occupancy_notify_message: "Belegung erkannt: {name}",
+    editor_occupancy_notify_empty: "Keine Präsenzsensoren gefunden.",
+    editor_occupancy_notify_success: "Automation aktualisiert",
     editor_occupancy_name_strip: "Aus Namen entfernen (Komma-getrennt)",
     editor_occupancy_sort: "Sortierung",
     editor_occupancy_sort_occupied: "Belegte zuerst",
@@ -2290,6 +2298,14 @@ const translations = {
     editor_occupancy_manual_hint:
       "With automatic discovery off, only the sensors added here are shown.",
     editor_occupancy_add_sensor: "Add sensor",
+    editor_occupancy_notify: "Notification",
+    editor_occupancy_notify_hint:
+      "Sends a push message as soon as a sensor reports occupancy (per sensor).",
+    editor_occupancy_notify_alias: "Occupancy detected",
+    editor_occupancy_notify_description: "Created by the M3 Occupancy Card.",
+    editor_occupancy_notify_message: "Occupancy detected: {name}",
+    editor_occupancy_notify_empty: "No presence sensors found.",
+    editor_occupancy_notify_success: "Automation updated",
     editor_occupancy_name_strip: "Strip from names (comma separated)",
     editor_occupancy_sort: "Sorting",
     editor_occupancy_sort_occupied: "Occupied first",

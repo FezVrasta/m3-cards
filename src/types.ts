@@ -1275,7 +1275,7 @@ export interface OccupancySensorConfig {
   timeout_entity?: string;
 }
 
-export interface M3OccupancyCardConfig {
+export interface M3OccupancyCardConfig extends NotifyConfigBase {
   type: string;
   auto_discover?: boolean;
   include_area?: string[];
