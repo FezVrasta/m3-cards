@@ -119,3 +119,8 @@ export function readableOnCss(colorCss: string, surfaceCss: string, target = 4.5
   if (!color || !surface) return colorCss;
   return toHex(readableOn(color, surface, target));
 }
+
+/** Linear mix of `a` into `b`; `t` is the share of `a`. Rounds as it blends. */
+export function mixColors(a: Rgb, b: Rgb, t: number): Rgb {
+  return blend(b, a, t);
+}

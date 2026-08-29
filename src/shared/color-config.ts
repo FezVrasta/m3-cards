@@ -1,5 +1,14 @@
 import { THEME_COLOR_TOKENS } from "../const";
-import { readableOnCss } from "./contrast";
+import {
+  contrastRatio,
+  mixColors,
+  parseColor,
+  readableOn,
+  readableOnCss,
+  relativeLuminance,
+  toHex,
+} from "./contrast";
+import type { Rgb } from "./contrast";
 
 // Resolves a config color value against the curated HA/tile-card token list
 // (e.g. "red", "primary"); anything not found is used verbatim as a CSS
@@ -133,4 +142,91 @@ export function resolveCommonColors(config: CommonColorConfig): CommonColors {
       ? resolveThemeColor(config.card_background)
       : undefined,
   };
+}
+
+// The reference dark surface the palette was designed against. Used to ask what
+// contrast a tint *already achieves* in a dark theme, which is then the target
+// for the same tint in a light one.
+const DARK_REFERENCE: Rgb = [28, 28, 28];
+
+const tintCache = new Map<string, string>();
+
+/**
+ * Host-aware `tintBackground`: resolves the mix itself and, on a light surface,
+ * darkens the result until it is as visible as the identical tint is in a dark
+ * theme.
+ *
+ * `tintBackground` mixes the accent into the card surface, which fixed the
+ * old "mixes toward transparent" bug but left a second one: the palette is made
+ * of light colours, so a light accent mixed into a light surface stays light. A
+ * 30% energy-card bar renders rgb(53,83,92) on #111e1c — 2.05:1, clearly
+ * visible — and rgb(205,236,242) on #e8f7f3, which is 1.06:1 and effectively
+ * invisible. That is what "man erkennt die Balken kaum" looks like as a number.
+ *
+ * The target is not invented: it is whatever *this* colour at *this* percentage
+ * reaches on the reference dark surface. That makes the correction
+ * self-scaling — a 10% chip wash asks for barely any contrast and stays a wash,
+ * a 30% data bar asks for real separation and gets it — and a no-op in a dark
+ * theme, where the mix already clears its own target.
+ */
+export function tintOn(
+  host: HTMLElement | undefined,
+  colorCss: string,
+  opacityPercent: number | undefined,
+  defaultPercent: number,
+): string {
+  const percent = opacityPercent ?? defaultPercent;
+  const surfaceCss = surfaceOf(host);
+  const surface = parseColor(surfaceCss);
+  const color = parseColor(colorCss);
+  // Unresolvable — a bare var(), a theme colour not yet applied — so hand back
+  // the CSS-level mix and let the browser do what it did before.
+  if (!surface || !color) return tintBackground(colorCss, opacityPercent, defaultPercent);
+
+  const key = `${colorCss}|${surfaceCss}|${percent}`;
+  const cached = tintCache.get(key);
+  if (cached !== undefined) return cached;
+
+  // A dark surface is what the palette was built for, so there is nothing to
+  // correct and the reference below would only nudge it by a hundredth. Leave
+  // dark themes byte-identical rather than almost-identical.
+  if (relativeLuminance(surface) <= 0.5) {
+    return tintBackground(colorCss, opacityPercent, defaultPercent);
+  }
+
+  const share = percent / 100;
+  const mixed = mixColors(color, surface, share);
+  const wanted = contrastRatio(mixColors(color, DARK_REFERENCE, share), DARK_REFERENCE);
+  const out = toHex(
+    contrastRatio(mixed, surface) >= wanted ? mixed : readableOn(mixed, surface, wanted),
+  );
+  tintCache.set(key, out);
+  return out;
+}
+
+/**
+ * A solid data fill — a chart bar, a progress segment — moved far enough from a
+ * light surface to read as a mark rather than a wash.
+ *
+ * Deliberately not the `tintOn` rule. A tint can aim for the contrast the same
+ * tint reaches in a dark theme, because both ends are mixtures. A *solid*
+ * accent cannot: a light accent on a dark ground is inherently high-contrast
+ * (#89CFF0 on #1c1c1c is 10.7:1), and demanding that on near-white would mean a
+ * near-black bar. So this uses the WCAG floor for graphical objects instead,
+ * 3:1, which is also comfortably above the ~2:1 the tinted bars land on — the
+ * emphasis stays an emphasis.
+ *
+ * Only for fills that carry nothing on top. Several solid accent surfaces in
+ * these cards hold dark ink (#1c1c1c), and darkening those would trade a
+ * fill-vs-surface problem for an ink-vs-fill one.
+ */
+export function fillColor(
+  host: HTMLElement | undefined,
+  colorCss: string,
+  target = 3,
+): string {
+  const surfaceCss = surfaceOf(host);
+  const surface = parseColor(surfaceCss);
+  if (!surface || relativeLuminance(surface) <= 0.5) return colorCss;
+  return readableCached(colorCss, surfaceCss, target);
 }
