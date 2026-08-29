@@ -114,8 +114,12 @@ export class M3LightCard extends LitElement implements LovelaceCard {
 
   @state() private _config?: M3LightCardConfig;
 
-  @state() private _phase = 0;
-  @state() private _displayAmplitude = 0;
+  // Deliberately NOT @state: both advance every animation frame and feed a
+  // single SVG path. As reactive fields they re-rendered the whole card —
+  // colour wheel, sliders and all — at frame rate. One light left on produced
+  // 1820 renders in 15 seconds, 73% of a 35-card dashboard's total.
+  private _phase = 0;
+  private _displayAmplitude = 0;
   @state() private _measuredWidth = DEFAULT_SLIDER_WIDTH;
   @state() private _dragging = false;
   @state() private _dragValue?: number;
@@ -134,6 +138,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
   private _intersectionObserver?: IntersectionObserver;
   private _isIntersecting = true;
   private _targetAmplitude = 0;
+  private _waveGeom?: { activeEnd: number; midY: number };
   private _phaseAnimating = false;
 
   private _dragEndTimer?: number;
@@ -256,6 +261,27 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     this._rafId = requestAnimationFrame(step);
   }
 
+  // Repaints only the wave path. The rest of the card is untouched, which is
+  // the whole point: the animation is one attribute write per frame, not a
+  // full Lit update.
+  private _repaintWave(): void {
+    const geom = this._waveGeom;
+    if (!geom) return;
+    const path = this.renderRoot?.querySelector(".wave-active");
+    if (!path) return;
+    path.setAttribute(
+      "d",
+      buildWavePath(
+        0,
+        geom.activeEnd,
+        this._displayAmplitude,
+        LIGHT_WAVE_WAVELENGTH,
+        this._phase,
+        geom.midY,
+      ),
+    );
+  }
+
   private _stopAnimationLoop(): void {
     if (this._rafId !== undefined) {
       cancelAnimationFrame(this._rafId);
@@ -285,7 +311,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       this._stopAnimationLoop();
       return;
     }
-    this.requestUpdate();
+    this._repaintWave();
   }
 
   // ---- Brightness (wave slider) --------------------------------------------
@@ -627,6 +653,10 @@ export class M3LightCard extends LitElement implements LovelaceCard {
     const trackStart = Math.min(width, handleX + gapHalf + handleW / 2);
     const hasActive = activeEnd > 1;
     const hasTrack = trackStart < width - 1;
+    // Kept for the animation frame, which repaints the path without a render:
+    // activeEnd and midY only move when brightness or size changes, and both
+    // of those re-render anyway.
+    this._waveGeom = hasActive ? { activeEnd, midY } : undefined;
     const activePath = hasActive
       ? buildWavePath(0, activeEnd, amplitude, LIGHT_WAVE_WAVELENGTH, this._phase, midY)
       : "";
