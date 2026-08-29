@@ -418,11 +418,14 @@ export const LIGHT_POWER_BTN_SIZE = 44;
 export const LIGHT_POWER_BTN_RADIUS_ON = 22;
 export const LIGHT_POWER_BTN_RADIUS_OFF = 15;
 export const LIGHT_WAVE_HEIGHT = 56;
-export const LIGHT_WAVE_AMPLITUDE = 4.5;
-export const LIGHT_WAVE_WAVELENGTH = 26;
-export const LIGHT_WAVE_PHASE_SPEED = 0.05;
-export const LIGHT_WAVE_STROKE = 14;
-export const LIGHT_WAVE_GAP = 14;
+// Wave geometry mirrors the progress-card ("washing machine") bar so it reads
+// as a clean wave, not a thick lump: a slim 6px stroke over a 3.5px-amplitude,
+// 24px-wavelength sine. (Was 14px/4.5/26 — the fat stroke swallowed the wave.)
+export const LIGHT_WAVE_AMPLITUDE = 3.5;
+export const LIGHT_WAVE_WAVELENGTH = 24;
+export const LIGHT_WAVE_PHASE_SPEED = 0.09;
+export const LIGHT_WAVE_STROKE = 6;
+export const LIGHT_WAVE_GAP = 12;
 export const LIGHT_WAVE_AMPLITUDE_LERP = 0.12;
 export const LIGHT_HANDLE_WIDTH = 6;
 export const LIGHT_HANDLE_HEIGHT = 34;

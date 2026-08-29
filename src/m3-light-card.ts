@@ -49,6 +49,7 @@ import { renderListRow, listRowStyles } from "./shared/list-row";
 import { shouldAnimate, isReducedMotion, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { buildWavePath } from "./shared/wave";
+import { stopSwipe } from "./shared/swipe";
 import { hexToHs, hsToRgb, rgbToHex, rgbToHs } from "./shared/color-picker";
 import { localize, type TranslationKey } from "./localize";
 
@@ -644,6 +645,10 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         @pointermove=${this._handlePointerMove}
         @pointerup=${this._handlePointerUp}
         @pointercancel=${this._handlePointerUp}
+        @touchstart=${stopSwipe}
+        @touchmove=${stopSwipe}
+        @mousedown=${stopSwipe}
+        @mousemove=${stopSwipe}
         @keydown=${this._handleKeydown}
       >
         <span class="wave-value">${pct} %</span>
@@ -718,6 +723,10 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         @pointermove=${(e: PointerEvent) => this._handleTempPointerMove(e, minK, maxK)}
         @pointerup=${this._handleTempPointerUp}
         @pointercancel=${this._handleTempPointerUp}
+        @touchstart=${stopSwipe}
+        @touchmove=${stopSwipe}
+        @mousedown=${stopSwipe}
+        @mousemove=${stopSwipe}
       >
         <span class="temp-value">${Math.round(currentK)} K</span>
         <div class="temp-handle" style=${`left: ${pct}%;`}></div>
@@ -761,6 +770,10 @@ export class M3LightCard extends LitElement implements LovelaceCard {
           @pointermove=${this._handleWheelPointerMove}
           @pointerup=${this._handleWheelPointerUp}
           @pointercancel=${this._handleWheelPointerUp}
+          @touchstart=${stopSwipe}
+          @touchmove=${stopSwipe}
+          @mousedown=${stopSwipe}
+          @mousemove=${stopSwipe}
         >
           <div class="wheel-saturation"></div>
           <div

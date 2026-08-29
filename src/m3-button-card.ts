@@ -168,15 +168,14 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     switch (domain) {
       case "light": {
+        // Stay a usable 0-100 slider even when the light is off (brightness
+        // absent) — otherwise a tap on an off light has no range to commit and
+        // falls through to toggle, snapping it back to its last brightness
+        // instead of the pressed position.
         const brightness = entity.attributes.brightness;
-        if (typeof brightness !== "number") return undefined;
-        return {
-          value: Math.round((brightness / 255) * 100),
-          min: 0,
-          max: 100,
-          step: 1,
-          unit: "%",
-        };
+        const value =
+          typeof brightness === "number" ? Math.round((brightness / 255) * 100) : 0;
+        return { value, min: 0, max: 100, step: 1, unit: "%" };
       }
       case "cover": {
         const pos = entity.attributes.current_position;
@@ -354,11 +353,26 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       el.releasePointerCapture(e.pointerId);
     }
     const info = this._sliderInfo();
-    if (this._dragMoved && info && this._dragPercent !== undefined) {
+    // Commit on any release inside the slider — a drag OR a plain tap. A tap
+    // sets the value to the pressed position (standard slider behavior): press
+    // the middle and you get ~50%, not the old value left untouched. A release
+    // that came from a long-press (hold_action fired) is left alone.
+    if (info && this._dragPercent !== undefined && !this._holdTriggered) {
       this._suppressClick = true;
       this._setSliderValue(this._valueFromPercent(this._dragPercent, info));
     }
     this._dragPercent = undefined;
+  };
+
+  // Dashboard-wide swipe plugins (hass-swipe-navigation and friends) listen for
+  // touch/mouse drags on an ancestor of the card in the bubble phase. A drag on
+  // a slider button is setting the value, never navigation, so it is kept from
+  // reaching them — otherwise a sideways flick switches the view out from under
+  // the value being set (same guard as the time-card wheels). Only slider
+  // buttons drag; a plain button must stay swipe-through, so the guard no-ops
+  // unless this card is in slider mode.
+  private _stopSwipe = (e: Event): void => {
+    if (this._sliderInfo()) e.stopPropagation();
   };
 
   private _onClick = (): void => {
@@ -421,7 +435,13 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       return;
     }
     this._iconLastTap = now;
-    const defaultIconTap: HaActionConfig = { action: "more-info" };
+    // In slider mode the body sets the value, so the icon becomes the natural
+    // on/off switch: default it to the domain's toggle (falling back to
+    // more-info for non-toggleable domains). A plain button keeps more-info.
+    const iconDomain = this._config?.entity?.split(".")[0] ?? "";
+    const defaultIconTap: HaActionConfig = this._sliderInfo()
+      ? this._defaultTapAction(iconDomain)
+      : { action: "more-info" };
     if (hasIconDoubleTap) {
       window.setTimeout(() => {
         if (this._iconLastTap !== now) return;
@@ -518,6 +538,11 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const sliderFillBg = tintBackground(color, this._config.color_opacity, 45);
     const iconBgInactive = tintBackground(inactiveColor, this._config.inactive_opacity, 8);
     const iconBgActive = tintBackground(color, this._config.color_opacity, 20);
+    // In slider mode the fill runs behind the icon chip; a translucent chip
+    // would double-tint over it into a muddy blob. This opaque variant (the
+    // same tint mixed into the card surface instead of transparency) covers
+    // the fill so the chip reads as its own surface.
+    const iconBgActiveSolid = `color-mix(in srgb, ${color} ${this._config.color_opacity ?? 20}%, var(--card-background-color, #1c1c1c))`;
     const name =
       this._config.name ||
       entity?.attributes.friendly_name ||
@@ -568,7 +593,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
+        style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-btn-icon-bg-active-solid: ${iconBgActiveSolid}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
@@ -586,9 +611,18 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
           @pointerup=${this._onPointerUp}
           @pointercancel=${this._onPointerUp}
           @pointerleave=${this._onPointerUp}
+          @touchstart=${this._stopSwipe}
+          @touchmove=${this._stopSwipe}
+          @mousedown=${this._stopSwipe}
+          @mousemove=${this._stopSwipe}
         >
           ${sliderInfo
-            ? html`<div class="slider-fill-bg" style=${`width: ${sliderPercent}%;`}></div>`
+            ? html`<div
+                class="slider-fill-bg ${this._dragPercent !== undefined
+                  ? "dragging"
+                  : ""}"
+                style=${`width: ${sliderPercent}%;`}
+              ></div>`
             : nothing}
           <div class="content ${this._config.vertical ? "vertical" : "horizontal"}">
             ${this._config.show_icon_background !== false
@@ -706,6 +740,12 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       transition: width 0.1s ease;
     }
 
+    /* While dragging, the fill must track the finger 1:1 — the settle
+       transition would otherwise trail the pointer and read as lag. */
+    .slider-fill-bg.dragging {
+      transition: none;
+    }
+
     .card-inner.glass {
       background: color-mix(
         in srgb,
@@ -770,6 +810,11 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     .icon-container.active {
       background: var(--m3-btn-icon-bg-active);
       color: var(--m3-btn-color);
+    }
+
+    /* Slider mode: opaque chip so the fill behind it doesn't double-tint. */
+    .card-inner.sliderable .icon-container.active {
+      background: var(--m3-btn-icon-bg-active-solid);
     }
 
     .icon-bare {
