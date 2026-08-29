@@ -120,6 +120,11 @@ Live-Werte.</sub>
 
 ### HACS (empfohlen)
 
+[![Dieses Repository in HACS öffnen.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=j0sp0r&repository=m3-cards&category=plugin)
+
+Der Knopf öffnet das Repository direkt in deinem eigenen Home Assistant —
+dort auf *Herunterladen* drücken, fertig. Von Hand geht es so:
+
 1. HACS → Menü (⋮) oben rechts → *Benutzerdefinierte Repositories*
 2. Repository-URL eintragen, als Typ **Dashboard** wählen, dann *Hinzufügen*
    (**nicht** *Integration* — das hier ist eine Lovelace-Karte, keine Integration)
