@@ -16,7 +16,16 @@ export function tintBackground(
   opacityPercent: number | undefined,
   defaultPercent: number,
 ): string {
-  return `color-mix(in srgb, ${colorCss} ${opacityPercent ?? defaultPercent}%, transparent)`;
+  // Mixed into the card surface rather than toward transparent. Mixing toward
+  // transparent leaves the result depending on everything behind the card —
+  // the glass scrim, and through it the dashboard's wallpaper — so a 14% tint
+  // rendered as a barely-there wash in a light theme over a dark background.
+  // Against the surface the tint is definite and theme-correct at both ends:
+  // the same percentage of accent over near-white in a light theme and over
+  // near-black in a dark one. The card as a whole stays translucent; only
+  // these inner fills become opaque, which is the Material tonal-surface
+  // model and what keeps them legible.
+  return `color-mix(in srgb, ${colorCss} ${opacityPercent ?? defaultPercent}%, var(--ha-card-background, var(--card-background-color)))`;
 }
 
 // Builds a `--prefix-key: value;` inline style string from a map, skipping

@@ -34,8 +34,9 @@ Punkte ändern aber das **Verhalten**, ohne dass man etwas anpasst:
   den Domänen-Toggle wechselt — zurück mit `icon_tap_action: more-info`. Karten
   **ohne** `show_slider` sind nicht betroffen.
 - **M3 Light Card**: Die Wellen-Geometrie ist schlanker (Strichstärke 14 → 6).
-- **Alle Karten**: Der Glas-Hintergrund wird jetzt aus der Kartenfläche
-  gemischt statt aus der Textfarbe. Im dunklen Theme ist der Unterschied
+- **Alle Karten**: Glas-Hintergrund und getönte Flächen (Icon-Felder,
+  Kacheln, Zeilen) werden jetzt aus der Kartenfläche gemischt statt gegen
+  `transparent`. Im dunklen Theme ist der Unterschied
   minimal (die Karten werden leicht blickdichter), im hellen ist er groß —
   siehe „Behoben".
 
@@ -143,6 +144,12 @@ Punkte ändern aber das **Verhalten**, ohne dass man etwas anpasst:
   themekorrekt liefert: hell im hellen Theme, dunkel im dunklen. Damit stimmt
   der Kontrast von selbst, ohne Theme-Erkennung und unabhängig davon, was
   hinter dem Dashboard liegt. Bestand seit 1.0.0.
+- **Alle Karten im hellen Theme**: `tintBackground` mischte getönte Flächen
+  ebenfalls gegen `transparent` — eine 14-%-Tönung war damit zu 86 %
+  durchsichtig, und was durchschien, war der Schleier über dem
+  Hintergrundbild. Icon-Felder, Kacheln und Balken waren dadurch kaum zu
+  erkennen. Gemischt wird jetzt in die Kartenfläche, wodurch die Tönung
+  definiert ist und in beiden Themes gleich stark wirkt.
 - **M3 Light Card**: Die Wellenanimation rief bei jedem Frame
   `requestUpdate()` und baute damit die komplette Karte samt Farbrad neu auf,
   solange eine Lampe an war. Eine Instanz erzeugte 1820 Renders in 15 Sekunden
