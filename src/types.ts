@@ -734,6 +734,9 @@ export interface M3MediaCardConfig {
   name?: string;
   show_source_select?: boolean;
   show_shuffle_repeat?: boolean;
+  show_browser?: boolean;
+  default_tab?: "queue" | "library";
+  browse_height?: number;
   use_artwork_color?: boolean;
   accent_color?: string;
   accent_opacity?: number;

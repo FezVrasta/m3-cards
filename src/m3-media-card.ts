@@ -14,14 +14,41 @@ import {
   MEDIA_ARTWORK_SIZE,
   MEDIA_ARTWORK_RADIUS,
   MEDIA_PLAY_BTN_SIZE,
-  MEDIA_PLAY_BTN_RADIUS,
+  MEDIA_PLAY_BTN_RADIUS_PLAYING,
+  MEDIA_PLAY_BTN_RADIUS_PAUSED,
+  MEDIA_PLAY_ICON_SIZE,
   MEDIA_TRANSPORT_BTN_SIZE,
   MEDIA_TRANSPORT_BTN_RADIUS,
-  MEDIA_WAVE_HEIGHT,
+  MEDIA_TRANSPORT_ICON_SIZE,
+  MEDIA_PILL_BTN_SIZE,
+  MEDIA_PILL_BTN_RADIUS,
+  MEDIA_PILL_ICON_SIZE,
+  MEDIA_ICON_MORPH_MS,
+  MEDIA_PROGRESS_HEIGHT,
+  MEDIA_PROGRESS_STROKE,
+  MEDIA_PROGRESS_GAP,
+  MEDIA_PROGRESS_HANDLE_RADIUS,
   MEDIA_VOLUME_WAVE_HEIGHT,
+  MEDIA_VOLUME_AMPLITUDE,
+  MEDIA_VOLUME_WAVELENGTH,
+  MEDIA_VOLUME_GAP,
+  MEDIA_VOLUME_DOT_RADIUS,
   MEDIA_VOLUME_THROTTLE_MS,
   MEDIA_MUTE_BTN_HEIGHT,
   MEDIA_ARTWORK_COLOR_CACHE_SIZE,
+  MEDIA_ACCENT_MIN_CONTRAST,
+  MEDIA_BROWSE_TOGGLE_HEIGHT,
+  MEDIA_BROWSE_TOGGLE_RADIUS,
+  MEDIA_BROWSE_TAB_HEIGHT,
+  MEDIA_BROWSE_TAB_RADIUS,
+  MEDIA_BROWSE_TAB_RADIUS_ACTIVE,
+  MEDIA_BROWSE_ROW_HEIGHT,
+  MEDIA_BROWSE_ROW_RADIUS,
+  MEDIA_BROWSE_ROW_ICON_SIZE,
+  MEDIA_BROWSE_ROW_ICON_RADIUS,
+  MEDIA_BROWSE_SKELETON_ROWS,
+  MEDIA_BROWSE_MAX_ROWS,
+  DEFAULT_MEDIA_BROWSE_HEIGHT,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
@@ -29,6 +56,7 @@ import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/g
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { buildWavePath } from "./shared/wave";
+import { stopSwipe } from "./shared/swipe";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 
@@ -51,10 +79,112 @@ const FEATURE = {
   TURN_OFF: 256,
   VOLUME_STEP: 1024,
   SELECT_SOURCE: 2048,
+  STOP: 4096,
+  BROWSE_MEDIA: 131072,
   PLAY: 16384,
   SHUFFLE_SET: 32768,
   REPEAT_SET: 262144,
 } as const;
+
+const AUDIO_FILE_RE = /\.(mp3|flac|m4a|aac|wav|ogg|opus|wma|alac|aiff?)$/i;
+// Library-root folders that are never an artist/album name.
+const GENERIC_FOLDERS = new Set([
+  "media",
+  "local",
+  "music",
+  "musik",
+  "media_source",
+  "audio",
+  "songs",
+  "downloads",
+]);
+
+function decodeSegment(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
+interface MediaInfo {
+  title?: string;
+  artist?: string;
+  album?: string;
+}
+
+// Some players (e.g. a Chromecast running the Default Media Receiver on a local
+// file) report no media_title/artist at all — only a media_content_id file URL.
+// A tidy library is laid out as .../<Artist>/<Album>/<track>.<ext>, so derive
+// what we can from the path: the filename (track number stripped) as the title,
+// and the two parent folders as album and artist. Best-effort fallback only —
+// real metadata always wins upstream.
+function mediaInfoFromContentId(contentId?: string): MediaInfo {
+  if (!contentId) return {};
+  const path = contentId.split("?")[0];
+  if (!AUDIO_FILE_RE.test(path)) return {};
+  const parts = path.split("/").map(decodeSegment).filter(Boolean);
+  const file = parts.pop();
+  if (!file) return {};
+  const bareName = file.replace(/\.[^.]+$/, "").trim();
+  // Strip a leading track number like "02 - ", "02. ", "3) ".
+  const title = bareName.replace(/^\d{1,3}\s*[-.)]\s*/, "").trim() || bareName;
+  const folder = (name?: string): string | undefined =>
+    name && !GENERIC_FOLDERS.has(name.toLowerCase()) ? name : undefined;
+  const album = folder(parts.pop());
+  const artist = folder(parts.pop());
+  return { title: title || undefined, artist, album };
+}
+
+interface BrowseItem {
+  title: string;
+  media_class?: string;
+  media_content_id: string;
+  media_content_type: string;
+  can_play?: boolean;
+  can_expand?: boolean;
+  thumbnail?: string | null;
+  children?: BrowseItem[];
+  children_media_class?: string;
+}
+
+interface BrowseCrumb {
+  title: string;
+  id?: string;
+  type?: string;
+}
+
+// media_class values come from HA's MediaClass enum. A live library here
+// returns only "directory", "music" and "app", but the map covers the whole
+// enum so other integrations (Plex, Jellyfin, podcasts, TV) read correctly too.
+const MEDIA_CLASS_ICONS: Record<string, string> = {
+  album: "mdi:album",
+  app: "mdi:application",
+  artist: "mdi:account-music",
+  channel: "mdi:television-classic",
+  composer: "mdi:music-clef-treble",
+  contributing_artist: "mdi:account-music",
+  directory: "mdi:folder",
+  episode: "mdi:play-box",
+  game: "mdi:gamepad-variant",
+  genre: "mdi:tag",
+  image: "mdi:image",
+  movie: "mdi:movie",
+  music: "mdi:music-note",
+  playlist: "mdi:playlist-music",
+  podcast: "mdi:podcast",
+  season: "mdi:playlist-play",
+  track: "mdi:music-note",
+  tv_show: "mdi:television-classic",
+  url: "mdi:link-variant",
+  video: "mdi:video",
+};
+
+function browseIcon(item: BrowseItem): string {
+  const byClass = item.media_class && MEDIA_CLASS_ICONS[item.media_class];
+  if (byClass) return byClass;
+  return item.can_expand ? "mdi:folder" : "mdi:play-circle-outline";
+}
 
 const OFF_STATES = new Set(["off", "unavailable", "unknown"]);
 const IDLE_STATES = new Set(["idle", "standby"]);
@@ -66,15 +196,48 @@ const artworkColorCache = new Map<string, string>();
 
 function clampLuminanceRgb(r: number, g: number, b: number): [number, number, number] {
   const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-  if (luma < 60) {
-    const t = (60 - luma) / 60;
-    return [r + (255 - r) * t * 0.5, g + (255 - g) * t * 0.5, b + (255 - b) * t * 0.5];
-  }
   if (luma > 200) {
     const t = (luma - 200) / 55;
     return [r * (1 - t * 0.5), g * (1 - t * 0.5), b * (1 - t * 0.5)];
   }
   return [r, g, b];
+}
+
+// WCAG relative luminance of an 8-bit sRGB triple.
+function relativeLuminance(r: number, g: number, b: number): number {
+  const f = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+function contrastRatio(a: number, b: number): number {
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+// The built-in palette is all light pastels, so a fixed dark ink (#1c1c1c) is
+// always legible on a filled accent. An artwork-derived accent carries no such
+// guarantee — a dark album cover yielded #4c3d56, a 1.71:1 ratio against that
+// ink, i.e. an all-but-invisible play glyph. Lighten toward white until the
+// filled button clears the AA bar for large graphics. Hue is preserved because
+// every channel moves toward white by the same fraction.
+function ensureInkContrast(r: number, g: number, b: number): [number, number, number] {
+  const inkLum = relativeLuminance(0x1c, 0x1c, 0x1c);
+  let lo = 0;
+  let hi = 1;
+  if (contrastRatio(relativeLuminance(r, g, b), inkLum) >= MEDIA_ACCENT_MIN_CONTRAST) {
+    return [r, g, b];
+  }
+  // White always passes, so a bisection on "fraction blended toward white"
+  // converges on the least-changed color that still clears the bar.
+  for (let i = 0; i < 12; i++) {
+    const t = (lo + hi) / 2;
+    const [tr, tg, tb] = [r, g, b].map((c) => c + (255 - c) * t) as [number, number, number];
+    if (contrastRatio(relativeLuminance(tr, tg, tb), inkLum) >= MEDIA_ACCENT_MIN_CONTRAST) hi = t;
+    else lo = t;
+  }
+  return [r, g, b].map((c) => c + (255 - c) * hi) as [number, number, number];
 }
 
 async function extractArtworkColor(url: string): Promise<string | undefined> {
@@ -109,7 +272,8 @@ async function extractArtworkColor(url: string): Promise<string | undefined> {
       count++;
     }
     if (count === 0) return undefined;
-    const [cr, cg, cb] = clampLuminanceRgb(r / count, g / count, b / count);
+    const [lr, lg, lb] = clampLuminanceRgb(r / count, g / count, b / count);
+    const [cr, cg, cb] = ensureInkContrast(lr, lg, lb);
     const hex = `#${[cr, cg, cb].map((x) => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2, "0")).join("")}`;
     if (artworkColorCache.size >= MEDIA_ARTWORK_COLOR_CACHE_SIZE) {
       const firstKey = artworkColorCache.keys().next().value;
@@ -132,14 +296,101 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
   @state() private _artworkColor?: string;
   @state() private _dragging = false;
   @state() private _dragVolume?: number;
+  // Real pixel width of the volume slider. The wave is drawn into a viewBox of
+  // this exact width so the end-dot renders as a circle (a fixed viewBox with
+  // preserveAspectRatio="none" would stretch it into an ellipse).
+  @state() private _volumeWidth = 220;
+  // Seeking (scrubbing) through the track.
+  @state() private _seeking = false;
+  @state() private _seekPosition?: number;
+  @state() private _progressWidth = 260;
+  // Browser section. `_browseCrumbs` is the navigation stack: index 0 is the
+  // player's own root, each further entry a level the user drilled into.
+  @state() private _browseOpen = false;
+  @state() private _browseTab: "queue" | "library" = "library";
+  @state() private _browseCrumbs: BrowseCrumb[] = [];
+  @state() private _browseItems: BrowseItem[] = [];
+  @state() private _browseLoading = false;
+  @state() private _browseError = false;
+  @state() private _queueItems?: BrowseItem[];
+  // undefined = not probed yet, false = this player has no queue (tab hidden).
+  @state() private _queueAvailable?: boolean;
+  // Phase of the flowing volume wave. Deliberately NOT @state: the animation
+  // advances it every frame and repaints just the one SVG path directly (see
+  // _syncWaveAnimation), so it must not trigger a full card re-render.
+  private _wavePhase = 0;
 
   @query(".volume-slider") private _volumeSliderEl?: HTMLDivElement;
+  @query(".progress-slider") private _progressSliderEl?: HTMLDivElement;
 
   private _positionTimer?: number;
   private _lastArtworkUrl?: string;
   private _volumeThrottleTimer?: number;
   private _pendingVolume?: number;
   private _lastVolumeCallTs = 0;
+  private _volumeResizeObserver?: ResizeObserver;
+  private _progressResizeObserver?: ResizeObserver;
+  private _waveRafId?: number;
+
+  private get _duration(): number {
+    return (this._entity?.attributes.media_duration as number | undefined) ?? 0;
+  }
+
+  private get _reducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  // Drives the flowing volume wave by repainting ONLY the one SVG path each
+  // frame — never this.requestUpdate(), so the rest of the card (and the wider
+  // dashboard) isn't re-rendered 60×/s, which would jank other interactions.
+  // requestAnimationFrame pauses itself while the tab is hidden, so no extra
+  // visibility handling is needed.
+  private _syncWaveAnimation(animate: boolean): void {
+    if (animate) {
+      if (this._waveRafId !== undefined) return;
+      const step = () => {
+        this._waveRafId = requestAnimationFrame(step);
+        this._wavePhase -= 0.08;
+        const path = this.renderRoot?.querySelector(".volume-active");
+        const width = this._volumeActiveWidth();
+        if (path && width > 1) {
+          path.setAttribute(
+            "d",
+            buildWavePath(
+              0,
+              width,
+              MEDIA_VOLUME_AMPLITUDE,
+              MEDIA_VOLUME_WAVELENGTH,
+              this._wavePhase,
+              MEDIA_VOLUME_WAVE_HEIGHT / 2,
+            ),
+          );
+        }
+      };
+      this._waveRafId = requestAnimationFrame(step);
+    } else if (this._waveRafId !== undefined) {
+      cancelAnimationFrame(this._waveRafId);
+      this._waveRafId = undefined;
+    }
+  }
+
+  // Active (filled) width of the volume wave from current state — shared by the
+  // render and the animation frame so they stay in sync.
+  private _volumeActiveWidth(): number {
+    const attrs = this._entity?.attributes ?? {};
+    const muted = !!attrs.is_volume_muted;
+    const entityVol = (attrs.volume_level as number | undefined) ?? 0;
+    const vol = this._dragging ? (this._dragVolume ?? entityVol) : entityVol;
+    const effVol = muted ? 0 : vol;
+    const available = Math.max(
+      0,
+      this._volumeWidth - MEDIA_VOLUME_GAP - MEDIA_VOLUME_DOT_RADIUS * 2,
+    );
+    return available * effVol;
+  }
 
   public static getStubConfig(hass: HomeAssistant): M3MediaCardConfig {
     const entities = Object.keys(hass?.states ?? {}).filter((eid) => eid.startsWith("media_player."));
@@ -181,13 +432,96 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     this._stopPositionTimer();
     if (this._volumeThrottleTimer !== undefined) clearTimeout(this._volumeThrottleTimer);
+    this._volumeResizeObserver?.disconnect();
+    this._volumeResizeObserver = undefined;
+    this._progressResizeObserver?.disconnect();
+    this._progressResizeObserver = undefined;
+    this._syncWaveAnimation(false);
   }
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     this._syncPositionTimer();
     this._maybeExtractColor();
+    this._observeVolumeWidth();
+    this._observeProgressWidth();
   }
+
+  // The volume slider mounts/unmounts with the VOLUME_SET feature, so the
+  // observer is (re)attached whenever the element appears.
+  private _observeVolumeWidth(): void {
+    const el = this._volumeSliderEl;
+    if (!el) {
+      this._volumeResizeObserver?.disconnect();
+      this._volumeResizeObserver = undefined;
+      return;
+    }
+    if (this._volumeResizeObserver) return;
+    this._volumeResizeObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width && Math.abs(width - this._volumeWidth) > 0.5) {
+        this._volumeWidth = width;
+      }
+    });
+    this._volumeResizeObserver.observe(el);
+    const w = el.getBoundingClientRect().width;
+    if (w) this._volumeWidth = w;
+  }
+
+  // The progress slider mounts/unmounts with media_duration, so the observer is
+  // (re)attached whenever the element appears. Measured width keeps the handle
+  // circular and the clientX→position math correct.
+  private _observeProgressWidth(): void {
+    const el = this._progressSliderEl;
+    if (!el) {
+      this._progressResizeObserver?.disconnect();
+      this._progressResizeObserver = undefined;
+      return;
+    }
+    if (this._progressResizeObserver) return;
+    this._progressResizeObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width && Math.abs(width - this._progressWidth) > 0.5) {
+        this._progressWidth = width;
+      }
+    });
+    this._progressResizeObserver.observe(el);
+    const w = el.getBoundingClientRect().width;
+    if (w) this._progressWidth = w;
+  }
+
+  private _positionFromClientX(clientX: number): number {
+    const el = this._progressSliderEl;
+    const duration = this._duration;
+    if (!el || duration <= 0) return 0;
+    const rect = el.getBoundingClientRect();
+    const pct = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
+    return Math.min(duration, Math.max(0, pct * duration));
+  }
+
+  private _handleSeekPointerDown = (e: PointerEvent): void => {
+    if (!this._progressSliderEl || this._duration <= 0) return;
+    e.preventDefault();
+    this._progressSliderEl.setPointerCapture(e.pointerId);
+    this._seeking = true;
+    this._seekPosition = this._positionFromClientX(e.clientX);
+  };
+
+  private _handleSeekPointerMove = (e: PointerEvent): void => {
+    if (!this._seeking) return;
+    this._seekPosition = this._positionFromClientX(e.clientX);
+  };
+
+  private _handleSeekPointerUp = (): void => {
+    if (!this._seeking) return;
+    this._seeking = false;
+    if (this._seekPosition !== undefined) {
+      this._callService("media_seek", { seek_position: Math.round(this._seekPosition) });
+      // Optimistically hold the scrubbed position until the player reports back.
+      this._displayPosition = this._seekPosition;
+    }
+    this._seekPosition = undefined;
+  };
 
   private get _language(): string {
     return this.hass?.locale?.language ?? this.hass?.language ?? "en";
@@ -398,7 +732,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
               <button
                 class="power-btn"
                 ?disabled=${entity.state === "unavailable"}
-                aria-label="mdi:power"
+                aria-label=${this._t("media_power")}
                 @click=${(e: Event) => {
                   e.stopPropagation();
                   this._callService(off ? "turn_on" : "turn_off");
@@ -412,17 +746,134 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _tv(key: TranslationKey, vars: Record<string, string | number>): string {
+    let out = this._t(key);
+    for (const [k, v] of Object.entries(vars)) out = out.replaceAll(`{${k}}`, String(v));
+    return out;
+  }
+
+  private get _browseHeight(): number {
+    return this._config?.browse_height ?? DEFAULT_MEDIA_BROWSE_HEIGHT;
+  }
+
+  private async _browseCall(id?: string, type?: string): Promise<BrowseItem> {
+    return this.hass!.callWS<BrowseItem>({
+      type: "media_player/browse_media",
+      entity_id: this._config!.entity,
+      ...(id !== undefined ? { media_content_id: id, media_content_type: type ?? "" } : {}),
+    });
+  }
+
+  // Probed once per card. The spec's queue source is a browse level of type
+  // "queue"; integrations without one simply reject the call, and the tab is
+  // hidden rather than shown empty.
+  private async _probeQueue(): Promise<void> {
+    if (this._queueAvailable !== undefined) return;
+    try {
+      const res = await this._browseCall("", "queue");
+      const items = (res.children ?? []).filter((c) => c.can_play);
+      this._queueItems = items;
+      this._queueAvailable = items.length > 0;
+    } catch {
+      this._queueAvailable = false;
+      this._queueItems = undefined;
+    }
+    if (this._queueAvailable === false && this._browseTab === "queue") this._browseTab = "library";
+  }
+
+  private async _loadBrowseLevel(): Promise<void> {
+    this._browseLoading = true;
+    this._browseError = false;
+    const last = this._browseCrumbs[this._browseCrumbs.length - 1];
+    try {
+      const res = await this._browseCall(last?.id, last?.type);
+      this._browseItems = res.children ?? [];
+      if (this._browseCrumbs.length === 0) {
+        this._browseCrumbs = [{ title: res.title || this._t("media_browse_root") }];
+      }
+    } catch {
+      this._browseError = true;
+      this._browseItems = [];
+    } finally {
+      this._browseLoading = false;
+    }
+  }
+
+  private _toggleBrowse = (): void => {
+    this._browseOpen = !this._browseOpen;
+    if (!this._browseOpen) return;
+    this._browseTab = this._config?.default_tab ?? "library";
+    void this._probeQueue();
+    if (this._browseItems.length === 0 && !this._browseLoading) void this._loadBrowseLevel();
+  };
+
+  private _openItem(item: BrowseItem): void {
+    if (item.can_expand) {
+      this._browseCrumbs = [
+        ...this._browseCrumbs,
+        { title: item.title, id: item.media_content_id, type: item.media_content_type },
+      ];
+      this._browseItems = [];
+      void this._loadBrowseLevel();
+      return;
+    }
+    if (item.can_play) this._playItem(item);
+  }
+
+  private _playItem(item: BrowseItem): void {
+    this._callService("play_media", {
+      media_content_id: item.media_content_id,
+      media_content_type: item.media_content_type,
+    });
+  }
+
+  private _crumbTo(index: number): void {
+    if (index >= this._browseCrumbs.length - 1) return;
+    this._browseCrumbs = this._browseCrumbs.slice(0, index + 1);
+    this._browseItems = [];
+    void this._loadBrowseLevel();
+  }
+
   private _renderPlayback(entity: { state: string }, attrs: Record<string, unknown>, name: string) {
     const features = (attrs.supported_features as number) ?? 0;
-    const title = (attrs.media_title as string) || name;
-    const artist = attrs.media_artist as string | undefined;
-    const source = attrs.source as string | undefined;
+    const parsed = mediaInfoFromContentId(attrs.media_content_id as string | undefined);
+    const title = (attrs.media_title as string) || parsed.title || name;
+    const artist = (attrs.media_artist as string | undefined) || parsed.artist;
+    const album = (attrs.media_album_name as string | undefined) || parsed.album;
+    // Prefer a real source label; fall back to the album so there's always a
+    // third line of context when it's available.
+    const subline = (attrs.source as string | undefined) || album;
     const picture = attrs.entity_picture as string | undefined;
     const duration = attrs.media_duration as number | undefined;
     const isPlaying = entity.state === "playing";
     const volume = (attrs.volume_level as number | undefined) ?? 0;
     const displayVolume = this._dragging ? (this._dragVolume ?? volume) : volume;
     const muted = !!attrs.is_volume_muted;
+
+    // Play/pause is the row's state indicator. A player that cannot pause but
+    // can stop (many streaming/radio sources) gets a stop glyph instead, so the
+    // button never offers an action the player would reject.
+    const canPause = (features & FEATURE.PAUSE) !== 0;
+    const canStop = (features & FEATURE.STOP) !== 0;
+    const hasPlayControl = (features & (FEATURE.PLAY | FEATURE.PAUSE | FEATURE.STOP)) !== 0;
+    const stopsInsteadOfPausing = !canPause && canStop;
+    const pauseIcon = stopsInsteadOfPausing ? "mdi:stop" : "mdi:pause";
+    const playAction = isPlaying
+      ? stopsInsteadOfPausing
+        ? "media_stop"
+        : "media_pause"
+      : "media_play";
+    const playLabel: TranslationKey = isPlaying
+      ? stopsInsteadOfPausing
+        ? "media_stop"
+        : "media_pause"
+      : "media_play";
+    const repeatOn = !!attrs.repeat && attrs.repeat !== "off";
+
+    // The volume wave flows only while sound is actually coming out.
+    this._syncWaveAnimation(
+      isPlaying && !muted && displayVolume > 0 && !this._reducedMotion,
+    );
 
     return html`
       <div class="playback">
@@ -432,15 +883,23 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
           </div>
           <div class="meta">
             <div class="meta-title">${title}</div>
-            ${artist ? html`<div class="meta-artist">${artist}</div>` : nothing}
-            ${source ? html`<div class="meta-source">${source}</div>` : nothing}
+            ${artist
+              ? html`<div class="meta-artist">
+                  <ha-icon icon="mdi:account-music"></ha-icon><span>${artist}</span>
+                </div>`
+              : nothing}
+            ${subline
+              ? html`<div class="meta-source">
+                  <ha-icon icon="mdi:album"></ha-icon><span>${subline}</span>
+                </div>`
+              : nothing}
           </div>
         </div>
 
         ${duration
           ? html`
               <div class="progress">
-                ${this._renderProgressWave(duration)}
+                ${this._renderProgress(duration, features)}
                 <div class="progress-times">
                   <span>${this._formatTime(this._displayPosition)}</span>
                   <span>${this._formatTime(duration)}</span>
@@ -450,45 +909,68 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
           : nothing}
 
         <div class="transport-row">
+          ${this._config?.show_shuffle_repeat && features & FEATURE.SHUFFLE_SET
+            ? html`
+                <button
+                  class="pill-toggle ${attrs.shuffle ? "active" : ""}"
+                  aria-label=${this._t("media_shuffle")}
+                  aria-pressed=${attrs.shuffle ? "true" : "false"}
+                  @click=${() => this._callService("shuffle_set", { shuffle: !attrs.shuffle })}
+                >
+                  <ha-icon icon="mdi:shuffle-variant"></ha-icon>
+                </button>
+              `
+            : nothing}
           ${features & FEATURE.PREVIOUS_TRACK
             ? html`
-                <button class="transport-btn" @click=${() => this._callService("media_previous_track")}>
+                <button
+                  class="transport-btn"
+                  aria-label=${this._t("media_previous")}
+                  @click=${() => this._callService("media_previous_track")}
+                >
                   <ha-icon icon="mdi:skip-previous"></ha-icon>
                 </button>
               `
             : nothing}
-          ${features & (FEATURE.PAUSE | FEATURE.PLAY)
+          ${hasPlayControl
             ? html`
-                <button class="play-btn" @click=${() => this._callService(isPlaying ? "media_pause" : "media_play")}>
-                  <ha-icon icon=${isPlaying ? "mdi:pause" : "mdi:play"}></ha-icon>
+                <button
+                  class="play-btn ${isPlaying ? "playing" : ""}"
+                  aria-label=${this._t(playLabel)}
+                  @click=${() => this._callService(playAction)}
+                >
+                  <span class="icon-stack">
+                    <span class="icon-layer ${isPlaying ? "" : "swapped"}">
+                      <ha-icon icon=${pauseIcon}></ha-icon>
+                    </span>
+                    <span class="icon-layer ${isPlaying ? "swapped" : ""}">
+                      <ha-icon icon="mdi:play"></ha-icon>
+                    </span>
+                  </span>
                 </button>
               `
             : nothing}
           ${features & FEATURE.NEXT_TRACK
             ? html`
-                <button class="transport-btn" @click=${() => this._callService("media_next_track")}>
-                  <ha-icon icon="mdi:skip-next"></ha-icon>
-                </button>
-              `
-            : nothing}
-          ${this._config?.show_shuffle_repeat && features & FEATURE.SHUFFLE_SET
-            ? html`
                 <button
-                  class="pill-toggle ${attrs.shuffle ? "active" : ""}"
-                  @click=${() => this._callService("shuffle_set", { shuffle: !attrs.shuffle })}
+                  class="transport-btn"
+                  aria-label=${this._t("media_next")}
+                  @click=${() => this._callService("media_next_track")}
                 >
-                  <ha-icon icon="mdi:shuffle"></ha-icon>
+                  <ha-icon icon="mdi:skip-next"></ha-icon>
                 </button>
               `
             : nothing}
           ${this._config?.show_shuffle_repeat && features & FEATURE.REPEAT_SET
             ? html`
                 <button
-                  class="pill-toggle ${attrs.repeat && attrs.repeat !== "off" ? "active" : ""}"
+                  class="pill-toggle ${repeatOn ? "active" : ""}"
+                  aria-label=${this._t("media_repeat")}
+                  aria-pressed=${repeatOn ? "true" : "false"}
                   @click=${() =>
                     this._callService("repeat_set", { repeat: attrs.repeat === "off" ? "all" : "off" })}
                 >
-                  <ha-icon icon="mdi:repeat"></ha-icon>
+                  <ha-icon icon=${attrs.repeat === "one" ? "mdi:repeat-once" : "mdi:repeat"}></ha-icon>
                 </button>
               `
             : nothing}
@@ -497,41 +979,233 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         ${features & FEATURE.VOLUME_SET ? this._renderVolume(displayVolume, muted, features) : nothing}
 
         ${this._config?.show_source_select && attrs.source_list
-          ? this._renderSourceSelect(attrs.source_list as string[], source)
+          ? this._renderSourceSelect(attrs.source_list as string[], attrs.source as string | undefined)
           : nothing}
+
+        ${this._renderBrowser(features)}
       </div>
     `;
   }
 
-  private _renderProgressWave(duration: number) {
-    const pct = duration > 0 ? Math.min(1, this._displayPosition / duration) : 0;
-    const width = 260;
-    const midY = MEDIA_WAVE_HEIGHT / 2;
-    const gap = 8;
-    const activeEnd = Math.max(0, pct * width - gap / 2);
-    const trackStart = Math.min(width, pct * width + gap / 2);
+  private _renderBrowser(features: number) {
+    if (this._config?.show_browser === false) return nothing;
+    if (!(features & FEATURE.BROWSE_MEDIA)) return nothing;
+
+    const next = this._queueItems?.[0];
+    const label = next
+      ? this._tv("media_browse_next", { title: next.title })
+      : this._t("media_browse_open");
+
     return html`
-      <svg class="progress-svg" viewBox="0 0 ${width} ${MEDIA_WAVE_HEIGHT}" preserveAspectRatio="none">
-        ${activeEnd > 1
-          ? svg`<path class="progress-active" d=${buildWavePath(0, activeEnd, 1.6, 14, 0, midY)} fill="none"></path>`
+      <div class="browser">
+        <button
+          class="browse-toggle ${this._browseOpen ? "open" : ""}"
+          aria-expanded=${this._browseOpen ? "true" : "false"}
+          aria-label=${this._t("media_browse_toggle")}
+          @click=${this._toggleBrowse}
+        >
+          <span class="browse-toggle-icon">
+            <ha-icon icon=${next ? "mdi:playlist-music" : "mdi:music-box-multiple"}></ha-icon>
+          </span>
+          <span class="browse-toggle-label">${label}</span>
+          <ha-icon class="browse-chevron" icon="mdi:chevron-down"></ha-icon>
+        </button>
+        ${this._browseOpen ? this._renderBrowsePanel() : nothing}
+      </div>
+    `;
+  }
+
+  private _renderBrowsePanel() {
+    const showQueueTab = this._queueAvailable === true;
+    return html`
+      <div class="browse-panel">
+        ${showQueueTab
+          ? html`
+              <div class="browse-tabs" role="tablist">
+                ${(["queue", "library"] as const).map(
+                  (tab) => html`
+                    <button
+                      class="browse-tab ${this._browseTab === tab ? "active" : ""}"
+                      role="tab"
+                      aria-selected=${this._browseTab === tab ? "true" : "false"}
+                      @click=${() => (this._browseTab = tab)}
+                    >
+                      ${this._t(tab === "queue" ? "media_browse_tab_queue" : "media_browse_tab_library")}
+                    </button>
+                  `,
+                )}
+              </div>
+            `
           : nothing}
-        ${trackStart < width - 1
-          ? svg`<line class="progress-track" x1=${trackStart} y1=${midY} x2=${width} y2=${midY}></line>`
-          : nothing}
-        <circle class="progress-dot" cx=${Math.min(width, pct * width)} cy=${midY} r="3"></circle>
-      </svg>
+        ${this._browseTab === "queue" && showQueueTab
+          ? this._renderQueueList()
+          : this._renderLibraryList()}
+      </div>
+    `;
+  }
+
+  private _renderQueueList() {
+    const items = this._queueItems ?? [];
+    return html`
+      <div class="browse-list" style=${`max-height: ${this._browseHeight}px;`}>
+        ${items.map(
+          (item, i) => html`
+            <button class="browse-row" @click=${() => this._playItem(item)}>
+              <span class="browse-num">${i + 1}</span>
+              <span class="browse-text">
+                <span class="browse-title">${item.title}</span>
+              </span>
+            </button>
+          `,
+        )}
+      </div>
+    `;
+  }
+
+  private _renderLibraryList() {
+    const crumbs = this._browseCrumbs;
+    const shown = this._browseItems.slice(0, MEDIA_BROWSE_MAX_ROWS);
+    const hidden = this._browseItems.length - shown.length;
+
+    return html`
+      ${crumbs.length > 1
+        ? html`
+            <div class="browse-crumbs">
+              ${crumbs.map((c, i) =>
+                i === crumbs.length - 1
+                  ? html`<span class="crumb current">${c.title}</span>`
+                  : html`<button class="crumb" @click=${() => this._crumbTo(i)}>${c.title}</button>
+                      <ha-icon class="crumb-sep" icon="mdi:chevron-right"></ha-icon>`,
+              )}
+            </div>
+          `
+        : nothing}
+      <div class="browse-list" style=${`max-height: ${this._browseHeight}px;`}>
+        ${this._browseLoading
+          ? // Skeleton rows: the list visibly takes shape. A spinner in this
+            // spot reads as "something may be wrong" rather than "loading".
+            Array.from(
+              { length: MEDIA_BROWSE_SKELETON_ROWS },
+              () => html`<div class="browse-row skeleton"><span class="sk-icon"></span><span class="sk-line"></span></div>`,
+            )
+          : this._browseError
+            ? html`<div class="browse-note">${this._t("media_browse_error")}</div>`
+            : shown.length === 0
+              ? html`<div class="browse-note">${this._t("media_browse_empty")}</div>`
+              : html`
+                  ${shown.map(
+                    (item) => html`
+                      <button
+                        class="browse-row"
+                        aria-label=${this._tv(item.can_expand ? "media_browse_enter" : "media_browse_play", {
+                          title: item.title,
+                        })}
+                        @click=${() => this._openItem(item)}
+                      >
+                        <span
+                          class="browse-icon"
+                          style=${item.thumbnail ? `background-image: url("${item.thumbnail}");` : ""}
+                        >
+                          ${item.thumbnail ? nothing : html`<ha-icon icon=${browseIcon(item)}></ha-icon>`}
+                        </span>
+                        <span class="browse-text">
+                          <span class="browse-title">${item.title}</span>
+                        </span>
+                        ${item.can_expand
+                          ? html`<ha-icon class="browse-arrow" icon="mdi:chevron-right"></ha-icon>`
+                          : nothing}
+                      </button>
+                    `,
+                  )}
+                  ${hidden > 0
+                    ? html`<div class="browse-note">${this._tv("media_browse_more", { n: hidden })}</div>`
+                    : nothing}
+                `}
+      </div>
+    `;
+  }
+
+  private _renderProgress(duration: number, features: number) {
+    const seekable = (features & FEATURE.SEEK) !== 0;
+    const width = this._progressWidth;
+    const midY = MEDIA_PROGRESS_HEIGHT / 2;
+    const gap = MEDIA_PROGRESS_GAP;
+    const handleR = MEDIA_PROGRESS_HANDLE_RADIUS;
+    const pos =
+      this._seeking && this._seekPosition !== undefined
+        ? this._seekPosition
+        : this._displayPosition;
+    const pct = duration > 0 ? Math.min(1, Math.max(0, pos / duration)) : 0;
+    // Keep the handle fully inside the track at the ends.
+    const tipX = handleR + pct * Math.max(0, width - 2 * handleR);
+    const activeEnd = Math.max(0, tipX - gap);
+    const trackStart = Math.min(width, tipX + gap);
+    const svg_ = svg`<svg
+      class="progress-svg"
+      viewBox="0 0 ${width} ${MEDIA_PROGRESS_HEIGHT}"
+      preserveAspectRatio="none"
+    >
+      ${activeEnd > 1
+        ? svg`<line class="progress-active" x1="0" y1=${midY} x2=${activeEnd} y2=${midY}></line>`
+        : nothing}
+      ${trackStart < width - 1
+        ? svg`<line class="progress-track" x1=${trackStart} y1=${midY} x2=${width} y2=${midY}></line>`
+        : nothing}
+      ${seekable
+        ? svg`<circle class="progress-handle ${this._seeking ? "seeking" : ""}" cx=${tipX} cy=${midY} r=${handleR}></circle>`
+        : svg`<circle class="progress-dot" cx=${tipX} cy=${midY} r="3"></circle>`}
+    </svg>`;
+
+    if (!seekable) {
+      return html`<div class="progress-slider static">${svg_}</div>`;
+    }
+    return html`
+      <div
+        class="progress-slider"
+        role="slider"
+        aria-label=${this._t("media_seek_label")}
+        aria-valuemin="0"
+        aria-valuemax=${Math.round(duration)}
+        aria-valuenow=${Math.round(pos)}
+        tabindex="0"
+        @pointerdown=${this._handleSeekPointerDown}
+        @pointermove=${this._handleSeekPointerMove}
+        @pointerup=${this._handleSeekPointerUp}
+        @pointercancel=${this._handleSeekPointerUp}
+        @touchstart=${stopSwipe}
+        @touchmove=${stopSwipe}
+        @mousedown=${stopSwipe}
+        @mousemove=${stopSwipe}
+      >
+        ${svg_}
+      </div>
     `;
   }
 
   private _renderVolume(volume: number, muted: boolean, features: number) {
-    const width = 220;
+    // Same wavy form as the progress-card ("washing machine") bar: a visible
+    // wave for the active portion, a gap, a straight track, and a round dot at
+    // the end. Drawn at the measured pixel width so the dot stays circular.
+    const width = this._volumeWidth;
     const midY = MEDIA_VOLUME_WAVE_HEIGHT / 2;
-    const activeWidth = volume * width;
+    const trackEndX = width - MEDIA_VOLUME_DOT_RADIUS;
+    // Muted collapses the bar to empty (just track + end dot).
+    const activeWidth = this._volumeActiveWidth();
+    const hasActive = activeWidth > 1;
+    const trackStartX = hasActive ? activeWidth + MEDIA_VOLUME_GAP : 0;
+    const activePath = hasActive
+      ? buildWavePath(0, activeWidth, MEDIA_VOLUME_AMPLITUDE, MEDIA_VOLUME_WAVELENGTH, this._wavePhase, midY)
+      : "";
     return html`
       <div class="volume-row">
         ${features & FEATURE.VOLUME_MUTE
           ? html`
-              <button class="mute-btn ${muted ? "active" : ""}" @click=${() => this._callService("volume_mute", { is_volume_muted: !muted })}>
+              <button
+                class="mute-btn ${muted ? "active" : ""}"
+                aria-label=${this._t(muted ? "media_unmute" : "media_mute")}
+                aria-pressed=${muted ? "true" : "false"}
+                @click=${() => this._callService("volume_mute", { is_volume_muted: !muted })}
+              >
                 <ha-icon icon=${muted ? "mdi:volume-off" : "mdi:volume-high"}></ha-icon>
               </button>
             `
@@ -548,14 +1222,19 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
           @pointermove=${this._handleVolumePointerMove}
           @pointerup=${this._handleVolumePointerUp}
           @pointercancel=${this._handleVolumePointerUp}
+          @touchstart=${stopSwipe}
+          @touchmove=${stopSwipe}
+          @mousedown=${stopSwipe}
+          @mousemove=${stopSwipe}
         >
           <svg class="volume-svg" viewBox="0 0 ${width} ${MEDIA_VOLUME_WAVE_HEIGHT}" preserveAspectRatio="none">
-            ${activeWidth > 1
-              ? svg`<path class="volume-active" d=${buildWavePath(0, activeWidth, 3, 20, 0, midY)} fill="none"></path>`
+            ${hasActive
+              ? svg`<path class="volume-active" d=${activePath} fill="none"></path>`
               : nothing}
-            ${activeWidth < width - 1
-              ? svg`<line class="volume-track" x1=${activeWidth} y1=${midY} x2=${width} y2=${midY}></line>`
+            ${trackEndX > trackStartX
+              ? svg`<line class="volume-track" x1=${trackStartX} y1=${midY} x2=${trackEndX} y2=${midY}></line>`
               : nothing}
+            <circle class="volume-dot" cx=${trackEndX} cy=${midY} r=${MEDIA_VOLUME_DOT_RADIUS}></circle>
           </svg>
         </div>
       </div>
@@ -689,22 +1368,37 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         overflow: hidden;
       }
 
-      .meta-artist {
-        font-size: 12px;
-        opacity: 0.65;
+      .meta-artist,
+      .meta-source {
+        display: flex;
+        align-items: center;
+        gap: 5px;
         color: var(--m3p-secondary-text);
+        min-width: 0;
+      }
+
+      .meta-artist span,
+      .meta-source span {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
+      .meta-artist ha-icon,
+      .meta-source ha-icon {
+        flex-shrink: 0;
+        --mdc-icon-size: 14px;
+        opacity: 0.8;
+      }
+
+      .meta-artist {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
       .meta-source {
         font-size: 11px;
         opacity: 0.5;
-        color: var(--m3p-secondary-text);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
       .progress {
@@ -713,27 +1407,54 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         gap: 2px;
       }
 
+      .progress-slider {
+        width: 100%;
+        height: ${MEDIA_PROGRESS_HEIGHT}px;
+        cursor: pointer;
+        touch-action: none;
+        outline: none;
+      }
+
+      .progress-slider.static {
+        cursor: default;
+      }
+
+      .progress-slider:focus-visible {
+        outline: 2px solid var(--mc-accent);
+        outline-offset: 2px;
+        border-radius: 8px;
+      }
+
       .progress-svg {
         display: block;
         width: 100%;
-        height: ${MEDIA_WAVE_HEIGHT}px;
+        height: 100%;
         overflow: visible;
       }
 
       .progress-active {
         stroke: var(--mc-accent);
-        stroke-width: 5px;
+        stroke-width: ${MEDIA_PROGRESS_STROKE}px;
         stroke-linecap: round;
       }
 
       .progress-track {
         stroke: color-mix(in srgb, var(--primary-text-color) 16%, transparent);
-        stroke-width: 5px;
+        stroke-width: ${MEDIA_PROGRESS_STROKE}px;
         stroke-linecap: round;
       }
 
       .progress-dot {
         fill: var(--mc-accent);
+      }
+
+      .progress-handle {
+        fill: var(--mc-accent);
+        transition: r 0.12s ease;
+      }
+
+      .progress-handle.seeking {
+        r: ${MEDIA_PROGRESS_HANDLE_RADIUS + 1};
       }
 
       .progress-times {
@@ -758,7 +1479,9 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         border: none;
         border-radius: ${MEDIA_TRANSPORT_BTN_RADIUS}px;
         background: var(--m3p-transport-btn-bg);
-        color: var(--m3p-text);
+        /* 90% of the text color rather than a literal rgba(255,255,255,.9):
+           the reference design is dark-theme, this reads correctly in both. */
+        color: color-mix(in srgb, var(--m3p-text) 90%, transparent);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -770,18 +1493,65 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         width: ${MEDIA_PLAY_BTN_SIZE}px;
         height: ${MEDIA_PLAY_BTN_SIZE}px;
         border: none;
-        border-radius: ${MEDIA_PLAY_BTN_RADIUS}px;
+        /* Paused is a full circle; playing morphs to a squircle. The button
+           is the transport row's state indicator, so the shape carries it. */
+        border-radius: ${MEDIA_PLAY_BTN_RADIUS_PAUSED}px;
         background: var(--mc-accent);
-        color: #101010;
+        /* Dark ink on a filled accent, same value as todo/time/counter — the
+           suite's accents are all light pastels, so a fixed dark glyph is
+           readable in either theme where white would not be. */
+        color: #1c1c1c;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: border-radius 300ms ${EASING};
+        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+      }
+
+      .play-btn.playing {
+        border-radius: ${MEDIA_PLAY_BTN_RADIUS_PLAYING}px;
       }
 
       .play-btn ha-icon {
-        --mdc-icon-size: 26px;
+        --mdc-icon-size: ${MEDIA_PLAY_ICON_SIZE}px;
+      }
+
+      .transport-btn ha-icon {
+        --mdc-icon-size: ${MEDIA_TRANSPORT_ICON_SIZE}px;
+      }
+
+      .pill-toggle ha-icon {
+        --mdc-icon-size: ${MEDIA_PILL_ICON_SIZE}px;
+      }
+
+      /* Both glyphs sit stacked so the swap cross-fades without a layout
+         jump — the outgoing one shrinks out, the incoming one scales in. */
+      .icon-stack {
+        position: relative;
+        width: ${MEDIA_PLAY_ICON_SIZE}px;
+        height: ${MEDIA_PLAY_ICON_SIZE}px;
+      }
+
+      .icon-layer {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transform: scale(1);
+        transition:
+          opacity ${MEDIA_ICON_MORPH_MS}ms ${EASING},
+          transform ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+      }
+
+      .icon-layer.swapped {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+
+      .card-inner.no-animations .icon-layer {
+        transition: none;
       }
 
       .card-inner.no-animations .play-btn {
@@ -790,21 +1560,23 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
       .pill-toggle {
         flex-shrink: 0;
-        width: 36px;
-        height: 36px;
+        width: ${MEDIA_PILL_BTN_SIZE}px;
+        height: ${MEDIA_PILL_BTN_SIZE}px;
         border: none;
-        border-radius: 14px;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
-        color: var(--m3p-secondary-text);
+        border-radius: ${MEDIA_PILL_BTN_RADIUS}px;
+        background: var(--m3p-transport-btn-bg);
+        color: color-mix(in srgb, var(--m3p-text) 75%, transparent);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
+      /* Active fills with the accent, so the glyph flips to dark ink — the
+         same pairing as the play button. */
       .pill-toggle.active {
-        background: var(--m3p-pill-active-bg);
-        color: var(--mc-accent);
+        background: var(--mc-accent);
+        color: #1c1c1c;
       }
 
       .volume-row {
@@ -861,14 +1633,267 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
       .volume-active {
         stroke: var(--mc-accent);
-        stroke-width: 14px;
+        stroke-width: 6px;
         stroke-linecap: round;
       }
 
       .volume-track {
-        stroke: color-mix(in srgb, var(--primary-text-color) 13%, transparent);
-        stroke-width: 14px;
+        stroke: color-mix(in srgb, var(--primary-text-color) 16%, transparent);
+        stroke-width: 6px;
         stroke-linecap: round;
+      }
+
+      .volume-dot {
+        fill: var(--mc-accent);
+      }
+
+      /* ---- Browser (Warteschlange + Bibliothek) ---- */
+      .browser {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .browse-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        height: ${MEDIA_BROWSE_TOGGLE_HEIGHT}px;
+        padding: 0 12px;
+        border: none;
+        border-radius: ${MEDIA_BROWSE_TOGGLE_RADIUS}px;
+        background: var(--m3p-transport-btn-bg);
+        color: var(--m3p-text);
+        cursor: pointer;
+        text-align: left;
+        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+      }
+
+      .browse-toggle.open {
+        border-radius: ${MEDIA_BROWSE_TAB_RADIUS_ACTIVE}px;
+      }
+
+      .card-inner.no-animations .browse-toggle,
+      .card-inner.no-animations .browse-chevron,
+      .card-inner.no-animations .browse-tab {
+        transition: none;
+      }
+
+      .browse-toggle-icon {
+        flex-shrink: 0;
+        width: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
+        background: var(--m3p-icon-bg);
+        color: var(--mc-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .browse-toggle-icon ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .browse-toggle-label {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .browse-chevron {
+        flex-shrink: 0;
+        --mdc-icon-size: 20px;
+        color: var(--m3p-secondary-text);
+        transition: transform ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+      }
+
+      .browse-toggle.open .browse-chevron {
+        transform: rotate(180deg);
+      }
+
+      .browse-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .browse-tabs {
+        display: flex;
+        gap: 6px;
+      }
+
+      .browse-tab {
+        height: ${MEDIA_BROWSE_TAB_HEIGHT}px;
+        padding: 0 14px;
+        border: none;
+        border-radius: ${MEDIA_BROWSE_TAB_RADIUS}px;
+        background: var(--m3p-transport-btn-bg);
+        color: var(--m3p-secondary-text);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+      }
+
+      .browse-tab.active {
+        border-radius: ${MEDIA_BROWSE_TAB_RADIUS_ACTIVE}px;
+        background: var(--mc-accent);
+        color: #1c1c1c;
+      }
+
+      .browse-crumbs {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 2px;
+        font-size: 11px;
+        color: var(--m3p-secondary-text);
+      }
+
+      .crumb {
+        border: none;
+        background: none;
+        padding: 2px 4px;
+        font: inherit;
+        color: var(--mc-accent);
+        cursor: pointer;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .crumb.current {
+        color: var(--m3p-secondary-text);
+        cursor: default;
+        font-weight: 600;
+      }
+
+      .crumb-sep {
+        --mdc-icon-size: 14px;
+        opacity: 0.5;
+      }
+
+      .browse-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+
+      .browse-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        width: 100%;
+        height: ${MEDIA_BROWSE_ROW_HEIGHT}px;
+        padding: 0 10px;
+        border: none;
+        border-radius: ${MEDIA_BROWSE_ROW_RADIUS}px;
+        background: var(--m3p-transport-btn-bg);
+        color: var(--m3p-text);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .browse-row:hover {
+        background: var(--m3p-pill-active-bg);
+      }
+
+      .browse-icon {
+        flex-shrink: 0;
+        width: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
+        background: var(--m3p-icon-bg) center/cover no-repeat;
+        color: var(--mc-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .browse-icon ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .browse-num {
+        flex-shrink: 0;
+        width: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
+        background: var(--m3p-icon-bg);
+        color: var(--mc-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .browse-text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .browse-title {
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .browse-arrow {
+        flex-shrink: 0;
+        --mdc-icon-size: 18px;
+        color: var(--m3p-secondary-text);
+      }
+
+      .browse-note {
+        padding: 10px;
+        font-size: 12px;
+        color: var(--m3p-secondary-text);
+        text-align: center;
+      }
+
+      /* Skeletons statt Spinner: die Liste nimmt sichtbar Gestalt an. */
+      .browse-row.skeleton {
+        cursor: default;
+        opacity: 0.5;
+      }
+
+      .sk-icon {
+        width: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
+        border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
+        background: var(--m3p-icon-bg);
+        flex-shrink: 0;
+      }
+
+      .sk-line {
+        height: 10px;
+        border-radius: 5px;
+        flex: 1;
+        background: var(--m3p-icon-bg);
+        animation: sk-pulse 1.4s ease-in-out infinite;
+      }
+
+      .card-inner.no-animations .sk-line {
+        animation: none;
+      }
+
+      @keyframes sk-pulse {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 0.9; }
       }
 
       .source-row {

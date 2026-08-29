@@ -1,7 +1,7 @@
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor, M3MediaCardConfig } from "./types";
-import { DEFAULT_MEDIA_RADIUS } from "./const";
+import { DEFAULT_MEDIA_RADIUS, DEFAULT_MEDIA_BROWSE_HEIGHT } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
 import { radiusLabelMap } from "./shared/radius-editor";
@@ -42,6 +42,23 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       { name: "name", selector: { text: {} } },
       { name: "show_source_select", selector: { boolean: {} } },
       { name: "show_shuffle_repeat", selector: { boolean: {} } },
+      { name: "show_browser", selector: { boolean: {} } },
+      {
+        name: "default_tab",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "queue", label: localize("editor_media_tab_queue", this._language) },
+              { value: "library", label: localize("editor_media_tab_library", this._language) },
+            ],
+          },
+        },
+      },
+      {
+        name: "browse_height",
+        selector: { number: { mode: "box", min: 80, max: 600, step: 10, unit_of_measurement: "px" } },
+      },
     ];
   }
 
@@ -69,6 +86,9 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       name: "editor_name",
       show_source_select: "editor_media_show_source_select",
       show_shuffle_repeat: "editor_media_show_shuffle_repeat",
+      show_browser: "editor_media_show_browser",
+      default_tab: "editor_media_default_tab",
+      browse_height: "editor_media_browse_height",
       use_artwork_color: "editor_media_use_artwork_color",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
@@ -165,6 +185,9 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       name: this._config.name,
       show_source_select: this._config.show_source_select ?? false,
       show_shuffle_repeat: this._config.show_shuffle_repeat ?? false,
+      show_browser: this._config.show_browser ?? true,
+      default_tab: this._config.default_tab ?? "library",
+      browse_height: this._config.browse_height ?? DEFAULT_MEDIA_BROWSE_HEIGHT,
     };
     const useArtworkData = { use_artwork_color: this._config.use_artwork_color ?? true };
     const animationData = { animation: this._config.animation ?? "auto" };

@@ -582,15 +582,67 @@ export const DEFAULT_MEDIA_RADIUS = RADIUS.card;
 export const DEFAULT_MEDIA_ACCENT = PALETTE.media;
 export const MEDIA_ARTWORK_SIZE = 88;
 export const MEDIA_ARTWORK_RADIUS = 24;
-export const MEDIA_PLAY_BTN_SIZE = 56;
-export const MEDIA_PLAY_BTN_RADIUS = RADIUS.squircle56;
-export const MEDIA_TRANSPORT_BTN_SIZE = 44;
-export const MEDIA_TRANSPORT_BTN_RADIUS = 22;
+// Transport bar. The play/pause button is the row's state indicator: a
+// squircle while playing, morphing to a full circle when paused. Every icon is
+// an inline SVG (see shared/icons.ts), so the icon sizes are explicit here
+// rather than coming from --mdc-icon-size.
+export const MEDIA_PLAY_BTN_SIZE = 62;
+export const MEDIA_PLAY_BTN_RADIUS_PLAYING = 22;
+export const MEDIA_PLAY_BTN_RADIUS_PAUSED = MEDIA_PLAY_BTN_SIZE / 2;
+export const MEDIA_PLAY_ICON_SIZE = 30;
+export const MEDIA_TRANSPORT_BTN_SIZE = 48;
+export const MEDIA_TRANSPORT_BTN_RADIUS = 24;
+export const MEDIA_TRANSPORT_ICON_SIZE = 24;
+export const MEDIA_PILL_BTN_SIZE = 40;
+export const MEDIA_PILL_BTN_RADIUS = 20;
+export const MEDIA_PILL_ICON_SIZE = 20;
+// The play/pause glyph cross-fades over the same duration as the radius morph,
+// so the button reads as one gesture rather than two overlapping ones.
+export const MEDIA_ICON_MORPH_MS = 350;
 export const MEDIA_WAVE_HEIGHT = 5;
+// Playback progress is a plain straight seek bar (no wave — that reads as
+// noise on a thin position indicator): a taller touch target with a slim line
+// and a draggable handle to scrub through the track.
+export const MEDIA_PROGRESS_HEIGHT = 20;
+export const MEDIA_PROGRESS_STROKE = 4;
+export const MEDIA_PROGRESS_GAP = 8;
+export const MEDIA_PROGRESS_HANDLE_RADIUS = 6;
 export const MEDIA_VOLUME_WAVE_HEIGHT = 44;
+// Wavy volume bar geometry, matching the progress-card ("washing machine")
+// form: a visible wave, a gap, a straight track, and a round end-dot.
+export const MEDIA_VOLUME_AMPLITUDE = 3.5;
+export const MEDIA_VOLUME_WAVELENGTH = 24;
+export const MEDIA_VOLUME_GAP = 10;
+export const MEDIA_VOLUME_DOT_RADIUS = 4;
 export const MEDIA_VOLUME_THROTTLE_MS = 200;
 export const MEDIA_MUTE_BTN_HEIGHT = 40;
 export const MEDIA_ARTWORK_COLOR_CACHE_SIZE = 20;
+
+// Browser section (queue + library). The toggle row is the same shape as the
+// list rows elsewhere in the suite; the tab pills morph to a tighter radius
+// when active, like the todo card's chips.
+export const MEDIA_BROWSE_TOGGLE_HEIGHT = 44;
+export const MEDIA_BROWSE_TOGGLE_RADIUS = 19;
+export const MEDIA_BROWSE_TAB_HEIGHT = 32;
+export const MEDIA_BROWSE_TAB_RADIUS = 16;
+export const MEDIA_BROWSE_TAB_RADIUS_ACTIVE = 10;
+export const MEDIA_BROWSE_ROW_HEIGHT = 46;
+export const MEDIA_BROWSE_ROW_RADIUS = 15;
+export const MEDIA_BROWSE_ROW_ICON_SIZE = 32;
+export const MEDIA_BROWSE_ROW_ICON_RADIUS = RADIUS.squircle32;
+export const DEFAULT_MEDIA_BROWSE_HEIGHT = 190;
+// Skeleton rows shown while a browse level loads — a fixed count reads as a
+// list taking shape, where a spinner reads as "something might be wrong".
+export const MEDIA_BROWSE_SKELETON_ROWS = 4;
+// A directory can hold thousands of entries (a real library here has 2147
+// artist folders); rendering them all locks the frame. Rows beyond this are
+// reachable by drilling in, not by scrolling forever.
+export const MEDIA_BROWSE_MAX_ROWS = 100;
+// Minimum WCAG contrast the accent must reach against the dark on-accent ink.
+// Artwork-derived accents are NOT guaranteed to be light pastels the way the
+// built-in palette is, so the extracted color is lightened until a filled
+// button's glyph is actually legible. 3:1 is the AA bar for large graphics.
+export const MEDIA_ACCENT_MIN_CONTRAST = 3.2;
 
 // ---- Aquarium card ----------------------------------------------------------
 export const DEFAULT_AQUARIUM_RADIUS = RADIUS.card;
