@@ -12,3 +12,4 @@ reference/
 graphify-out/
 # Local dev/screenshot tooling
 dev/
+.contrast.mjs
