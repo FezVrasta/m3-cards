@@ -30,6 +30,7 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { getGridEntities, fetchTodayChangeSum } from "./shared/ha-energy";
 import { shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 
 console.info(
@@ -90,6 +91,10 @@ export class M3GaugeCard extends LitElement implements LovelaceCard {
       source: "energy",
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.value_a_entity, this._config?.value_b_entity]);
   }
 
   public setConfig(config: M3GaugeCardConfig): void {

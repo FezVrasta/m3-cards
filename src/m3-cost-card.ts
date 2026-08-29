@@ -49,6 +49,7 @@ import {
 } from "./shared/pricing";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 
 console.info(
@@ -154,6 +155,10 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       price_source: "energy_dashboard",
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.entity, this._config?.price_entity]);
   }
 
   public setConfig(config: M3CostCardConfig): void {

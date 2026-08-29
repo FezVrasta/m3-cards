@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, svg, unsafeCSS } from "lit";
+import { LitElement, html, css, nothing, svg, unsafeCSS, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -63,6 +63,7 @@ import { activateOnKey } from "./shared/a11y";
 import { fireEvent } from "./shared/editor-helpers";
 import { formatNumber } from "./shared/formatting";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-AQUARIUM-CARD %c v${CARD_VERSION} `,
@@ -265,6 +266,21 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
       camera_entity: pickAll(["camera"], ["aqua"], ["kamera"])?.entity,
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.water_temperature_entity,
+      this._config?.heater_power_entity,
+      this._config?.ph_entity,
+      this._config?.tds_entity,
+      this._config?.power_entity,
+      this._config?.water_level_entity,
+      this._config?.cleaning_entity,
+      this._config?.cleaning_interval_entity,
+      this._config?.camera_entity,
+      this._config?.schedule_entity,
+    ]);
   }
 
   public setConfig(config: M3AquariumCardConfig): void {

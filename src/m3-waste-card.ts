@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -26,6 +26,7 @@ import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, isReducedMotion } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters, listEntities } from "./shared/should-update";
 
 console.info(
   `%c M3-WASTE-CARD %c v${CARD_VERSION} `,
@@ -51,6 +52,10 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
   @state() private _sessionAck?: string;
   @state() private _now = Date.now();
   private _tick?: number;
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.ack_entity, ...listEntities(this._config?.entities)]);
+  }
 
   public setConfig(config: M3WasteCardConfig): void {
     this._config = config;

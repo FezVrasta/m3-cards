@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, svg, type SVGTemplateResult } from "lit";
+import { LitElement, html, css, nothing, svg, type SVGTemplateResult, type PropertyValues } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -25,6 +25,7 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 import { buildWavePath } from "./shared/wave";
 import { resolveCommonColors, tintBackground } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
@@ -77,6 +78,14 @@ export class M3ProgressCard extends LitElement implements LovelaceCard {
       entity: statusEntity,
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.entity,
+      this._config?.percentage_entity,
+      this._config?.remaining_entity,
+    ]);
   }
 
   public setConfig(config: M3ProgressCardConfig): void {

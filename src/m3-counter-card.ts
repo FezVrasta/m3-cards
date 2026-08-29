@@ -39,6 +39,7 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 import { decimalSeparator, formatNumber } from "./shared/formatting";
 
 console.info(
@@ -88,6 +89,15 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
       entity,
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.entity,
+      this._config?.power_entity,
+      this._config?.daily_entity,
+      this._config?.adjust_entity,
+    ]);
   }
 
   public setConfig(config: M3CounterCardConfig): void {

@@ -49,3 +49,20 @@ export function hassChangeMatters(
   }
   return false;
 }
+
+// Several cards accept a list of either bare entity ids or objects carrying
+// one (plus, for cover pairs, an up/down/stop trio). Flattens both shapes into
+// the list hassChangeMatters wants; undefined entries are ignored there.
+export function listEntities(
+  list?: (string | { entity?: string; up_entity?: string; down_entity?: string; stop_entity?: string })[],
+): (string | undefined)[] {
+  const out: (string | undefined)[] = [];
+  for (const item of list ?? []) {
+    if (typeof item === "string") {
+      out.push(item);
+      continue;
+    }
+    out.push(item?.entity, item?.up_entity, item?.down_entity, item?.stop_entity);
+  }
+  return out;
+}

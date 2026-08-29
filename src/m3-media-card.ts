@@ -76,6 +76,7 @@ import { buildWavePath } from "./shared/wave";
 import { stopSwipe } from "./shared/swipe";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-MEDIA-CARD %c v${CARD_VERSION} `,
@@ -519,6 +520,10 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       entity: entities[0] ?? "",
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.entity]);
   }
 
   public setConfig(config: M3MediaCardConfig): void {

@@ -1,4 +1,4 @@
-import { LitElement, html, css, svg, nothing } from "lit";
+import { LitElement, html, css, svg, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -27,6 +27,7 @@ import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { buildWavePath } from "./shared/wave";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters, listEntities } from "./shared/should-update";
 
 console.info(
   `%c M3-COVER-CARD %c v${CARD_VERSION} `,
@@ -79,6 +80,16 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     this._settleTimer = undefined;
     for (const id of Object.values(this._feedbackTimers)) clearTimeout(id);
     this._feedbackTimers = {};
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.entity,
+      this._config?.up_entity,
+      this._config?.down_entity,
+      this._config?.stop_entity,
+      ...listEntities(this._config?.entities),
+    ]);
   }
 
   public setConfig(config: M3CoverCardConfig): void {

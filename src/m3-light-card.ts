@@ -52,6 +52,7 @@ import { buildWavePath } from "./shared/wave";
 import { stopSwipe } from "./shared/swipe";
 import { hexToHs, hsToRgb, rgbToHex, rgbToHs } from "./shared/color-picker";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-LIGHT-CARD %c v${CARD_VERSION} `,
@@ -160,6 +161,21 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       entity: entities[0] ?? "",
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    const eid = this._config?.entity;
+    // A light group renders a row per member, so their states matter too. They
+    // live in the group entity's own attributes, and a membership change moves
+    // that entity — which is already watched.
+    const members = eid
+      ? ((this.hass?.states[eid]?.attributes.entity_id as string[] | undefined) ?? [])
+      : [];
+    return hassChangeMatters(changed, this.hass, [
+      eid,
+      ...members,
+      ...(this._config?.scenes ?? []).map((sc) => sc.entity),
+    ]);
   }
 
   public setConfig(config: M3LightCardConfig): void {

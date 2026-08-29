@@ -55,6 +55,7 @@ import { repeat } from "lit/directives/repeat.js";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters, listEntities } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 
 console.info(
@@ -121,6 +122,13 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
       type: "custom:m3-supply-card",
       items: helper ? [{ entity: helper }] : [],
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.todo_entity,
+      ...listEntities(this._config?.items),
+    ]);
   }
 
   public setConfig(config: M3SupplyCardConfig): void {
