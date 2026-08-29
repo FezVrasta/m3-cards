@@ -12,6 +12,15 @@ von Grund auf neu strukturierte README. Enthält alle seit 1.9.0 gesammelten
 Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat veröffentlicht und ist
 hier aufgegangen).
 
+### Bekannte Einschränkungen
+
+- **Akzentfarben im hellen Theme**: Die Palette ist für dunkle Hintergründe
+  entworfen (`#a58fe8` erreicht auf Weiß nur 2,4:1, auf `#1c1c1c` dagegen
+  6,2:1). Werte, die in der Akzentfarbe gesetzt sind, wirken im hellen Theme
+  deshalb blass. Kartenflächen und getönte Flächen sind mit dieser Version
+  korrigiert; die rund 155 Vordergrund-Stellen über 17 Karten folgen in
+  2.0.1, zusammen mit einer Überarbeitung der Palette.
+
 ### Achtung beim Update
 
 Keine Konfigurationsoption wurde entfernt oder umbenannt, und kein Standardwert

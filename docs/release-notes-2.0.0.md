@@ -1,3 +1,7 @@
+## Bekannte Einschränkung
+
+**Akzentfarben im hellen Theme.** Die Farbpalette ist für dunkle Hintergründe entworfen. Im hellen Theme haben Werte, die in der Akzentfarbe gesetzt sind — große Zahlen, Prozentangaben, Statusfarben — weniger Kontrast als der übrige Text und wirken blass. Kartenflächen, getönte Flächen und Balken sind mit dieser Version korrigiert; die Vordergrundfarben folgen in 2.0.1.
+
 ## Achtung beim Update
 
 Keine Konfigurationsoption wurde entfernt oder umbenannt — bestehende Configs laden unverändert. Diese Punkte ändern aber das Verhalten, ohne dass man etwas anpasst:
@@ -56,6 +60,10 @@ Zusätzlich filtern 15 der 29 Karten jetzt überflüssige Neuzeichnungen: Home A
 Die vollständige Liste steht in [CHANGELOG.md](CHANGELOG.md).
 
 ---
+
+## Known issue
+
+**Accent colours in a light theme.** The palette is built for dark backgrounds. In a light theme, values set in the accent colour — large figures, percentages, status colours — carry less contrast than the surrounding text and read as pale. Card surfaces, tinted fills and bars are corrected in this release; the foreground colours follow in 2.0.1.
 
 ## Before you update
 

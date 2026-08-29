@@ -344,6 +344,12 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 
 ## Bekannte Einschränkungen
 
+- **Akzentfarben im hellen Theme:** Werte in der Akzentfarbe (große Zahlen,
+  Prozentangaben, Statusfarben) haben im hellen Theme weniger Kontrast als der
+  übrige Text. Ursache ist die für dunkle Gründe entworfene Palette, nicht ein
+  Fehler einer einzelnen Karte. Beim Durchgang im hellen Theme also nicht als
+  Kartenfehler notieren — die Vordergrundfarben werden in 2.0.1 überarbeitet.
+
 - **`m3-climate-card-mini` und `m3-button-card` in HA's Standard-„Masonry“-Ansicht:**
   Beide Karten können in einer Masonry-View (HA's Default-Dashboard-Typ, im
   Unterschied zur „Sections“-Ansicht) auf 0px Höhe kollabieren und unsichtbar

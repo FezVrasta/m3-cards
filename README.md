@@ -3,6 +3,12 @@
 > **⚠️ Beta:** This project is new and under active development.
 > Configuration options may still change between versions — please file an
 > issue if you run into something.
+>
+> **Known issue — accent colours in a light theme.** The palette is built for
+> dark backgrounds. In a light theme, values set in the accent colour (large
+> figures, percentages, status colours) carry less contrast than the
+> surrounding text and read as pale. Card surfaces, tinted fills and bars were
+> corrected in 2.0; the foreground colours follow in 2.0.1.
 
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
