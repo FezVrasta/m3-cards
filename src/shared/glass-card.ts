@@ -3,6 +3,25 @@ import { css, html, type TemplateResult } from "lit";
 // Shared M3 card frame: the "glass" translucent/blurred background used by
 // every card in this project, plus the "solid" theme-background fallback.
 // Cards import this once instead of redefining ha-card/.card-inner rules.
+// The frosted-glass surface, as one value so the three cards that build their
+// own card CSS (button, climate, climate-mini) cannot drift from it.
+//
+// Mixed from the card *surface* colour, not the text colour. HA already hands
+// every card theme-correct variables — the surface is light in a light theme
+// and dark in a dark one — so tinting with it is self-correcting and needs no
+// theme detection. Tinting with the text colour, as this did before, inverts
+// that: in a light theme it darkened the backdrop that dark text then had to
+// sit on, which made every card unreadable over a dark dashboard wallpaper.
+//
+// 55% keeps the backdrop visible through the blur while still establishing a
+// ground of its own, so legibility no longer depends on what is behind the
+// dashboard — something the card cannot see.
+export const glassBackground = css`color-mix(
+  in srgb,
+  var(--ha-card-background, var(--card-background-color)) 55%,
+  transparent
+)`;
+
 export const glassCardStyles = css`
   :host {
     display: block;
@@ -27,11 +46,7 @@ export const glassCardStyles = css`
   }
 
   .card-inner.glass {
-    background: color-mix(
-      in srgb,
-      var(--primary-text-color) 5%,
-      transparent
-    );
+    background: ${glassBackground};
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     /* Forces its own compositor layer. Without this, Chromium sometimes

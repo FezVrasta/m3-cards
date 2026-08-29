@@ -34,6 +34,10 @@ Punkte ändern aber das **Verhalten**, ohne dass man etwas anpasst:
   den Domänen-Toggle wechselt — zurück mit `icon_tap_action: more-info`. Karten
   **ohne** `show_slider` sind nicht betroffen.
 - **M3 Light Card**: Die Wellen-Geometrie ist schlanker (Strichstärke 14 → 6).
+- **Alle Karten**: Der Glas-Hintergrund wird jetzt aus der Kartenfläche
+  gemischt statt aus der Textfarbe. Im dunklen Theme ist der Unterschied
+  minimal (die Karten werden leicht blickdichter), im hellen ist er groß —
+  siehe „Behoben".
 
 ### Neu
 - **M3 Cover Card** (`custom:m3-cover-card`): Rollladen- und
@@ -131,6 +135,14 @@ Punkte ändern aber das **Verhalten**, ohne dass man etwas anpasst:
   anonymisiert.
 
 ### Behoben
+- **Alle Karten im hellen Theme**: Der Glas-Hintergrund mischte seinen
+  Schleier aus `--primary-text-color`. Im hellen Theme ist die dunkel, sodass
+  die Fläche den Hintergrund zusätzlich verdunkelte — und darauf stand dann
+  dunkler Text. Über einem dunklen Dashboard-Hintergrundbild waren die Karten
+  praktisch unlesbar. Gemischt wird jetzt aus der Kartenfläche, die HA ohnehin
+  themekorrekt liefert: hell im hellen Theme, dunkel im dunklen. Damit stimmt
+  der Kontrast von selbst, ohne Theme-Erkennung und unabhängig davon, was
+  hinter dem Dashboard liegt. Bestand seit 1.0.0.
 - **M3 Light Card**: Die Wellenanimation rief bei jedem Frame
   `requestUpdate()` und baute damit die komplette Karte samt Farbrad neu auf,
   solange eine Lampe an war. Eine Instanz erzeugte 1820 Renders in 15 Sekunden

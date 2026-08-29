@@ -35,6 +35,10 @@ Dazu eine gemeinsame Benachrichtigungs-Infrastruktur für Occupancy-, Leak- und 
 
 **Akzentfarbe aus dem Cover.** Bisher der Durchschnitt aller Pixel — also Hintergrund plus Motiv addiert, meist ein entsättigter Braunton. Jetzt wird die dominante gesättigte Farbe gewählt und auf lesbaren Kontrast gebracht. Ein Cover, das vorher ein praktisch unsichtbares Symbol ergab, liefert nun ein klar erkennbares Violett.
 
+## Behoben: helles Theme
+
+Der Glas-Hintergrund aller Karten mischte seinen Schleier aus der Textfarbe. Im hellen Theme ist die dunkel — die Fläche verdunkelte also den Hintergrund, vor dem dann dunkler Text stand. Über einem dunklen Dashboard-Hintergrundbild waren die Karten dadurch praktisch unlesbar. Gemischt wird jetzt aus der Kartenfläche, die Home Assistant ohnehin themekorrekt liefert; der Kontrast stimmt damit von selbst, unabhängig vom Hintergrundbild. Im dunklen Theme ändert sich fast nichts. Der Fehler bestand seit 1.0.0.
+
 ## Leistung
 
 Zwei Animationen bauten bei **jedem Einzelbild die komplette Karte neu auf**, statt nur den animierten Pfad zu zeichnen. Bei der Light Card erzeugte eine einzige Instanz mit eingeschalteter Lampe **1820 Renders in 15 Sekunden** — 73 % eines Dashboards mit 35 Karten. Nach der Korrektur sind es 9. Die Media Card hatte dieselbe Ursache im Fortschrittsbalken.
@@ -89,6 +93,10 @@ Alongside them, shared notification plumbing for the occupancy, leak and waste c
 **Transport bar.** Ordered shuffle · previous · play/pause · next · repeat. The play button is the state indicator: a circle when paused, a squircle while playing, with the glyph cross-fading between them. Repeat cycles through three states (off → all → one). Buttons still appear only when the player reports the matching feature.
 
 **Accent colour from the artwork.** Previously the mean of every pixel — a cover's backdrop and its subject added together, which on most covers is a desaturated brown. Now the dominant saturated colour is picked and brought to a legible contrast. A cover that used to produce an all-but-invisible glyph now yields a clearly readable purple.
+
+## Fixed: light theme
+
+Every card's glass background mixed its scrim from the text colour. In a light theme that colour is dark, so the surface darkened the backdrop that dark text then had to sit on — over a dark dashboard wallpaper the cards were all but unreadable. The scrim now mixes from the card surface, which Home Assistant already hands over theme-correct, so contrast resolves on its own regardless of what is behind the dashboard. In a dark theme almost nothing changes. The bug dated back to 1.0.0.
 
 ## Performance
 

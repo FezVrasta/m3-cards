@@ -19,6 +19,7 @@ import {
   resolveCornerRadius,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { glassBackground } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
@@ -762,11 +763,8 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     }
 
     .card-inner.glass {
-      background: color-mix(
-        in srgb,
-        var(--primary-text-color) 5%,
-        transparent
-      );
+      /* Shared value — see glassBackground in shared/glass-card.ts. */
+      background: ${glassBackground};
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
