@@ -6,10 +6,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [2.0.0]
 
-Großes Funktions-Release: fünf neue Karten, optionale Benachrichtigungen für
-mehrere Karten und eine von Grund auf neu strukturierte README. Enthält alle
-seit 1.9.0 gesammelten Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat
-veröffentlicht und ist hier aufgegangen).
+Großes Funktions-Release: sechs neue Karten (23 → 29), optionale
+Benachrichtigungen für mehrere Karten, eine überarbeitete Media Card und eine
+von Grund auf neu strukturierte README. Enthält alle seit 1.9.0 gesammelten
+Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat veröffentlicht und ist
+hier aufgegangen).
 
 ### Neu
 - **M3 Cover Card** (`custom:m3-cover-card`): Rollladen- und
