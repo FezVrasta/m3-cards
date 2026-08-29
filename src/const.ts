@@ -40,17 +40,6 @@ export const MODE_ICONS: Record<HvacMode, string> = {
   heat_cool: "mdi:sun-snowflake-variant",
 };
 
-// Order in which modes are rendered when present in hvac_modes, "off" always first.
-export const MODE_ORDER: HvacMode[] = [
-  "off",
-  "heat",
-  "cool",
-  "dry",
-  "auto",
-  "fan_only",
-  "heat_cool",
-];
-
 export const PRESET_ICONS: Record<string, string> = {
   eco: "mdi:leaf",
   sleep: "mdi:sleep",
@@ -208,7 +197,6 @@ export const WAVE_AMPLITUDE = 3.5;
 export const WAVE_WAVELENGTH = 24;
 export const WAVE_PHASE_SPEED = 0.09;
 export const WAVE_GAP = 12;
-export const WAVE_STROKE_WIDTH = 6;
 export const WAVE_DOT_RADIUS = 3.5;
 export const INDETERMINATE_SEGMENT_FRACTION = 0.3;
 export const INDETERMINATE_CYCLE_MS = 3000;
@@ -500,8 +488,6 @@ export const DEFAULT_WEATHER_CHIPS: WeatherChipType[] = [
 ];
 export const WEATHER_HEADER_ICON_SIZE = 56;
 export const WEATHER_HEADER_ICON_RADIUS = RADIUS.squircle56;
-export const WEATHER_TEMP_FONT_SIZE = 34;
-export const WEATHER_CHIP_HEIGHT = 30;
 export const WEATHER_CHIP_RADIUS = RADIUS.chip;
 export const WEATHER_DAY_ROW_HEIGHT = 44;
 export const WEATHER_DAY_ROW_RADIUS = RADIUS.row;
@@ -517,7 +503,6 @@ export const WEATHER_DAILY_COLLAPSED_COUNT = 3;
 export const WEATHER_DAYS_TOGGLE_HEIGHT = HEIGHT.toggle;
 export const WEATHER_DAYS_TOGGLE_RADIUS = RADIUS.row;
 export const WEATHER_DAYS_TOGGLE_RADIUS_OPEN = 14;
-export const WEATHER_CHART_TOP_PADDING = 30;
 
 // ---- Presence card ------------------------------------------------------------
 export const DEFAULT_PRESENCE_RADIUS = RADIUS.card;
@@ -525,7 +510,6 @@ export const DEFAULT_PRESENCE_ICON = "mdi:account-group";
 export const PRESENCE_AVATAR_SIZE = 56;
 export const PRESENCE_AVATAR_RADIUS = RADIUS.squircle56;
 export const PRESENCE_DOT_SIZE = 14;
-export const PRESENCE_DOT_RADIUS = 5;
 export const PRESENCE_RING_WIDTH = 2.5;
 export const PRESENCE_GRID_GAP = 10;
 export const PRESENCE_GRID_MIN_COL = 84;
@@ -599,7 +583,6 @@ export const MEDIA_PILL_ICON_SIZE = 20;
 // The play/pause glyph cross-fades over the same duration as the radius morph,
 // so the button reads as one gesture rather than two overlapping ones.
 export const MEDIA_ICON_MORPH_MS = 350;
-export const MEDIA_WAVE_HEIGHT = 5;
 // Playback progress is a wavy indicator in the progress-card ("washing
 // machine") form: a wave for the elapsed part, a gap, a straight track, and a
 // dot at the far end. The wave flattens to a straight line when playback is
@@ -736,10 +719,6 @@ export const UPDATES_COLOR_REMOTE = "#8fa3b8";
 export const UPDATES_COLOR_BACKUP_WARN = "#f0a24a";
 export const UPDATES_COLOR_BACKUP_MISSING = "#e57368";
 
-export const UPDATES_BANNER_PADDING = 12;
-export const UPDATES_BANNER_RADIUS = 22;
-export const UPDATES_BANNER_ICON_SIZE = 46;
-export const UPDATES_BANNER_ICON_RADIUS = 17;
 export const UPDATES_CHIP_HEIGHT = 30;
 export const UPDATES_CHIP_RADIUS = 15;
 export const UPDATES_CORE_PADDING = 13;
@@ -777,8 +756,6 @@ export const NAS_ROW_RADIUS_ACTIVE = 12;
 export const NAS_ICON_SIZE = 34;
 export const NAS_ICON_RADIUS = 12;
 export const NAS_ROW_GAP = 6;
-export const NAS_BAR_HEIGHT = 5;
-export const NAS_BAR_RADIUS = 3;
 export const NAS_TILE_RADIUS = 16;
 export const NAS_TILE_PADDING = 10;
 export const NAS_TOGGLE_HEIGHT = 44;
@@ -1001,9 +978,6 @@ export const OCCUPANCY_SEGMENT_HEIGHT = 14;
 export const OCCUPANCY_SEGMENT_RADIUS = 3;
 export const OCCUPANCY_SEGMENT_GAP = 2;
 export const OCCUPANCY_SEGMENT_FADED_OPACITY = 0.6;
-export const DEFAULT_OCCUPANCY_BATTERY_WARN = 40;
-export const DEFAULT_OCCUPANCY_BATTERY_CRITICAL = 20;
-export const DEFAULT_OCCUPANCY_LQI_WARN = 50;
 // State changes are pushed by hass, but "seit 12 Min." only stays honest if
 // the card re-renders on its own as the clock moves.
 export const OCCUPANCY_TICK_MS = 60000;
@@ -1014,7 +988,6 @@ export const DEFAULT_COVER_ACCENT = PALETTE.cover;
 export const COVER_TILT_STEP = 15;
 export const COVER_POSITION_THROTTLE_MS = 200;
 export const COVER_DRAG_SETTLE_MS = 600;
-export const COVER_PRESS_FEEDBACK_MS = 800;
 export const COVER_MIN_FEEDBACK_MS = 1400;
 // Cover supported_features bit flags (from HA's CoverEntityFeature).
 export const COVER_FEATURE = {
@@ -1056,8 +1029,10 @@ export const LEAK_ROW_RADIUS_ACTIVE = RADIUS.rowActive;
 export const LEAK_ICON_SIZE = 32;
 export const LEAK_ICON_RADIUS = RADIUS.squircle32;
 export const LEAK_ROW_GAP = SPACING.rowGap;
-export const LEAK_PULSE_MS = 1600;
 export const LEAK_TICK_MS = 60000;
+// How long the shut-off button stays armed after the first tap, when
+// confirm_shutoff is on.
+export const LEAK_ARM_TIMEOUT_MS = 4000;
 export const LEAK_DEFAULT_NAME_STRIP = [
   " Feuchte$",
   " Water Leak$",
@@ -1108,12 +1083,3 @@ export const WASTE_COLOR_RULES: Array<[RegExp, string]> = [
   [/glas|glass/i, "#7bc4b0"],
   [/sperrm(ü|ue)ll|bulk/i, "#b8946a"],
 ];
-export const WASTE_HERO_ICON_SIZE = 56;
-export const WASTE_HERO_ICON_RADIUS = 20;
-export const WASTE_MULTI_ICON_SIZE = 26;
-export const WASTE_MULTI_ICON_RADIUS = 9;
-export const WASTE_ROW_HEIGHT = 56;
-export const WASTE_ROW_RADIUS = RADIUS.row;
-export const WASTE_ROW_ICON_SIZE = 32;
-export const WASTE_ROW_ICON_RADIUS = RADIUS.squircle32;
-export const WASTE_TIMELINE_DOT = 15;

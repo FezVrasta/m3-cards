@@ -55,6 +55,7 @@ import { repeat } from "lit/directives/repeat.js";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-SUPPLY-CARD %c v${CARD_VERSION} `,
@@ -349,9 +350,9 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
   }
 
   private _formatCount(value: number): string {
-    return new Intl.NumberFormat(this._language, {
+    return formatNumber(this._language, value, {
       maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
-    }).format(value);
+    });
   }
 
   // Picks the coarsest unit that still reads as a useful number, so a long

@@ -26,6 +26,7 @@ import {
   LEAK_ICON_RULES,
   LEAK_DEFAULT_NAME_STRIP,
   LEAK_TICK_MS,
+  LEAK_ARM_TIMEOUT_MS,
   resolveCornerRadius,
 } from "./const";
 import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
@@ -66,6 +67,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
   @state() private _armShutoff = false;
   @state() private _now = Date.now();
   private _tick?: number;
+  private _armTimer?: number;
   private _discoverKey = "";
   private _discoverInFlight = false;
 
@@ -93,6 +95,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._tick) clearInterval(this._tick);
+    if (this._armTimer) clearTimeout(this._armTimer);
   }
 
   protected updated(changed: PropertyValues): void {
@@ -227,7 +230,11 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
     if (!hass || !valve) return;
     if (this._config?.confirm_shutoff && !this._armShutoff) {
       this._armShutoff = true;
-      window.setTimeout(() => (this._armShutoff = false), 4000);
+      if (this._armTimer) clearTimeout(this._armTimer);
+      this._armTimer = window.setTimeout(() => {
+        this._armShutoff = false;
+        this._armTimer = undefined;
+      }, LEAK_ARM_TIMEOUT_MS);
       return;
     }
     const [domain] = valve.split(".");

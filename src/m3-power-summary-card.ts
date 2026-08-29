@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, type PropertyValues } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -37,6 +37,7 @@ import { activateOnKey } from "./shared/a11y";
 import { shouldAnimate } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-POWER-SUMMARY-CARD %c v${CARD_VERSION} `,
@@ -147,13 +148,16 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
   private _formatWatts(value: number): { number: string; unit: string } {
     const kwThreshold = this._config?.kw_threshold ?? DEFAULT_SUMMARY_KW_THRESHOLD;
     if (Math.abs(value) >= kwThreshold) {
-      const kw = new Intl.NumberFormat(this._language, {
+      const kw = formatNumber(this._language, value / 1000, {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
-      }).format(value / 1000);
+      });
       return { number: kw, unit: "kW" };
     }
-    return { number: new Intl.NumberFormat(this._language, { maximumFractionDigits: 0 }).format(value), unit: "W" };
+    return {
+      number: formatNumber(this._language, value, { maximumFractionDigits: 0 }),
+      unit: "W",
+    };
   }
 
   private _stateValue(entityId: string | undefined): number {

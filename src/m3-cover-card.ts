@@ -68,6 +68,19 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
   @state() private _feedback: Record<string, { dir: CoverDir; until: number }> = {};
   private _feedbackTimers: Record<string, number> = {};
 
+  // Cover is one of only two cards in the suite that held timers without a
+  // teardown: a group can arm one feedback timer per switch pair, and a drag
+  // leaves a settle timer pending. They fire on a detached element when the
+  // card is removed mid-gesture — harmless in Lit, but out of step with the
+  // other 21 cards.
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._settleTimer) clearTimeout(this._settleTimer);
+    this._settleTimer = undefined;
+    for (const id of Object.values(this._feedbackTimers)) clearTimeout(id);
+    this._feedbackTimers = {};
+  }
+
   public setConfig(config: M3CoverCardConfig): void {
     if (config.mode === "group" && !config.entities?.length) {
       // tolerate an empty group; render nothing rather than throw

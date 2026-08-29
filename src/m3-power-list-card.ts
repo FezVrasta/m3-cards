@@ -39,6 +39,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { discoverPowerEntities } from "./shared/ha-registry";
 import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-POWER-LIST-CARD %c v${CARD_VERSION} `,
@@ -119,9 +120,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
   }
 
   private _formatNumber(value: number): string {
-    return new Intl.NumberFormat(this._language, {
-      maximumFractionDigits: 0,
-    }).format(value);
+    return formatNumber(this._language, value, { maximumFractionDigits: 0 });
   }
 
   protected willUpdate(changed: PropertyValues): void {

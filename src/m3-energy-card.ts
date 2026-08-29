@@ -55,6 +55,7 @@ import { getSolarEntities, fetchSolarForecast } from "./shared/ha-energy";
 import { fireEvent } from "./shared/editor-helpers";
 import { shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-ENERGY-CARD %c v${CARD_VERSION} `,
@@ -82,7 +83,6 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
 
   @state() private _config?: M3EnergyCardConfig;
   @state() private _dayValues: number[] = [];
-  @state() private _usingFallback = false;
   @state() private _loading = true;
   @state() private _revealed = false;
   @state() private _staggerActive = false;
@@ -272,7 +272,6 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
           ? await fetchEnergyHours(this.hass, entity, barCount, statisticType)
           : await fetchEnergyDays(this.hass, entity, barCount, statisticType);
       this._dayValues = result.values;
-      this._usingFallback = result.usingFallback;
     } catch (e) {
       console.error("m3-energy-card: failed to load energy data", e);
     } finally {
@@ -1041,8 +1040,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
   }
 
   private _formatNumber(value: number): string {
-    const lang = this._language;
-    return new Intl.NumberFormat(lang, { maximumFractionDigits: 2 }).format(value);
+    return formatNumber(this._language, value, { maximumFractionDigits: 2 });
   }
 
   static styles = [

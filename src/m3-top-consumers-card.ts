@@ -45,6 +45,7 @@ import { getEnergyDeviceEntities } from "./shared/ha-energy";
 import { fetchPeriodChangeByEntity } from "./shared/ha-statistics";
 import { resolveEffectivePrice, formatCurrency } from "./shared/pricing";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-TOP-CONSUMERS-CARD %c v${CARD_VERSION} `,
@@ -161,10 +162,10 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
   }
 
   private _formatKwh(value: number): string {
-    return new Intl.NumberFormat(this._language, {
+    return formatNumber(this._language, value, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    });
   }
 
   public connectedCallback(): void {

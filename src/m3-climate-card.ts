@@ -22,6 +22,7 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
 import { tintBackground } from "./shared/color-config";
 import { shouldAnimate } from "./shared/animation";
@@ -123,14 +124,10 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
   }
 
   private _formatNumber(value: number, digits = 1): string {
-    try {
-      return new Intl.NumberFormat(this._language, {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-      }).format(value);
-    } catch {
-      return value.toFixed(digits);
-    }
+    return formatNumber(this._language, value, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
   }
 
   private _fireMoreInfo(entityId?: string): void {

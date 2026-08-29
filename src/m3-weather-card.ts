@@ -16,7 +16,6 @@ import {
   DEFAULT_WEATHER_ACCENT,
   DEFAULT_WEATHER_PRECIPITATION_COLOR,
   DEFAULT_WEATHER_CHIPS,
-  WEATHER_HEADER_ICON_SIZE,
   WEATHER_HEADER_ICON_RADIUS,
   WEATHER_CHIP_RADIUS,
   WEATHER_DAY_ROW_HEIGHT,
@@ -42,6 +41,7 @@ import { activateOnKey } from "./shared/a11y";
 import { computeBarHeights } from "./shared/bar-chart";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-WEATHER-CARD %c v${CARD_VERSION} `,
@@ -301,10 +301,10 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
   }
 
   private _formatNumber(value: number, decimals = 0): string {
-    return new Intl.NumberFormat(this._language, {
+    return formatNumber(this._language, value, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(value);
+    });
   }
 
   private _use12Hour(): boolean {
@@ -512,7 +512,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
 
         <div class="precip-row">
           ${items.map(
-            (it, i) => html`
+            (_it, i) => html`
               <div class="hour-slot">
                 ${bars[i].value > 0
                   ? html`

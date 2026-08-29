@@ -43,6 +43,7 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { getEnergyDashboardEntities, fetchTodayChangeSum } from "./shared/ha-energy";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-ENERGY-FLOW-CARD %c v${CARD_VERSION} `,
@@ -252,7 +253,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
   }
 
   private _formatNumber(value: number): string {
-    return new Intl.NumberFormat(this._language, { maximumFractionDigits: 2 }).format(value);
+    return formatNumber(this._language, value, { maximumFractionDigits: 2 });
   }
 
   private _buildDiagram(

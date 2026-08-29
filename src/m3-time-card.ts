@@ -60,7 +60,6 @@ import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import {
   readTime,
   hasTime,
-  hasDate,
   uses12Hour,
   pad2,
   to12Hour,

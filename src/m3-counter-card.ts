@@ -39,6 +39,7 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { decimalSeparator, formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-COUNTER-CARD %c v${CARD_VERSION} `,
@@ -128,14 +129,11 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
   }
 
   private _decimalSeparator(): string {
-    const parts = new Intl.NumberFormat(this._language).formatToParts(1.1);
-    return parts.find((p) => p.type === "decimal")?.value ?? ".";
+    return decimalSeparator(this._language);
   }
 
   private _formatNumber(value: number, maxFractionDigits = 2): string {
-    return new Intl.NumberFormat(this._language, {
-      maximumFractionDigits: maxFractionDigits,
-    }).format(value);
+    return formatNumber(this._language, value, { maximumFractionDigits: maxFractionDigits });
   }
 
   public disconnectedCallback(): void {

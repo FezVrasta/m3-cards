@@ -53,7 +53,6 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
   private _holdTriggered = false;
   private _lastTap = 0;
   private _dragStartX = 0;
-  private _dragMoved = false;
   private _dragActive = false;
   private _suppressClick = false;
 
@@ -78,6 +77,16 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       glass_background: true,
       tap_action: { action: "toggle" },
     };
+  }
+
+  // Hold detection arms timers up to the hold delay, and the double-tap paths
+  // schedule deferred actions. Without this they fire after the card is gone.
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.clearTimeout(this._holdTimer);
+    window.clearTimeout(this._iconHoldTimer);
+    this._holdTimer = undefined;
+    this._iconHoldTimer = undefined;
   }
 
   public setConfig(config: M3ButtonCardConfig): void {
@@ -329,7 +338,6 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       const el = e.currentTarget as HTMLElement;
       el.setPointerCapture(e.pointerId);
       this._dragStartX = e.clientX;
-      this._dragMoved = false;
       this._dragActive = true;
       this._dragPercent = this._percentFromEvent(e, el);
     }
@@ -338,7 +346,6 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
   private _onPointerMove = (e: PointerEvent): void => {
     if (!this._dragActive) return;
     if (Math.abs(e.clientX - this._dragStartX) > DRAG_THRESHOLD_PX) {
-      this._dragMoved = true;
       window.clearTimeout(this._holdTimer);
     }
     this._dragPercent = this._percentFromEvent(e, e.currentTarget as HTMLElement);

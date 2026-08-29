@@ -1,4 +1,5 @@
 import type { HomeAssistant, PriceUnit, PricingConfig } from "../types";
+import { getNumberFormat } from "./formatting";
 import { fetchPeriodChangeByEntity } from "./ha-statistics";
 import { getGridEntities } from "./ha-energy";
 
@@ -53,8 +54,15 @@ export async function setPrice(
   await hass.callService("input_number", "set_value", { entity_id: entityId, value });
 }
 
+// Currency formatters are the most expensive Intl objects here and are built
+// per row by the cost and top-consumers lists; they go through the shared
+// cache like everything else.
+function getNumberFormatOrThrow(language: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
+  return getNumberFormat(language, options) ?? new Intl.NumberFormat(undefined, options);
+}
+
 export function formatCurrency(value: number, currency: string, language: string): string {
-  return new Intl.NumberFormat(language, {
+  return getNumberFormatOrThrow(language, {
     style: "currency",
     currency,
     maximumFractionDigits: 2,
@@ -71,7 +79,7 @@ export function formatCurrencyParts(
   currency: string,
   language: string,
 ): { number: string; symbol: string } {
-  const parts = new Intl.NumberFormat(language, {
+  const parts = getNumberFormatOrThrow(language, {
     style: "currency",
     currency,
     maximumFractionDigits: 2,

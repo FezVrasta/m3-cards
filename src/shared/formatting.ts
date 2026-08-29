@@ -2,19 +2,54 @@
 // numeric value (power, energy, percentages, totals). Centralizes the
 // `new Intl.NumberFormat(language, options)` call that was previously
 // reimplemented ad-hoc per card.
+// Constructing an Intl formatter is markedly more expensive than formatting
+// with one, and list cards build a formatter per value per render. Keyed by
+// language plus the options object, so the handful of shapes this suite uses
+// are each built once for the life of the page.
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+
+// Returns a cached formatter, or undefined for a locale/options combination
+// Intl rejects. Exposed so callers that need formatToParts (currency symbol
+// splitting) share the same cache instead of building their own.
+export function getNumberFormat(
+  language: string,
+  options?: Intl.NumberFormatOptions,
+): Intl.NumberFormat | undefined {
+  const key = language + "|" + (options ? JSON.stringify(options) : "");
+  const cached = numberFormatters.get(key);
+  if (cached) return cached;
+  try {
+    const fmt = new Intl.NumberFormat(language, options);
+    numberFormatters.set(key, fmt);
+    return fmt;
+  } catch {
+    // An unusable locale tag from hass.locale would otherwise throw mid
+    // render. Two of the nine per-card copies guarded this, seven did not;
+    // consolidating keeps the safer behaviour for all of them.
+    return undefined;
+  }
+}
+
 export function formatNumber(
   language: string,
   value: number,
   options?: Intl.NumberFormatOptions,
 ): string {
-  return new Intl.NumberFormat(language, options).format(value);
+  const fmt = getNumberFormat(language, options);
+  return fmt ? fmt.format(value) : value.toFixed(options?.maximumFractionDigits ?? 0);
 }
 
 // Locale's decimal separator (e.g. "," for de, "." for en) — used by the
 // counter-card's digit-roll to pick the correct separator glyph.
+const separators = new Map<string, string>();
+
 export function decimalSeparator(language: string): string {
-  const parts = new Intl.NumberFormat(language).formatToParts(1.1);
-  return parts.find((p) => p.type === "decimal")?.value ?? ".";
+  const cached = separators.get(language);
+  if (cached !== undefined) return cached;
+  const parts = getNumberFormat(language)?.formatToParts(1.1) ?? [];
+  const sep = parts.find((p) => p.type === "decimal")?.value ?? ".";
+  separators.set(language, sep);
+  return sep;
 }
 
 // Coarse "how long ago" used by the occupancy card's status line: minutes up

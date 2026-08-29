@@ -49,6 +49,7 @@ import {
 } from "./shared/pricing";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-COST-CARD %c v${CARD_VERSION} `,
@@ -597,16 +598,14 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       if (state) {
         const raw = parseFloat(state.state);
         if (!isNaN(raw)) {
-          displayValue = new Intl.NumberFormat(this._language, { maximumFractionDigits: 3 }).format(
-            raw,
-          );
+          displayValue = formatNumber(this._language, raw, { maximumFractionDigits: 3 });
           unit = state.attributes.unit_of_measurement ?? "";
         }
       }
     } else if (this._config.price_source === "fixed" && typeof this._config.price === "number") {
-      displayValue = new Intl.NumberFormat(this._language, { maximumFractionDigits: 3 }).format(
-        this._config.price,
-      );
+      displayValue = formatNumber(this._language, this._config.price, {
+        maximumFractionDigits: 3,
+      });
       unit =
         this._config.price_unit === "ct_per_kwh"
           ? `ct/kWh`

@@ -32,6 +32,7 @@ import { activateOnKey } from "./shared/a11y";
 import { discoverPersonEntities } from "./shared/ha-registry";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { formatNumber } from "./shared/formatting";
 
 console.info(
   `%c M3-PRESENCE-CARD %c v${CARD_VERSION} `,
@@ -262,7 +263,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
     return () => fireEvent(this, "hass-more-info", { entityId });
   }
 
-  private _handlePointerDown(row: PersonRow): (e: PointerEvent) => void {
+  private _handlePointerDown(_row: PersonRow): (e: PointerEvent) => void {
     return () => {
       this._holdFired = false;
       if (!this._config?.hold_action || this._config.hold_action.action === "none") return;
@@ -391,7 +392,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
   }
 
   private _formatNumber(value: number): string {
-    return new Intl.NumberFormat(this._language, { maximumFractionDigits: 1 }).format(value);
+    return formatNumber(this._language, value, { maximumFractionDigits: 1 });
   }
 
   static styles = [
