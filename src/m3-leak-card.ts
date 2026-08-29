@@ -310,7 +310,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       key: r.entity,
       icon: r.icon,
       iconColor,
-      iconBackground: `color-mix(in srgb, ${iconColor === "var(--m3p-secondary-text)" ? "var(--primary-text-color)" : iconColor} 14%, transparent)`,
+      iconBackground: `color-mix(in srgb, ${iconColor === "var(--m3p-secondary-text)" ? "var(--primary-text-color)" : iconColor} 14%, var(--ha-card-background, var(--card-background-color)))`,
       label: r.name,
       extraClass,
       onClick: () => this._moreInfo(r.entity),
@@ -367,7 +367,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
     const bannerColor = state === "alarm" ? LEAK_ALARM_COLOR : state === "stale" ? LEAK_STALE_COLOR : accent;
     const cssVars = buildCssVars({
       "m3p-icon-color": bannerColor,
-      "m3p-icon-bg": `color-mix(in srgb, ${bannerColor} 18%, transparent)`,
+      "m3p-icon-bg": `color-mix(in srgb, ${bannerColor} 18%, var(--ha-card-background, var(--card-background-color)))`,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "leak-alarm": LEAK_ALARM_COLOR,

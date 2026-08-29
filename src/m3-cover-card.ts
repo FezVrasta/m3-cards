@@ -617,7 +617,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
     const accent = this._accent();
     const cssVars = buildCssVars({
       "m3p-icon-color": accent,
-      "m3p-icon-bg": `color-mix(in srgb, ${accent} 20%, transparent)`,
+      "m3p-icon-bg": `color-mix(in srgb, ${accent} 20%, var(--ha-card-background, var(--card-background-color)))`,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
