@@ -2609,3 +2609,7 @@ export function localize(key: TranslationKey, language?: string): string {
   const lang = resolveLang(language);
   return translations[lang][key] ?? translations.en[key] ?? key;
 }
+    occupancy_expand: "{n} weitere anzeigen",
+    occupancy_collapse: "Einklappen",
+    occupancy_expand: "Show {n} more",
+    occupancy_collapse: "Collapse",

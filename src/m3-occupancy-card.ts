@@ -28,6 +28,8 @@ import {
   OCCUPANCY_PULSE_MS,
   OCCUPANCY_TINT_OCCUPIED,
   OCCUPANCY_TINT_FREE,
+  OCCUPANCY_TOGGLE_HEIGHT,
+  OCCUPANCY_TOGGLE_RADIUS,
   OCCUPANCY_CHIP_RADIUS,
   OCCUPANCY_TICK_MS,
   DEFAULT_OCCUPANCY_TIMELINE_HOURS,
@@ -78,6 +80,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3OccupancyCardConfig;
+  @state() private _expanded = false;
   @state() private _discovered: DiscoveredOccupancyRoom[] = [];
   /** Bumped by the ticker so the elapsed-time text stays honest. */
   @state() private _tick = 0;
@@ -417,6 +420,13 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
       ? `${cssVars} --ha-card-background: ${cardBackgroundCss};`
       : cssVars;
 
+    // max_visible was offered by the editor and never read here — reported as
+    // a bug against 2.0.0. Same shape the battery, power-list, NAS and updates
+    // cards already use: keep the first N rows, put the rest behind a toggle.
+    const maxVisible = cfg.max_visible ?? 0;
+    const sichtbar = maxVisible > 0 && !this._expanded ? rows.slice(0, maxVisible) : rows;
+    const versteckt = maxVisible > 0 ? Math.max(0, rows.length - maxVisible) : 0;
+
     return html`
       <ha-card style=${style}>
         <div
@@ -425,8 +435,23 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
           ${this._renderHeader(occupied, rows.length)}
           ${rows.length
             ? html`<div class="rows">
-                  ${repeat(rows, (r) => r.key, (r) => this._renderRow(r))}
+                  ${repeat(sichtbar, (r) => r.key, (r) => this._renderRow(r))}
                 </div>
+                ${versteckt > 0
+                  ? html`
+                      <button
+                        class="expand-toggle ${this._expanded ? "open" : ""}"
+                        @click=${() => (this._expanded = !this._expanded)}
+                      >
+                        <span
+                          >${this._expanded
+                            ? this._t("occupancy_collapse")
+                            : this._t("occupancy_expand").replace("{n}", String(versteckt))}</span
+                        >
+                        <ha-icon class="chevron" icon="mdi:chevron-down"></ha-icon>
+                      </button>
+                    `
+                  : nothing}
                 ${cfg.show_timeline === false ? nothing : this._renderAxis()}`
             : html`<div class="empty">${this._t("occupancy_none_found")}</div>`}
         </div>
@@ -563,6 +588,45 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         display: flex;
         flex-direction: column;
         gap: ${OCCUPANCY_ROW_GAP}px;
+      }
+
+      .expand-toggle {
+        width: 100%;
+        height: ${OCCUPANCY_TOGGLE_HEIGHT}px;
+        border-radius: ${OCCUPANCY_TOGGLE_RADIUS}px;
+        border: none;
+        background: color-mix(
+          in srgb,
+          var(--primary-text-color) 7%,
+          var(--ha-card-background, var(--card-background-color))
+        );
+        color: var(--m3p-secondary-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 13px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: border-radius 350ms ${EASING};
+      }
+
+      .expand-toggle.open {
+        border-radius: ${OCCUPANCY_TOGGLE_RADIUS - 7}px;
+      }
+
+      .expand-toggle .chevron {
+        --mdc-icon-size: 18px;
+        transition: transform 250ms ${EASING};
+      }
+
+      .expand-toggle.open .chevron {
+        transform: rotate(180deg);
+      }
+
+      .card-inner.no-animations .expand-toggle,
+      .card-inner.no-animations .expand-toggle .chevron {
+        transition: none;
       }
 
       .row {

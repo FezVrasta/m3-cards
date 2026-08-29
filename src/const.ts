@@ -1096,3 +1096,5 @@ export const WASTE_COLOR_RULES: Array<[RegExp, string]> = [
   [/glas|glass/i, "#7bc4b0"],
   [/sperrm(ü|ue)ll|bulk/i, "#b8946a"],
 ];
+export const OCCUPANCY_TOGGLE_HEIGHT = HEIGHT.toggle;
+export const OCCUPANCY_TOGGLE_RADIUS = RADIUS.row;
