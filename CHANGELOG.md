@@ -12,6 +12,29 @@ von Grund auf neu strukturierte README. Enthält alle seit 1.9.0 gesammelten
 Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat veröffentlicht und ist
 hier aufgegangen).
 
+### Achtung beim Update
+
+Keine Konfigurationsoption wurde entfernt oder umbenannt, und kein Standardwert
+in `const.ts` hat sich geändert — bestehende Configs laden unverändert. Diese
+Punkte ändern aber das **Verhalten**, ohne dass man etwas anpasst:
+
+- **M3 Media Card**: Die rechte Zeitangabe zeigt jetzt die **Restzeit mit
+  Minuszeichen** statt der Gesamtdauer. Zurück mit `time_display: total`.
+- **M3 Media Card**: Führende Tracknummern verschwinden aus dem Titel. Zurück
+  mit `strip_track_number: false`.
+- **M3 Media Card**: Bei Playern mit `BROWSE_MEDIA` erscheint die
+  Bibliothekszeile, und die Transportknöpfe sind größer — **die Karte wird
+  höher** und kann Dashboard-Layouts verschieben. Die Zeile lässt sich mit
+  `show_browser: false` abschalten.
+- **M3 Media Card**: Der Fortschritt ist wieder ein Wellen-Indikator statt
+  einer geraden Linie.
+- **M3 Button Card mit `show_slider: true`**: Ein Tap setzt jetzt den Wert an
+  der getippten Position, statt auf die Tap-Aktion durchzufallen. Zum Schalten
+  dient jetzt das Icon, dessen Standardaktion im Slider-Modus von More-Info auf
+  den Domänen-Toggle wechselt — zurück mit `icon_tap_action: more-info`. Karten
+  **ohne** `show_slider` sind nicht betroffen.
+- **M3 Light Card**: Die Wellen-Geometrie ist schlanker (Strichstärke 14 → 6).
+
 ### Neu
 - **M3 Cover Card** (`custom:m3-cover-card`): Rollladen- und
   Abdeckungssteuerung, die sich an die Fähigkeiten der Entität anpasst —

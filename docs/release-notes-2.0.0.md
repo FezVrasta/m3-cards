@@ -1,3 +1,10 @@
+## Achtung beim Update
+
+Keine Konfigurationsoption wurde entfernt oder umbenannt — bestehende Configs laden unverändert. Diese Punkte ändern aber das Verhalten, ohne dass man etwas anpasst:
+
+- **Media Card**: Die rechte Zeitangabe zeigt die **Restzeit mit Minuszeichen** statt der Gesamtdauer (`time_display: total` stellt es zurück), führende Tracknummern verschwinden aus dem Titel (`strip_track_number: false`), und bei Playern mit `BROWSE_MEDIA` erscheint die Bibliothekszeile — **die Karte wird dadurch höher** und kann Layouts verschieben (`show_browser: false`).
+- **Button Card mit `show_slider: true`**: Ein Tap setzt jetzt den Wert an der getippten Position, statt zu schalten. Zum Schalten dient das Icon, dessen Standardaktion im Slider-Modus auf den Domänen-Toggle wechselt (`icon_tap_action: more-info` stellt More-Info zurück). Karten **ohne** `show_slider` sind nicht betroffen.
+
 ## Neu
 
 Sechs neue Karten — die Suite wächst von 23 auf 29.
@@ -45,6 +52,13 @@ Zusätzlich filtern 15 der 29 Karten jetzt überflüssige Neuzeichnungen: Home A
 Die vollständige Liste steht in [CHANGELOG.md](CHANGELOG.md).
 
 ---
+
+## Before you update
+
+No configuration option was removed or renamed — existing configs load unchanged. These do change behaviour without any edit on your side:
+
+- **Media card**: the right-hand time shows **remaining, with a minus sign**, rather than the total length (`time_display: total` restores it), leading track numbers drop out of titles (`strip_track_number: false`), and players reporting `BROWSE_MEDIA` gain the library row — which makes **the card taller** and may reflow a dashboard (`show_browser: false`).
+- **Button card with `show_slider: true`**: a tap now sets the value at the pressed position instead of toggling. Toggling moves to the icon, whose default action in slider mode becomes the domain's toggle (`icon_tap_action: more-info` restores more-info). Cards **without** `show_slider` are unaffected.
 
 ## New
 
