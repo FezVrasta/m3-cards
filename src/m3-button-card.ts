@@ -175,6 +175,12 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     | { value: number; min: number; max: number; step: number; unit: string }
     | undefined {
     if (!this.hass || !this._config?.entity) return undefined;
+    // Slider mode is opt-in. Gating here rather than only at the render site
+    // keeps the pointer handlers, the swipe guard and the icon's default
+    // action in step with it: without this a plain button on a light — no
+    // slider drawn — would still commit a brightness on tap instead of
+    // toggling, because the drag handlers only ever asked the domain.
+    if (!this._config.show_slider) return undefined;
     const entity = this.hass.states[this._config.entity];
     if (!entity) return undefined;
     const domain = this._sliderDomain();
@@ -588,10 +594,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       this._config.radius ?? DEFAULT_BUTTON_RADIUS,
       this._config.corners,
     );
-    const sliderInfo =
-      entity && this._config.show_slider && !unavailable
-        ? this._sliderInfo()
-        : undefined;
+    const sliderInfo = entity && !unavailable ? this._sliderInfo() : undefined;
     const sliderPercent =
       this._dragPercent ??
       (sliderInfo
