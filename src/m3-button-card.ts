@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -19,6 +19,7 @@ import {
   resolveCornerRadius,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
@@ -87,6 +88,10 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     window.clearTimeout(this._iconHoldTimer);
     this._holdTimer = undefined;
     this._iconHoldTimer = undefined;
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.entity]);
   }
 
   public setConfig(config: M3ButtonCardConfig): void {

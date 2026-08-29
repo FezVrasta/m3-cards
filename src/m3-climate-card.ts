@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, unsafeCSS } from "lit";
+import { LitElement, html, css, nothing, unsafeCSS, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -22,6 +22,7 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
 import { tintBackground } from "./shared/color-config";
@@ -61,6 +62,16 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       show_sensors: true,
       glass_background: true,
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.entity,
+      this._config?.temperature_sensor,
+      this._config?.humidity_sensor,
+      this._config?.window_sensor,
+      this._config?.battery_sensor,
+    ]);
   }
 
   public setConfig(config: M3ClimateCardConfig): void {

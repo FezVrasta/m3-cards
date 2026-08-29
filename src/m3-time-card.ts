@@ -70,6 +70,7 @@ import {
   parsePresetTime,
 } from "./shared/ha-time";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-TIME-CARD %c v${CARD_VERSION} `,
@@ -134,6 +135,10 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         (e) => e.startsWith("input_datetime.") && hass.states[e].attributes.has_time === true,
       ) ?? "";
     return { type: "custom:m3-time-card", entity };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.entity]);
   }
 
   public setConfig(config: M3TimeCardConfig): void {
