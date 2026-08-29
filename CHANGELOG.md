@@ -4,6 +4,84 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [2.1.0]
+
+### Neu
+- **M3 Media Card — Bibliothek und Warteschlange**: Meldet der Player
+  `BROWSE_MEDIA`, öffnet eine Zeile am Fuß der Karte HAs Medienbrowser —
+  Breadcrumb-Navigation, Vorschaubild oder `media_class`-Icon je Zeile, Ordner
+  zum Hineinnavigieren, abspielbare Einträge per Tap. Ein zweiter Reiter zeigt
+  die Warteschlange, sofern die Integration eine liefert; Cast und Spotify tun
+  das nicht und bekommen den Reiter gar nicht erst. Ebenen mit tausenden
+  Einträgen werden bei 100 Zeilen gekappt (`show_browser`, `default_tab`,
+  `browse_height`).
+- **M3 Media Card — Metadaten und Chips**: Titel zweizeilig, Interpretenzeile
+  mit Radio-Fallback über `media_channel`, dritte Zeile mit Album und Jahr.
+  Darunter Chips für Ausgabegerät und Quelle, optional Titelnummer, Jahr und
+  Bitrate über `meta_chips`. Führende Tracknummern werden entfernt
+  (`strip_track_number`), ohne Titel wie `1979` oder `365 Dreams` anzutasten.
+- **M3 Media Card — Fortschritt**: Wellen-Indikator, der beim Pausieren flach
+  ausläuft. Streams ohne Dauer zeigen ein wanderndes Wellensegment und einen
+  „Live"-Chip. Restzeit mit Minuszeichen, umschaltbar über `time_display`.
+  Spulen mit 200-ms-Drosselung.
+
+### Geändert
+- **M3 Media Card**: Transportleiste in der Reihenfolge Shuffle · Zurück ·
+  Play/Pause · Vor · Repeat, mit neuen Größen. Der Play-Knopf ist der
+  Zustandsanzeiger der Zeile — Kreis pausiert, Squircle beim Abspielen, mit
+  überblendendem Symbol. Repeat läuft jetzt dreistufig (aus → alle → einer).
+  Alle Knöpfe morphen beim Tippen kurz die Ecken ein.
+- **M3 Media Card**: `FEATURE.STOP` fehlte in der Feature-Maske. Player, die
+  nicht pausieren, aber stoppen können, zeigen jetzt ein Stopp-Symbol.
+- **M3 Media Card**: Die Akzentfarbe aus dem Cover ist nicht mehr der
+  Durchschnitt aller Pixel — der ergibt Hintergrund plus Motiv addiert, also
+  meist einen entsättigten Braunton. Stattdessen wird die dominante gesättigte
+  Farbe gewählt und danach auf mindestens 3,2:1 gegen die dunkle Tinte
+  gebracht. Ein Cover, das vorher `#4c3d56` bei 1,71:1 lieferte (praktisch
+  unsichtbares Symbol), landet jetzt bei einem lesbaren Violett. Farbwechsel
+  blenden über 400 ms über.
+- **M3 Button Card**: Der Slider übernimmt jetzt auch beim Tippen, nicht nur
+  beim Ziehen, und bleibt bei ausgeschaltetem Licht bedienbar. Das Icon wird
+  im Slider-Modus zum Schalter.
+- Drags auf Slidern und Rädern werden von Swipe-Plugins des Dashboards
+  abgeschirmt (`shared/swipe.ts`), damit ein seitlicher Wisch nicht die
+  Ansicht wechselt.
+
+### Behoben
+- **M3 Light Card**: Die Wellenanimation rief bei jedem Frame
+  `requestUpdate()` und baute damit die komplette Karte samt Farbrad neu auf,
+  solange eine Lampe an war. Eine Instanz erzeugte 1820 Renders in 15 Sekunden
+  — 73 % eines Dashboards mit 35 Karten. Der Frame schreibt jetzt nur noch das
+  `d`-Attribut des einen Pfades: 1820 → 9.
+- **M3 Media Card**: Dieselbe Ursache im Fortschrittsbalken — ein `@state`-Feld
+  mit Millisekunden-Genauigkeit wurde in `updated()` neu berechnet, sodass
+  jeder Render den nächsten auslöste. Die präzise Position ist jetzt entkoppelt,
+  reaktiv ist nur noch die ganze Sekunde.
+- **M3 Media Card**: Der Power-Knopf der Kompaktansicht trug den Icon-Namen als
+  `aria-label`. Alle Icon-Knöpfe haben jetzt lokalisierte Beschriftungen.
+
+### Leistung
+- `shouldUpdate` in 15 von 29 Karten (`shared/should-update.ts`). HA weist
+  `hass` bei jeder Zustandsänderung im gesamten System neu zu, sodass bisher
+  jede Karte bei jedem fremden Sensor neu rendert. Umgestellte Karten rendern
+  nur noch, wenn eine ihrer eigenen Entitäten sich ändert. Bewusst ausgenommen
+  sind Karten mit Auto-Discovery und solche, deren Entitäten aus dem
+  Energie-Dashboard, Statistiken oder der Registry stammen — dort ließe sich
+  die Liste nicht vollständig ableiten, und eine unvollständige Liste würde
+  eine Karte still aufhören lassen zu reagieren.
+- Intl-Formatter werden zwischengespeichert statt bei jedem Aufruf neu gebaut
+  (41 Stellen, teils pro Listenzeile pro Render).
+
+### Aufgeräumt
+- 27 ungenutzte Konstanten und 30 tote Übersetzungsschlüssel entfernt;
+  `noUnusedLocals` und `noUnusedParameters` sind jetzt aktiv.
+- Button- und Cover-Karte waren die einzigen zwei von 23 Karten mit Timern
+  ohne `disconnectedCallback`; der Arm-Timeout der Leak-Karte wurde nie
+  verfolgt. Alle drei räumen jetzt auf.
+- Die neun kartenspezifischen `_formatNumber` nutzen jetzt die gemeinsame
+  Funktion. Zwei davon fingen einen unbrauchbaren Locale-Tag ab, sieben nicht
+  — der Schutz gilt jetzt für alle.
+
 ## [2.0.0]
 
 Großes Funktions-Release: fünf neue Karten, optionale Benachrichtigungen für

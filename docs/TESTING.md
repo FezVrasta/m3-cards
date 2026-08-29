@@ -21,7 +21,7 @@ WebSocket-Antworten oder visuelles Rendering aussagen.
 - Ein Handy oder ein per DevTools emuliertes Touch-Gerät für alle Drag-Interaktionen
   (Wave-Slider, Wischen) — Maus-Events allein decken `touch-action`-Konflikte nicht ab.
 
-## Cross-Cutting-Checkliste (für jede der 14 Karten)
+## Cross-Cutting-Checkliste (für jede der 29 Karten)
 
 Diese Punkte gelten kartenübergreifend, weil sie über gemeinsame `shared/*`-Module
 implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichzeitig.
@@ -196,12 +196,149 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 | `max_visible` + Erweitern-Button | Mehr Entitäten als `max_visible` | „N weitere anzeigen“/„Einklappen“ toggelt kompakte Zusatzzeilen mit FLIP-Animation |
 | Manuelle Ausschlüsse | `exclude_entities` mit einer Entity-ID aus der Auto-Discovery | Diese Entität erscheint nirgends, auch nicht hinter dem Erweitern-Button |
 
+## M3 Media Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Feature-Erkennung | Player ohne `PREVIOUS_TRACK`/`NEXT_TRACK` (Chromecast mit lokaler Datei) gegen einen mit (derselbe Player über Spotify) | Fehlende Knöpfe fehlen ganz, kein ausgegrauter Platzhalter; über Spotify erscheinen sie |
+| Play/Pause-Morph | Zwischen Wiedergabe und Pause umschalten | Fläche morpht Kreis ↔ Squircle, Symbol blendet über, kein Layout-Sprung |
+| Ohne Pause-Feature | Player, der nur `STOP` meldet | Stopp-Symbol statt Pause, Aufruf geht an `media_stop` |
+| Repeat dreistufig | Repeat mehrfach tippen | aus → alle → einer → aus, bei „einer" das `repeat-once`-Symbol |
+| Fortschrittswelle | Wiedergabe pausieren | Welle ebbt animiert auf eine gerade Linie ab, springt nicht |
+| Live-Stream | Radio-Stream ohne `media_duration` | Wanderndes Wellensegment, „Live"-Chip statt Restzeit |
+| Restzeit | `time_display` umschalten | `remaining` zeigt `-2:21`, `total` die Gesamtdauer |
+| Spulen | Auf dem Fortschritt ziehen | Zeitangabe links folgt dem Griff, nicht dem Player; höchstens ein `media_seek` je 200 ms |
+| Ohne Metadaten | Chromecast mit lokaler Datei (Default Media Receiver) | Interpret/Album/Titel aus dem Pfad abgeleitet, Interpret nicht doppelt im Titel |
+| Tracknummer | Titel `07 - Enjoy the Silence` und `365 Dreams - My Way` | Erster gekürzt, zweiter unangetastet |
+| Cover-Farbe | Dunkles Cover mit kleinem farbigem Motiv | Akzent nimmt die Motivfarbe an, Symbol auf gefüllter Fläche bleibt lesbar |
+| Ohne Cover | Player ohne `entity_picture` | Verlaufsfläche mit Album-/Noten-Symbol, keine leere Kachel |
+| Bibliothek | Zeile aufklappen, zwei Ebenen tief navigieren, Breadcrumb zurück | Skeletons beim Laden, Breadcrumb stimmt, Zurück funktioniert |
+| Bibliothek: große Ebene | Ordner mit >100 Einträgen öffnen | 100 Zeilen plus Hinweis „… und N weitere", Oberfläche bleibt flüssig |
+| Bibliothek: abspielen | Abspielbaren Eintrag antippen | Wiedergabe startet, Karte übernimmt den neuen Titel |
+| Warteschlange | Player mit und ohne Queue | Mit: zweiter Reiter und „Als Nächstes: …"; ohne: kein leerer Reiter, Zeile liest „Bibliothek durchsuchen" |
+| `show_browser: false` | Option setzen | Bereich verschwindet vollständig |
+
+## M3 Weather Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Vorhersagearten | Entität nur mit täglicher bzw. nur mit stündlicher Vorhersage | Kurve rendert oder fällt sauber weg, kein leerer Bereich |
+| Sonnenmarker | `sun.sun` beobachten | Auf-/Untergangsmarker sitzen an der richtigen Stelle der Zeitachse |
+| Niederschlagsbalken | Vorhersage ohne Niederschlagsdaten | Balkenreihe entfällt, Kurve bleibt |
+
+## M3 Presence Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Auto-Discovery | Ohne `entities` konfigurieren | Alle `person`-Entitäten erscheinen |
+| Ohne Bild | Person ohne `entity_picture` | Initialen statt Avatar |
+| Kartenintegration | `show_map: true` | Karte lädt, keine Konsolenfehler bei fehlenden Koordinaten |
+
+## M3 Climate Overview Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Bereichserkennung | `auto_discover: true` ohne Räume | Räume aus HA-Bereichen, Temperatur und Feuchte je Raum |
+| Raum ohne Feuchtesensor | Raum mit nur Temperatur | Feuchtewert entfällt, Zeile bleibt intakt |
+| Trend | Verlauf abwarten | Trendpfeil erscheint erst mit ausreichend Historie |
+
+## M3 Aquarium Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Fehlende Slots | Nur `water_temperature_entity` gesetzt | Übrige Kacheln entfallen, kein Platzhalter mit „–" |
+| Kamera | `camera_entity` gesetzt, Banner aufklappen | Bild lädt, Aufklappanimation ruckelt nicht |
+| Reinigungsintervall | Datum in Vergangenheit und Zukunft | Fälligkeit korrekt, Zustandsfarbe wechselt |
+
+## M3 Updates Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Ohne Updates | Alle `update.*` auf „aktuell" | Ruhezustand statt leerer Liste |
+| Installation | Update auslösen | Knopf morpht in den Busy-Zustand, Fortschritt sichtbar |
+| Backup-Warnung | Letztes Backup älter als `backup_warn_days` | Warnhinweis erscheint |
+
+## M3 NAS Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Offline | NAS-Entitäten auf `unavailable` | Offline-Zustand nach `offline_minutes`, keine `NaN`-Werte |
+| Schwellwerte | Disk-/Temperaturwerte über Warn- und Kritisch-Schwelle | Farbwechsel an beiden Schwellen |
+
+## M3 System Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Reines Rendering | Karte platzieren | Rendert ohne `hass`-Zustand, keine Konsolenfehler |
+
+## M3 Supply Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Hero-Wechsel | Zeile antippen | Angetippter Vorrat wird zum Hero, Animation sauber |
+| Punkte vs. Balken | Vorrat unter und über 40 Einheiten | Unter 40 ein Punkt je Einheit, darüber ein Balken |
+| Stepper-Wiederholung | +/- gedrückt halten | Wert läuft weiter, stoppt beim Loslassen |
+| Nachfüllen | „Packung nachgefüllt" antippen | Zähler springt um die Packungsgröße |
+
+## M3 Todo Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Hinzufügen | Eintrag oben und unten (`add_position`) | Landet an der konfigurierten Stelle |
+| Duplikat | Vorhandenen Eintrag erneut eingeben | Bestehender Eintrag pulst, keine zweite Zeile |
+| Abhaken | Häkchen antippen | Morph vom Ring zum gefüllten Squircle |
+| Schnellwahl-Chips | Quelle auf Supply-Karten stellen | Knappster Vorrat zuerst als Chip |
+| Umbenennen/Löschen | Zeile lange drücken | Dialog erscheint, beide Aktionen wirken |
+
+## M3 Time Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Darstellungsvarianten | Stepper und Scroll-Räder durchschalten | Beide bedienbar, gleicher Wert |
+| Rad-Drag vs. Swipe | Auf einem Dashboard mit Swipe-Plugin am Rad ziehen | Ansicht wechselt nicht |
+| 12-Stunden-Format | HA-Locale auf 12h stellen | AM/PM korrekt, ARIA-Bereich passend |
+| Übernehmen-Knopf | Sichtbarkeit umschalten | Wert wird sofort bzw. erst beim Übernehmen geschrieben |
+
+## M3 Occupancy Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Auto-Discovery | Ohne Sensorliste | Räume aus HA-Bereichen, „X von Y Räumen belegt" |
+| Zeitleiste | Sensor auslösen | Streifen aktualisiert sich ohne Wartezeit auf den Minutentakt |
+| „belegt seit" | Sensor länger als eine Stunde aktiv | Wechsel von Minuten- auf Stundenangabe |
+
+## M3 Cover Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Fähigkeiten | Cover mit Position, mit Lamellen, nur Auf/Zu | Nur die tatsächlich unterstützten Bedienelemente |
+| `switch_pair` | FingerBot-artiges Paar ohne Rückmeldung | Tastenfeedback zeigt den ausgelösten Befehl |
+| Gruppenmodus | Mehrere Zeilen, davon eine `switch_pair` | Jede Zeile eigenständig bedienbar |
+| Drag | Position ziehen | Höchstens ein Aufruf je 200 ms, Wert setzt sich nach dem Loslassen |
+
+## M3 Leak Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Alarm | Feuchtesensor auf `on` | Lauter Alarmzustand, Karte hebt sich ab |
+| Veraltet | Sensor lange ohne Update | „veraltet"-Zustand statt fälschlich „OK" |
+| Absperren | Mit `confirm_shutoff` zweimal tippen | Erster Tap schärft, zweiter löst aus; nach 4 s wieder entschärft |
+| Absperr-Domänen | `valve`, `switch` und `cover` als Absperrentität | Jeweils korrekter Dienstaufruf |
+
+## M3 Waste Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Hero | Sensor mit 0, 1 und mehreren Tagen | „nächste Abfuhr in N Tagen" korrekt, heute als Sonderfall |
+| Mehrere Tonnen am selben Tag | Zwei Sensoren mit gleichem Tag | Hero zeigt „N Tonnen" mit Mehrfach-Icon |
+| Zeitleiste | Zwei Wochen Vorschau | Marker an den richtigen Tagen |
+
 ## Vor jedem Release
 
 1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
    durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
    eine mit Animation wie Progress/Light).
-2. Jede der 14 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+2. Jede der 29 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
 
