@@ -4,7 +4,14 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
-## [2.1.0]
+## [2.0.0]
+
+Großes Funktions-Release: fünf neue Karten, optionale Benachrichtigungen für
+mehrere Karten und eine von Grund auf neu strukturierte README. Enthält alle
+seit 1.9.0 gesammelten Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat
+veröffentlicht und ist hier aufgegangen).
+
+<!-- Media-Karte, Leistung und Aufräumarbeiten (zuvor als 2.1.0 geführt) -->
 
 ### Neu
 - **M3 Media Card — Bibliothek und Warteschlange**: Meldet der Player
@@ -81,13 +88,6 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Die neun kartenspezifischen `_formatNumber` nutzen jetzt die gemeinsame
   Funktion. Zwei davon fingen einen unbrauchbaren Locale-Tag ab, sieben nicht
   — der Schutz gilt jetzt für alle.
-
-## [2.0.0]
-
-Großes Funktions-Release: fünf neue Karten, optionale Benachrichtigungen für
-mehrere Karten und eine von Grund auf neu strukturierte README. Enthält alle
-seit 1.9.0 gesammelten Arbeiten (die zwischenzeitliche 1.9.1 wurde nie separat
-veröffentlicht und ist hier aufgegangen).
 
 ### Neu
 - **M3 Cover Card** (`custom:m3-cover-card`): Rollladen- und
