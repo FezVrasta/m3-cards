@@ -34,7 +34,7 @@ import {
   WEATHER_DAYS_TOGGLE_RADIUS_OPEN,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -377,15 +377,23 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_WEATHER_RADIUS, this._config.corners);
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "wc-accent": accentColor,
       "wc-precip": precipColor,
       "wc-gradient": gradientColor,
-      "wc-days-toggle-bg": tintBackground(accentColor, this._config.accent_opacity, 14),
+      "wc-days-toggle-bg": tintOn(this, accentColor, this._config.accent_opacity, 14),
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3p-icon-color": accentColor,
+        "wc-accent": accentColor,
+      }),
     });
 
     const hours = Math.max(0, this._config.hours ?? DEFAULT_WEATHER_HOURS);
@@ -658,7 +666,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
         align-items: center;
         justify-content: center;
         background: var(--m3p-icon-bg);
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
       }
 
       .header-icon-swatch ha-icon {
@@ -850,7 +858,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
         border-radius: ${WEATHER_DAYS_TOGGLE_RADIUS}px;
         border: none;
         background: var(--wc-days-toggle-bg);
-        color: var(--wc-accent);
+        color: var(--wc-accent-fg, var(--wc-accent));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -901,14 +909,14 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       .day-icon {
         flex-shrink: 0;
         --mdc-icon-size: 20px;
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
       }
 
       .day-pop {
         flex-shrink: 0;
         width: 34px;
         font-size: 11px;
-        color: var(--wc-accent);
+        color: var(--wc-accent-fg, var(--wc-accent));
         opacity: 0.8;
       }
 

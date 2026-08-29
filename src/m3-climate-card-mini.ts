@@ -24,7 +24,7 @@ import { renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
-import { tintBackground } from "./shared/color-config";
+import { tintOn } from "./shared/color-config";
 
 console.info(
   `%c M3-CLIMATE-CARD-MINI %c v${CARD_VERSION} `,
@@ -206,28 +206,28 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     const plusColor = active ? plusActiveColor : plusInactiveColor;
     const minusColor = active ? minusActiveColor : minusInactiveColor;
 
-    const iconInactiveBg = tintBackground(
+    const iconInactiveBg = tintOn(this, 
       iconInactiveColor,
       this._config.icon_inactive_opacity,
       14,
     );
-    const iconActiveBg = tintBackground(
+    const iconActiveBg = tintOn(this, 
       iconActiveColor,
       this._config.icon_active_opacity,
       22,
     );
-    const powerInactiveBg = tintBackground(
+    const powerInactiveBg = tintOn(this, 
       powerInactiveColor,
       this._config.power_inactive_opacity,
       14,
     );
-    const powerActiveBg = tintBackground(
+    const powerActiveBg = tintOn(this, 
       powerActiveColor,
       this._config.power_active_opacity,
       30,
     );
-    const minusBg = tintBackground(minusColor, this._config.minus_opacity, 8);
-    const plusBg = tintBackground(plusColor, this._config.plus_opacity, 20);
+    const minusBg = tintOn(this, minusColor, this._config.minus_opacity, 8);
+    const plusBg = tintOn(this, plusColor, this._config.plus_opacity, 20);
 
     const hvacModesRaw: string[] = Array.isArray(attrs.hvac_modes)
       ? attrs.hvac_modes

@@ -36,7 +36,7 @@ import {
   resolveThemeColor,
   buildCssVars,
   resolveCommonColors,
-  tintBackground,
+  tintOn, foregroundOn, fillColor,
 } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -418,10 +418,13 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
     const animate = shouldAnimate(this._config.animation);
     const dotDuration = FLOW_DOT_DURATION_MS[this._config.flow_speed ?? "normal"];
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, textColorCss, this._config.text_opacity, 12);
     const cssVars = buildCssVars({
       "m3p-accent": homeColor,
-      "m3p-icon-color": textColorCss,
-      "m3p-icon-bg": tintBackground(textColorCss, this._config.text_opacity, 12),
+      "m3p-icon-color": foregroundOn(textColorCss, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
@@ -460,7 +463,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
                   <div class="self-sufficiency-track">
                     <div
                       class="self-sufficiency-fill"
-                      style=${`width: ${Math.max(4, selfSufficiency)}%; background: ${selfSufficiencyColor};`}
+                      style=${`width: ${Math.max(4, selfSufficiency)}%; background: ${fillColor(this, selfSufficiencyColor)};`}
                     ></div>
                   </div>
                 </div>
@@ -503,7 +506,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
   }
 
   private _renderNode(node: FlowNodeData, nodeTintOpacity: number | undefined): SVGTemplateResult {
-    const fill = tintBackground(node.color, nodeTintOpacity, 18);
+    const fill = tintOn(this, node.color, nodeTintOpacity, 18);
     return svg`
       <g class="flow-node">
         <rect

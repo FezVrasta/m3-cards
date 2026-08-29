@@ -38,7 +38,7 @@ import {
   CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -567,9 +567,12 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
       ? resolveThemeColor(this._config.accent_color)
       : "var(--primary-text-color)";
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 12);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 12),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
@@ -588,7 +591,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
               ? html`
                   <div
                     class="outlier-chip"
-                    style=${`background: ${tintBackground(outlier.tile.tempColor, this._config.tile_tint_opacity, 18)}; color: ${outlier.tile.tempColor};`}
+                    style=${`background: ${tintOn(this, outlier.tile.tempColor, this._config.tile_tint_opacity, 18)}; color: ${outlier.tile.tempColor};`}
                     role="button"
                     tabindex="0"
                     aria-label=${outlier.tile.name}
@@ -619,7 +622,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     return html`
       <div
         class="room-tile ${tile.temperatureUnavailable ? "unavailable" : ""}"
-        style=${`--tile-color: ${tile.tempColor}; background: ${tintBackground(tile.tempColor, this._config?.tile_tint_opacity, 12)};`}
+        style=${`--tile-color: ${tile.tempColor}; background: ${tintOn(this, tile.tempColor, this._config?.tile_tint_opacity, 12)};`}
         role="button"
         tabindex="0"
         aria-label=${tile.name}

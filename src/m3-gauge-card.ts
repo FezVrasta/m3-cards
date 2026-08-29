@@ -23,7 +23,7 @@ import {
   resolveThemeColor,
   buildCssVars,
   resolveCommonColors,
-  tintBackground,
+  tintOn, foregroundOn,
 } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -283,9 +283,12 @@ export class M3GaugeCard extends LitElement implements LovelaceCard {
       this._startAnimationLoop();
     }
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, segmentAColor, this._config.segment_a_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": segmentAColor,
-      "m3p-icon-bg": tintBackground(segmentAColor, this._config.segment_a_opacity, 18),
+      "m3p-icon-color": foregroundOn(segmentAColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });

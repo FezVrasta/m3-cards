@@ -29,7 +29,7 @@ import {
   LEAK_ARM_TIMEOUT_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, isReducedMotion } from "./shared/animation";
 import { renderListRow, listRowStyles } from "./shared/list-row";
@@ -307,6 +307,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       r.rowState === "wet" ? LEAK_ALARM_COLOR : r.rowState === "stale" || r.rowState === "unavailable" ? LEAK_STALE_COLOR : "var(--m3p-secondary-text)";
     const extraClass = r.rowState === "wet" ? "row-wet" : r.rowState === "stale" || r.rowState === "unavailable" ? "row-stale" : "";
     return renderListRow({
+      host: this,
       key: r.entity,
       icon: r.icon,
       iconColor,
@@ -378,6 +379,12 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       "lr-icon-size": `${LEAK_ICON_SIZE}px`,
       "lr-icon-radius": `${LEAK_ICON_RADIUS}px`,
       "lr-row-gap": `${LEAK_ROW_GAP}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "leak-alarm": LEAK_ALARM_COLOR,
+        "leak-stale": LEAK_STALE_COLOR,
+        "m3p-icon-color": bannerColor,
+      }),
     });
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_LEAK_RADIUS, this._config.corners);
 
@@ -503,7 +510,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         align-items: center;
         justify-content: center;
         background: color-mix(in srgb, var(--m3p-icon-color) 22%, transparent);
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
       }
       .banner-icon ha-icon {
         --mdc-icon-size: 26px;
@@ -526,7 +533,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       }
       .banner.alarm .banner-title {
         font-size: 17px;
-        color: var(--leak-alarm);
+        color: var(--leak-alarm-fg, var(--leak-alarm));
       }
       .banner-sub {
         font-size: 12px;
@@ -555,7 +562,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       }
       .valve-chip.closed {
         background: color-mix(in srgb, var(--leak-stale) 20%, transparent);
-        color: var(--leak-stale);
+        color: var(--leak-stale-fg, var(--leak-stale));
       }
       .test-chip {
         height: 30px;
@@ -568,7 +575,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         cursor: pointer;
         background: color-mix(in srgb, var(--leak-stale) 18%, transparent);
-        color: var(--leak-stale);
+        color: var(--leak-stale-fg, var(--leak-stale));
       }
       .test-chip ha-icon {
         --mdc-icon-size: 16px;
@@ -639,7 +646,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         color: var(--m3p-secondary-text);
       }
       .lr-sub.stale {
-        color: var(--leak-stale);
+        color: var(--leak-stale-fg, var(--leak-stale));
         opacity: 0.9;
       }
       .lr-row.row-wet {
@@ -660,10 +667,10 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         --mdc-icon-size: 16px;
       }
       .bat.warn {
-        color: var(--leak-stale);
+        color: var(--leak-stale-fg, var(--leak-stale));
       }
       .bat.crit {
-        color: var(--leak-alarm);
+        color: var(--leak-alarm-fg, var(--leak-alarm));
       }
       .status {
         font-size: 11px;
@@ -672,7 +679,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         opacity: 0.7;
       }
       .status.wet {
-        color: var(--leak-alarm);
+        color: var(--leak-alarm-fg, var(--leak-alarm));
         opacity: 1;
       }
       .lr-right {

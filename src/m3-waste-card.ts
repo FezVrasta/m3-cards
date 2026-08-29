@@ -22,7 +22,7 @@ import {
   WASTE_TICK_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, isReducedMotion } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
@@ -381,6 +381,10 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "waste-accent": primaryColor,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "waste-accent": primaryColor,
+      }),
     });
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_WASTE_RADIUS, this._config.corners);
 
@@ -583,7 +587,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
       .hero-main {
         font-size: 21px;
         font-weight: 700;
-        color: var(--waste-accent);
+        color: var(--waste-accent-fg, var(--waste-accent));
         line-height: 1.15;
       }
       .hero-main.big {

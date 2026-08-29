@@ -34,7 +34,7 @@ import {
   TOP_CONSUMERS_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -312,12 +312,19 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
     const costMode = this._config.unit_mode === "cost";
     const currency = this._config.currency || DEFAULT_COST_CURRENCY;
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "tc-accent": accentColor,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "tc-accent": accentColor,
+      }),
     });
 
     if (this._noDeviceSection) {
@@ -518,7 +525,7 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
         font-size: 20px;
         font-weight: 700;
         line-height: 1.1;
-        color: var(--tc-accent);
+        color: var(--tc-accent-fg, var(--tc-accent));
       }
 
       .total-unit {
@@ -689,7 +696,7 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
       .empty-state a {
         display: block;
         margin-top: 6px;
-        color: var(--tc-accent);
+        color: var(--tc-accent-fg, var(--tc-accent));
       }
     `,
   ];

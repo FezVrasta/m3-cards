@@ -26,7 +26,7 @@ import { glassBackground } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
-import { tintBackground } from "./shared/color-config";
+import { tintOn } from "./shared/color-config";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
@@ -319,7 +319,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-mode-color: ${modeColor}; --m3-icon-color: ${iconColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-bg: ${tintBackground(iconColor, this._config.icon_opacity, 18)}; --m3-plus-bg: ${tintBackground(plusColor, this._config.plus_opacity, 20)}; --m3-minus-bg: ${tintBackground(minusColor, this._config.minus_opacity, 8)}; border-radius: ${radius};`}
+        style=${`--m3-mode-color: ${modeColor}; --m3-icon-color: ${iconColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-bg: ${tintOn(this, iconColor, this._config.icon_opacity, 18)}; --m3-plus-bg: ${tintOn(this, plusColor, this._config.plus_opacity, 20)}; --m3-minus-bg: ${tintOn(this, minusColor, this._config.minus_opacity, 8)}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div

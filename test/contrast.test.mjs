@@ -10,7 +10,8 @@
 //   npm run test:contrast
 //
 const m = await import("file://" + process.argv[2]);
-const { parseColor, readableOnCss, contrastRatio, relativeLuminance, toHex, readableOn } = m;
+const { parseColor, readableOnCss, contrastRatio, relativeLuminance, toHex, readableOn,
+        vividOn, toneAt, rgbToHsl, mixColors } = m;
 
 const HELL = "#fafafa", DUNKEL = "#1c1c1c";
 const PAL = { off:"#888780", heat:"#e57368", cool:"#6ba7dc", dryAuto:"#5dcaa5", fan:"#b8c4c9",
@@ -49,5 +50,62 @@ pruefe("bereits kontrastreich bleibt gleich", readableOnCss("#000000", HELL) ===
 }
 // #808080 hat Luminanz 0.22, gilt also als dunkle Fläche -> Richtung Weiß
 pruefe("unerreichbares Ziel gibt Extrem", readableOnCss("#808080", "#808080", 21) === "#ffffff");
+
+// --- vividOn: der Weg, den die Karten tatsaechlich gehen -------------------
+//
+// readableOn blendet Richtung Schwarz und erreicht das Ziel, entfaerbt dabei
+// aber. vividOn haelt den Farbton und hebt die Saettigung. Beides wird hier
+// geprueft, sonst sichert der Test einen Pfad ab, den niemand mehr benutzt.
+const BOOST = 1.25;
+console.log("\n  vividOn — Farbe bleibt Farbe (Ziel 4,5:1 auf " + HELL + ")");
+console.log("  " + "-".repeat(74));
+for (const [n, hex] of Object.entries(PAL)) {
+  const c = parseColor(hex), grund = parseColor(HELL);
+  const neu = vividOn(c, grund, 4.5, BOOST);
+  const k = contrastRatio(neu, grund);
+  const satAlt = rgbToHsl(c)[1], satNeu = rgbToHsl(neu)[1];
+  const satBlass = rgbToHsl(readableOn(c, grund, 4.5))[1];
+  const farbtonAlt = rgbToHsl(c)[0], farbtonNeu = rgbToHsl(neu)[0];
+  pruefe(n + " erreicht 4,5:1", k >= 4.49);
+  // Grautoene (off, fan) haben keinen Farbton, den man halten koennte.
+  if (satAlt > 0.2) {
+    pruefe(n + " bleibt gesaettigter als die Blend-Variante", satNeu > satBlass);
+    pruefe(n + " behaelt den Farbton", Math.abs(farbtonNeu - farbtonAlt) < 0.02);
+  }
+  console.log(`  ${n.padEnd(12)} ${hex} -> ${toHex(neu)}  ${k.toFixed(2).padStart(5)}:1  S ${(satAlt*100).toFixed(0).padStart(3)}% -> ${(satNeu*100).toFixed(0).padStart(3)}%  (blend nur ${(satBlass*100).toFixed(0)}%)`);
+}
+for (const [n, hex] of Object.entries(PAL)) {
+  pruefe(n + ": vividOn im Dunklen unangetastet",
+    toHex(vividOn(parseColor(hex), parseColor(DUNKEL), 4.5, 1)) === hex.toLowerCase());
+}
+
+// --- toneAt: trifft das Ziel, statt es zu ueberschreiten -------------------
+//
+// Der Unterschied ist der Grund, warum es beide gibt: eine Toenung, die das
+// Ziel nur ueberschreiten muesste, kaeme bei einem ohnehin kontrastreichen
+// Akzent in voller Staerke zurueck — das Icon-Feld waere dann volltonfarben
+// und das gleichfarbige Icon darauf unsichtbar.
+console.log("\n  toneAt — trifft den Zielkontrast");
+const DUNKELREF = parseColor("#1c1c1c");
+for (const [n, hex] of Object.entries(PAL)) {
+  const c = parseColor(hex), grund = parseColor(HELL);
+  for (const pct of [8, 18, 30]) {
+    const ziel = contrastRatio(mixColors(c, DUNKELREF, pct / 100), DUNKELREF);
+    const t = toneAt(c, grund, ziel, BOOST);
+    const k = contrastRatio(t, grund);
+    pruefe(`${n} ${pct}%: toneAt trifft ${ziel.toFixed(2)}`, Math.abs(k - ziel) < 0.05);
+    pruefe(`${n} ${pct}%: Toenung bleibt heller als der Grund`,
+      relativeLuminance(t) < relativeLuminance(grund) || k < 1.05);
+  }
+}
+{
+  const grund = parseColor(HELL), c = parseColor("#89CFF0");
+  const t = toneAt(c, grund, 1.5, BOOST);
+  pruefe("toneAt gibt nicht den vollen Akzent zurueck", toHex(t) !== "#89cff0");
+  pruefe("toneAt bleibt hell", relativeLuminance(t) > 0.4);
+  console.log("  #89CFF0 bei Ziel 1,5:1 -> " + toHex(t) + "  (" + contrastRatio(t, grund).toFixed(2) + ":1)");
+}
+
+
 console.log("\n  " + (fehler ? `${fehler} FEHLER` : "alle Prüfungen bestanden"));
 process.exit(fehler ? 1 : 0);

@@ -31,7 +31,7 @@ import {
   SUMMARY_VALUE_LERP_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground, foregroundVars, foregroundColor } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundVars, foregroundColor } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { shouldAnimate } from "./shared/animation";
@@ -297,7 +297,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "ps-accent": accentColor,
-      "ps-accent-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "ps-accent-bg": tintOn(this, accentColor, this._config.accent_opacity, 18),
       "ps-producer": producerColor,
       "ps-main": mainColor,
       ...foregroundVars(this, {
@@ -318,7 +318,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
           <div class="main-row ${gridUnavailable ? "unavailable" : ""}">
             <div
               class="main-icon"
-              style=${`background: ${tintBackground(mainColor, this._config.flow_tint_opacity, 18)}; color: ${foregroundColor(this, mainColor)};`}
+              style=${`background: ${tintOn(this, mainColor, this._config.flow_tint_opacity, 18)}; color: ${foregroundColor(this, mainColor)};`}
               role="button"
               tabindex="0"
               aria-label=${mainLabel}
@@ -388,15 +388,15 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     const color = explicitColor ?? (isProducer ? producerColor : "var(--primary-text-color)");
     const flowTintOpacity = this._config?.flow_tint_opacity;
     const bg = explicitColor
-      ? tintBackground(explicitColor, flowTintOpacity, 14)
+      ? tintOn(this, explicitColor, flowTintOpacity, 14)
       : isProducer
-        ? tintBackground(producerColor, flowTintOpacity, 14)
+        ? tintOn(this, producerColor, flowTintOpacity, 14)
         : "color-mix(in srgb, var(--primary-text-color) 7%, transparent)";
     const iconColor = explicitColor ?? (isProducer ? producerColor : "var(--primary-text-color)");
     const iconBg = explicitColor
-      ? tintBackground(explicitColor, flowTintOpacity, 24)
+      ? tintOn(this, explicitColor, flowTintOpacity, 24)
       : isProducer
-        ? tintBackground(producerColor, flowTintOpacity, 24)
+        ? tintOn(this, producerColor, flowTintOpacity, 24)
         : "color-mix(in srgb, var(--primary-text-color) 12%, transparent)";
     const name = metric.name || state?.attributes.friendly_name || metric.entity;
     const icon = metric.icon || state?.attributes.icon || "mdi:power-plug";

@@ -42,7 +42,7 @@ import {
   OCCUPANCY_SEGMENT_FADED_OPACITY,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
@@ -411,10 +411,14 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3o-accent": accent,
-      "m3o-accent-tint": tintBackground(accent, cfg.accent_opacity, 18),
+      "m3o-accent-tint": tintOn(this, accent, cfg.accent_opacity, 18),
       "m3o-text": textColorCss,
       "m3o-secondary-text": secondaryTextColorCss,
       "m3o-radius": resolveCornerRadius(cfg.radius ?? DEFAULT_OCCUPANCY_RADIUS, cfg.corners),
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3o-accent": accent,
+      }),
     });
     const style = cardBackgroundCss
       ? `${cssVars} --ha-card-background: ${cardBackgroundCss};`
@@ -542,7 +546,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--m3o-accent);
+        color: var(--m3o-accent-fg, var(--m3o-accent));
         background: var(--m3o-accent-tint);
       }
 
@@ -578,7 +582,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         border-radius: ${OCCUPANCY_CHIP_RADIUS}px;
         font-size: 13px;
         font-weight: 700;
-        color: var(--m3o-accent);
+        color: var(--m3o-accent-fg, var(--m3o-accent));
         background: var(--m3o-accent-tint);
       }
 
@@ -676,7 +680,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
       }
 
       .row.occupied .row-icon {
-        color: var(--m3o-accent);
+        color: var(--m3o-accent-fg, var(--m3o-accent));
         background: color-mix(in srgb, var(--m3o-accent) 20%, transparent);
       }
 
@@ -784,7 +788,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
       }
 
       .row.occupied .row-status {
-        color: var(--m3o-accent);
+        color: var(--m3o-accent-fg, var(--m3o-accent));
         opacity: 1;
       }
     `,

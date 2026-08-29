@@ -20,7 +20,7 @@ import {
   COVER_MIN_FEEDBACK_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -620,6 +620,10 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
       "m3p-icon-bg": `color-mix(in srgb, ${accent} 20%, var(--ha-card-background, var(--card-background-color)))`,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3p-icon-color": accent,
+      }),
     });
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_COVER_RADIUS, this._config.corners);
 
@@ -668,7 +672,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         background: color-mix(in srgb, var(--m3p-icon-color) 20%, transparent);
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
         font-size: 14px;
         font-weight: 700;
       }

@@ -31,7 +31,7 @@ import {
   POWER_LIST_FLIP_DURATION_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -214,9 +214,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
     const producerColor = this._config.producer_color
       ? resolveThemeColor(this._config.producer_color)
       : DEFAULT_POWER_LIST_PRODUCER_COLOR;
-    const barTintColor = this._config.bar_tint_color
-      ? resolveThemeColor(this._config.bar_tint_color)
-      : accentColor;
+    const barTintColor = this._barTintColor();
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );
@@ -255,9 +253,12 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
         String(consumers.length),
       );
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "pl-accent": accentColor,
@@ -269,6 +270,11 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       "lr-icon-size": `${POWER_LIST_ICON_SIZE}px`,
       "lr-icon-radius": `${POWER_LIST_ICON_RADIUS}px`,
       "lr-row-gap": `${POWER_LIST_ROW_GAP}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "pl-accent": accentColor,
+        "pl-producer": producerColor,
+      }),
     });
 
     const showIdleToggle = this._config.show_idle_toggle ?? true;
@@ -359,38 +365,53 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  // Shared by render() (for the CSS variable) and by the row builder, which
+  // needs the resolved value rather than the variable.
+  private _barTintColor(): string {
+    return this._config?.bar_tint_color
+      ? resolveThemeColor(this._config.bar_tint_color)
+      : this._config?.accent_color
+        ? resolveThemeColor(this._config.accent_color)
+        : DEFAULT_POWER_LIST_ACCENT;
+  }
+
   private _renderProducerRow(row: PowerRow) {
     return renderListRow({
+      host: this,
       key: row.key,
       label: row.name,
       icon: row.icon,
       iconColor: "var(--pl-producer)",
-      iconBackground: tintBackground("var(--pl-producer)", this._config?.producer_opacity, 24),
+      iconBackground: tintOn(this, "var(--pl-producer)", this._config?.producer_opacity, 24),
       middle: html`<div class="row-name">${row.name}</div>`,
       right: html`<div class="row-value producer-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),
       extraClass: "producer-row",
-      style: `--lr-row-bg: ${tintBackground("var(--pl-producer)", this._config?.producer_opacity, 14)};`,
+      style: `--lr-row-bg: ${tintOn(this, "var(--pl-producer)", this._config?.producer_opacity, 14)};`,
     });
   }
 
   private _renderActiveRow(row: PowerRow, maxPower: number) {
     return renderListRow({
+      host: this,
       key: row.key,
       label: row.name,
       icon: row.icon,
       iconColor: "var(--pl-accent)",
-      iconBackground: tintBackground("var(--pl-accent)", this._config?.accent_opacity, 20),
+      iconBackground: tintOn(this, "var(--pl-accent)", this._config?.accent_opacity, 20),
       middle: html`<div class="row-name">${row.name}</div>`,
       right: html`<div class="row-value consumer-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),
       barFraction: row.power / maxPower,
-      barColor: "var(--pl-bar-tint)",
+      // The resolved value, not var(--pl-bar-tint): the tint has to parse the
+      // colour to correct it against a light surface, and a bare var() cannot.
+      barColor: this._barTintColor(),
     });
   }
 
   private _renderIdleRow(row: PowerRow) {
     return renderListRow({
+      host: this,
       key: row.key,
       label: row.name,
       icon: "mdi:power-plug-off",
@@ -418,7 +439,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
         font-size: 20px;
         font-weight: 700;
         line-height: 1.1;
-        color: var(--pl-accent);
+        color: var(--pl-accent-fg, var(--pl-accent));
       }
 
       .total-unit {
@@ -447,11 +468,11 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       }
 
       .producer-value {
-        color: var(--pl-producer);
+        color: var(--pl-producer-fg, var(--pl-producer));
       }
 
       .consumer-value {
-        color: var(--pl-accent);
+        color: var(--pl-accent-fg, var(--pl-accent));
       }
 
       .idle-value {

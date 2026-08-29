@@ -56,7 +56,7 @@ import {
   ACTIVE_STATES,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, resolveCommonColors, buildCssVars, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, resolveCommonColors, buildCssVars, tintOn } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -1015,7 +1015,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
                   ${thumbnailMode
                     ? this._renderCameraThumbnail()
                     : html`
-                        <div class="icon-swatch" style=${`background: ${tintBackground(accentColor, this._config.accent_opacity, 18)}; color: ${accentColor};`}>
+                        <div class="icon-swatch" style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 18)}; color: ${accentColor};`}>
                           <ha-icon icon=${icon}></ha-icon>
                         </div>
                       `}
@@ -1067,7 +1067,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
     return html`
       <div
         class="tile ${tile.active ? "active" : ""} ${tile.unavailable ? "unavailable" : ""}"
-        style=${`--tile-color: ${tile.color}; --tile-icon-bg: ${tintBackground(tile.color, this._config?.tile_tint_opacity, 22)}; border-radius: ${tile.active ? AQUARIUM_TILE_RADIUS_ON : AQUARIUM_TILE_RADIUS_OFF}px; background: ${tintBackground(tile.color, this._config?.tile_tint_opacity, tile.active ? 17 : 6)};`}
+        style=${`--tile-color: ${tile.color}; --tile-icon-bg: ${tintOn(this, tile.color, this._config?.tile_tint_opacity, 22)}; border-radius: ${tile.active ? AQUARIUM_TILE_RADIUS_ON : AQUARIUM_TILE_RADIUS_OFF}px; background: ${tintOn(this, tile.color, this._config?.tile_tint_opacity, tile.active ? 17 : 6)};`}
         role="button"
         tabindex="0"
         aria-label=${tile.name}

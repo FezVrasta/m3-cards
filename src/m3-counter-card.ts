@@ -32,7 +32,7 @@ import {
   COUNTER_ADJUST_RADIUS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -425,17 +425,24 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
       dailyEntity &&
       !Number.isNaN(dailyValue);
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "counter-accent": accentColor,
-      "counter-frac-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "counter-frac-bg": tintOn(this, accentColor, this._config.accent_opacity, 18),
       "counter-cell-bg": cellBackgroundCss,
       "counter-cell-w": `${this._narrow ? COUNTER_CELL_NARROW_WIDTH : COUNTER_CELL_WIDTH}px`,
       "counter-cell-h": `${this._narrow ? COUNTER_CELL_NARROW_HEIGHT : COUNTER_CELL_HEIGHT}px`,
       "counter-digit-size": `${this._narrow ? COUNTER_DIGIT_FONT_SIZE_NARROW : COUNTER_DIGIT_FONT_SIZE}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "counter-accent": accentColor,
+      }),
     });
 
     const moreInfo = () =>
@@ -460,7 +467,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
                         ? html`
                             <div
                               class="power-chip"
-                              style=${`color: ${this._powerChipColor(powerValue)}; background: ${tintBackground(this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
+                              style=${`color: ${this._powerChipColor(powerValue)}; background: ${tintOn(this, this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
                             >
                               <ha-icon icon="mdi:lightning-bolt"></ha-icon>
                               <span>${this._formatNumber(powerValue, 0)} W</span>
@@ -587,7 +594,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
 
       .cell.frac {
         background: var(--counter-frac-bg);
-        color: var(--counter-accent);
+        color: var(--counter-accent-fg, var(--counter-accent));
       }
 
       .cell.sign {

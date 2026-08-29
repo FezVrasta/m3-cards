@@ -35,7 +35,7 @@ import {
   COST_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, fillColor , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
@@ -329,6 +329,10 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "cost-accent": accentColor,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "cost-accent": accentColor,
+      }),
     });
 
     if (this._noPriceConfigured) {
@@ -339,7 +343,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
             style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
           >
             <div class="main-row">
-              <div class="main-icon" style=${`background: ${tintBackground(accentColor, this._config.accent_opacity, 18)}; color: ${accentColor};`}>
+              <div class="main-icon" style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 18)}; color: ${accentColor};`}>
                 <ha-icon icon=${icon}></ha-icon>
               </div>
               <div class="main-text">
@@ -426,7 +430,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
           <div class="main-row">
             <div
               class="main-icon"
-              style=${`background: ${tintBackground(isCredit ? COST_BETTER_COLOR : accentColor, this._config.accent_opacity, 18)}; color: ${isCredit ? COST_BETTER_COLOR : accentColor};`}
+              style=${`background: ${tintOn(this, isCredit ? COST_BETTER_COLOR : accentColor, this._config.accent_opacity, 18)}; color: ${isCredit ? COST_BETTER_COLOR : accentColor};`}
             >
               <ha-icon icon=${icon}></ha-icon>
             </div>
@@ -513,7 +517,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
         <div class="nav-info">
           <div
             class="nav-icon"
-            style=${`background: ${tintBackground(accentColor, this._config?.accent_opacity, 20)}; color: ${accentColor};`}
+            style=${`background: ${tintOn(this, accentColor, this._config?.accent_opacity, 20)}; color: ${accentColor};`}
           >
             <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
           </div>
@@ -580,8 +584,8 @@ export class M3CostCard extends LitElement implements LovelaceCard {
           class="bar ${isFuture ? "future" : ""} ${isCurrent ? "current" : ""}"
           style=${`height: ${heightPx.toFixed(1)}px; ${
             isFuture
-              ? `border-color: ${tintBackground(accentColor, this._config?.accent_opacity, 55)};`
-              : `background: ${isCurrent ? accentColor : tintBackground(accentColor, this._config?.accent_opacity, 30)};`
+              ? `border-color: ${tintOn(this, accentColor, this._config?.accent_opacity, 55)};`
+              : `background: ${isCurrent ? fillColor(this, accentColor) : tintOn(this, accentColor, this._config?.accent_opacity, 30)};`
           }`}
           role="button"
           tabindex="0"
@@ -630,7 +634,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       >
         <div
           class="tariff-icon"
-          style=${`background: ${tintBackground(accentColor, this._config.accent_opacity, 20)}; color: ${accentColor};`}
+          style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 20)}; color: ${accentColor};`}
         >
           <ha-icon icon="mdi:tag-outline"></ha-icon>
         </div>
@@ -929,7 +933,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       .empty-state a {
         display: block;
         margin-top: 6px;
-        color: var(--cost-accent);
+        color: var(--cost-accent-fg, var(--cost-accent));
       }
     `,
   ];

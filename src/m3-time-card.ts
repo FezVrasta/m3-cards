@@ -53,7 +53,7 @@ import {
   TIME_INSTANT_DEBOUNCE_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
@@ -451,11 +451,15 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(cfg);
     const cssVars = buildCssVars({
       "m3ti-accent": accent,
-      "m3ti-accent-tint": tintBackground(accent, cfg.accent_opacity, 18),
+      "m3ti-accent-tint": tintOn(this, accent, cfg.accent_opacity, 18),
       "m3ti-text": textColorCss,
       "m3ti-secondary-text": secondaryTextColorCss,
       "m3ti-radius": resolveCornerRadius(cfg.radius ?? DEFAULT_TIME_RADIUS, cfg.corners),
       "m3ti-field-width": `${this._narrow ? TIME_FIELD_WIDTH_NARROW : TIME_FIELD_WIDTH}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3ti-accent": accent,
+      }),
     });
     const style = cardBackgroundCss
       ? `${cssVars} --ha-card-background: ${cardBackgroundCss};`
@@ -925,7 +929,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--m3ti-accent);
+        color: var(--m3ti-accent-fg, var(--m3ti-accent));
         background: var(--m3ti-accent-tint);
       }
 
@@ -960,7 +964,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         padding: 4px 9px;
         border-radius: 12px;
-        color: var(--m3ti-accent);
+        color: var(--m3ti-accent-fg, var(--m3ti-accent));
         background: var(--m3ti-accent-tint);
       }
 
@@ -1049,7 +1053,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
       }
 
       .field.active {
-        color: var(--m3ti-accent);
+        color: var(--m3ti-accent-fg, var(--m3ti-accent));
         background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
       }
 
@@ -1107,7 +1111,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
 
       .half.on {
         border-radius: 9px;
-        color: var(--m3ti-accent);
+        color: var(--m3ti-accent-fg, var(--m3ti-accent));
         background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
       }
 
@@ -1186,7 +1190,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-size: ${TIME_WHEEL_ACTIVE_FONT_SIZE}px;
         font-weight: 700;
         opacity: 1;
-        color: var(--m3ti-accent);
+        color: var(--m3ti-accent-fg, var(--m3ti-accent));
       }
 
       .card-inner.no-animations .wheel-item {
@@ -1254,7 +1258,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-weight: 700;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
-        color: var(--m3ti-accent);
+        color: var(--m3ti-accent-fg, var(--m3ti-accent));
         background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
       }
 

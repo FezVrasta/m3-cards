@@ -46,7 +46,7 @@ import {
   UPDATES_CONFIRM_TIMEOUT_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -438,15 +438,23 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         ? undefined
         : html`<div class="header-chips">${backupChip}${countChip}</div>`;
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, statusColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
-      "m3p-icon-color": statusColor,
-      "m3p-icon-bg": tintBackground(statusColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(statusColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "upd-status": statusColor,
       "upd-accent": updColor,
-      "upd-core-bg": tintBackground(updColor, undefined, 9),
-      "upd-core-icon-bg": tintBackground(updColor, undefined, 20),
+      "upd-core-bg": tintOn(this, updColor, undefined, 9),
+      "upd-core-icon-bg": tintOn(this, updColor, undefined, 20),
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3p-icon-color": statusColor,
+        "upd-accent": updColor,
+      }),
     });
 
     return html`
@@ -572,7 +580,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     if (days === undefined) {
       return html`<div
         class="backup-chip"
-        style=${`background: ${tintBackground(UPDATES_COLOR_BACKUP_MISSING, undefined, 20)}; color: ${UPDATES_COLOR_BACKUP_MISSING};`}
+        style=${`background: ${tintOn(this, UPDATES_COLOR_BACKUP_MISSING, undefined, 20)}; color: ${UPDATES_COLOR_BACKUP_MISSING};`}
         @click=${this._moreInfo(this._config.backup_entity)}
       >
         <ha-icon icon="mdi:backup-restore"></ha-icon>
@@ -588,7 +596,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
           : this._t("updates_backup_days_ago").replace("{n}", String(days));
     return html`<div
       class="backup-chip"
-      style=${`background: ${tintBackground(color, undefined, 20)}; color: ${color};`}
+      style=${`background: ${tintOn(this, color, undefined, 20)}; color: ${color};`}
       @click=${this._moreInfo(this._config.backup_entity)}
     >
       <ha-icon icon="mdi:backup-restore"></ha-icon>
@@ -711,7 +719,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         @click=${this._moreInfo(row.entity)}
         @keydown=${activateOnKey(this._moreInfo(row.entity))}
       >
-        <div class="row-icon" style=${`background: ${tintBackground(color, undefined, 20)}; color: ${color};`}>
+        <div class="row-icon" style=${`background: ${tintOn(this, color, undefined, 20)}; color: ${color};`}>
           ${row.picture
             ? html`<img src=${row.picture} alt="" />`
             : html`<ha-icon icon=${GROUP_ICONS[row.group]}></ha-icon>`}
@@ -740,7 +748,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
               class="row-btn accent"
               ?disabled=${row.inProgress}
               title=${this._t("updates_install")}
-              style=${`background: ${tintBackground(color, undefined, 22)}; color: ${color};`}
+              style=${`background: ${tintOn(this, color, undefined, 22)}; color: ${color};`}
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._install(row);
@@ -792,7 +800,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         padding: 0 10px;
         border-radius: ${UPDATES_CHIP_RADIUS}px;
         background: var(--m3p-icon-bg);
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
         font-size: 13px;
         font-weight: 700;
       }
@@ -843,7 +851,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         height: ${UPDATES_CORE_ICON_SIZE}px;
         border-radius: ${UPDATES_CORE_ICON_RADIUS}px;
         background: var(--upd-core-icon-bg);
-        color: var(--upd-accent);
+        color: var(--upd-accent-fg, var(--upd-accent));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -883,7 +891,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         font-weight: 700;
         letter-spacing: 0.04em;
         background: var(--upd-core-icon-bg);
-        color: var(--upd-accent);
+        color: var(--upd-accent-fg, var(--upd-accent));
       }
 
       .core-version {
@@ -904,12 +912,12 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
       .core-version .arrow {
         --mdc-icon-size: 13px;
-        color: var(--upd-accent);
+        color: var(--upd-accent-fg, var(--upd-accent));
       }
 
       .core-version .to {
         font-weight: 700;
-        color: var(--upd-accent);
+        color: var(--upd-accent-fg, var(--upd-accent));
       }
 
       .core-btn {
@@ -1056,7 +1064,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
 
       .toggle.accent-toggle {
         background: color-mix(in srgb, var(--upd-accent) 14%, transparent);
-        color: var(--upd-accent);
+        color: var(--upd-accent-fg, var(--upd-accent));
       }
 
       .toggle ha-icon {

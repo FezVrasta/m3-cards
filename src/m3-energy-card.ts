@@ -36,7 +36,7 @@ import {
   ENERGY_MONTH_BAR_RADIUS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn, fillColor, foregroundVars } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -697,10 +697,14 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
     const tintPercent = mode === "solar" ? ENERGY_SOLAR_BAR_TINT_PERCENT : ENERGY_BAR_TINT_PERCENT;
     const tintColorCss = this._config.bar_tint_color
       ? resolveThemeColor(this._config.bar_tint_color)
-      : tintBackground(accentColor, this._config.accent_opacity, tintPercent);
+      : tintOn(this, accentColor, this._config.accent_opacity, tintPercent);
+    // The highlighted bar is a bare fill, so it needs the solid-fill rule
+    // rather than the tint one — otherwise it lands below its own neighbours
+    // in a light theme.
+    const currentBarCss = fillColor(this, accentColor);
     const outlineOpacity =
       period === "month" ? ENERGY_PROJECTION_OUTLINE_OPACITY : ENERGY_FORECAST_OUTLINE_OPACITY;
-    const outlineColorCss = tintBackground(accentColor, this._config.accent_opacity, outlineOpacity);
+    const outlineColorCss = tintOn(this, accentColor, this._config.accent_opacity, outlineOpacity);
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );
@@ -846,15 +850,22 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
         ? new Intl.DateTimeFormat(this._language, { month: "long" }).format(new Date())
         : "";
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
       "m3p-accent": accentColor,
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "bar-max-height": `${geometry.maxHeight}px`,
       "bar-gap": `${geometry.gap}px`,
       "bar-radius": `${geometry.radius}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3p-accent": accentColor,
+      }),
     });
 
     return html`
@@ -900,7 +911,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
                     ? html`
                         <div
                           class="comparison-chip"
-                          style=${`color: ${activeComparison.color}; background: ${tintBackground(activeComparison.color, this._config.comparison_tint_opacity, 16)};`}
+                          style=${`color: ${activeComparison.color}; background: ${tintOn(this, activeComparison.color, this._config.comparison_tint_opacity, 16)};`}
                         >
                           <ha-icon
                             icon=${activeComparison.isMore ? "mdi:arrow-up" : "mdi:arrow-down"}
@@ -1001,7 +1012,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
                     : html`
                         <div
                           class="bar ${v.isCurrent ? "current" : ""} ${active ? "active" : ""}"
-                          style=${`height: ${heightPx.toFixed(1)}px; background: ${v.isCurrent ? "var(--m3p-accent)" : tintColorCss}; --grow-delay: ${growDelay}ms;`}
+                          style=${`height: ${heightPx.toFixed(1)}px; background: ${v.isCurrent ? currentBarCss : tintColorCss}; --grow-delay: ${growDelay}ms;`}
                           @click=${() => this._handleBarTap(i)}
                         ></div>
                       `}
@@ -1056,7 +1067,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
         font-size: 22px;
         font-weight: 700;
         line-height: 1.1;
-        color: var(--m3p-accent);
+        color: var(--m3p-accent-fg, var(--m3p-accent));
       }
 
       .current-unit {
@@ -1086,7 +1097,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
       .bar-value.current {
         font-weight: 700;
         opacity: 1;
-        color: var(--m3p-accent);
+        color: var(--m3p-accent-fg, var(--m3p-accent));
       }
 
       .bars-row {

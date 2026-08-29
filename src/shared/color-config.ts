@@ -3,10 +3,10 @@ import {
   contrastRatio,
   mixColors,
   parseColor,
-  readableOn,
-  readableOnCss,
   relativeLuminance,
   toHex,
+  toneAt,
+  vividOn,
 } from "./contrast";
 import type { Rgb } from "./contrast";
 
@@ -72,11 +72,23 @@ function surfaceOf(host: HTMLElement | undefined): string {
 // set of (colour, surface) pairs a dashboard uses is tiny and stable.
 const foregroundCache = new Map<string, string>();
 
+// How much the saturation is lifted while a colour is darkened. Darkening
+// alone reaches the contrast target but drains the colour out — #85b7eb ends
+// up #537293, a grey-blue that reads as washed rather than as a deliberate
+// deep tone. Lifting saturation as the lightness drops keeps the accent
+// recognisably itself: the same colour lands on #0b6ed5.
+const SATURATION_BOOST = 1.25;
+
 function readableCached(colorCss: string, surface: string, target: number): string {
   const key = `${colorCss}|${surface}|${target}`;
   let out = foregroundCache.get(key);
   if (out === undefined) {
-    out = readableOnCss(colorCss, surface, target);
+    const color = parseColor(colorCss);
+    const ground = parseColor(surface);
+    out =
+      color && ground
+        ? toHex(vividOn(color, ground, target, SATURATION_BOOST))
+        : colorCss;
     foregroundCache.set(key, out);
   }
   return out;
@@ -195,11 +207,13 @@ export function tintOn(
   }
 
   const share = percent / 100;
-  const mixed = mixColors(color, surface, share);
   const wanted = contrastRatio(mixColors(color, DARK_REFERENCE, share), DARK_REFERENCE);
-  const out = toHex(
-    contrastRatio(mixed, surface) >= wanted ? mixed : readableOn(mixed, surface, wanted),
-  );
+  // Built from the accent's own hue and saturation at the lightness that meets
+  // that target, rather than by mixing into the surface. Mixing is what made
+  // these washes grey: a light accent stirred into a light surface keeps the
+  // lightness and loses the hue, so an 18% icon well came out #d7f0f2 instead
+  // of a recognisable #7cd3fd.
+  const out = toHex(toneAt(color, surface, wanted, SATURATION_BOOST));
   tintCache.set(key, out);
   return out;
 }
@@ -228,5 +242,17 @@ export function fillColor(
   const surfaceCss = surfaceOf(host);
   const surface = parseColor(surfaceCss);
   if (!surface || relativeLuminance(surface) <= 0.5) return colorCss;
+  return readableCached(colorCss, surfaceCss, target);
+}
+
+/**
+ * Foreground colour against an explicit surface rather than the card's.
+ *
+ * Needed wherever ink sits on a tinted well instead of on the card itself.
+ * Once tints keep their hue, an icon well and the icon on it are the same hue
+ * at similar lightness, and the glyph disappears — measured against the well,
+ * it darkens instead.
+ */
+export function foregroundOn(colorCss: string, surfaceCss: string, target = 3): string {
   return readableCached(colorCss, surfaceCss, target);
 }

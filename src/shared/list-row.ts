@@ -1,6 +1,7 @@
 import { html, css, unsafeCSS, nothing, type TemplateResult } from "lit";
 import { STANDARD_EASING } from "./animation";
 import { activateOnKey } from "./a11y";
+import { tintOn } from "./color-config";
 
 // Shared row-pill component for the M3 list-style cards (power-list,
 // top-consumers, battery, ...): a squircle icon, a flexible middle slot
@@ -25,6 +26,9 @@ export interface ListRowParams {
   label?: string;
   extraClass?: string;
   style?: string;
+  /** The card element, so the bar tint can be resolved against the actual
+   * card surface. Without it the tint falls back to a plain CSS mix. */
+  host?: HTMLElement;
 }
 
 export function renderListRow(p: ListRowParams): TemplateResult {
@@ -42,7 +46,7 @@ export function renderListRow(p: ListRowParams): TemplateResult {
       @keydown=${interactive && p.onClick ? activateOnKey(p.onClick) : nothing}
     >
       ${barPct !== undefined
-        ? html`<div class="lr-bar-fill" style=${`width: ${barPct}%; background: color-mix(in srgb, ${p.barColor ?? p.iconColor} 16%, transparent);`}></div>`
+        ? html`<div class="lr-bar-fill" style=${`width: ${barPct}%; background: ${tintOn(p.host, p.barColor ?? p.iconColor, undefined, 16)};`}></div>`
         : nothing}
       <div
         class="lr-icon"

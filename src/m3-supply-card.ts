@@ -48,7 +48,7 @@ import {
 } from "./const";
 import { supplyPackSize, supplyLimits } from "./shared/supply-thresholds";
 import { fetchConsumptionRates, type ConsumptionRate } from "./shared/supply-history";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
 import { repeat } from "lit/directives/repeat.js";
@@ -498,6 +498,10 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
       "lr-icon-size": `${SUPPLY_ICON_SIZE}px`,
       "lr-icon-radius": `${SUPPLY_ICON_RADIUS}px`,
       "lr-row-gap": `${SUPPLY_ROW_GAP}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3s-accent": hero?.colorCss,
+      }),
     });
 
     const style = cardBackgroundCss
@@ -532,13 +536,13 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
 
   private _renderHero(entry: SupplyEntry): TemplateResult {
     const cfg: Partial<M3SupplyCardConfig> = this._config ?? {};
-    const tint = tintBackground(entry.colorCss, cfg.accent_opacity, 18);
+    const tint = tintOn(this, entry.colorCss, cfg.accent_opacity, 18);
     const dimmed = entry.available ? "" : "dimmed";
 
     return html`
       <div class="hero ${dimmed}" style=${`--m3s-accent: ${entry.colorCss};`}>
         <div class="hero-head">
-          <div class="hero-icon" style=${`background: ${tintBackground(entry.colorCss, undefined, 18)};`}>
+          <div class="hero-icon" style=${`background: ${tintOn(this, entry.colorCss, undefined, 18)};`}>
             <ha-icon icon=${entry.icon}></ha-icon>
           </div>
           <div class="hero-text">
@@ -661,10 +665,11 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
       ? Math.max(0, Math.min(1, entry.value / entry.packSize))
       : 0;
     return renderListRow({
+      host: this,
       key: entry.entityId,
       icon: entry.icon,
       iconColor: entry.colorCss,
-      iconBackground: tintBackground(entry.colorCss, undefined, 18),
+      iconBackground: tintOn(this, entry.colorCss, undefined, 18),
       barFraction: fraction,
       barColor: entry.colorCss,
       label: entry.name,
@@ -753,7 +758,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--m3s-accent);
+        color: var(--m3s-accent-fg, var(--m3s-accent));
       }
 
       .hero-icon ha-icon {
@@ -789,7 +794,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
 
       .hero-sub.alert {
         opacity: 1;
-        color: var(--m3s-accent);
+        color: var(--m3s-accent-fg, var(--m3s-accent));
         font-weight: 600;
       }
 
@@ -806,7 +811,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
       .hero-count {
         font-size: 30px;
         font-weight: 700;
-        color: var(--m3s-accent);
+        color: var(--m3s-accent-fg, var(--m3s-accent));
       }
 
       .hero-max {
@@ -851,7 +856,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         flex-shrink: 0;
         font-size: 11px;
         font-weight: 700;
-        color: var(--m3s-accent);
+        color: var(--m3s-accent-fg, var(--m3s-accent));
         padding-left: 4px;
       }
 
@@ -886,7 +891,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         cursor: pointer;
         user-select: none;
-        color: var(--m3s-accent);
+        color: var(--m3s-accent-fg, var(--m3s-accent));
         background: color-mix(in srgb, var(--m3s-accent) 16%, transparent);
       }
 
@@ -959,7 +964,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         user-select: none;
         border-radius: ${SUPPLY_REFILL_RADIUS}px;
-        color: var(--m3s-accent);
+        color: var(--m3s-accent-fg, var(--m3s-accent));
         font-size: 15px;
         font-weight: 600;
         transition: border-radius ${SUPPLY_REFILL_MORPH_MS}ms ${EASING};

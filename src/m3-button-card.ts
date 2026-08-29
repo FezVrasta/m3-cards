@@ -24,7 +24,7 @@ import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
-import { tintBackground } from "./shared/color-config";
+import { tintOn } from "./shared/color-config";
 
 const HOLD_DURATION_MS = 500;
 const DOUBLE_TAP_WINDOW_MS = 250;
@@ -554,9 +554,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const inactiveColor = this._config.invert_colors
       ? rawActiveColor
       : rawInactiveColor;
-    const sliderFillBg = tintBackground(color, this._config.color_opacity, 45);
-    const iconBgInactive = tintBackground(inactiveColor, this._config.inactive_opacity, 8);
-    const iconBgActive = tintBackground(color, this._config.color_opacity, 20);
+    const sliderFillBg = tintOn(this, color, this._config.color_opacity, 45);
+    const iconBgInactive = tintOn(this, inactiveColor, this._config.inactive_opacity, 8);
+    const iconBgActive = tintOn(this, color, this._config.color_opacity, 20);
     // In slider mode the fill runs behind the icon chip; a translucent chip
     // would double-tint over it into a muddy blob. This opaque variant (the
     // same tint mixed into the card surface instead of transparency) covers

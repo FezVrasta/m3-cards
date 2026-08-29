@@ -42,7 +42,7 @@ import {
   LIGHT_MEMBER_ROW_HEIGHT,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { renderListRow, listRowStyles } from "./shared/list-row";
@@ -604,19 +604,27 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       this._startAnimationLoop();
     }
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, activeColor, this._config.accent_opacity, unavailable || !effectiveOn ? 14 : 20);
     const cssVars = buildCssVars({
-      "m3p-icon-color": activeColor,
-      "m3p-icon-bg": tintBackground(activeColor, this._config.accent_opacity, unavailable || !effectiveOn ? 14 : 20),
+      "m3p-icon-color": foregroundOn(activeColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "lc-accent": activeColor,
-      "lc-accent-bg": tintBackground(activeColor, this._config.accent_opacity, 20),
+      "lc-accent-bg": tintOn(this, activeColor, this._config.accent_opacity, 20),
       "lc-track": trackColorCss,
       "lc-handle": handleColorCss,
       "lc-power-color": activeColor,
-      "lc-power-bg": tintBackground(activeColor, this._config.accent_opacity, 14),
-      "lc-power-bg-active": tintBackground(activeColor, this._config.accent_opacity, 20),
+      "lc-power-bg": tintOn(this, activeColor, this._config.accent_opacity, 14),
+      "lc-power-bg-active": tintOn(this, activeColor, this._config.accent_opacity, 20),
       "lr-row-height": `${LIGHT_MEMBER_ROW_HEIGHT}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "lc-accent": activeColor,
+        "lc-power-color": activeColor,
+      }),
     });
 
     return html`
@@ -880,10 +888,11 @@ export class M3LightCard extends LitElement implements LovelaceCard {
           const memberOn = member.state === "on";
           const memberUnavailable = member.state === "unavailable";
           return renderListRow({
+      host: this,
             key: id,
             icon: member.attributes.icon || DEFAULT_LIGHT_ICON,
             iconColor: memberUnavailable ? LIGHT_OFF_COLOR : memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR,
-            iconBackground: tintBackground(memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR, this._config?.accent_opacity, 14),
+            iconBackground: tintOn(this, memberOn ? "var(--lc-accent)" : LIGHT_OFF_COLOR, this._config?.accent_opacity, 14),
             middle: html`<div class="member-name">${member.attributes.friendly_name || id}</div>`,
             right: html`
               <button
@@ -925,7 +934,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         align-items: center;
         justify-content: center;
         background: var(--lc-power-bg);
-        color: var(--lc-power-color);
+        color: var(--lc-power-color-fg, var(--lc-power-color));
         cursor: pointer;
         padding: 0;
         transition:
@@ -1231,7 +1240,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
 
       .member-toggle.active {
         background: var(--lc-accent-bg);
-        color: var(--lc-accent);
+        color: var(--lc-accent-fg, var(--lc-accent));
       }
 
       .member-toggle ha-icon {

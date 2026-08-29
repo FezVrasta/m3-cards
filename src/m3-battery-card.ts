@@ -42,7 +42,7 @@ import {
   DEFAULT_BATTERY_NAME_STRIP,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -290,11 +290,12 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
     const color = this._stageColor(row.stage);
     const barPct = row.unavailable ? 0 : Math.max(0, Math.min(100, row.value));
     return renderListRow({
+      host: this,
       key: row.key,
       label: row.name,
       icon: row.icon,
       iconColor: color,
-      iconBackground: tintBackground(color, this._config?.stage_tint_opacity, 18),
+      iconBackground: tintOn(this, color, this._config?.stage_tint_opacity, 18),
       middle: html`
         <div class="battery-name">${row.name}</div>
         <div class="battery-track">
@@ -373,9 +374,12 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
         ? this._t("battery_subtitle_attention").replace("{n}", String(attentionCount))
         : this._t("battery_subtitle_ok");
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, headerColor, this._config.stage_tint_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": headerColor,
-      "m3p-icon-bg": tintBackground(headerColor, this._config.stage_tint_opacity, 18),
+      "m3p-icon-color": foregroundOn(headerColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "lr-row-height": `${BATTERY_ROW_HEIGHT}px`,

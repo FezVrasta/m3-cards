@@ -68,7 +68,7 @@ import {
   DEFAULT_MEDIA_BROWSE_HEIGHT,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -906,18 +906,26 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_MEDIA_RADIUS, this._config.corners);
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accentColor,
-      "m3p-icon-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
       "mc-accent": accentColor,
-      "m3p-power-btn-bg": tintBackground(accentColor, this._config.accent_opacity, 14),
-      "m3p-artwork-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
-      "m3p-transport-btn-bg": tintBackground(accentColor, this._config.accent_opacity, 8),
-      "m3p-pill-active-bg": tintBackground(accentColor, this._config.accent_opacity, 24),
-      "m3p-mute-active-bg": tintBackground(accentColor, this._config.accent_opacity, 20),
-      "m3p-source-active-bg": tintBackground(accentColor, this._config.accent_opacity, 22),
+      "m3p-power-btn-bg": tintOn(this, accentColor, this._config.accent_opacity, 14),
+      "m3p-artwork-bg": tintOn(this, accentColor, this._config.accent_opacity, 18),
+      "m3p-transport-btn-bg": tintOn(this, accentColor, this._config.accent_opacity, 8),
+      "m3p-pill-active-bg": tintOn(this, accentColor, this._config.accent_opacity, 24),
+      "m3p-mute-active-bg": tintOn(this, accentColor, this._config.accent_opacity, 20),
+      "m3p-source-active-bg": tintOn(this, accentColor, this._config.accent_opacity, 22),
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3p-icon-color": accentColor,
+        "mc-accent": accentColor,
+      }),
     });
 
     return html`
@@ -1641,7 +1649,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         align-items: center;
         justify-content: center;
         background: var(--m3p-icon-bg);
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
       }
 
       .compact-text {
@@ -1671,7 +1679,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         border: none;
         border-radius: 14px;
         background: var(--m3p-power-btn-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -1702,7 +1710,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
       }
 
       .artwork ha-icon {
@@ -1802,7 +1810,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
       .meta-chip.accent {
         background: var(--m3p-icon-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
       }
 
       .meta-chip ha-icon {
@@ -1862,7 +1870,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         padding: 1px 7px;
         border-radius: 7px;
         background: var(--m3p-icon-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         font-weight: 700;
         letter-spacing: 0.04em;
       }
@@ -2048,7 +2056,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       .mute-btn.active {
         border-radius: 12px;
         background: var(--m3p-mute-active-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
       }
 
       .card-inner.no-animations .mute-btn {
@@ -2133,7 +2141,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
         border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
         background: var(--m3p-icon-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2211,7 +2219,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         background: none;
         padding: 2px 4px;
         font: inherit;
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         cursor: pointer;
         max-width: 140px;
         overflow: hidden;
@@ -2264,7 +2272,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
         border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
         background: var(--m3p-icon-bg) center/cover no-repeat;
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2280,7 +2288,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         height: ${MEDIA_BROWSE_ROW_ICON_SIZE}px;
         border-radius: ${MEDIA_BROWSE_ROW_ICON_RADIUS}px;
         background: var(--m3p-icon-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2407,7 +2415,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
       .source-pill.active {
         background: var(--m3p-source-active-bg);
-        color: var(--mc-accent);
+        color: var(--mc-accent-fg, var(--mc-accent));
         border-radius: 10px;
       }
 

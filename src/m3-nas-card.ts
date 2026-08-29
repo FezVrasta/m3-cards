@@ -35,7 +35,7 @@ import {
   NAS_TOGGLE_RADIUS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { renderListRow, listRowStyles } from "./shared/list-row";
@@ -484,11 +484,14 @@ export class M3NasCard extends LitElement implements LovelaceCard {
     const visible = maxVisible > 0 ? disks.slice(0, maxVisible) : disks;
     const overflow = maxVisible > 0 ? disks.slice(maxVisible) : [];
 
+    // The glyph sits on this well, not on the card, so its contrast has to be
+    // measured against the well.
+    const iconWellCss = tintOn(this, statusColor, cfg.accent_opacity, 18);
     const cssVars = buildCssVars({
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
-      "m3p-icon-color": statusColor,
-      "m3p-icon-bg": tintBackground(statusColor, cfg.accent_opacity, 18),
+      "m3p-icon-color": foregroundOn(statusColor, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "nas-status": statusColor,
       "lr-row-height": `${NAS_ROW_HEIGHT}px`,
       "lr-row-radius": `${NAS_ROW_RADIUS}px`,
@@ -496,6 +499,11 @@ export class M3NasCard extends LitElement implements LovelaceCard {
       "lr-icon-size": `${NAS_ICON_SIZE}px`,
       "lr-icon-radius": `${NAS_ICON_RADIUS}px`,
       "lr-row-gap": `${NAS_ROW_GAP}px`,
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3p-icon-color": statusColor,
+        "nas-status": statusColor,
+      }),
     });
 
     const nothingFound = !disks.length && cpu === undefined && mem === undefined && !offline;
@@ -576,11 +584,12 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         : undefined;
 
     return renderListRow({
+      host: this,
       key: row.mount,
       label: row.name,
       icon: "mdi:harddisk",
       iconColor: color,
-      iconBackground: tintBackground(color, undefined, 20),
+      iconBackground: tintOn(this, color, undefined, 20),
       barFraction: row.percent / 100,
       barColor: color,
       onClick: this._moreInfo(row.percentEntity),
@@ -714,7 +723,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         padding: 0 10px;
         border-radius: 15px;
         background: var(--m3p-icon-bg);
-        color: var(--m3p-icon-color);
+        color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
         font-size: 13px;
         font-weight: 700;
       }
@@ -796,7 +805,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         border-radius: ${NAS_TOGGLE_RADIUS}px;
         border: none;
         background: color-mix(in srgb, var(--nas-status) 14%, transparent);
-        color: var(--nas-status);
+        color: var(--nas-status-fg, var(--nas-status));
         display: flex;
         align-items: center;
         justify-content: center;

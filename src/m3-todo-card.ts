@@ -44,7 +44,7 @@ import {
   TODO_LONG_PRESS_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
@@ -467,10 +467,14 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
 
     const cssVars = buildCssVars({
       "m3t-accent": accent,
-      "m3t-accent-tint": tintBackground(accent, cfg.accent_opacity, 18),
+      "m3t-accent-tint": tintOn(this, accent, cfg.accent_opacity, 18),
       "m3t-text": textColorCss,
       "m3t-secondary-text": secondaryTextColorCss,
       "m3t-radius": resolveCornerRadius(cfg.radius ?? DEFAULT_TODO_RADIUS, cfg.corners),
+      // Fills keep the accent; these twins carry it where it is text.
+      ...foregroundVars(this, {
+        "m3t-accent": accent,
+      }),
     });
     const style = cardBackgroundCss
       ? `${cssVars} --ha-card-background: ${cardBackgroundCss};`
@@ -763,7 +767,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--m3t-accent);
+        color: var(--m3t-accent-fg, var(--m3t-accent));
         background: var(--m3t-accent-tint);
       }
 
@@ -804,7 +808,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         box-sizing: border-box;
         font-size: 13px;
         font-weight: 700;
-        color: var(--m3t-accent);
+        color: var(--m3t-accent-fg, var(--m3t-accent));
         background: var(--m3t-accent-tint);
       }
 
@@ -990,7 +994,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
 
       .check.done {
         border-radius: ${TODO_CHECK_RADIUS_DONE}px;
-        border-color: var(--m3t-accent);
+        border-color: var(--m3t-accent-fg, var(--m3t-accent));
         background: var(--m3t-accent);
         color: #1c1c1c;
       }
@@ -1110,7 +1114,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         flex-shrink: 0;
         font-size: 11px;
         font-weight: 600;
-        color: var(--m3t-accent);
+        color: var(--m3t-accent-fg, var(--m3t-accent));
         cursor: pointer;
       }
 
