@@ -1,7 +1,7 @@
 import { html, css, unsafeCSS, nothing, type TemplateResult } from "lit";
 import { STANDARD_EASING } from "./animation";
 import { activateOnKey } from "./a11y";
-import { tintOn } from "./color-config";
+import { foregroundOn, tintOn } from "./color-config";
 
 // Shared row-pill component for the M3 list-style cards (power-list,
 // top-consumers, battery, ...): a squircle icon, a flexible middle slot
@@ -50,7 +50,7 @@ export function renderListRow(p: ListRowParams): TemplateResult {
         : nothing}
       <div
         class="lr-icon"
-        style=${`--lr-icon-color: ${p.iconColor}; --lr-icon-bg: ${p.iconBackground};`}
+        style=${`--lr-icon-color: ${foregroundOn(p.iconColor, p.iconBackground)}; --lr-icon-bg: ${p.iconBackground};`}
       >
         <ha-icon icon=${p.icon}></ha-icon>
       </div>

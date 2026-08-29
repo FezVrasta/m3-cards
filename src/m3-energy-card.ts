@@ -36,7 +36,7 @@ import {
   ENERGY_MONTH_BAR_RADIUS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn, fillColor, foregroundVars } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk, foregroundOn, fillColor, foregroundVars } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -911,7 +911,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
                     ? html`
                         <div
                           class="comparison-chip"
-                          style=${`color: ${activeComparison.color}; background: ${tintOn(this, activeComparison.color, this._config.comparison_tint_opacity, 16)};`}
+                          style=${`color: ${tintInk(this, activeComparison.color, this._config.comparison_tint_opacity, 16)}; background: ${tintOn(this, activeComparison.color, this._config.comparison_tint_opacity, 16)};`}
                         >
                           <ha-icon
                             icon=${activeComparison.isMore ? "mdi:arrow-up" : "mdi:arrow-down"}

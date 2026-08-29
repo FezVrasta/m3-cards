@@ -208,12 +208,8 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
 
     const name = this._config.name || this._t("power_list_default_name");
     const icon = this._config.icon || DEFAULT_POWER_LIST_ICON;
-    const accentColor = this._config.accent_color
-      ? resolveThemeColor(this._config.accent_color)
-      : DEFAULT_POWER_LIST_ACCENT;
-    const producerColor = this._config.producer_color
-      ? resolveThemeColor(this._config.producer_color)
-      : DEFAULT_POWER_LIST_PRODUCER_COLOR;
+    const accentColor = this._accentColor();
+    const producerColor = this._producerColor();
     const barTintColor = this._barTintColor();
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
@@ -367,6 +363,18 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
 
   // Shared by render() (for the CSS variable) and by the row builder, which
   // needs the resolved value rather than the variable.
+  private _accentColor(): string {
+    return this._config?.accent_color
+      ? resolveThemeColor(this._config.accent_color)
+      : DEFAULT_POWER_LIST_ACCENT;
+  }
+
+  private _producerColor(): string {
+    return this._config?.producer_color
+      ? resolveThemeColor(this._config.producer_color)
+      : DEFAULT_POWER_LIST_PRODUCER_COLOR;
+  }
+
   private _barTintColor(): string {
     return this._config?.bar_tint_color
       ? resolveThemeColor(this._config.bar_tint_color)
@@ -381,13 +389,13 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       key: row.key,
       label: row.name,
       icon: row.icon,
-      iconColor: "var(--pl-producer)",
-      iconBackground: tintOn(this, "var(--pl-producer)", this._config?.producer_opacity, 24),
+      iconColor: this._producerColor(),
+      iconBackground: tintOn(this, this._producerColor(), this._config?.producer_opacity, 24),
       middle: html`<div class="row-name">${row.name}</div>`,
       right: html`<div class="row-value producer-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),
       extraClass: "producer-row",
-      style: `--lr-row-bg: ${tintOn(this, "var(--pl-producer)", this._config?.producer_opacity, 14)};`,
+      style: `--lr-row-bg: ${tintOn(this, this._producerColor(), this._config?.producer_opacity, 14)};`,
     });
   }
 
@@ -397,8 +405,8 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       key: row.key,
       label: row.name,
       icon: row.icon,
-      iconColor: "var(--pl-accent)",
-      iconBackground: tintOn(this, "var(--pl-accent)", this._config?.accent_opacity, 20),
+      iconColor: this._accentColor(),
+      iconBackground: tintOn(this, this._accentColor(), this._config?.accent_opacity, 20),
       middle: html`<div class="row-name">${row.name}</div>`,
       right: html`<div class="row-value consumer-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),
@@ -416,7 +424,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       label: row.name,
       icon: "mdi:power-plug-off",
       iconColor: "var(--m3p-secondary-text)",
-      iconBackground: "color-mix(in srgb, var(--primary-text-color) 10%, transparent)",
+      iconBackground: tintOn(this, "var(--primary-text-color)", undefined, 10),
       middle: html`<div class="row-name idle-name">${row.name}</div>`,
       right: html`<div class="row-value idle-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),

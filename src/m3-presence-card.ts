@@ -24,7 +24,7 @@ import {
   PRESENCE_COLOR_UNKNOWN,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
@@ -363,7 +363,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
         role="button"
         tabindex="0"
         aria-label=${row.name}
-        style=${`--presence-color: ${row.color}; --presence-tint: ${tintOn(this, row.color, this._config?.presence_tint_opacity, 18)};`}
+        style=${`--presence-color: ${row.color}; --presence-tint: ${tintOn(this, row.color, this._config?.presence_tint_opacity, 18)}; --presence-ink: ${tintInk(this, row.color, this._config?.presence_tint_opacity, 18)};`}
         @pointerdown=${this._handlePointerDown(row)}
         @pointerup=${this._handlePointerUp(row)}
         @pointercancel=${() => {
@@ -472,7 +472,8 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
       .initials {
         font-size: 20px;
         font-weight: 700;
-        color: var(--presence-color);
+        /* Initials sit on --presence-tint, not on the card. */
+        color: var(--presence-ink, var(--presence-color));
       }
 
       .status-dot {

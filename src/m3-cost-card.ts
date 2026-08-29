@@ -35,7 +35,7 @@ import {
   COST_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, fillColor , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk, fillColor , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
@@ -343,7 +343,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
             style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
           >
             <div class="main-row">
-              <div class="main-icon" style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 18)}; color: ${accentColor};`}>
+              <div class="main-icon" style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 18)}; color: ${tintInk(this, accentColor, this._config.accent_opacity, 18)};`}>
                 <ha-icon icon=${icon}></ha-icon>
               </div>
               <div class="main-text">
@@ -517,7 +517,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
         <div class="nav-info">
           <div
             class="nav-icon"
-            style=${`background: ${tintOn(this, accentColor, this._config?.accent_opacity, 20)}; color: ${accentColor};`}
+            style=${`background: ${tintOn(this, accentColor, this._config?.accent_opacity, 20)}; color: ${tintInk(this, accentColor, this._config?.accent_opacity, 20)};`}
           >
             <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
           </div>
@@ -634,7 +634,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       >
         <div
           class="tariff-icon"
-          style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 20)}; color: ${accentColor};`}
+          style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 20)}; color: ${tintInk(this, accentColor, this._config.accent_opacity, 20)};`}
         >
           <ha-icon icon="mdi:tag-outline"></ha-icon>
         </div>

@@ -32,7 +32,7 @@ import {
   COUNTER_ADJUST_RADIUS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -467,7 +467,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
                         ? html`
                             <div
                               class="power-chip"
-                              style=${`color: ${this._powerChipColor(powerValue)}; background: ${tintOn(this, this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
+                              style=${`color: ${tintInk(this, this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)}; background: ${tintOn(this, this._powerChipColor(powerValue), this._config.power_chip_opacity, 18)};`}
                             >
                               <ha-icon icon="mdi:lightning-bolt"></ha-icon>
                               <span>${this._formatNumber(powerValue, 0)} W</span>

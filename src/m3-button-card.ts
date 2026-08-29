@@ -24,7 +24,7 @@ import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
-import { tintOn } from "./shared/color-config";
+import { tintOn, foregroundOn, foregroundColor } from "./shared/color-config";
 
 const HOLD_DURATION_MS = 500;
 const DOUBLE_TAP_WINDOW_MS = 250;
@@ -561,7 +561,12 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     // would double-tint over it into a muddy blob. This opaque variant (the
     // same tint mixed into the card surface instead of transparency) covers
     // the fill so the chip reads as its own surface.
-    const iconBgActiveSolid = `color-mix(in srgb, ${color} ${this._config.color_opacity ?? 20}%, var(--card-background-color, #1c1c1c))`;
+    const iconBgActiveSolid = tintOn(this, color, this._config.color_opacity, 20);
+    // The glyph sits in the well, so it is measured against the well rather
+    // than against the card — otherwise an active button shows an accent icon
+    // on an accent-tinted ground and the glyph disappears.
+    const iconInkActive = foregroundOn(color, iconBgActive);
+    const iconInkInactive = foregroundOn(inactiveColor, iconBgInactive);
     const name =
       this._config.name ||
       entity?.attributes.friendly_name ||
@@ -609,7 +614,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-btn-icon-bg-active-solid: ${iconBgActiveSolid}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
+        style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-btn-icon-bg-active-solid: ${iconBgActiveSolid}; --m3-btn-icon-ink-active: ${iconInkActive}; --m3-btn-icon-ink-inactive: ${iconInkInactive}; --m3-btn-color-fg: ${foregroundColor(this, color)}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
@@ -810,7 +815,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--m3-btn-inactive-color);
+      color: var(--m3-btn-icon-ink-inactive, var(--m3-btn-inactive-color));
       background: var(--m3-btn-icon-bg-inactive);
       transition: all 0.25s ease;
       cursor: pointer;
@@ -822,7 +827,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     .icon-container.active {
       background: var(--m3-btn-icon-bg-active);
-      color: var(--m3-btn-color);
+      color: var(--m3-btn-icon-ink-active, var(--m3-btn-color));
     }
 
     /* Slider mode: opaque chip so the fill behind it doesn't double-tint. */
@@ -850,7 +855,8 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     }
 
     .icon-bare.active {
-      color: var(--m3-btn-color);
+      /* Bare icon sits on the card, so the card-level foreground applies. */
+      color: var(--m3-btn-color-fg, var(--m3-btn-color));
     }
 
     .text {

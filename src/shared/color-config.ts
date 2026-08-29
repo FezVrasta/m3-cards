@@ -59,6 +59,27 @@ export function tintBackground(
 // knows it. When it cannot be resolved — the element is not connected yet, or
 // the theme sets nothing — every value is passed through unchanged, so the
 // worst case is today's appearance.
+/**
+ * Resolves a bare `var(--x)` / `var(--x, fallback)` against the host's computed
+ * style so the contrast helpers can parse it.
+ *
+ * Without this the helpers silently no-op on every call site that passes a
+ * custom property instead of a literal — and a lot of them do. The waste card's
+ * non-highlighted rows tint from `var(--primary-text-color)`, so the tint fell
+ * back to a CSS mix, which then could not be parsed as a surface, so the row's
+ * text kept the raw accent and stayed at 1.34:1 while the highlighted row next
+ * to it was corrected properly.
+ */
+function resolveVarCss(host: HTMLElement | undefined, css: string): string {
+  const m = css.trim().match(/^var\(\s*(--[\w-]+)\s*(?:,\s*([\s\S]+))?\)$/);
+  if (!m) return css;
+  if (host?.isConnected) {
+    const value = getComputedStyle(host).getPropertyValue(m[1]).trim();
+    if (value) return value;
+  }
+  return m[2] ? resolveVarCss(host, m[2].trim()) : css;
+}
+
 function surfaceOf(host: HTMLElement | undefined): string {
   if (!host?.isConnected) return "";
   const cs = getComputedStyle(host);
@@ -102,7 +123,7 @@ export function foregroundColor(
   target = 4.5,
 ): string {
   const surface = surfaceOf(host);
-  return surface ? readableCached(colorCss, surface, target) : colorCss;
+  return surface ? readableCached(resolveVarCss(host, colorCss), surface, target) : colorCss;
 }
 
 export function foregroundVars(
@@ -189,13 +210,14 @@ export function tintOn(
 ): string {
   const percent = opacityPercent ?? defaultPercent;
   const surfaceCss = surfaceOf(host);
+  const resolvedCss = resolveVarCss(host, colorCss);
   const surface = parseColor(surfaceCss);
-  const color = parseColor(colorCss);
-  // Unresolvable — a bare var(), a theme colour not yet applied — so hand back
-  // the CSS-level mix and let the browser do what it did before.
+  const color = parseColor(resolvedCss);
+  // Still unresolvable — a theme colour not yet applied — so hand back the
+  // CSS-level mix and let the browser do what it did before.
   if (!surface || !color) return tintBackground(colorCss, opacityPercent, defaultPercent);
 
-  const key = `${colorCss}|${surfaceCss}|${percent}`;
+  const key = `${resolvedCss}|${surfaceCss}|${percent}`;
   const cached = tintCache.get(key);
   if (cached !== undefined) return cached;
 
@@ -242,7 +264,7 @@ export function fillColor(
   const surfaceCss = surfaceOf(host);
   const surface = parseColor(surfaceCss);
   if (!surface || relativeLuminance(surface) <= 0.5) return colorCss;
-  return readableCached(colorCss, surfaceCss, target);
+  return readableCached(resolveVarCss(host, colorCss), surfaceCss, target);
 }
 
 /**
@@ -255,4 +277,26 @@ export function fillColor(
  */
 export function foregroundOn(colorCss: string, surfaceCss: string, target = 3): string {
   return readableCached(colorCss, surfaceCss, target);
+}
+
+/**
+ * The ink for content that sits on `tintOn`'s output — a chip's label, the
+ * glyph in an icon well.
+ *
+ * Without it the two are the same colour at similar lightness once tints keep
+ * their hue: an accent chip renders #81c784 on #9cdc9f, which is 1.26:1 and
+ * unreadable. Measuring the ink against the tint it sits on rather than
+ * against the card is the whole fix.
+ *
+ * Default target 3:1, which suits an icon or a bold chip label; pass 4.5 for
+ * small body text.
+ */
+export function tintInk(
+  host: HTMLElement | undefined,
+  colorCss: string,
+  opacityPercent: number | undefined,
+  defaultPercent: number,
+  target = 3,
+): string {
+  return foregroundOn(colorCss, tintOn(host, colorCss, opacityPercent, defaultPercent), target);
 }

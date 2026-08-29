@@ -29,7 +29,7 @@ import {
   LEAK_ARM_TIMEOUT_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors , tintOn, foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, isReducedMotion } from "./shared/animation";
 import { renderListRow, listRowStyles } from "./shared/list-row";
@@ -311,7 +311,12 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       key: r.entity,
       icon: r.icon,
       iconColor,
-      iconBackground: `color-mix(in srgb, ${iconColor === "var(--m3p-secondary-text)" ? "var(--primary-text-color)" : iconColor} 14%, var(--ha-card-background, var(--card-background-color)))`,
+      iconBackground: tintOn(
+        this,
+        iconColor === "var(--m3p-secondary-text)" ? "var(--primary-text-color)" : iconColor,
+        undefined,
+        14,
+      ),
       label: r.name,
       extraClass,
       onClick: () => this._moreInfo(r.entity),

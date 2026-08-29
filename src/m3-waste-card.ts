@@ -22,7 +22,7 @@ import {
   WASTE_TICK_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, tintOn, tintInk, foregroundOn, resolveCommonColors , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, isReducedMotion } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
@@ -341,13 +341,13 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
       const three = sameDayStreams.slice(0, 3);
       return html`<div class="hero-multi">
         ${three.map(
-          (s, i) => html`<div class="mini" style=${`background: color-mix(in srgb, ${s.color} 22%, transparent); color: ${s.color}; margin-left: ${i === 0 ? 0 : -8}px; z-index: ${3 - i};`}>
+          (s, i) => html`<div class="mini" style=${`background: ${tintOn(this, s.color, undefined, 22)}; color: ${tintInk(this, s.color, undefined, 22)}; margin-left: ${i === 0 ? 0 : -8}px; z-index: ${3 - i};`}>
             <ha-icon icon=${s.icon}></ha-icon>
           </div>`,
         )}
       </div>`;
     }
-    return html`<div class="hero-icon" style=${`background: color-mix(in srgb, ${primaryColor} 22%, transparent); color: ${primaryColor};`}>
+    return html`<div class="hero-icon" style=${`background: ${tintOn(this, primaryColor, undefined, 22)}; color: ${tintInk(this, primaryColor, undefined, 22)};`}>
       <ha-icon icon=${sameDayStreams[0]?.icon ?? DEFAULT_WASTE_ICON}></ha-icon>
     </div>`;
   }
@@ -495,22 +495,33 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
     else if (s.date) sub = this._weekday(s.date);
     else sub = "";
     const right = unknown ? this._t("waste_unknown") : this._daysRow(s.daysTo!);
+    // Row background, icon well and their ink all come from one calculation, so
+    // the text is measured against the surface it actually sits on.
+    const rowBgCss = tintOn(
+      this,
+      isNext ? s.color : "var(--primary-text-color)",
+      undefined,
+      isNext ? 8 : 5,
+    );
+    const iconBgCss = tintOn(this, unknown ? "var(--primary-text-color)" : s.color, undefined, 14);
+    const rowInkCss = unknown ? "var(--m3p-secondary-text)" : foregroundOn(s.color, rowBgCss, 4.5);
+    const iconInkCss = unknown ? "var(--m3p-secondary-text)" : foregroundOn(s.color, iconBgCss);
     return html`
       <div
         class="waste-row ${isNext ? "next" : ""} ${unknown ? "unknown" : ""}"
-        style=${`--row-color: ${s.color};`}
+        style=${`--row-color: ${s.color}; --row-bg: ${rowBgCss};`}
         role="button"
         tabindex="0"
         @click=${() => this._moreInfo(s.entity)}
       >
-        <div class="row-icon" style=${`background: color-mix(in srgb, ${unknown ? "var(--primary-text-color)" : s.color} 14%, transparent); color: ${unknown ? "var(--m3p-secondary-text)" : s.color};`}>
+        <div class="row-icon" style=${`background: ${iconBgCss}; color: ${iconInkCss};`}>
           <ha-icon icon=${s.icon}></ha-icon>
         </div>
         <div class="row-text">
           <div class="row-name">${s.name}</div>
           <div class="row-sub">${sub}</div>
         </div>
-        <div class="row-days" style=${`color: ${unknown ? "var(--m3p-secondary-text)" : s.color};`}>${right}</div>
+        <div class="row-days" style=${`color: ${rowInkCss};`}>${right}</div>
       </div>
     `;
   }
@@ -685,10 +696,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
         align-items: center;
         gap: 12px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
-      }
-      .waste-row.next {
-        background: color-mix(in srgb, var(--row-color) 8%, transparent);
+        background: var(--row-bg);
       }
       .waste-row.unknown {
         opacity: 0.55;
