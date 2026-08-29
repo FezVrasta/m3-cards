@@ -1,4 +1,5 @@
 import { THEME_COLOR_TOKENS } from "../const";
+import { readableOnCss } from "./contrast";
 
 // Resolves a config color value against the curated HA/tile-card token list
 // (e.g. "red", "primary"); anything not found is used verbatim as a CSS
@@ -31,6 +32,72 @@ export function tintBackground(
 // Builds a `--prefix-key: value;` inline style string from a map, skipping
 // undefined entries. Used by cards to assemble their CSS-custom-property
 // theming block on the <ha-card> root in one line.
+// Derives a readable foreground twin for each colour a card uses as *text*.
+//
+// The palette is built for dark backgrounds — every one of its colours falls
+// below 4.5:1 on a light card surface (docs/light-theme-colors.md) — so an
+// accent that reads well as a fill is washed out as a figure or a label. Each
+// entry comes back with a `-fg` suffix, adjusted only as far as the target
+// contrast demands and left alone when it already clears it, which means the
+// dark theme is untouched.
+//
+// Deliberately explicit rather than derived from variable names: a card's
+// foreground colours are not all called "-accent" (power-summary alone has
+// `ps-main` and `ps-producer`), and guessing from names would silently miss
+// them.
+//
+// The surface is read from the host's computed style because only the theme
+// knows it. When it cannot be resolved — the element is not connected yet, or
+// the theme sets nothing — every value is passed through unchanged, so the
+// worst case is today's appearance.
+function surfaceOf(host: HTMLElement | undefined): string {
+  if (!host?.isConnected) return "";
+  const cs = getComputedStyle(host);
+  return (
+    cs.getPropertyValue("--ha-card-background").trim() ||
+    cs.getPropertyValue("--card-background-color").trim()
+  );
+}
+
+// The bisection is cheap but list cards call this per row per render, and the
+// set of (colour, surface) pairs a dashboard uses is tiny and stable.
+const foregroundCache = new Map<string, string>();
+
+function readableCached(colorCss: string, surface: string, target: number): string {
+  const key = `${colorCss}|${surface}|${target}`;
+  let out = foregroundCache.get(key);
+  if (out === undefined) {
+    out = readableOnCss(colorCss, surface, target);
+    foregroundCache.set(key, out);
+  }
+  return out;
+}
+
+// Single colour in, readable colour out — for the places a card sets a text
+// colour inline rather than through a CSS variable.
+export function foregroundColor(
+  host: HTMLElement | undefined,
+  colorCss: string,
+  target = 4.5,
+): string {
+  const surface = surfaceOf(host);
+  return surface ? readableCached(colorCss, surface, target) : colorCss;
+}
+
+export function foregroundVars(
+  host: HTMLElement | undefined,
+  vars: Record<string, string | undefined>,
+  target = 4.5,
+): Record<string, string | undefined> {
+  const surface = surfaceOf(host);
+  const out: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(vars)) {
+    if (value === undefined) continue;
+    out[`${key}-fg`] = surface ? readableCached(value, surface, target) : value;
+  }
+  return out;
+}
+
 export function buildCssVars(vars: Record<string, string | undefined>): string {
   return Object.entries(vars)
     .filter(([, v]) => v !== undefined)

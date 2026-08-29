@@ -31,7 +31,7 @@ import {
   SUMMARY_VALUE_LERP_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintBackground, foregroundVars, foregroundColor } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { shouldAnimate } from "./shared/animation";
@@ -291,6 +291,8 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     const pctA = segTotal > 0 ? (segA / segTotal) * 100 : 0;
     const pctB = 100 - pctA;
 
+    // Fills keep the pure accent; the -fg twins carry the same colours where
+    // they are used as text, adjusted for contrast against the card surface.
     const cssVars = buildCssVars({
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
@@ -298,6 +300,11 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
       "ps-accent-bg": tintBackground(accentColor, this._config.accent_opacity, 18),
       "ps-producer": producerColor,
       "ps-main": mainColor,
+      ...foregroundVars(this, {
+        "ps-accent": accentColor,
+        "ps-producer": producerColor,
+        "ps-main": mainColor,
+      }),
     });
 
     const metrics = this._config.metrics ?? [];
@@ -311,7 +318,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
           <div class="main-row ${gridUnavailable ? "unavailable" : ""}">
             <div
               class="main-icon"
-              style=${`background: ${tintBackground(mainColor, this._config.flow_tint_opacity, 18)}; color: ${mainColor};`}
+              style=${`background: ${tintBackground(mainColor, this._config.flow_tint_opacity, 18)}; color: ${foregroundColor(this, mainColor)};`}
               role="button"
               tabindex="0"
               aria-label=${mainLabel}
@@ -405,10 +412,10 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
         @click=${this._moreInfo(metric.entity)}
         @keydown=${activateOnKey(this._moreInfo(metric.entity))}
       >
-        <div class="metric-icon" style=${`background: ${iconBg}; color: ${iconColor};`}>
+        <div class="metric-icon" style=${`background: ${iconBg}; color: ${foregroundColor(this, iconColor)};`}>
           <ha-icon icon=${icon}></ha-icon>
         </div>
-        <div class="metric-value" style=${`color: ${unavailable ? "var(--m3p-secondary-text)" : color};`}>
+        <div class="metric-value" style=${`color: ${unavailable ? "var(--m3p-secondary-text)" : foregroundColor(this, color)};`}>
           ${unavailable ? "–" : formatted.number}
           <span class="metric-unit">${unavailable ? "" : formatted.unit}</span>
         </div>
@@ -465,7 +472,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
         font-size: 32px;
         font-weight: 700;
         line-height: 1.15;
-        color: var(--ps-main);
+        color: var(--ps-main-fg, var(--ps-main));
         font-variant-numeric: tabular-nums;
       }
 
@@ -485,7 +492,7 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
         padding: 0 12px;
         border-radius: ${SUMMARY_CHIP_RADIUS}px;
         background: var(--ps-accent-bg);
-        color: var(--ps-accent);
+        color: var(--ps-accent-fg, var(--ps-accent));
         font-size: 14px;
         font-weight: 700;
       }
