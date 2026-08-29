@@ -16,6 +16,7 @@ import {
   WASTE_COLOR_RULES,
   WASTE_DEFAULT_NAME_STRIP,
   WASTE_TIMELINE_DAYS,
+  WASTE_CALENDAR_LOOKAHEAD_DAYS,
   WASTE_REMINDER_OFFSET,
   WASTE_REMINDER_TIME,
   WASTE_TICK_MS,
@@ -34,6 +35,12 @@ console.info(
   "color: #9fb0c0; background: #222; font-weight: 700; border-radius: 0 4px 4px 0;",
 );
 
+// Shape of the REST calendar response, narrowed to what this card reads.
+interface CalendarEvent {
+  summary?: string;
+  start?: { date?: string; dateTime?: string };
+}
+
 interface WasteStream {
   entity: string;
   name: string;
@@ -51,7 +58,9 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
   @state() private _expanded = false;
   @state() private _sessionAck?: string;
   @state() private _now = Date.now();
+  @state() private _calendarStreams: WasteStream[] = [];
   private _tick?: number;
+  private _calendarKey?: string;
 
   protected shouldUpdate(changed: PropertyValues): boolean {
     return hassChangeMatters(changed, this.hass, [this._config?.ack_entity, ...listEntities(this._config?.entities)]);
@@ -95,6 +104,11 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
     if (this._tick) clearInterval(this._tick);
   }
 
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    this._maybeFetchCalendar();
+  }
+
   private get _language(): string {
     return this.hass?.locale?.language ?? this.hass?.language ?? "en";
   }
@@ -127,6 +141,89 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
     return list.map((e) => (typeof e === "string" ? { entity: e } : e));
   }
 
+  // ---- calendar source -----------------------------------------------------
+  // Waste Collection Schedule can expose the schedule either as one day-count
+  // sensor per bin or as a single calendar whose event summaries name the bins.
+  // The two models are different enough to need separate handling: a sensor is
+  // one stream, a calendar is many, and only the calendar has to be fetched.
+  //
+  // There is no websocket command for listing events — `calendar/event/list`
+  // does not exist — so this goes through the REST endpoint the HA frontend
+  // itself uses.
+  private async _fetchCalendar(): Promise<void> {
+    const hass = this.hass;
+    const eid = this._config?.calendar_entity;
+    if (!hass || !eid) return;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start.getTime() + WASTE_CALENDAR_LOOKAHEAD_DAYS * 86400_000);
+    try {
+      const events = await hass.callApi<CalendarEvent[]>(
+        "GET",
+        `calendars/${eid}?start=${encodeURIComponent(start.toISOString())}` +
+          `&end=${encodeURIComponent(end.toISOString())}`,
+      );
+      this._calendarStreams = this._groupEvents(events ?? [], start);
+    } catch {
+      // A missing or unreadable calendar leaves the configured sensors to
+      // carry the card, rather than emptying it.
+      if (this._calendarStreams.length) this._calendarStreams = [];
+    }
+  }
+
+  private _maybeFetchCalendar(): void {
+    const eid = this._config?.calendar_entity;
+    if (!this.hass || !eid) {
+      // Only assign when there is something to clear. A fresh [] is a new
+      // identity, and a @state field reassigned from updated() schedules the
+      // next render, which schedules the next — the card without a calendar
+      // would spin forever.
+      if (this._calendarStreams.length) this._calendarStreams = [];
+      this._calendarKey = undefined;
+      return;
+    }
+    // Re-read once a day, or whenever the configured calendar changes.
+    const key = `${eid}|${new Date().toDateString()}`;
+    if (key === this._calendarKey) return;
+    this._calendarKey = key;
+    void this._fetchCalendar();
+  }
+
+  // One stream per distinct event summary, taking each bin's soonest date.
+  private _groupEvents(events: CalendarEvent[], startOfToday: Date): WasteStream[] {
+    const proTonne = new Map<string, { name: string; date: Date }>();
+    for (const ev of events) {
+      const summary = (ev.summary ?? "").trim();
+      if (!summary) continue;
+      const roh = ev.start?.date ?? ev.start?.dateTime;
+      if (!roh) continue;
+      const date = new Date(roh);
+      if (isNaN(date.getTime())) continue;
+      date.setHours(0, 0, 0, 0);
+      if (date.getTime() < startOfToday.getTime()) continue;
+      const key = summary.toLowerCase();
+      const bisher = proTonne.get(key);
+      if (!bisher || date.getTime() < bisher.date.getTime()) {
+        proTonne.set(key, { name: summary, date });
+      }
+    }
+    return [...proTonne.entries()].map(([key, { name, date }]) => {
+      // Event summaries come straight out of an ICS file and are often all
+      // lower case ("altpapier"). A sensor's friendly name is the user's own
+      // wording and is left alone; this one is not, so it gets a capital.
+      const roh = this._stripName(name);
+      const anzeige = roh.charAt(0).toUpperCase() + roh.slice(1);
+      return {
+        entity: `${this._config?.calendar_entity ?? "calendar"}#${key}`,
+        name: anzeige,
+        icon: this._iconFor(anzeige),
+        color: this._colorFor(anzeige),
+        daysTo: Math.round((date.getTime() - startOfToday.getTime()) / 86400_000),
+        date,
+      };
+    });
+  }
+
   private _streams(): WasteStream[] {
     const hass = this.hass;
     if (!hass) return [];
@@ -152,6 +249,15 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
           date,
         };
       });
+  }
+
+  private _allStreams(): WasteStream[] {
+    const sensoren = this._streams();
+    // Both sources may describe the same bin — someone running the integration
+    // with sensors *and* a calendar would otherwise see every bin twice. The
+    // explicitly configured sensor wins; the calendar fills in the rest.
+    const bekannt = new Set(sensoren.map((s) => s.name.toLowerCase()));
+    return [...sensoren, ...this._calendarStreams.filter((s) => !bekannt.has(s.name.toLowerCase()))];
   }
 
   private _sorted(streams: WasteStream[]): WasteStream[] {
@@ -251,7 +357,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
     const mode = this._config.mode ?? "info";
     const heroPrimary = this._config.hero_primary ?? "days";
     const heroIconMode = this._config.hero_icon ?? "first";
-    const streams = this._sorted(this._streams());
+    const streams = this._sorted(this._allStreams());
     const known = streams.filter((s) => s.daysTo !== undefined);
     const next = known[0];
     const sameDay = next ? known.filter((s) => s.daysTo === next.daysTo) : [];

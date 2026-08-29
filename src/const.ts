@@ -969,6 +969,8 @@ export const DEFAULT_OCCUPANCY_NAME_STRIP = [
   " Bewegung$",
 ];
 export const OCCUPANCY_HEADER_ICON_SIZE = 44;
+export const OCCUPANCY_TOGGLE_HEIGHT = HEIGHT.toggle;
+export const OCCUPANCY_TOGGLE_RADIUS = RADIUS.row;
 export const OCCUPANCY_HEADER_ICON_RADIUS = RADIUS.squircle44;
 export const OCCUPANCY_ROW_RADIUS = RADIUS.row;
 export const OCCUPANCY_ROW_RADIUS_ACTIVE = RADIUS.rowActive;
@@ -1068,6 +1070,10 @@ export const DEFAULT_LEAK_ICON = "mdi:water-outline";
 // ---- Waste card -----------------------------------------------------------
 export const DEFAULT_WASTE_RADIUS = RADIUS.card;
 export const WASTE_TIMELINE_DAYS = 14;
+// How far ahead a calendar is read. Longer than the timeline on purpose: a bin
+// on a four-week cycle would otherwise be missing from the list entirely for
+// most of the month, where a day-count sensor always knows its next date.
+export const WASTE_CALENDAR_LOOKAHEAD_DAYS = 70;
 export const WASTE_REMINDER_OFFSET = 1;
 export const WASTE_REMINDER_TIME = "18:00";
 export const WASTE_TICK_MS = 60000;
@@ -1096,5 +1102,3 @@ export const WASTE_COLOR_RULES: Array<[RegExp, string]> = [
   [/glas|glass/i, "#7bc4b0"],
   [/sperrm(ü|ue)ll|bulk/i, "#b8946a"],
 ];
-export const OCCUPANCY_TOGGLE_HEIGHT = HEIGHT.toggle;
-export const OCCUPANCY_TOGGLE_RADIUS = RADIUS.row;

@@ -1096,6 +1096,10 @@ export interface M3WasteCardConfig extends NotifyConfigBase {
   type: string;
   mode?: "info" | "reminder";
   entities?: (string | WasteEntityConfig)[];
+  /** A calendar holding one event per collection, the summary naming the bin.
+   *  Waste Collection Schedule can produce this instead of, or alongside, the
+   *  day-count sensors. Streams found here are merged with `entities`. */
+  calendar_entity?: string;
   auto_discover?: boolean;
   name_strip?: string[];
   hero_primary?: "days" | "weekday";

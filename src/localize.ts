@@ -1011,6 +1011,8 @@ const translations = {
     todo_delete_item: "Eintrag löschen",
     time_current: "aktuell {zeit}",
     occupancy_default_name: "Präsenz",
+    occupancy_expand: "{n} weitere anzeigen",
+    occupancy_collapse: "Einklappen",
     occupancy_subtitle: "{belegt} von {gesamt} Räumen belegt",
     occupancy_occupied: "belegt",
     occupancy_since: "seit {dauer}",
@@ -1155,6 +1157,7 @@ const translations = {
     waste_collapse: "Weniger anzeigen",
     waste_expand: "{n} weitere anzeigen",
     editor_waste_mode: "Modus",
+    editor_waste_calendar_entity: "Kalender (statt oder zusätzlich zu Sensoren)",
     editor_waste_mode_info: "Info (automatische Abholung)",
     editor_waste_mode_reminder: "Erinnerung (selbst rausstellen)",
     editor_waste_mode_hint:
@@ -2308,6 +2311,8 @@ const translations = {
     todo_delete_item: "Delete item",
     time_current: "currently {zeit}",
     occupancy_default_name: "Presence",
+    occupancy_expand: "Show {n} more",
+    occupancy_collapse: "Collapse",
     occupancy_subtitle: "{belegt} of {gesamt} rooms occupied",
     occupancy_occupied: "occupied",
     occupancy_since: "for {dauer}",
@@ -2452,6 +2457,7 @@ const translations = {
     waste_collapse: "Show less",
     waste_expand: "Show {n} more",
     editor_waste_mode: "Mode",
+    editor_waste_calendar_entity: "Calendar (instead of, or alongside, sensors)",
     editor_waste_mode_info: "Info (automatic collection)",
     editor_waste_mode_reminder: "Reminder (put out yourself)",
     editor_waste_mode_hint:
@@ -2609,7 +2615,3 @@ export function localize(key: TranslationKey, language?: string): string {
   const lang = resolveLang(language);
   return translations[lang][key] ?? translations.en[key] ?? key;
 }
-    occupancy_expand: "{n} weitere anzeigen",
-    occupancy_collapse: "Einklappen",
-    occupancy_expand: "Show {n} more",
-    occupancy_collapse: "Collapse",

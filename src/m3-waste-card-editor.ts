@@ -85,6 +85,7 @@ export class M3WasteCardEditor extends LitElement implements LovelaceCardEditor 
       schema.push(
         { name: "reminder_offset", selector: { number: { min: 0, max: 7, mode: "box", unit_of_measurement: "d" } } },
         { name: "reminder_time", selector: { time: {} } },
+        { name: "calendar_entity", selector: { entity: { domain: "calendar" } } },
         { name: "ack_entity", selector: { entity: { domain: ["input_boolean", "input_datetime"] } } },
       );
     }
@@ -259,6 +260,7 @@ export class M3WasteCardEditor extends LitElement implements LovelaceCardEditor 
       mode: "editor_waste_mode",
       reminder_offset: "editor_waste_reminder_offset",
       reminder_time: "editor_waste_reminder_time",
+      calendar_entity: "editor_waste_calendar_entity",
       ack_entity: "editor_waste_ack_entity",
       auto_discover: "editor_waste_auto_discover",
       entity: "editor_entity",
