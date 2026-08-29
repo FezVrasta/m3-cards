@@ -48,6 +48,12 @@ import {
   MEDIA_CHIP_HEIGHT,
   MEDIA_CHIP_RADIUS,
   MEDIA_ACCENT_MIN_CONTRAST,
+  MEDIA_ARTWORK_SAMPLE_SIZE,
+  MEDIA_ARTWORK_HUE_BUCKETS,
+  MEDIA_ARTWORK_MIN_LIGHTNESS,
+  MEDIA_ARTWORK_MAX_LIGHTNESS,
+  MEDIA_ARTWORK_MIN_SATURATION,
+  MEDIA_ACCENT_FADE_MS,
   MEDIA_BROWSE_TOGGLE_HEIGHT,
   MEDIA_BROWSE_TOGGLE_RADIUS,
   MEDIA_BROWSE_TAB_HEIGHT,
@@ -273,6 +279,84 @@ function ensureInkContrast(r: number, g: number, b: number): [number, number, nu
   return [r, g, b].map((c) => c + (255 - c) * hi) as [number, number, number];
 }
 
+// Hue/saturation/lightness of an 8-bit sRGB triple. Only the three values the
+// dominant-colour vote needs, so no full HSL round-trip.
+function hsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return { h: 0, s: 0, l };
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h: number;
+  if (max === rn) h = ((gn - bn) / d) % 6;
+  else if (max === gn) h = (bn - rn) / d + 2;
+  else h = (rn - gn) / d + 4;
+  h = h * 60;
+  if (h < 0) h += 360;
+  return { h, s, l };
+}
+
+// Picks the artwork's dominant *saturated* colour rather than averaging every
+// pixel. An average is the sum of a cover's backdrop and its subject, which on
+// most covers is a desaturated brown-grey — "Inner Light" averaged to #4c3d56,
+// a muddy near-black that failed contrast outright. Instead: bucket the pixels
+// by hue, weight each vote by its saturation so a small vivid area outvotes a
+// large flat one, then average the winning bucket's actual pixels. A genuinely
+// greyscale cover has no saturated pixels at all and falls back to the mean.
+function dominantColor(data: Uint8ClampedArray): [number, number, number] | undefined {
+  const buckets = new Array(MEDIA_ARTWORK_HUE_BUCKETS).fill(0);
+  const sums = Array.from({ length: MEDIA_ARTWORK_HUE_BUCKETS }, () => [0, 0, 0, 0]);
+  let meanR = 0;
+  let meanG = 0;
+  let meanB = 0;
+  let meanCount = 0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 16) continue;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    meanR += r;
+    meanG += g;
+    meanB += b;
+    meanCount++;
+
+    const { h, s, l } = hsl(r, g, b);
+    if (l < MEDIA_ARTWORK_MIN_LIGHTNESS || l > MEDIA_ARTWORK_MAX_LIGHTNESS) continue;
+    if (s < MEDIA_ARTWORK_MIN_SATURATION) continue;
+    const idx = Math.min(
+      MEDIA_ARTWORK_HUE_BUCKETS - 1,
+      Math.floor((h / 360) * MEDIA_ARTWORK_HUE_BUCKETS),
+    );
+    // Saturation-weighted so vividness counts, not just area.
+    buckets[idx] += s;
+    sums[idx][0] += r * s;
+    sums[idx][1] += g * s;
+    sums[idx][2] += b * s;
+    sums[idx][3] += s;
+  }
+
+  if (meanCount === 0) return undefined;
+
+  let best = -1;
+  let bestWeight = 0;
+  for (let i = 0; i < buckets.length; i++) {
+    if (buckets[i] > bestWeight) {
+      bestWeight = buckets[i];
+      best = i;
+    }
+  }
+  if (best < 0 || sums[best][3] === 0) {
+    return [meanR / meanCount, meanG / meanCount, meanB / meanCount];
+  }
+  const w = sums[best][3];
+  return [sums[best][0] / w, sums[best][1] / w, sums[best][2] / w];
+}
+
 async function extractArtworkColor(url: string): Promise<string | undefined> {
   const cached = artworkColorCache.get(url);
   if (cached) return cached;
@@ -285,27 +369,16 @@ async function extractArtworkColor(url: string): Promise<string | undefined> {
     });
     img.src = url;
     await loaded;
-    const size = 16;
+    const size = MEDIA_ARTWORK_SAMPLE_SIZE;
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return undefined;
     ctx.drawImage(img, 0, 0, size, size);
-    const data = ctx.getImageData(0, 0, size, size).data;
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    let count = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] < 16) continue;
-      r += data[i];
-      g += data[i + 1];
-      b += data[i + 2];
-      count++;
-    }
-    if (count === 0) return undefined;
-    const [lr, lg, lb] = clampLuminanceRgb(r / count, g / count, b / count);
+    const dom = dominantColor(ctx.getImageData(0, 0, size, size).data);
+    if (!dom) return undefined;
+    const [lr, lg, lb] = clampLuminanceRgb(dom[0], dom[1], dom[2]);
     const [cr, cg, cb] = ensureInkContrast(lr, lg, lb);
     const hex = `#${[cr, cg, cb].map((x) => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2, "0")).join("")}`;
     if (artworkColorCache.size >= MEDIA_ARTWORK_COLOR_CACHE_SIZE) {
@@ -1816,7 +1889,10 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       .transport-btn,
       .pill-toggle,
       .mute-btn {
-        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+        transition:
+          border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING},
+          background-color ${MEDIA_ACCENT_FADE_MS}ms ease,
+          color ${MEDIA_ACCENT_FADE_MS}ms ease;
       }
 
       .progress-times {
@@ -1867,7 +1943,9 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+        transition:
+          border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING},
+          background-color ${MEDIA_ACCENT_FADE_MS}ms ease;
       }
 
       .play-btn.playing {
@@ -2029,7 +2107,9 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         color: var(--m3p-text);
         cursor: pointer;
         text-align: left;
-        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+        transition:
+          border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING},
+          background-color ${MEDIA_ACCENT_FADE_MS}ms ease;
       }
 
       .browse-toggle.open {
@@ -2100,7 +2180,10 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
-        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
+        transition:
+          border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING},
+          background-color ${MEDIA_ACCENT_FADE_MS}ms ease,
+          color ${MEDIA_ACCENT_FADE_MS}ms ease;
       }
 
       .browse-tab.active {
@@ -2256,6 +2339,44 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       @keyframes sk-pulse {
         0%, 100% { opacity: 0.45; }
         50% { opacity: 0.9; }
+      }
+
+      /* The accent arrives as a CSS variable, so every property that consumes
+         it cross-fades on a track change instead of snapping. SVG stroke and
+         fill are transitionable, which is what keeps the waves from jumping. */
+      .progress-active,
+      .volume-active {
+        transition: stroke ${MEDIA_ACCENT_FADE_MS}ms ease;
+      }
+
+      .progress-dot,
+      .progress-handle,
+      .volume-dot {
+        transition: fill ${MEDIA_ACCENT_FADE_MS}ms ease;
+      }
+
+      .artwork,
+      .icon-swatch,
+      .browse-toggle-icon,
+      .browse-icon,
+      .browse-num,
+      .meta-chip,
+      .live-chip,
+      .crumb,
+      .browse-row {
+        transition:
+          background-color ${MEDIA_ACCENT_FADE_MS}ms ease,
+          color ${MEDIA_ACCENT_FADE_MS}ms ease;
+      }
+
+      .card-inner.no-animations .progress-active,
+      .card-inner.no-animations .volume-active,
+      .card-inner.no-animations .progress-dot,
+      .card-inner.no-animations .volume-dot,
+      .card-inner.no-animations .artwork,
+      .card-inner.no-animations .meta-chip,
+      .card-inner.no-animations .browse-row {
+        transition: none;
       }
 
       .source-row {

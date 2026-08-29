@@ -617,6 +617,19 @@ export const MEDIA_VOLUME_DOT_RADIUS = 4;
 export const MEDIA_VOLUME_THROTTLE_MS = 200;
 export const MEDIA_MUTE_BTN_HEIGHT = 40;
 export const MEDIA_ARTWORK_COLOR_CACHE_SIZE = 20;
+// Artwork is sampled at this resolution before the dominant colour is picked.
+export const MEDIA_ARTWORK_SAMPLE_SIZE = 32;
+// Hue is bucketed at 20° so shades of one colour count as the same hue.
+export const MEDIA_ARTWORK_HUE_BUCKETS = 18;
+// Pixels outside this lightness band are backdrop, not subject: near-black and
+// near-white dominate most covers by area and say nothing about their colour.
+export const MEDIA_ARTWORK_MIN_LIGHTNESS = 0.12;
+export const MEDIA_ARTWORK_MAX_LIGHTNESS = 0.92;
+// Below this saturation a pixel counts as grey and carries no hue vote.
+export const MEDIA_ARTWORK_MIN_SATURATION = 0.15;
+// The accent is distributed as a CSS variable; the properties that consume it
+// cross-fade over this so buttons and waves never jump on a track change.
+export const MEDIA_ACCENT_FADE_MS = 400;
 
 // Meta chips under the title. Deliberately shorter than the suite's standard
 // chip (RADIUS.chip / 15px) — these sit directly under two text lines and a
