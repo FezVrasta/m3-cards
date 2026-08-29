@@ -600,13 +600,30 @@ export const MEDIA_PILL_ICON_SIZE = 20;
 // so the button reads as one gesture rather than two overlapping ones.
 export const MEDIA_ICON_MORPH_MS = 350;
 export const MEDIA_WAVE_HEIGHT = 5;
-// Playback progress is a plain straight seek bar (no wave — that reads as
-// noise on a thin position indicator): a taller touch target with a slim line
-// and a draggable handle to scrub through the track.
+// Playback progress is a wavy indicator in the progress-card ("washing
+// machine") form: a wave for the elapsed part, a gap, a straight track, and a
+// dot at the far end. The wave flattens to a straight line when playback is
+// paused, so the bar itself carries the play state.
 export const MEDIA_PROGRESS_HEIGHT = 20;
-export const MEDIA_PROGRESS_STROKE = 4;
+export const MEDIA_PROGRESS_STROKE = 5;
+export const MEDIA_PROGRESS_AMPLITUDE = 2.6;
+export const MEDIA_PROGRESS_WAVELENGTH = 20;
 export const MEDIA_PROGRESS_GAP = 8;
+export const MEDIA_PROGRESS_DOT_RADIUS = 4;
 export const MEDIA_PROGRESS_HANDLE_RADIUS = 6;
+// Per-frame easing of the amplitude toward its target, matching the light
+// card's wave. Low enough that pausing reads as the wave settling flat rather
+// than snapping.
+export const MEDIA_PROGRESS_AMPLITUDE_LERP = 0.1;
+export const MEDIA_PROGRESS_PHASE_SPEED = 0.06;
+// A stream with no duration cannot show a position, so a short segment of
+// wave travels the bar instead.
+export const MEDIA_INDETERMINATE_FRACTION = 0.28;
+export const MEDIA_INDETERMINATE_CYCLE_MS = 2200;
+// Seeks are throttled while dragging so a scrub does not flood the player.
+export const MEDIA_SEEK_THROTTLE_MS = 200;
+// Every transport button briefly morphs to this radius when tapped.
+export const MEDIA_PRESS_RADIUS = 14;
 export const MEDIA_VOLUME_WAVE_HEIGHT = 44;
 // Wavy volume bar geometry, matching the progress-card ("washing machine")
 // form: a visible wave, a gap, a straight track, and a round end-dot.

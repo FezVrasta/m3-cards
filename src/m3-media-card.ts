@@ -26,6 +26,15 @@ import {
   MEDIA_ICON_MORPH_MS,
   MEDIA_PROGRESS_HEIGHT,
   MEDIA_PROGRESS_STROKE,
+  MEDIA_PROGRESS_AMPLITUDE,
+  MEDIA_PROGRESS_WAVELENGTH,
+  MEDIA_PROGRESS_DOT_RADIUS,
+  MEDIA_PROGRESS_AMPLITUDE_LERP,
+  MEDIA_PROGRESS_PHASE_SPEED,
+  MEDIA_INDETERMINATE_FRACTION,
+  MEDIA_INDETERMINATE_CYCLE_MS,
+  MEDIA_SEEK_THROTTLE_MS,
+  MEDIA_PRESS_RADIUS,
   MEDIA_PROGRESS_GAP,
   MEDIA_PROGRESS_HANDLE_RADIUS,
   MEDIA_VOLUME_WAVE_HEIGHT,
@@ -343,11 +352,25 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
   // advances it every frame and repaints just the one SVG path directly (see
   // _syncWaveAnimation), so it must not trigger a full card re-render.
   private _wavePhase = 0;
+  // Progress wave: phase advances every frame, amplitude eases toward its
+  // target (0 when paused). Neither is @state — the animation repaints the one
+  // path directly, so a 60fps re-render of the whole card never happens.
+  // Sub-second position, for the wave only. Deliberately NOT @state: it
+  // changes every frame, and a reactive field here re-renders the card on
+  // every animation frame — which is exactly the render loop this replaces.
+  private _precisePosition = 0;
+  private _progressPhase = 0;
+  private _progressAmplitude = 0;
+  private _progressRafId?: number;
+  private _visible = true;
+  private _visibilityObserver?: IntersectionObserver;
+  private _seekThrottleTimer?: number;
+  private _lastSeekTs = 0;
+  private _pressTimer?: number;
 
   @query(".volume-slider") private _volumeSliderEl?: HTMLDivElement;
   @query(".progress-slider") private _progressSliderEl?: HTMLDivElement;
 
-  private _positionTimer?: number;
   private _lastArtworkUrl?: string;
   private _volumeThrottleTimer?: number;
   private _pendingVolume?: number;
@@ -452,15 +475,28 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     return document.createElement("m3-media-card-editor") as unknown as LovelaceCardEditor;
   }
 
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // Re-arm after a move in the DOM: disconnectedCallback tore the loop and
+    // the observer down, and without this the card would sit still until some
+    // unrelated state update happened to restart it.
+    this._visible = true;
+    this._syncPositionTimer();
+  }
+
   public disconnectedCallback(): void {
     super.disconnectedCallback();
-    this._stopPositionTimer();
     if (this._volumeThrottleTimer !== undefined) clearTimeout(this._volumeThrottleTimer);
     this._volumeResizeObserver?.disconnect();
     this._volumeResizeObserver = undefined;
     this._progressResizeObserver?.disconnect();
     this._progressResizeObserver = undefined;
     this._syncWaveAnimation(false);
+    this._stopProgressAnimation();
+    this._visibilityObserver?.disconnect();
+    this._visibilityObserver = undefined;
+    if (this._seekThrottleTimer !== undefined) clearTimeout(this._seekThrottleTimer);
+    if (this._pressTimer !== undefined) clearTimeout(this._pressTimer);
   }
 
   protected updated(changed: PropertyValues): void {
@@ -469,6 +505,23 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     this._maybeExtractColor();
     this._observeVolumeWidth();
     this._observeProgressWidth();
+    this._observeVisibility();
+  }
+
+  // requestAnimationFrame already pauses in a hidden tab, but a card scrolled
+  // far off a long dashboard keeps animating. This stops that too.
+  private _observeVisibility(): void {
+    if (this._visibilityObserver || typeof IntersectionObserver === "undefined") return;
+    // Deliberately re-syncs on every callback rather than only on a change.
+    // An element observed before it is laid out reports "not intersecting"
+    // once, which stops the loop; comparing against the previous value could
+    // then swallow the restart and leave the wave frozen for the card's whole
+    // life. The observer fires rarely, so the extra sync costs nothing.
+    this._visibilityObserver = new IntersectionObserver((entries) => {
+      this._visible = entries.some((e) => e.isIntersecting);
+      this._syncPositionTimer();
+    });
+    this._visibilityObserver.observe(this);
   }
 
   // The volume slider mounts/unmounts with the VOLUME_SET feature, so the
@@ -534,7 +587,30 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
   private _handleSeekPointerMove = (e: PointerEvent): void => {
     if (!this._seeking) return;
     this._seekPosition = this._positionFromClientX(e.clientX);
+    this._throttledSeek();
   };
+
+  // Scrubbing sends intermediate seeks so the player follows the drag, but at
+  // most one every MEDIA_SEEK_THROTTLE_MS — a raw pointermove stream would
+  // flood it with a call per frame.
+  private _throttledSeek(): void {
+    const now = Date.now();
+    const wait = MEDIA_SEEK_THROTTLE_MS - (now - this._lastSeekTs);
+    if (wait <= 0) {
+      this._lastSeekTs = now;
+      if (this._seekPosition !== undefined) {
+        this._callService("media_seek", { seek_position: Math.round(this._seekPosition) });
+      }
+      return;
+    }
+    if (this._seekThrottleTimer !== undefined) return;
+    this._seekThrottleTimer = window.setTimeout(() => {
+      this._seekThrottleTimer = undefined;
+      if (!this._seeking || this._seekPosition === undefined) return;
+      this._lastSeekTs = Date.now();
+      this._callService("media_seek", { seek_position: Math.round(this._seekPosition) });
+    }, wait);
+  }
 
   private _handleSeekPointerUp = (): void => {
     if (!this._seeking) return;
@@ -542,7 +618,8 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     if (this._seekPosition !== undefined) {
       this._callService("media_seek", { seek_position: Math.round(this._seekPosition) });
       // Optimistically hold the scrubbed position until the player reports back.
-      this._displayPosition = this._seekPosition;
+      this._precisePosition = this._seekPosition;
+      this._displayPosition = Math.floor(this._seekPosition);
     }
     this._seekPosition = undefined;
   };
@@ -566,34 +643,81 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     const position = entity.attributes.media_position as number | undefined;
     const updatedAt = entity.attributes.media_position_updated_at as string | undefined;
     if (position === undefined) {
+      this._precisePosition = 0;
       this._displayPosition = 0;
       return;
     }
     if (entity.state === "playing" && updatedAt) {
       const elapsed = (Date.now() - new Date(updatedAt).getTime()) / 1000;
-      this._displayPosition = Math.max(0, position + elapsed);
+      this._precisePosition = Math.max(0, position + elapsed);
     } else {
-      this._displayPosition = position;
+      this._precisePosition = position;
     }
+    // The label reads m:ss, so only whole seconds are reactive. Assigning the
+    // sub-second value here would make every render schedule the next one:
+    // updated() → recompute → new value → update → … a loop that saturates the
+    // main thread and starves the animation frames.
+    this._displayPosition = Math.floor(this._precisePosition);
   }
 
+  // The position is interpolated locally from media_position and
+  // media_position_updated_at rather than waiting for the player's state
+  // updates, which arrive seconds apart and would make the bar tick.
   private _syncPositionTimer(): void {
     const entity = this._entity;
-    const playing = entity?.state === "playing" && entity.attributes.media_duration;
+    const playing = entity?.state === "playing";
     this._computeDisplayPosition();
-    if (playing && this._positionTimer === undefined) {
-      this._positionTimer = window.setInterval(() => {
-        this._computeDisplayPosition();
-      }, 1000);
-    } else if (!playing) {
-      this._stopPositionTimer();
+    this._syncProgressAnimation(!!playing && this._visible);
+  }
+
+  private _stopProgressAnimation(): void {
+    if (this._progressRafId !== undefined) {
+      cancelAnimationFrame(this._progressRafId);
+      this._progressRafId = undefined;
     }
   }
 
-  private _stopPositionTimer(): void {
-    if (this._positionTimer !== undefined) {
-      window.clearInterval(this._positionTimer);
-      this._positionTimer = undefined;
+  private _syncProgressAnimation(run: boolean): void {
+    const wantsFrames = run || this._progressAmplitude > 0.05;
+    if (!wantsFrames) {
+      this._stopProgressAnimation();
+      this._progressAmplitude = 0;
+      this._repaintProgress();
+      return;
+    }
+    if (this._progressRafId !== undefined) return;
+    const step = (ts: number) => {
+      this._progressRafId = requestAnimationFrame(step);
+      const entity = this._entity;
+      const playing = entity?.state === "playing" && this._visible;
+      // Amplitude eases toward its target, so pausing settles the wave flat
+      // instead of snapping it.
+      const target = playing && !this._reducedMotion ? MEDIA_PROGRESS_AMPLITUDE : 0;
+      this._progressAmplitude += (target - this._progressAmplitude) * MEDIA_PROGRESS_AMPLITUDE_LERP;
+      if (playing) this._progressPhase -= MEDIA_PROGRESS_PHASE_SPEED;
+      void ts;
+      this._computeDisplayPosition();
+      this._repaintProgress();
+      if (!playing && this._progressAmplitude < 0.05) {
+        this._progressAmplitude = 0;
+        this._repaintProgress();
+        this._stopProgressAnimation();
+      }
+    };
+    this._progressRafId = requestAnimationFrame(step);
+  }
+
+  // Repaints only the progress path, never the card.
+  private _repaintProgress(): void {
+    const path = this.renderRoot?.querySelector(".progress-active");
+    if (!path) return;
+    const geo = this._progressGeometry();
+    if (!geo) return;
+    path.setAttribute("d", geo.d);
+    const track = this.renderRoot?.querySelector(".progress-track");
+    if (track) {
+      track.setAttribute("x1", String(geo.trackStart));
+      track.setAttribute("x2", String(geo.trackEnd));
     }
   }
 
@@ -904,6 +1028,9 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         : "media_pause"
       : "media_play";
     const repeatOn = !!attrs.repeat && attrs.repeat !== "off";
+    // While scrubbing the clock must follow the handle, not the player.
+    const shownPosition =
+      this._seeking && this._seekPosition !== undefined ? this._seekPosition : this._displayPosition;
 
     // The volume wave flows only while sound is actually coming out.
     this._syncWaveAnimation(
@@ -938,17 +1065,19 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
           </div>
         </div>
 
-        ${duration
-          ? html`
-              <div class="progress">
-                ${this._renderProgress(duration, features)}
-                <div class="progress-times">
-                  <span>${this._formatTime(this._displayPosition)}</span>
-                  <span>${this._formatTime(duration)}</span>
-                </div>
-              </div>
-            `
-          : nothing}
+        <div class="progress">
+          ${this._renderProgress(duration ?? 0, features)}
+          <div class="progress-times">
+            <span>${this._formatTime(shownPosition)}</span>
+            ${duration
+              ? html`<span
+                  >${this._config?.time_display === "total"
+                    ? this._formatTime(duration)
+                    : `-${this._formatTime(Math.max(0, duration - shownPosition))}`}</span
+                >`
+              : html`<span class="live-chip">${this._t("media_live")}</span>`}
+          </div>
+        </div>
 
         <div class="transport-row">
           ${this._config?.show_shuffle_repeat && features & FEATURE.SHUFFLE_SET
@@ -957,7 +1086,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
                   class="pill-toggle ${attrs.shuffle ? "active" : ""}"
                   aria-label=${this._t("media_shuffle")}
                   aria-pressed=${attrs.shuffle ? "true" : "false"}
-                  @click=${() => this._callService("shuffle_set", { shuffle: !attrs.shuffle })}
+                  @click=${(e: Event) => { this._pressMorph(e); this._callService("shuffle_set", { shuffle: !attrs.shuffle }); }}
                 >
                   <ha-icon icon="mdi:shuffle-variant"></ha-icon>
                 </button>
@@ -968,7 +1097,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
                 <button
                   class="transport-btn"
                   aria-label=${this._t("media_previous")}
-                  @click=${() => this._callService("media_previous_track")}
+                  @click=${(e: Event) => { this._pressMorph(e); this._callService("media_previous_track"); }}
                 >
                   <ha-icon icon="mdi:skip-previous"></ha-icon>
                 </button>
@@ -979,7 +1108,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
                 <button
                   class="play-btn ${isPlaying ? "playing" : ""}"
                   aria-label=${this._t(playLabel)}
-                  @click=${() => this._callService(playAction)}
+                  @click=${(e: Event) => { this._pressMorph(e); this._callService(playAction); }}
                 >
                   <span class="icon-stack">
                     <span class="icon-layer ${isPlaying ? "" : "swapped"}">
@@ -997,7 +1126,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
                 <button
                   class="transport-btn"
                   aria-label=${this._t("media_next")}
-                  @click=${() => this._callService("media_next_track")}
+                  @click=${(e: Event) => { this._pressMorph(e); this._callService("media_next_track"); }}
                 >
                   <ha-icon icon="mdi:skip-next"></ha-icon>
                 </button>
@@ -1009,8 +1138,17 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
                   class="pill-toggle ${repeatOn ? "active" : ""}"
                   aria-label=${this._t("media_repeat")}
                   aria-pressed=${repeatOn ? "true" : "false"}
-                  @click=${() =>
-                    this._callService("repeat_set", { repeat: attrs.repeat === "off" ? "all" : "off" })}
+                  @click=${(e: Event) => {
+                    this._pressMorph(e);
+                    // off → all → one → off, matching HA's repeat modes.
+                    const next =
+                      attrs.repeat === "off" || !attrs.repeat
+                        ? "all"
+                        : attrs.repeat === "all"
+                          ? "one"
+                          : "off";
+                    this._callService("repeat_set", { repeat: next });
+                  }}
                 >
                   <ha-icon icon=${attrs.repeat === "one" ? "mdi:repeat-once" : "mdi:repeat"}></ha-icon>
                 </button>
@@ -1032,6 +1170,20 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
   // Device + source always; anything else only when the player actually
   // reports it. HA has no standard bitrate attribute — a few integrations add
   // media_bitrate, most do not, so that chip is usually absent by design.
+  // Every transport button briefly pulls its corners in on tap. Driven by a
+  // class rather than :active so the morph plays out for its full duration
+  // even on a quick tap, where :active would already be gone.
+  private _pressMorph = (e: Event): void => {
+    const el = (e.currentTarget as HTMLElement) ?? null;
+    if (!el || !shouldAnimate(this._config?.animation)) return;
+    el.classList.add("pressed");
+    if (this._pressTimer !== undefined) clearTimeout(this._pressTimer);
+    this._pressTimer = window.setTimeout(() => {
+      el.classList.remove("pressed");
+      this._pressTimer = undefined;
+    }, MEDIA_ICON_MORPH_MS);
+  };
+
   private _renderMetaChips(attrs: Record<string, unknown>, name: string, yearShown: boolean) {
     const source = (attrs.source as string | undefined) || (attrs.app_name as string | undefined);
     const extras = this._config?.meta_chips ?? [];
@@ -1216,40 +1368,77 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  // Shared by the render and the animation frame so both draw the same wave.
+  private _progressGeometry():
+    | { d: string; trackStart: number; trackEnd: number; tipX: number }
+    | undefined {
+    const width = this._progressWidth;
+    if (width <= 1) return undefined;
+    const midY = MEDIA_PROGRESS_HEIGHT / 2;
+    const trackEnd = width - MEDIA_PROGRESS_DOT_RADIUS;
+    const duration = this._duration;
+
+    // No duration: a short wave segment travels the bar instead of a position.
+    if (duration <= 0) {
+      const span = trackEnd * MEDIA_INDETERMINATE_FRACTION;
+      const t = (Date.now() % MEDIA_INDETERMINATE_CYCLE_MS) / MEDIA_INDETERMINATE_CYCLE_MS;
+      const from = t * (trackEnd + span) - span;
+      const a = Math.max(0, from);
+      const b = Math.min(trackEnd, from + span);
+      return {
+        d: b > a ? buildWavePath(a, b, this._progressAmplitude, MEDIA_PROGRESS_WAVELENGTH, this._progressPhase, midY) : "",
+        trackStart: 0,
+        trackEnd,
+        tipX: b,
+      };
+    }
+
+    const pos =
+      this._seeking && this._seekPosition !== undefined ? this._seekPosition : this._precisePosition;
+    const pct = Math.min(1, Math.max(0, pos / duration));
+    const tipX = pct * trackEnd;
+    const activeEnd = Math.max(0, tipX);
+    return {
+      d:
+        activeEnd > 1
+          ? buildWavePath(0, activeEnd, this._progressAmplitude, MEDIA_PROGRESS_WAVELENGTH, this._progressPhase, midY)
+          : "",
+      trackStart: Math.min(trackEnd, tipX + MEDIA_PROGRESS_GAP),
+      trackEnd,
+      tipX,
+    };
+  }
+
   private _renderProgress(duration: number, features: number) {
-    const seekable = (features & FEATURE.SEEK) !== 0;
+    const seekable = (features & FEATURE.SEEK) !== 0 && duration > 0;
     const width = this._progressWidth;
     const midY = MEDIA_PROGRESS_HEIGHT / 2;
-    const gap = MEDIA_PROGRESS_GAP;
-    const handleR = MEDIA_PROGRESS_HANDLE_RADIUS;
-    const pos =
-      this._seeking && this._seekPosition !== undefined
-        ? this._seekPosition
-        : this._displayPosition;
-    const pct = duration > 0 ? Math.min(1, Math.max(0, pos / duration)) : 0;
-    // Keep the handle fully inside the track at the ends.
-    const tipX = handleR + pct * Math.max(0, width - 2 * handleR);
-    const activeEnd = Math.max(0, tipX - gap);
-    const trackStart = Math.min(width, tipX + gap);
+    const geo = this._progressGeometry();
+    const trackEnd = width - MEDIA_PROGRESS_DOT_RADIUS;
+
     const svg_ = svg`<svg
       class="progress-svg"
       viewBox="0 0 ${width} ${MEDIA_PROGRESS_HEIGHT}"
       preserveAspectRatio="none"
     >
-      ${activeEnd > 1
-        ? svg`<line class="progress-active" x1="0" y1=${midY} x2=${activeEnd} y2=${midY}></line>`
+      <path class="progress-active" d=${geo?.d ?? ""} fill="none"></path>
+      <line
+        class="progress-track"
+        x1=${geo?.trackStart ?? 0}
+        y1=${midY}
+        x2=${geo?.trackEnd ?? trackEnd}
+        y2=${midY}
+      ></line>
+      <circle class="progress-dot" cx=${trackEnd} cy=${midY} r=${MEDIA_PROGRESS_DOT_RADIUS}></circle>
+      ${this._seeking
+        ? svg`<circle class="progress-handle" cx=${geo?.tipX ?? 0} cy=${midY} r=${MEDIA_PROGRESS_HANDLE_RADIUS}></circle>`
         : nothing}
-      ${trackStart < width - 1
-        ? svg`<line class="progress-track" x1=${trackStart} y1=${midY} x2=${width} y2=${midY}></line>`
-        : nothing}
-      ${seekable
-        ? svg`<circle class="progress-handle ${this._seeking ? "seeking" : ""}" cx=${tipX} cy=${midY} r=${handleR}></circle>`
-        : svg`<circle class="progress-dot" cx=${tipX} cy=${midY} r="3"></circle>`}
     </svg>`;
 
     if (!seekable) {
       return html`<div class="progress-slider static">${svg_}</div>`;
     }
+    const pos = this._seeking && this._seekPosition !== undefined ? this._seekPosition : this._displayPosition;
     return html`
       <div
         class="progress-slider"
@@ -1584,6 +1773,20 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         stroke: var(--mc-accent);
         stroke-width: ${MEDIA_PROGRESS_STROKE}px;
         stroke-linecap: round;
+        fill: none;
+      }
+
+      .progress-dot {
+        fill: var(--mc-accent);
+      }
+
+      .live-chip {
+        padding: 1px 7px;
+        border-radius: 7px;
+        background: var(--m3p-icon-bg);
+        color: var(--mc-accent);
+        font-weight: 700;
+        letter-spacing: 0.04em;
       }
 
       .progress-track {
@@ -1598,11 +1801,22 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
 
       .progress-handle {
         fill: var(--mc-accent);
-        transition: r 0.12s ease;
+        stroke: var(--card-background-color, #1c1c1c);
+        stroke-width: 2px;
       }
 
-      .progress-handle.seeking {
-        r: ${MEDIA_PROGRESS_HANDLE_RADIUS + 1};
+      /* Tap morph: corners pull in, then settle back. */
+      .transport-btn.pressed,
+      .play-btn.pressed,
+      .pill-toggle.pressed,
+      .mute-btn.pressed {
+        border-radius: ${MEDIA_PRESS_RADIUS}px;
+      }
+
+      .transport-btn,
+      .pill-toggle,
+      .mute-btn {
+        transition: border-radius ${MEDIA_ICON_MORPH_MS}ms ${EASING};
       }
 
       .progress-times {

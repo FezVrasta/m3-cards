@@ -44,6 +44,18 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       { name: "show_shuffle_repeat", selector: { boolean: {} } },
       { name: "strip_track_number", selector: { boolean: {} } },
       {
+        name: "time_display",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "remaining", label: localize("editor_media_time_remaining", this._language) },
+              { value: "total", label: localize("editor_media_time_total", this._language) },
+            ],
+          },
+        },
+      },
+      {
         name: "meta_chips",
         selector: {
           select: {
@@ -102,6 +114,7 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       show_source_select: "editor_media_show_source_select",
       show_shuffle_repeat: "editor_media_show_shuffle_repeat",
       strip_track_number: "editor_media_strip_track_number",
+      time_display: "editor_media_time_display",
       meta_chips: "editor_media_meta_chips",
       show_browser: "editor_media_show_browser",
       default_tab: "editor_media_default_tab",
@@ -203,6 +216,7 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       show_source_select: this._config.show_source_select ?? false,
       show_shuffle_repeat: this._config.show_shuffle_repeat ?? false,
       strip_track_number: this._config.strip_track_number ?? true,
+      time_display: this._config.time_display ?? "remaining",
       meta_chips: this._config.meta_chips ?? [],
       show_browser: this._config.show_browser ?? true,
       default_tab: this._config.default_tab ?? "library",
