@@ -618,6 +618,12 @@ export const MEDIA_VOLUME_THROTTLE_MS = 200;
 export const MEDIA_MUTE_BTN_HEIGHT = 40;
 export const MEDIA_ARTWORK_COLOR_CACHE_SIZE = 20;
 
+// Meta chips under the title. Deliberately shorter than the suite's standard
+// chip (RADIUS.chip / 15px) — these sit directly under two text lines and a
+// full-height chip would crowd them.
+export const MEDIA_CHIP_HEIGHT = 24;
+export const MEDIA_CHIP_RADIUS = 9;
+
 // Browser section (queue + library). The toggle row is the same shape as the
 // list rows elsewhere in the suite; the tab pills morph to a tighter radius
 // when active, like the todo card's chips.

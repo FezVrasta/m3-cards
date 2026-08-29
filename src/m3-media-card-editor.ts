@@ -42,6 +42,21 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       { name: "name", selector: { text: {} } },
       { name: "show_source_select", selector: { boolean: {} } },
       { name: "show_shuffle_repeat", selector: { boolean: {} } },
+      { name: "strip_track_number", selector: { boolean: {} } },
+      {
+        name: "meta_chips",
+        selector: {
+          select: {
+            multiple: true,
+            mode: "list",
+            options: [
+              { value: "track", label: localize("editor_media_chip_track", this._language) },
+              { value: "year", label: localize("editor_media_chip_year", this._language) },
+              { value: "bitrate", label: localize("editor_media_chip_bitrate", this._language) },
+            ],
+          },
+        },
+      },
       { name: "show_browser", selector: { boolean: {} } },
       {
         name: "default_tab",
@@ -86,6 +101,8 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       name: "editor_name",
       show_source_select: "editor_media_show_source_select",
       show_shuffle_repeat: "editor_media_show_shuffle_repeat",
+      strip_track_number: "editor_media_strip_track_number",
+      meta_chips: "editor_media_meta_chips",
       show_browser: "editor_media_show_browser",
       default_tab: "editor_media_default_tab",
       browse_height: "editor_media_browse_height",
@@ -185,6 +202,8 @@ export class M3MediaCardEditor extends LitElement implements LovelaceCardEditor 
       name: this._config.name,
       show_source_select: this._config.show_source_select ?? false,
       show_shuffle_repeat: this._config.show_shuffle_repeat ?? false,
+      strip_track_number: this._config.strip_track_number ?? true,
+      meta_chips: this._config.meta_chips ?? [],
       show_browser: this._config.show_browser ?? true,
       default_tab: this._config.default_tab ?? "library",
       browse_height: this._config.browse_height ?? DEFAULT_MEDIA_BROWSE_HEIGHT,

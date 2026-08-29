@@ -735,6 +735,10 @@ export interface M3MediaCardConfig {
   show_source_select?: boolean;
   show_shuffle_repeat?: boolean;
   show_browser?: boolean;
+  strip_track_number?: boolean;
+  // Optional extra chips beside device + source. Only render when the player
+  // actually reports the underlying attribute.
+  meta_chips?: ("track" | "bitrate" | "year")[];
   default_tab?: "queue" | "library";
   browse_height?: number;
   use_artwork_color?: boolean;

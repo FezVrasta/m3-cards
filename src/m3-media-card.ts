@@ -36,6 +36,8 @@ import {
   MEDIA_VOLUME_THROTTLE_MS,
   MEDIA_MUTE_BTN_HEIGHT,
   MEDIA_ARTWORK_COLOR_CACHE_SIZE,
+  MEDIA_CHIP_HEIGHT,
+  MEDIA_CHIP_RADIUS,
   MEDIA_ACCENT_MIN_CONTRAST,
   MEDIA_BROWSE_TOGGLE_HEIGHT,
   MEDIA_BROWSE_TOGGLE_RADIUS,
@@ -107,6 +109,28 @@ function decodeSegment(s: string): string {
   }
 }
 
+// Leading track numbers ("02 - ", "3. ", "07 – ") are a file-naming artifact,
+// not part of the title. Bounded to one or two digits on purpose: a title that
+// genuinely opens with a number ("365 Dreams - My Way", "1979") must survive.
+const TRACK_NUMBER_RE = /^\d{1,2}\s*[-–.)]\s*/;
+
+function stripTrackNumber(title: string): string {
+  const out = title.replace(TRACK_NUMBER_RE, "").trim();
+  return out || title;
+}
+
+// A path-derived title often repeats the folder it came from
+// ("2 Chainz/…/2 Chainz - Birthday Song.mp3"). Real metadata never does this,
+// so the trim is applied only to the content-id fallback.
+function dropLeadingArtist(title: string, artist?: string): string {
+  if (!artist) return title;
+  const lead = artist.toLowerCase() + " - ";
+  if (title.toLowerCase().startsWith(lead)) {
+    return title.slice(lead.length).trim() || title;
+  }
+  return title;
+}
+
 interface MediaInfo {
   title?: string;
   artist?: string;
@@ -133,7 +157,7 @@ function mediaInfoFromContentId(contentId?: string): MediaInfo {
     name && !GENERIC_FOLDERS.has(name.toLowerCase()) ? name : undefined;
   const album = folder(parts.pop());
   const artist = folder(parts.pop());
-  return { title: title || undefined, artist, album };
+  return { title: dropLeadingArtist(title, artist) || undefined, artist, album };
 }
 
 interface BrowseItem {
@@ -837,12 +861,23 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
   private _renderPlayback(entity: { state: string }, attrs: Record<string, unknown>, name: string) {
     const features = (attrs.supported_features as number) ?? 0;
     const parsed = mediaInfoFromContentId(attrs.media_content_id as string | undefined);
-    const title = (attrs.media_title as string) || parsed.title || name;
-    const artist = (attrs.media_artist as string | undefined) || parsed.artist;
+    const rawTitle = (attrs.media_title as string) || parsed.title || name;
+    const title = this._config?.strip_track_number === false ? rawTitle : stripTrackNumber(rawTitle);
+    // Radio streams carry no artist; media_channel holds the station instead.
+    const channel = attrs.media_channel as string | undefined;
+    const artist = (attrs.media_artist as string | undefined) || parsed.artist || channel;
     const album = (attrs.media_album_name as string | undefined) || parsed.album;
-    // Prefer a real source label; fall back to the album so there's always a
-    // third line of context when it's available.
-    const subline = (attrs.source as string | undefined) || album;
+    const year = attrs.media_year as number | string | undefined;
+    // Third line: album, with the year appended when the integration has one.
+    // For radio, where there is no album, the station name takes the slot —
+    // but only if it is not already standing in as the artist line.
+    const albumLine = album
+      ? year
+        ? `${album} · ${year}`
+        : album
+      : artist === channel
+        ? undefined
+        : channel;
     const picture = attrs.entity_picture as string | undefined;
     const duration = attrs.media_duration as number | undefined;
     const isPlaying = entity.state === "playing";
@@ -878,21 +913,28 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
     return html`
       <div class="playback">
         <div class="playback-top">
-          <div class="artwork" style=${picture ? `background-image: url(${picture});` : ""}>
-            ${!picture ? html`<ha-icon icon="mdi:music-note"></ha-icon>` : nothing}
+          <div
+            class="artwork ${picture ? "" : "fallback"}"
+            style=${picture ? `background-image: url(${picture});` : ""}
+          >
+            ${!picture
+              ? html`<ha-icon icon=${album ? "mdi:album" : "mdi:music-note"}></ha-icon>`
+              : nothing}
           </div>
           <div class="meta">
             <div class="meta-title">${title}</div>
             ${artist
               ? html`<div class="meta-artist">
-                  <ha-icon icon="mdi:account-music"></ha-icon><span>${artist}</span>
+                  <ha-icon icon=${artist === channel ? "mdi:radio-tower" : "mdi:account-music"}></ha-icon
+                  ><span>${artist}</span>
                 </div>`
               : nothing}
-            ${subline
+            ${albumLine
               ? html`<div class="meta-source">
-                  <ha-icon icon="mdi:album"></ha-icon><span>${subline}</span>
+                  <ha-icon icon="mdi:album"></ha-icon><span>${albumLine}</span>
                 </div>`
               : nothing}
+            ${this._renderMetaChips(attrs, name, !!album && !!year)}
           </div>
         </div>
 
@@ -983,6 +1025,55 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
           : nothing}
 
         ${this._renderBrowser(features)}
+      </div>
+    `;
+  }
+
+  // Device + source always; anything else only when the player actually
+  // reports it. HA has no standard bitrate attribute — a few integrations add
+  // media_bitrate, most do not, so that chip is usually absent by design.
+  private _renderMetaChips(attrs: Record<string, unknown>, name: string, yearShown: boolean) {
+    const source = (attrs.source as string | undefined) || (attrs.app_name as string | undefined);
+    const extras = this._config?.meta_chips ?? [];
+    const chips: { text: string; icon: string; accent?: boolean }[] = [];
+
+    chips.push({ text: name, icon: "mdi:speaker", accent: true });
+    if (source) chips.push({ text: source, icon: "mdi:music-box-outline" });
+
+    if (extras.includes("track")) {
+      const track = attrs.media_track as number | undefined;
+      const total = attrs.media_playlist as string | number | undefined;
+      if (typeof track === "number") {
+        chips.push({
+          text:
+            typeof total === "number"
+              ? this._tv("media_track_of", { n: track, total })
+              : this._tv("media_track_no", { n: track }),
+          icon: "mdi:pound",
+        });
+      }
+    }
+    // Skipped when the album line already carries it — the year appended to
+    // "Violator · 1990" and a "1990" chip beside it is the same fact twice.
+    if (extras.includes("year") && !yearShown) {
+      const year = attrs.media_year as string | number | undefined;
+      if (year) chips.push({ text: String(year), icon: "mdi:calendar" });
+    }
+    if (extras.includes("bitrate")) {
+      const br = attrs.media_bitrate as string | number | undefined;
+      if (br) chips.push({ text: `${br} kbit/s`, icon: "mdi:sine-wave" });
+    }
+
+    if (chips.length === 0) return nothing;
+    return html`
+      <div class="meta-chips">
+        ${chips.map(
+          (c) => html`
+            <span class="meta-chip ${c.accent ? "accent" : ""}">
+              <ha-icon icon=${c.icon}></ha-icon><span>${c.text}</span>
+            </span>
+          `,
+        )}
       </div>
     `;
   }
@@ -1339,6 +1430,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         border-radius: ${MEDIA_ARTWORK_RADIUS}px;
         background-color: var(--m3p-artwork-bg);
         background-size: cover;
+        overflow: hidden;
         background-position: center;
         display: flex;
         align-items: center;
@@ -1350,6 +1442,21 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         --mdc-icon-size: 30px;
       }
 
+      /* No cover: a soft accent gradient rather than a flat tint, so the
+         placeholder reads as deliberate instead of unloaded. */
+      .artwork.fallback {
+        background-image: linear-gradient(
+          145deg,
+          color-mix(in srgb, var(--mc-accent) 34%, transparent),
+          color-mix(in srgb, var(--mc-accent) 12%, transparent)
+        );
+      }
+
+      .artwork.fallback ha-icon {
+        --mdc-icon-size: 34px;
+        opacity: 0.9;
+      }
+
       .meta {
         flex: 1;
         min-width: 0;
@@ -1359,8 +1466,9 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       }
 
       .meta-title {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
+        line-height: 1.25;
         color: var(--m3p-text);
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -1392,13 +1500,53 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       }
 
       .meta-artist {
-        font-size: 12px;
-        opacity: 0.7;
+        font-size: 13px;
+        opacity: 0.75;
       }
 
       .meta-source {
         font-size: 11px;
-        opacity: 0.5;
+        opacity: 0.45;
+      }
+
+      .meta-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 5px;
+        /* The chip row must never widen the card past the meta column. */
+        min-width: 0;
+      }
+
+      .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: ${MEDIA_CHIP_HEIGHT}px;
+        max-width: 100%;
+        padding: 0 8px;
+        border-radius: ${MEDIA_CHIP_RADIUS}px;
+        background: var(--m3p-transport-btn-bg);
+        color: var(--m3p-secondary-text);
+        font-size: 11px;
+        font-weight: 600;
+        min-width: 0;
+      }
+
+      .meta-chip.accent {
+        background: var(--m3p-icon-bg);
+        color: var(--mc-accent);
+      }
+
+      .meta-chip ha-icon {
+        flex-shrink: 0;
+        --mdc-icon-size: 13px;
+      }
+
+      .meta-chip span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .progress {
