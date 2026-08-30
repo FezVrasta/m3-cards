@@ -45,6 +45,11 @@ import {
   ROOM_TILE_RADIUS,
   ROOM_TILE_RADIUS_ACTIVE,
   ROOM_TILE_TINT_ACTIVE,
+  ROOM_ARROW,
+  ROOM_ARROW_RADIUS,
+  ROOM_ARROW_RADIUS_FOLDED,
+  ROOM_ARROW_TINT,
+  ROOM_FOLD_MS,
   ROOM_TILE_TINT_IDLE,
   resolveCornerRadius,
   type RoomCategoryDef,
@@ -66,6 +71,7 @@ import { glassCardClass, glassCardStyles } from "./shared/glass-card";
 import { formatNumber } from "./shared/formatting";
 import { areaEntityIds, areaInfo } from "./shared/ha-registry";
 import { guessRoomIcon } from "./shared/room-icons";
+import { readCollapsed, writeCollapsed, type CollapseTarget } from "./shared/collapse-state";
 import { hassChangeMatters } from "./shared/should-update";
 
 const EASING = unsafeCSS(STANDARD_EASING);
@@ -113,6 +119,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   @state() private _config?: M3RoomCardConfig;
   /** Domain of the category whose device picker is open, if any. */
   @state() private _sheet?: string;
+  @state() private _folded = false;
   /** True while the picker plays its exit; the sheet is still in the DOM. */
   @state() private _sheetClosing = false;
 
@@ -135,7 +142,25 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   public setConfig(config: M3RoomCardConfig): void {
     if (!config.area) throw new Error("m3-room-card: 'area' is required");
     this._config = { glass_background: true, animation: "auto", show_sensors: true, ...config };
+    this._folded = this._config.collapsible ? readCollapsed(this.hass, this._foldTarget) : false;
   }
+
+  private get _foldTarget(): CollapseTarget {
+    return {
+      entity: this._config?.collapse_state_entity,
+      // The area is what identifies the card; two cards for the same room on
+      // one view would share a fold, which is the behaviour a person expects.
+      storageKey: `m3-room-folded:${location.pathname}:${this._config?.area ?? ""}`,
+      defaultCollapsed: this._config?.default_collapsed,
+    };
+  }
+
+  private _toggleFold = (e: Event): void => {
+    e.stopPropagation();
+    const next = !this._folded;
+    this._folded = next;
+    writeCollapsed(this.hass, this._foldTarget, next);
+  };
 
   public getCardSize(): number {
     return 3;
@@ -166,6 +191,14 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     window.clearTimeout(this._holdTimer);
     window.clearTimeout(this._sheetCloseTimer);
+  }
+
+  protected updated(): void {
+    if (!this._config?.collapsible) return;
+    // An entity-backed fold can be changed from another dashboard or by an
+    // automation, so it is re-read rather than only written on a tap.
+    const wanted = readCollapsed(this.hass, this._foldTarget);
+    if (wanted !== this._folded) this._folded = wanted;
   }
 
   private get _language(): string {
@@ -207,6 +240,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         cfg.humidity_entity,
         cfg.power_entity,
         cfg.presence_entity,
+        cfg.collapse_state_entity,
         ...(cfg.extra_sensors ?? []),
         ...(cfg.window_entities ?? []),
       );
@@ -295,8 +329,10 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     // information at all. The icon still says what kind of thing it is.
     if (entities.length === 1) {
       const own = this.hass?.states[entities[0]]?.attributes?.friendly_name as string | undefined;
-      const short = own ? this._withoutAreaName(own) : "";
-      if (short) return short;
+      if (own) {
+        const short = this._config?.strip_area_name ? this._withoutAreaName(own) : own;
+        if (short) return short;
+      }
     }
     // A dehumidifier is its own word, and calling it a humidifier would be the
     // card telling the user their device does the opposite of what it does.
@@ -309,7 +345,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   }
 
   /**
-   * Drops the room's name from a device name, wherever it sits.
+   * Drops the room's name from a device name, wherever it sits. Opt-in.
+   *
+   * Off by default on purpose: it only helps if the device happens to be named
+   * after its room, which is one convention among several. Guessing right for
+   * one person means guessing wrong for the next, and `categories[].name` sets
+   * the tile's label outright for anyone whose names do not fit the pattern.
    *
    * People name devices after the room they are in, and Home Assistant then
    * builds the entity name from the device, so a bedroom card repeats
@@ -818,6 +859,19 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _renderFoldArrow(accent: string): TemplateResult {
+    const background = tintOn(this, accent, undefined, ROOM_ARROW_TINT);
+    return html`
+      <div
+        class="fold ${this._folded ? "folded" : ""}"
+        style=${`background: ${background}; color: ${foregroundOn(accent, background, 3, this)};`}
+        aria-hidden="true"
+      >
+        <ha-icon icon="mdi:chevron-down"></ha-icon>
+      </div>
+    `;
+  }
+
   private _renderTile(category: Category): TemplateResult {
     const dead = category.live.length === 0;
     const background = category.active
@@ -932,7 +986,14 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           } ${tinted ? "occupied" : ""}"
           style=${`border-radius: ${radius};${painted ? ` background: ${painted};` : ""}`}
         >
-          <div class="header">
+          <div
+            class="header ${cfg.collapsible ? "tappable" : ""}"
+            role=${cfg.collapsible ? "button" : nothing}
+            tabindex=${cfg.collapsible ? "0" : nothing}
+            aria-expanded=${cfg.collapsible ? String(!this._folded) : nothing}
+            @click=${cfg.collapsible ? this._toggleFold : nothing}
+            @keydown=${cfg.collapsible ? activateOnKey(this._toggleFold) : nothing}
+          >
             <div
               class="room-icon"
               style=${`background: ${headerBackground}; color: ${foregroundOn(occupied && showPresence ? presenceColor : accent, headerBackground, 3, this)};`}
@@ -944,11 +1005,16 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
               <div class="name" title=${name}>${name}</div>
               <div class="subtitle">${subtitle}</div>
             </div>
+            ${cfg.collapsible ? this._renderFoldArrow(accent) : nothing}
           </div>
-          ${this._renderChips(chips)}
-          ${categories.length
-            ? html`<div class="grid">${categories.map((c) => this._renderTile(c))}</div>`
-            : html`<div class="empty">${this._t("room_empty")}</div>`}
+          <div class="body ${cfg.collapsible && this._folded ? "folded" : ""}">
+            <div class="body-inner">
+              ${this._renderChips(chips)}
+              ${categories.length
+                ? html`<div class="grid">${categories.map((c) => this._renderTile(c))}</div>`
+                : html`<div class="empty">${this._t("room_empty")}</div>`}
+            </div>
+          </div>
           ${this._sheet ? this._renderSheet(categories) : nothing}
         </div>
       </ha-card>
@@ -1126,6 +1192,76 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         color: var(--m3p-secondary-text, var(--secondary-text-color));
       }
 
+
+
+      /* ---- folding ---- */
+
+      .header.tappable {
+        cursor: pointer;
+      }
+
+      .header:focus-visible {
+        outline: 2px solid var(--m3p-text, var(--primary-text-color));
+        outline-offset: 2px;
+        border-radius: 8px;
+      }
+
+      .fold {
+        flex-shrink: 0;
+        width: ${ROOM_ARROW}px;
+        height: ${ROOM_ARROW}px;
+        border-radius: ${ROOM_ARROW_RADIUS}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --mdc-icon-size: 18px;
+        transition: border-radius ${unsafeCSS(ROOM_FOLD_MS)}ms ${EASING};
+      }
+
+      .fold ha-icon {
+        transition: transform ${unsafeCSS(ROOM_FOLD_MS)}ms ${EASING};
+      }
+
+      .fold.folded {
+        border-radius: ${ROOM_ARROW_RADIUS_FOLDED}px;
+      }
+
+      .fold.folded ha-icon {
+        transform: rotate(-90deg);
+      }
+
+      /* 1fr -> 0fr is the one way to animate to a height nobody knows in
+         advance. A max-height guess either clips a room with many tiles or
+         leaves the transition idling through empty space on a room with two. */
+      .body {
+        display: grid;
+        grid-template-rows: 1fr;
+        transition: grid-template-rows ${unsafeCSS(ROOM_FOLD_MS)}ms ${EASING};
+      }
+
+      .body.folded {
+        grid-template-rows: 0fr;
+      }
+
+      .body-inner {
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* The card's own gap would otherwise leave a dead strip under the header
+         once the body has nothing left to show. */
+      .card-inner:has(.body.folded) {
+        gap: 0;
+      }
+
+      .no-animations .body,
+      .no-animations .fold,
+      .no-animations .fold ha-icon {
+        transition: none;
+      }
 
       /* ---- device picker ---- */
 

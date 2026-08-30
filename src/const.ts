@@ -1387,3 +1387,10 @@ export const ROOM_SHEET_ICON_RADIUS = 12;
 export const ROOM_SHEET_MS = 240;
 /** Above this many devices the list scrolls rather than growing the sheet. */
 export const ROOM_SHEET_MAX_HEIGHT = 60;
+
+/** Folding a room card down to its header. */
+export const ROOM_FOLD_MS = HEADING_COLLAPSE_MS;
+export const ROOM_ARROW = HEADING_ARROW;
+export const ROOM_ARROW_RADIUS = HEADING_ARROW_RADIUS;
+export const ROOM_ARROW_RADIUS_FOLDED = HEADING_ARROW_RADIUS_COLLAPSED;
+export const ROOM_ARROW_TINT = HEADING_ARROW_TINT;

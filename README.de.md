@@ -166,6 +166,24 @@ mode_colors:
   cool: "#6ba7dc"
 ```
 
+### Räume einklappen
+
+`collapsible: true` setzt einen Pfeil in die Kopfzeile und klappt die Karte
+beim Antippen auf ebendiese zusammen. Der Untertitel bleibt stehen — „belegt ·
+3 Geräte aktiv" ist genau das, was ein eingeklappter Raum noch sagen muss, und
+ein Einklappen, das ihn versteckt, macht aus der Karte ein Etikett.
+
+Der Zustand bleibt je Browser erhalten, oder geräteübergreifend in einem
+`input_boolean` über `collapse_state_entity` — womit auch eine Automatisierung
+das Gästezimmer einklappen kann, solange niemand darin ist.
+
+```yaml
+type: custom:m3-room-card
+area: gaestezimmer
+collapsible: true
+default_collapsed: true
+```
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -2755,6 +2773,10 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `window_entities` | Liste | – | Überschreibt die Erkennung |
 | `presence_entity` | string | erkannt | |
 | `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
+| `collapsible` | boolean | `false` | Klappt die Karte auf ihre Kopfzeile zusammen |
+| `default_collapsed` | boolean | `false` | |
+| `collapse_state_entity` | string | – | `input_boolean` mit dem eingeklappten Zustand |
+| `strip_area_name` | boolean | `false` | Entfernt den Raumnamen aus dem Namen eines einzelnen Geräts. Aus, weil es eine Konvention voraussetzt |
 
 
 ## Lizenz

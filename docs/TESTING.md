@@ -527,6 +527,14 @@ gefunden.
       Raumname ist herausgestrichen, auch wenn er hinten oder in der Mitte steht
 - [ ] Gerät, das genau wie der Raum heißt: die Kachel fällt auf den
       Kategorienamen zurück statt den Raumnamen zu wiederholen
+- [ ] `strip_area_name` ist **aus** per Default — der Gerätename steht so da,
+      wie er in HA heißt; die Beschriftung je Kachel überschreibt ihn immer
+- [ ] `collapsible`: Pfeil in der Kopfzeile, Antippen der ganzen Kopfzeile
+      klappt zusammen; der Untertitel bleibt sichtbar
+- [ ] Eingeklappt bleibt kein toter Streifen unter der Kopfzeile stehen
+- [ ] Zustand übersteht einen Reload; mit `collapse_state_entity` auch auf
+      einem zweiten Gerät, und eine Automatisierung kann ihn setzen
+- [ ] `animation: off`: klappt ohne Übergang, aber vollständig
 - [ ] Editor: die Kategorieliste zeigt genau die im Bereich erkannten Domains
       mit ihrer Anzahl; Auf/Ab schreibt `category_order`
 - [ ] Editor: eine Kategorie-Überschreibung, die nur noch `domain` enthält,

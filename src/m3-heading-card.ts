@@ -46,6 +46,7 @@ import {
   resolveThemeColor,
   tintOn,
 } from "./shared/color-config";
+import { readCollapsed, writeCollapsed, type CollapseTarget } from "./shared/collapse-state";
 import { hassChangeMatters } from "./shared/should-update";
 
 const EASING = unsafeCSS(STANDARD_EASING);
@@ -178,41 +179,22 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
     return `${STORAGE_PREFIX}:${location.pathname}:${this._config?.title ?? ""}`;
   }
 
+  private get _collapseTarget(): CollapseTarget {
+    return {
+      entity: this._config?.collapse_state_entity,
+      storageKey: this._storageKey,
+      defaultCollapsed: this._config?.default_collapsed,
+    };
+  }
+
   private _readCollapsed(): boolean {
-    const cfg = this._config;
-    if (!cfg) return false;
-    if (cfg.collapse_state_entity) {
-      const state = this.hass?.states[cfg.collapse_state_entity]?.state;
-      // An unavailable helper falls back to the configured default rather than
-      // silently reading as "expanded".
-      if (state === "on") return true;
-      if (state === "off") return false;
-      return cfg.default_collapsed ?? false;
-    }
-    try {
-      const stored = window.localStorage.getItem(this._storageKey);
-      if (stored !== null) return stored === "1";
-    } catch {
-      // Private mode, or storage disabled. The default is still correct.
-    }
-    return cfg.default_collapsed ?? false;
+    if (!this._config) return false;
+    return readCollapsed(this.hass, this._collapseTarget);
   }
 
   private _writeCollapsed(value: boolean): void {
-    const cfg = this._config;
-    if (!cfg) return;
-    if (cfg.collapse_state_entity) {
-      this.hass?.callService("input_boolean", value ? "turn_on" : "turn_off", {
-        entity_id: cfg.collapse_state_entity,
-      });
-      return;
-    }
-    try {
-      window.localStorage.setItem(this._storageKey, value ? "1" : "0");
-    } catch {
-      // Not being able to remember is survivable; not being able to collapse
-      // would not be.
-    }
+    if (!this._config) return;
+    writeCollapsed(this.hass, this._collapseTarget, value);
   }
 
   // ---- collapsing the siblings ---------------------------------------------

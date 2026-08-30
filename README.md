@@ -169,6 +169,24 @@ mode_colors:
   cool: "#6ba7dc"
 ```
 
+### Folding a room away
+
+`collapsible: true` puts a chevron in the header and folds the card down to
+that header when it is tapped. The subtitle stays — "occupied · 3 devices on"
+is exactly what a folded room still needs to say, and a fold that hid it would
+turn the card into a label.
+
+The state persists per browser, or across devices in an `input_boolean` via
+`collapse_state_entity` — which also lets an automation fold the guest room
+away while nobody is in it.
+
+```yaml
+type: custom:m3-room-card
+area: guest_room
+collapsible: true
+default_collapsed: true
+```
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -2694,6 +2712,10 @@ person would rather decide.
 | `window_entities` | list | – | Overrides the discovery |
 | `presence_entity` | string | discovered | |
 | `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
+| `collapsible` | boolean | `false` | Fold the card down to its header |
+| `default_collapsed` | boolean | `false` | |
+| `collapse_state_entity` | string | – | An `input_boolean` holding the folded state |
+| `strip_area_name` | boolean | `false` | Remove the room's name from a single device's name. Off because it assumes a convention |
 
 
 ## License

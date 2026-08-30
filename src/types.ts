@@ -1535,6 +1535,13 @@ export interface M3RoomCardConfig {
   category_order?: string[];
   hidden_categories?: string[];
   categories?: RoomCategoryConfig[];
+  /**
+   * Strip the room's name out of a single device's name on its tile. Off by
+   * default: it assumes a naming convention, and a card should not guess at
+   * how someone names their devices. `categories[].name` is the answer that
+   * always works.
+   */
+  strip_area_name?: boolean;
   /** Individual entities to leave out, whatever category they fall into. */
   excluded_entities?: string[];
   /** What a tap on a category holding several devices does. */
@@ -1550,6 +1557,11 @@ export interface M3RoomCardConfig {
   show_windows?: boolean;
   /** Leave unset to discover them from the area. */
   window_entities?: string[];
+  /** Fold the card down to its header, like the heading card's variant. */
+  collapsible?: boolean;
+  default_collapsed?: boolean;
+  /** An `input_boolean` holding the folded state, instead of localStorage. */
+  collapse_state_entity?: string;
   /** Leave unset to discover it from the area. */
   presence_entity?: string;
   presence_style?: "tint" | "dot_only" | "none";

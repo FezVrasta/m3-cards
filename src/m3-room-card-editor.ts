@@ -87,7 +87,16 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       .map((domain) => ({ domain, count: counts.get(domain)! }));
   }
 
+  /**
+   * The label the tile will actually carry, so the list shows what the card
+   * shows and the Name field visibly overrides *that*.
+   */
   private _categoryName(domain: string): string {
+    const entities = this._entitiesOf(domain).filter((id) => !this._isExcluded(id));
+    if (entities.length === 1) {
+      const own = this.hass?.states[entities[0]]?.attributes?.friendly_name as string | undefined;
+      if (own) return own;
+    }
     const key = `room_cat_${domain}` as TranslationKey;
     const label = localize(key, this._language);
     return label === key ? domain : label;
@@ -228,6 +237,20 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     ];
   }
 
+  private _foldSchema(): SchemaEntry[] {
+    const schema: SchemaEntry[] = [{ name: "collapsible", selector: { boolean: {} } }];
+    if (this._config?.collapsible) {
+      schema.push(
+        { name: "default_collapsed", selector: { boolean: {} } },
+        {
+          name: "collapse_state_entity",
+          selector: { entity: { domain: "input_boolean" } },
+        },
+      );
+    }
+    return schema;
+  }
+
   private _presenceSchema(): SchemaEntry[] {
     return [
       { name: "presence_entity", selector: { entity: { domain: "binary_sensor" } } },
@@ -277,6 +300,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       "humidity_entity",
       "power_entity",
       "presence_entity",
+      "collapse_state_entity",
     ]) {
       if (next[key] === "") delete next[key];
     }
@@ -345,8 +369,13 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       power_threshold: "editor_room_power_threshold",
       category_tap: "editor_room_category_tap",
       badge: "editor_room_badge",
+      tile_name: "editor_room_tile_name",
+      strip_area_name: "editor_room_strip_area",
       presence_entity: "editor_room_presence_entity",
       presence_style: "editor_room_presence_style",
+      collapsible: "editor_room_collapsible",
+      default_collapsed: "editor_room_default_collapsed",
+      collapse_state_entity: "editor_room_collapse_entity",
       animation: "editor_progress_animation",
     };
     const key = labelMap[schema.name];
@@ -415,13 +444,13 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                   <ha-form
                     .hass=${this.hass}
                     .data=${{
-                      name: this._override(domain)?.name ?? "",
+                      tile_name: this._override(domain)?.name ?? "",
                       icon: this._override(domain)?.icon ?? "",
                       badge: this._override(domain)?.badge ?? "auto",
                       tap_action: this._override(domain)?.tap_action,
                     }}
                     .schema=${[
-                      { name: "name", selector: { text: {} } },
+                      { name: "tile_name", selector: { text: {} } },
                       { name: "icon", selector: { icon: {} } },
                       {
                         name: "badge",
@@ -440,8 +469,13 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                       { name: "tap_action", selector: { ui_action: {} } },
                     ]}
                     .computeLabel=${this._computeLabel}
-                    @value-changed=${(ev: CustomEvent) =>
-                      this._patchCategory(domain, ev.detail.value as Partial<RoomCategoryConfig>)}
+                    @value-changed=${(ev: CustomEvent) => {
+                      const { tile_name, ...rest } = ev.detail.value as Record<string, unknown>;
+                      this._patchCategory(domain, {
+                        ...rest,
+                        name: tile_name as string,
+                      } as Partial<RoomCategoryConfig>);
+                    }}
                   ></ha-form>
                   ${colorRow(this._t("editor_mode_color"), this._override(domain)?.color, (v) =>
                     this._patchCategory(domain, { color: v }),
@@ -464,11 +498,18 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
             )}
             <ha-form
               .hass=${this.hass}
-              .data=${{ category_tap: cfg.category_tap ?? "list" }}
-              .schema=${this._tapSchema()}
+              .data=${{
+                category_tap: cfg.category_tap ?? "list",
+                strip_area_name: cfg.strip_area_name ?? false,
+              }}
+              .schema=${[
+                ...this._tapSchema(),
+                { name: "strip_area_name", selector: { boolean: {} } },
+              ]}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_room_strip_area_hint")}</div>
             <div class="hint">${this._t("editor_room_entities_hint")}</div>
             ${listRow(this._t("editor_room_extra_domains"), cfg.extra_domains ?? [], (values) => {
               const next = { ...cfg };
@@ -508,6 +549,24 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               else delete next.window_entities;
               this._emit(next);
             })}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_room_fold_section")}>
+          <ha-icon slot="leading-icon" icon="mdi:arrow-collapse-vertical"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${{
+                collapsible: cfg.collapsible ?? false,
+                default_collapsed: cfg.default_collapsed ?? false,
+                collapse_state_entity: cfg.collapse_state_entity ?? "",
+              }}
+              .schema=${this._foldSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_room_collapsible_hint")}</div>
           </div>
         </ha-expansion-panel>
 

@@ -8,6 +8,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Room Card — folding.** `collapsible: true` puts a chevron in the header
+  and folds the card down to it. The subtitle stays, because "occupied · 3
+  devices on" is exactly what a folded room still needs to say. The state
+  persists per browser, or across devices in an `input_boolean`.
+- **`src/shared/collapse-state.ts`** — the fold-state rule, shared by the
+  heading and room cards so the two cannot drift.
+
 - **M3 Room Card** (`m3-room-card`) — one card per area. Point it at a Home
   Assistant area and it works out the rest: which kinds of device are in the
   room, what each of them is doing, the climate readings, and whether anyone is
@@ -99,6 +106,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Room Card — Einklappen.** `collapsible: true` setzt einen Pfeil in die
+  Kopfzeile und klappt die Karte auf ebendiese zusammen. Der Untertitel bleibt
+  stehen, denn „belegt · 3 Geräte aktiv" ist genau das, was ein eingeklappter
+  Raum noch sagen muss. Der Zustand bleibt je Browser erhalten oder
+  geräteübergreifend in einem `input_boolean`.
+- **`src/shared/collapse-state.ts`** — die Regel für den eingeklappten Zustand,
+  gemeinsam genutzt von Heading- und Room-Karte, damit beide nicht auseinanderlaufen.
 
 - **M3 Room Card** (`m3-room-card`) — eine Karte je Bereich. Man gibt ihr einen
   Bereich aus Home Assistant, den Rest findet sie selbst: welche Gerätearten im
