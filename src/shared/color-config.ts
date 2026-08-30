@@ -221,14 +221,22 @@ export function tintOn(
   const cached = tintCache.get(key);
   if (cached !== undefined) return cached;
 
-  // A dark surface is what the palette was built for, so there is nothing to
-  // correct and the reference below would only nudge it by a hundredth. Leave
-  // dark themes byte-identical rather than almost-identical.
+  const share = percent / 100;
+
+  // A dark surface is what the palette was built for, so the plain mix needs no
+  // correction there. It is still computed and returned as a hex rather than
+  // handed back as a CSS color-mix string: `color-mix(in srgb, X p%, surface)`
+  // is exactly this arithmetic, so the pixels are identical, but a hex can be
+  // *parsed*. Returning the string made tintInk a silent no-op in every dark
+  // theme — it feeds tintOn's output back in as the surface to measure against,
+  // and an unparseable surface means the ink comes back unchanged. On the clock
+  // card that put an accent-coloured digit on an accent-coloured shape.
   if (relativeLuminance(surface) <= 0.5) {
-    return tintBackground(colorCss, opacityPercent, defaultPercent);
+    const out = toHex(mixColors(color, surface, share));
+    tintCache.set(key, out);
+    return out;
   }
 
-  const share = percent / 100;
   const mixed = mixColors(color, surface, share);
   const wanted = contrastRatio(mixColors(color, DARK_REFERENCE, share), DARK_REFERENCE);
 
@@ -325,4 +333,25 @@ export function tintInk(
     target,
     host,
   );
+}
+
+/**
+ * Ink for content laid on a *solid* colour fill: whichever of the house dark
+ * ink and white reads better on it.
+ *
+ * Distinct from `foregroundOn`, which nudges a colour until it clears a target.
+ * That is the wrong move on a fill the user chose — it would shift their accent
+ * — and it cannot always succeed: the palette's own `#85b7eb` sits at luminance
+ * 0.45, so a search that lightens toward white tops out at 2.11:1 and gives up.
+ * Choosing between two inks always succeeds and matches what the cards already
+ * do by hand: dark ink on a light accent.
+ */
+const HOUSE_INK = "#1c1c1c";
+
+export function inkOn(fillCss: string, host?: HTMLElement): string {
+  const fill = parseColor(resolveVarCss(host, fillCss));
+  if (!fill) return HOUSE_INK;
+  const dark = contrastRatio(parseColor(HOUSE_INK)!, fill);
+  const light = contrastRatio([255, 255, 255], fill);
+  return dark >= light ? HOUSE_INK : "#ffffff";
 }

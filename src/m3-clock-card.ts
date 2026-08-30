@@ -77,6 +77,7 @@ import { STANDARD_EASING, isReducedMotion, shouldAnimate } from "./shared/animat
 import {
   buildCssVars,
   foregroundColor,
+  inkOn,
   resolveCommonColors,
   resolveThemeColor,
   tintInk,
@@ -571,11 +572,12 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     const hourShape = cfg.shape_hours ?? "cookie";
     const minuteShape = cfg.shape_minutes ?? "clover";
     const minuteTint = tintOn(this, secondary, undefined, CLOCK_SHAPES_MINUTE_TINT);
-    // The hour pair is filled solid, so its digit is measured against that
-    // fill; the minute pair is a tint, so its digit is measured against the
-    // tint. Measuring either against the card would be the mistake that made
-    // chips unreadable in a light theme.
-    const hourInk = tintInk(this, accent, undefined, 100, 4.5);
+    // The hour pair is a solid fill in the user's accent, so the digit picks
+    // the ink that reads on it rather than shifting the accent itself. The
+    // minute pair is a tint, so its digit is measured against the tint.
+    // Measuring either against the card would be the mistake that made chips
+    // unreadable in a light theme.
+    const hourInk = inkOn(accent, this);
     const minuteInk = tintInk(this, secondary, undefined, CLOCK_SHAPES_MINUTE_TINT, 4.5);
 
     const digitCell = (digit: string, shape: ClockShape, fill: string, ink: string, i: number) => {
