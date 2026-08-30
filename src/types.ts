@@ -1223,7 +1223,8 @@ export type M3CardConfig =
   | M3LeakCardConfig
   | M3WasteCardConfig
   | M3ClockCardConfig
-  | M3StatusCardConfig;
+  | M3StatusCardConfig
+  | M3HeadingCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1464,6 +1465,37 @@ export interface M3StatusCardConfig {
   unavailable_style?: "dimmed" | "normal" | "hidden";
   radius?: number;
   corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export interface M3HeadingActionConfig {
+  name?: string;
+  icon?: string;
+  tap_action?: HaActionConfig;
+}
+
+export interface M3HeadingCardConfig {
+  type: string;
+  style?: "simple" | "status" | "divider" | "collapsible";
+  /** Required by every style but `divider`, which uses `label`. */
+  title?: string;
+  /** Divider only: the small caps text sitting between the two rules. */
+  label?: string;
+  icon?: string;
+  show_icon?: boolean;
+  color?: string;
+  title_size?: number;
+  /** Status only: fixed text, or an entity id whose state is shown. */
+  badge?: string;
+  /** Status only: the badge counts how many of these are on. */
+  count_entities?: string[];
+  action?: M3HeadingActionConfig;
+  tap_action?: HaActionConfig;
+  /** Collapsible only. */
+  default_collapsed?: boolean;
+  /** Collapsible only: an input_boolean holding the state, instead of localStorage. */
+  collapse_state_entity?: string;
+  animation?: "auto" | "on" | "off";
   card_version?: string;
 }
 

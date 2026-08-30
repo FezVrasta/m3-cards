@@ -441,6 +441,39 @@ Die Zuordnung ist der eigentliche Prüfgegenstand, nicht das Layout.
 - [ ] Beide Themes mit `test/contrast-audit.js` prüfen — der Wert im Hero sitzt
       auf der **getönten** Karte, nicht auf der Kartenfarbe
 
+## M3 Heading Card
+
+Die Karte zeichnet keine Karte — geprüft wird, dass sie sich trotzdem sauber
+in das Raster einfügt und das Einklappen nichts kaputt macht.
+
+- [ ] Alle vier Varianten rendern: `simple`, `status`, `divider`, `collapsible`
+- [ ] Kein Rahmen, kein Glas, kein Schatten — die Überschrift schwebt zwischen
+      den Karten, statt wie eine weitere Kachel zu wirken
+- [ ] `show_icon: false` rückt den Titel an den linken Rand
+- [ ] Sehr langer Titel: Ellipsis, vollständiger Text im `title`-Attribut
+- [ ] Karte schmaler als 260 px: der Aktions-Button behält nur sein Icon
+- [ ] **Zähler:** `count_entities` mit einer nicht verfügbaren Entität — sie
+      zählt weder als an noch als aus, der Chip zeigt die verbleibende Zahl
+- [ ] Aktions-Button: nach dem Tap morphen die Ecken und die Tönung hebt sich
+      für eine halbe Sekunde (die einzige Rückmeldung, die er geben kann)
+- [ ] **Einklappen:** genau die Karten bis zur nächsten Überschrift
+      verschwinden; die nächste Überschrift und alles darunter bleiben stehen
+- [ ] Zwei aufklappbare Überschriften in einem Abschnitt: jede besitzt nur
+      ihren eigenen Block
+- [ ] Reload: der Zustand bleibt (localStorage), mit `collapse_state_entity`
+      auch auf einem zweiten Gerät
+- [ ] `collapse_state_entity` zeigt auf eine nicht verfügbare Entität: es gilt
+      `default_collapsed`, nicht stillschweigend „ausgeklappt"
+- [ ] **Bearbeitungsmodus:** im Dashboard-Editor wird nicht eingeklappt, sonst
+      wären ausgeblendete Karten nicht mehr erreichbar
+- [ ] Eingeklappte Überschrift löschen: die ausgeblendeten Karten kommen zurück
+      (kein `display: none` bleibt zurück)
+- [ ] Masonry-Ansicht: erkennt die Karte das Layout nicht, fällt sie still auf
+      `simple` zurück — kein Pfeil, der nichts tut
+- [ ] Beide Themes prüfen: die Karte sitzt auf dem **Ansichts**-Hintergrund,
+      nicht auf einer Kartenfläche; der Trennstrich mischt aus der Textfarbe
+      und muss in beiden Themes sichtbar sein
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und

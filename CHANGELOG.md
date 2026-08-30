@@ -8,6 +8,21 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Heading Card** (`m3-heading-card`) — section headings for the space
+  between cards, in four variants: a plain icon and title, one with a count chip
+  and an action button, a divider rule with a small-caps label, and a
+  collapsible one that folds away the cards below it. It draws no card of its
+  own — no frame, no glass, no shadow — so it reads as a label for what follows
+  rather than as another tile.
+
+  Collapsing hides the sibling cards in the browser and writes nothing to the
+  dashboard configuration, so it is a view state and not an edit. That depends
+  on Home Assistant's own DOM, so every step is a check rather than an
+  assumption and an unrecognised layout falls back to the plain variant: an
+  arrow that visibly does nothing is worse than no arrow. The state persists in
+  `localStorage`, or in an `input_boolean` when one is configured, which also
+  syncs it across devices.
+
 - **M3 Status Card** (`m3-status-card`) — shows a value large and with meaning:
   a number, a piece of text, or a yes/no state, from any entity. The point of
   the card is the mapping in between: a `states` rule list turns `off` into a
@@ -59,6 +74,21 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Heading Card** (`m3-heading-card`) — Abschnitts-Überschriften für den
+  Raum zwischen den Karten, in vier Varianten: schlicht mit Icon und Titel, mit
+  Zähler-Chip und Aktions-Button, als Trennstrich mit Label in Versalien und
+  aufklappbar mit Einklappen der Karten darunter. Sie zeichnet keine eigene
+  Karte — kein Rahmen, kein Glas, kein Schatten —, damit sie als Beschriftung
+  für das Folgende gelesen wird und nicht als weitere Kachel.
+
+  Das Einklappen blendet die Geschwisterkarten im Browser aus und schreibt
+  nichts in die Dashboard-Konfiguration; es ist damit ein Anzeigezustand und
+  keine Bearbeitung. Das hängt vom DOM von Home Assistant ab, deshalb ist jeder
+  Schritt eine Prüfung und keine Annahme, und ein unbekanntes Layout fällt auf
+  die schlichte Variante zurück: Ein Pfeil, der sichtbar nichts tut, ist
+  schlimmer als gar keiner. Der Zustand bleibt im `localStorage` erhalten oder,
+  wenn konfiguriert, in einem `input_boolean` — dann gilt er geräteübergreifend.
 
 - **M3 Status Card** (`m3-status-card`) — zeigt einen Wert groß und mit
   Bedeutung: eine Zahl, einen Text oder einen Ja/Nein-Zustand, aus beliebigen

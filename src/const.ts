@@ -1274,3 +1274,41 @@ export const STATUS_ROW_RADIUS = 16;
 
 /** Under this width the hero drops a size step and the grid goes one column. */
 export const STATUS_NARROW_PX = 200;
+
+// ---- heading card ----------------------------------------------------------
+// Deliberately no radius or glass constants: this card draws no card at all.
+export const DEFAULT_HEADING_COLOR = PALETTE.home;
+export const DEFAULT_HEADING_ICON = "mdi:format-title";
+export const HEADING_ICON = 30;
+export const HEADING_ICON_RADIUS = 11;
+export const HEADING_ICON_GLYPH = 16;
+export const HEADING_ICON_TINT = 20;
+export const HEADING_TITLE_SIZE = 15;
+export const HEADING_TITLE_SIZE_MIN = 12;
+export const HEADING_TITLE_SIZE_MAX = 22;
+
+export const HEADING_BADGE_HEIGHT = 24;
+export const HEADING_BADGE_RADIUS = 9;
+export const HEADING_BADGE_TINT = 18;
+
+export const HEADING_ACTION_HEIGHT = 30;
+export const HEADING_ACTION_RADIUS = 15;
+export const HEADING_ACTION_RADIUS_ACTIVE = 9;
+export const HEADING_ACTION_TINT = 8;
+export const HEADING_ACTION_FEEDBACK_MS = 500;
+
+export const HEADING_ARROW = 26;
+export const HEADING_ARROW_RADIUS = 9;
+export const HEADING_ARROW_RADIUS_COLLAPSED = 13;
+export const HEADING_ARROW_TINT = 7;
+export const HEADING_COLLAPSE_MS = 350;
+
+export const HEADING_RULE_STUB = 14;
+export const HEADING_RULE_HEIGHT = 2;
+/** Mixed from the text colour, not from white: 18% white is invisible on a
+ *  light theme, and the rule would vanish exactly where it is most needed. */
+export const HEADING_RULE_TINT = 18;
+export const HEADING_LABEL_SIZE = 10;
+
+/** Below this the action button drops its label and keeps only the icon. */
+export const HEADING_NARROW_PX = 260;
