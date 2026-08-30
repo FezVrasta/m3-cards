@@ -4,6 +4,69 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **M3 Clock Card** (`m3-clock-card`) — a clock in five styles: rounded tiles,
+  digits inside lobed shapes, lockscreen typography, an organic analogue dial,
+  and a sixty-segment ring. It reads no entity, so it works on any dashboard
+  without setting anything up; the optional alarm, sun, day-progress and
+  second-time-zone extras are the only parts that need one.
+
+  The card only redraws while it is on screen — a clock on a wall tablet would
+  otherwise animate for weeks to an empty room — and styles with nothing moving
+  between whole seconds drop to a timer that wakes on the minute. Measured on a
+  35-card dashboard: 12 renders in 12 seconds against roughly 1440 frames, and
+  zero ticks while scrolled out of view.
+
+- **`src/shared/shapes.ts`** — the lobed-shape generator behind those styles.
+  The cookie, clover, flower and scallop shapes Material 3 Expressive uses are
+  one curve with different settings, so one generator covers the family. Useful
+  to any card in the suite, not just the clock.
+
+### Fixed
+
+- **`tintOn` on a dark surface** returned a CSS `color-mix` string rather than a
+  colour. `tintInk` feeds that back in as the surface to measure ink against,
+  and an unparseable surface means the ink comes back unchanged — so `tintInk`
+  has been a silent no-op in every dark theme since it was written. Benign
+  until now, because a light accent on its own dark tint contrasts well by
+  accident.
+
+---
+
+**Deutsche Fassung**
+
+### Neu
+
+- **M3 Clock Card** (`m3-clock-card`) — eine Uhr in fünf Stilen: runde Kacheln,
+  Ziffern in gelappten Formen, Sperrbildschirm-Typografie, ein organisches
+  analoges Zifferblatt und ein Ring aus sechzig Segmenten. Sie liest keine
+  Entität und läuft damit auf jedem Dashboard ohne Einrichtung; nur die
+  optionalen Extras — Wecker, Sonne, Tagesfortschritt, Zweitzeitzonen —
+  brauchen eine.
+
+  Die Karte zeichnet nur neu, solange sie sichtbar ist — eine Uhr auf einem
+  Wandtablet würde sonst wochenlang für einen leeren Raum animieren — und Stile
+  ohne Bewegung zwischen den Sekunden schalten auf einen Minutentimer um. Auf
+  einem Dashboard mit 35 Karten gemessen: 12 Renders in 12 Sekunden bei rund
+  1440 Frames, und null Ticks außerhalb des Sichtbereichs.
+
+- **`src/shared/shapes.ts`** — der Formengenerator dahinter. Cookie, Kleeblatt,
+  Blüte und Scallop sind dieselbe Kurve mit anderen Werten, also deckt ein
+  Generator die ganze Familie ab. Für jede Karte der Suite nutzbar, nicht nur
+  für die Uhr.
+
+### Behoben
+
+- **`tintOn` auf dunkler Fläche** gab einen CSS-`color-mix`-String zurück statt
+  einer Farbe. `tintInk` reicht genau das als Bezugsfläche zurück, und eine
+  nicht auflösbare Fläche heißt: Die Tinte kommt unverändert zurück — `tintInk`
+  war damit in jedem dunklen Theme still wirkungslos, seit es geschrieben
+  wurde. Bis jetzt folgenlos, weil ein heller Akzent auf seiner eigenen dunklen
+  Tönung zufällig gut kontrastiert.
+
 ## [2.1.0]
 
 The light theme release. Accent colours are now corrected at render time

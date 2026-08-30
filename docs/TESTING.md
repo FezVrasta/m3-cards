@@ -54,7 +54,7 @@ Beide Fehler ließen die Seite besser aussehen, als sie war.
 - Ein Handy oder ein per DevTools emuliertes Touch-Gerät für alle Drag-Interaktionen
   (Wave-Slider, Wischen) — Maus-Events allein decken `touch-action`-Konflikte nicht ab.
 
-## Cross-Cutting-Checkliste (für jede der 29 Karten)
+## Cross-Cutting-Checkliste (für jede der 30 Karten)
 
 Diese Punkte gelten kartenübergreifend, weil sie über gemeinsame `shared/*`-Module
 implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichzeitig.
@@ -371,9 +371,41 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
    durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
    eine mit Animation wie Progress/Light).
-2. Jede der 29 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+2. Jede der 30 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
+
+## M3 Clock Card
+
+Reine Anzeigekarte — sie liest keine Entität, nur die optionalen Extras tun das.
+
+- [ ] Alle fünf Stile rendern: `tiles`, `shapes`, `lockscreen`, `scallop`, `ring`
+- [ ] **Sichtbarkeit:** Karte aus dem Sichtbereich scrollen und in den
+      Entwicklerwerkzeugen prüfen, dass keine Frames mehr laufen. Wieder
+      hereinscrollen — die Uhr springt sofort auf die aktuelle Zeit, statt dort
+      weiterzulaufen, wo sie stehengeblieben ist.
+- [ ] **Takt:** Ohne Sekunden und ohne Formbewegung darf kein
+      `requestAnimationFrame` mehr laufen; die Karte wacht nur zur vollen Minute auf.
+- [ ] Minutenwechsel: bei `tiles` rollt **nur** die Kachel, die sich ändert;
+      bei `shapes` poppt nur die geänderte Ziffer
+- [ ] Stundenwechsel: `15:59 → 16:00` — die führende „1" bleibt stehen
+- [ ] `ring` mit `ring_animation: drain`: beim Umlauf leeren sich die Segmente
+      **rückwärts**, nicht alle gleichzeitig
+- [ ] `ring` mit `show_seconds: false` wird zum Stundenring (ein Segment je Minute)
+- [ ] `animation: off` und Systemeinstellung „Bewegung reduzieren": Formen
+      **stehen still, verschwinden aber nicht**
+- [ ] Zeitzone: gültige IANA-Zone wirkt; unsinnige Zone fällt auf Systemzeit
+      zurück, ohne die Karte zu zerstören
+- [ ] 12-Stunden-Format: führende Null der Stunde entfällt, AM/PM-Chip erscheint
+- [ ] Karte schmaler als 240 px: Kacheln und Schriftgrößen schrumpfen
+- [ ] **Masonry-Ansicht:** alle fünf Stile rendern mit Höhe > 0
+- [ ] Editor: Sektion „Formen" nur bei shapes/lockscreen/scallop, „Kacheln" nur
+      bei tiles, `ring_animation` nur bei ring
+- [ ] Editor: Zeitzonenfeld leeren → die Option verschwindet aus der Konfiguration
+      (statt als leerer String gespeichert zu werden)
+- [ ] Extras: Sonnen-Chip zeigt Untergang, solange die Sonne steht, sonst Aufgang
+- [ ] Extras: `progress_range: custom` mit `08:00`/`17:00` rechnet gegen diesen
+      Bereich, nicht gegen den ganzen Tag
 
 ## Bekannte Einschränkungen
 
