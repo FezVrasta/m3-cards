@@ -3,9 +3,9 @@
 Written at the end of the session that built the 2.2 cards. Read this first;
 it is meant to replace re-reading the diff.
 
-**State in one line:** 2.1.0 is released; four new cards and several shared
-modules sit unreleased on `main`, 21 commits ahead of `origin`, deployed to the
-author's Home Assistant and tested there, not pushed.
+**State in one line:** 2.1.0 is released; four new cards, several shared
+modules and a handful of additions to existing cards sit unreleased on `main`,
+deployed to the author's Home Assistant and tested there, not pushed.
 
 ---
 
@@ -100,6 +100,22 @@ the top of the file.
 change.** The clock's hand-written `shouldUpdate` omitted `themes` and kept the
 old theme's tints. `hassChangeMatters` covers this; a hand-written one must too.
 
+**A flex `gap` cannot be animated away with a height.** The room card folded by
+animating its body's height while switching `.card-inner`'s gap from 12px to 0,
+so the collapsed body would not leave a dead strip. A gap applies between items
+whatever their size, so it snapped in one frame and everything below the header
+jumped 12px while the box was still full height — reported as "the pills move,
+looks buggy". The spacing now lives *inside* the folding box as padding on
+`.body-inner`, and the card's gap is 0 at all times.
+
+**A throttled CSS transition freezes at its starting value, and re-setting the
+same value does not restart it.** A background tab is enough to trigger it: a
+room card folded there stayed open, with `style.height` reading `0px` and the
+computed height still the full 147px. `_applyFold` therefore settles the end
+state after the animation window, with the transition switched off for that
+final write. Worth remembering when a measurement says an animation "did
+nothing" — check `document.visibilityState` before suspecting the CSS.
+
 **`grid-template-rows: 1fr → 0fr` does not fold a box whose height comes from
 its content.** The flexible track is then sized by its own contents and there
 is no free space for the flex fraction to distribute. Measured: 135.605px
@@ -127,6 +143,8 @@ Dashboard `m3-test` on the author's instance, sections A–H3:
 - H / H2 — room cards: Wohnzimmer, Arbeitszimmer, Flur, then Schlafzimmer with
   `dot_only` and Waschraum as the empty case
 - H3 — room cards with `collapsible: true`
+- I — climate overview with `tile_tap_action: thermostat`: two Schlafzimmer
+  rooms that have one, and a third that has none so the fallback is visible
 
 `input_boolean.m3_test_schalter` is a scratch helper created for testing the
 status card's toggle. It can be deleted.

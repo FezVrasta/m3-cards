@@ -535,6 +535,10 @@ gefunden.
 - [ ] Zustand übersteht einen Reload; mit `collapse_state_entity` auch auf
       einem zweiten Gerät, und eine Automatisierung kann ihn setzen
 - [ ] `animation: off`: klappt ohne Übergang, aber vollständig
+- [ ] **Während** des Einklappens: die Sensor-Chips bleiben stehen, wo sie sind —
+      kein Sprung nach oben in den ersten Frames
+- [ ] Karte in einem Hintergrund-Tab einklappen, dann zurückwechseln: sie ist
+      eingeklappt (ein gedrosselter Übergang friert sonst auf dem Startwert ein)
 - [ ] Editor: die Kategorieliste zeigt genau die im Bereich erkannten Domains
       mit ihrer Anzahl; Auf/Ab schreibt `category_order`
 - [ ] Editor: eine Kategorie-Überschreibung, die nur noch `domain` enthält,
@@ -552,6 +556,8 @@ gefunden.
 - [ ] Über das Gerät gruppierter Raum (ohne Bereich): findet nichts automatisch,
       `climate_entity` je Raum ist dafür da
 - [ ] Schließen per X und per Klick auf den Hintergrund, mit Ausblenden
+- [ ] Das X quittiert den Druck (Radius-Morph) und dreht sich beim Schließen
+      eine Vierteldrehung mit heraus — in beiden Blättern gleich
 - [ ] `animation: off`: öffnet und schließt ohne Übergang
 
 ## Bekannte Einschränkungen
