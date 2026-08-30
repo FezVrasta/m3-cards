@@ -243,13 +243,20 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     void body.offsetHeight;
     body.style.height = `${to}px`;
 
-    if (!this._folded) {
-      // Back to auto once it is open, or the body would keep the height it had
-      // at the moment it was unfolded and clip whatever arrives later.
-      this._foldTimer = window.setTimeout(() => {
-        if (!this._folded) body.style.height = "";
-      }, ROOM_FOLD_MS + 40);
-    }
+    // Settle on the end state once the animation has had its time, in both
+    // directions and without a transition. Open goes back to auto, or the body
+    // would keep the height it had at that moment and clip whatever arrives
+    // later. Folded is pinned to 0, because a transition that never ran leaves
+    // the box at its *starting* height — a background tab throttles them, and
+    // setting the same value again does not restart one. Without this a card
+    // folded while its tab was in the background stayed open.
+    this._foldTimer = window.setTimeout(() => {
+      const folded = this._folded;
+      body.style.transition = "none";
+      body.style.height = folded ? "0px" : "";
+      void body.offsetHeight;
+      body.style.transition = "";
+    }, ROOM_FOLD_MS + 40);
   }
 
   private get _language(): string {
@@ -1034,7 +1041,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         <div
           class="card-inner ${glassCardClass(cfg.glass_background)} ${
             shouldAnimate(cfg.animation) ? "" : "no-animations"
-          } ${tinted ? "occupied" : ""} ${cfg.collapsible && this._folded ? "folded" : ""}"
+          } ${tinted ? "occupied" : ""}"
           style=${`border-radius: ${radius};${painted ? ` background: ${painted};` : ""}`}
         >
           <div
@@ -1075,8 +1082,14 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   static styles = [
     glassCardStyles,
     css`
+      /* No gap between the header and the body: the space above the chips is
+         padding *inside* the folding box instead, so it collapses with it. A
+         flex gap does not — it applies between items whatever their size — so
+         switching it to 0 on fold made everything below the header jump up
+         12px the instant the fold began, while the height was still animating.
+         That jump is what read as broken. */
       .card-inner {
-        gap: 12px;
+        gap: 0;
         position: relative;
       }
 
@@ -1295,12 +1308,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         display: flex;
         flex-direction: column;
         gap: 12px;
-      }
-
-      /* The card's own gap would otherwise leave a dead strip under the header
-         once the body has nothing left to show. */
-      .card-inner.folded {
-        gap: 0;
+        padding-top: 12px;
       }
 
       .no-animations .body,
