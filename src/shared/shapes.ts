@@ -78,3 +78,36 @@ export function shapePath(
   const preset = SHAPE_PRESETS[name] ?? SHAPE_PRESETS.cookie;
   return lobedPath(cx, cy, R, preset.lobes, preset.amp, rotation);
 }
+
+/**
+ * The base radius at which a named shape fits inside a square box, lobes and
+ * all, with `margin` pixels to spare.
+ *
+ * The obvious `box / 2 * 0.94` is wrong: a lobe reaches `R * (1 + amp)`, so a
+ * cookie at 94% of half the box extends to 1.025 of it and pushes past the
+ * edge. Dividing by `(1 + amp)` is what actually bounds the outermost point —
+ * and it has to, because the bounding box of a lobed shape changes as it turns:
+ * a maximum that happens to point sideways now will point diagonally a second
+ * later.
+ */
+export function fittedRadius(box: number, name: ShapeName, margin = 0): number {
+  const preset = SHAPE_PRESETS[name] ?? SHAPE_PRESETS.cookie;
+  return Math.max(0, (box / 2 - margin) / (1 + preset.amp));
+}
+
+/**
+ * One base radius that fits *every* named shape in the list inside the box.
+ *
+ * Fitting each shape on its own makes them look unequal: a clover reaches
+ * further from its centre than a cookie, so bounding it to the same box leaves
+ * it with a smaller body — 28.45 against 30.28 in a 72px cell, which reads as
+ * the minute pair being smaller than the hour pair. Sizing the whole set by its
+ * deepest lobe gives them a common radius, so they look like siblings.
+ */
+export function sharedFittedRadius(box: number, names: ShapeName[], margin = 0): number {
+  const worst = names.reduce(
+    (amp, n) => Math.max(amp, (SHAPE_PRESETS[n] ?? SHAPE_PRESETS.cookie).amp),
+    0,
+  );
+  return Math.max(0, (box / 2 - margin) / (1 + worst));
+}

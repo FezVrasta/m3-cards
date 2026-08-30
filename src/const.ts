@@ -1195,3 +1195,7 @@ export const CLOCK_RING_PAST_OPACITY = 0.75;
 export const CLOCK_RING_TIME_SIZE = 34;
 export const CLOCK_RING_SECONDS_SIZE = 13;
 export const CLOCK_RING_DRAIN_MS = 400;
+
+/** Clearance between a lobed shape's outermost lobe and its cell, so two
+ *  neighbours never touch and none of them clips the card edge. */
+export const CLOCK_SHAPE_MARGIN = 3;

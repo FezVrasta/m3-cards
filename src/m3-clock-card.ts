@@ -50,6 +50,7 @@ import {
   CLOCK_SECONDS_BAR_RADIUS,
   CLOCK_SECONDS_TRACK_TINT,
   CLOCK_SHAPE_SPEED_RAD_S,
+  CLOCK_SHAPE_MARGIN,
   CLOCK_SHAPES_MINUTE_TINT,
   CLOCK_SIZE_MAX,
   CLOCK_SIZE_MIN,
@@ -85,7 +86,13 @@ import {
 } from "./shared/color-config";
 import { glassCardClass, glassCardStyles } from "./shared/glass-card";
 import { pad2, to12Hour, uses12Hour } from "./shared/ha-time";
-import { SHAPE_PRESETS, lobedPath, shapePath } from "./shared/shapes";
+import {
+  SHAPE_PRESETS,
+  fittedRadius,
+  lobedPath,
+  shapePath,
+  sharedFittedRadius,
+} from "./shared/shapes";
 import { VisibleTicker } from "./shared/visible-ticker";
 
 const EASING = unsafeCSS(STANDARD_EASING);
@@ -580,14 +587,18 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     const hourInk = inkOn(accent, this);
     const minuteInk = tintInk(this, secondary, undefined, CLOCK_SHAPES_MINUTE_TINT, 4.5);
 
+    // One radius for both pairs, sized by whichever of the two reaches furthest.
+    // Fitting each on its own leaves the deeper-lobed shape visibly smaller.
+    const cellRadius = sharedFittedRadius(cell, [hourShape, minuteShape], CLOCK_SHAPE_MARGIN);
+
     const digitCell = (digit: string, shape: ClockShape, fill: string, ink: string, i: number) => {
-      const r = cell / 2;
+      const r = cellRadius;
       return html`<div
         class="cell"
         style=${`width:${cell}px;height:${cell}px;margin-left:${i === 1 ? overlap : 0}px;z-index:${2 - i};`}
       >
         <svg viewBox=${`0 0 ${cell} ${cell}`} width=${cell} height=${cell} aria-hidden="true">
-          ${this._lobed(shape, r, r, r * 0.94, "cell-shape", fill)}
+          ${this._lobed(shape, cell / 2, cell / 2, r, "cell-shape", fill)}
         </svg>
         <span class="cell-digit" style=${`color:${ink};`}>${digit}</span>
       </div>`;
@@ -641,7 +652,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
               viewBox=${`0 0 ${decor} ${decor}`}
               aria-hidden="true"
             >
-              ${this._lobed("cookie", decor / 2, decor / 2, decor / 2 - 2, "decor-shape", accent)}
+              ${this._lobed("cookie", decor / 2, decor / 2, fittedRadius(decor, "cookie", 1), "decor-shape", accent)}
             </svg>`
           : nothing}
         ${line(parts.hours, target === "hours")} ${line(parts.minutes, target === "minutes")}
@@ -693,8 +704,8 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
 
     return html`
       <svg class="dial" width=${D} height=${D} viewBox=${`0 0 ${D} ${D}`} aria-hidden="true">
-        ${this._lobed("scallop", c, c, c - 2, "dial-outer", outer, 1)}
-        ${this._lobed("clover", c, c, c * 0.74, "dial-inner", inner, -1)} ${ticks}
+        ${this._lobed("scallop", c, c, fittedRadius(D, "scallop", 2), "dial-outer", outer, 1)}
+        ${this._lobed("clover", c, c, fittedRadius(D * 0.78, "clover", 0), "dial-inner", inner, -1)} ${ticks}
         ${hand(hourAngle, c * 0.42, CLOCK_HAND_HOUR * this._size)}
         ${hand(minuteAngle, c * 0.6, CLOCK_HAND_MINUTE * this._size)}
         ${showSeconds
@@ -969,9 +980,11 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     }
 
     .decor {
+      /* Deliberately bleeds past the card: ha-card clips it, which is the
+         cut-off blob the reference design shows in the corner. */
       position: absolute;
-      top: -18px;
-      right: -14px;
+      top: -30px;
+      right: -26px;
       opacity: ${CLOCK_LOCK_DECOR_OPACITY};
       pointer-events: none;
     }
