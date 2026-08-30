@@ -48,7 +48,7 @@ import {
 } from "./const";
 import { supplyPackSize, supplyLimits } from "./shared/supply-thresholds";
 import { fetchConsumptionRates, type ConsumptionRate } from "./shared/supply-history";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderListRow, captureRowRects, flipRows, listRowStyles, listRowSurface } from "./shared/list-row";
 import { repeat } from "lit/directives/repeat.js";
@@ -542,7 +542,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
     return html`
       <div class="hero ${dimmed}" style=${`--m3s-accent: ${entry.colorCss};`}>
         <div class="hero-head">
-          <div class="hero-icon" style=${`background: ${tintOn(this, entry.colorCss, undefined, 18)};`}>
+          <div class="hero-icon" style=${`background: ${tintOn(this, entry.colorCss, undefined, 18)}; color: ${tintInk(this, entry.colorCss, undefined, 18, 3)};`}>
             <ha-icon icon=${entry.icon}></ha-icon>
           </div>
           <div class="hero-text">
@@ -586,7 +586,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
             role="button"
             tabindex="0"
             aria-label=${this._t("supply_refill")}
-            style=${`background: ${tint};`}
+            style=${`background: ${tint}; color: ${tintInk(this, entry.colorCss, cfg.accent_opacity, 18)};`}
             @click=${() => this._refill(entry)}
             @keydown=${activateOnKey(() => this._refill(entry))}
           >

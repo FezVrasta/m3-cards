@@ -31,7 +31,7 @@ import {
   SUMMARY_VALUE_LERP_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundVars, foregroundColor } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundVars, foregroundColor, foregroundOn } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { shouldAnimate } from "./shared/animation";
@@ -412,12 +412,12 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
         @click=${this._moreInfo(metric.entity)}
         @keydown=${activateOnKey(this._moreInfo(metric.entity))}
       >
-        <div class="metric-icon" style=${`background: ${iconBg}; color: ${foregroundColor(this, iconColor)};`}>
+        <div class="metric-icon" style=${`background: ${iconBg}; color: ${foregroundOn(iconColor, iconBg)};`}>
           <ha-icon icon=${icon}></ha-icon>
         </div>
         <div class="metric-value" style=${`color: ${unavailable ? "var(--m3p-secondary-text)" : foregroundColor(this, color)};`}>
           ${unavailable ? "–" : formatted.number}
-          <span class="metric-unit">${unavailable ? "" : formatted.unit}</span>
+          <span class="metric-unit" style=${`color: ${unavailable ? "var(--m3p-secondary-text)" : foregroundOn(color, bg, 4.5)};`}>${unavailable ? "" : formatted.unit}</span>
         </div>
         <div class="metric-name">${name}</div>
       </div>
@@ -587,7 +587,8 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
       .metric-unit {
         font-size: 11px;
         font-weight: 500;
-        opacity: 0.7;
+        /* No opacity here: at 11px the unit needs 4.5:1, and dimming a colour
+           that has just been corrected to exactly that takes it back under. */
       }
 
       .metric-name {

@@ -24,7 +24,7 @@ import { renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
-import { tintOn } from "./shared/color-config";
+import { tintOn, foregroundOn } from "./shared/color-config";
 
 console.info(
   `%c M3-CLIMATE-CARD-MINI %c v${CARD_VERSION} `,
@@ -206,6 +206,8 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     const plusColor = active ? plusActiveColor : plusInactiveColor;
     const minusColor = active ? minusActiveColor : minusInactiveColor;
 
+    // Each of these glyphs sits in its own tinted well, so its colour is
+    // measured against that well rather than against the card.
     const iconInactiveBg = tintOn(this, 
       iconInactiveColor,
       this._config.icon_inactive_opacity,
@@ -262,7 +264,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3-mode-color: ${modeColor}; --m3-icon-active-color: ${iconActiveColor}; --m3-icon-inactive-color: ${iconInactiveColor}; --m3-power-active-color: ${powerActiveColor}; --m3-power-inactive-color: ${powerInactiveColor}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-inactive-bg: ${iconInactiveBg}; --m3-icon-active-bg: ${iconActiveBg}; --m3-power-inactive-bg: ${powerInactiveBg}; --m3-power-active-bg: ${powerActiveBg}; --m3-minus-bg: ${minusBg}; --m3-plus-bg: ${plusBg}; border-radius: ${radius};`}
+        style=${`--m3-mode-color: ${modeColor}; --m3-icon-active-color: ${foregroundOn(iconActiveColor, iconActiveBg)}; --m3-icon-inactive-color: ${foregroundOn(iconInactiveColor, iconInactiveBg)}; --m3-power-active-color: ${foregroundOn(powerActiveColor, powerActiveBg)}; --m3-power-inactive-color: ${foregroundOn(powerInactiveColor, powerInactiveBg)}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-inactive-bg: ${iconInactiveBg}; --m3-icon-active-bg: ${iconActiveBg}; --m3-power-inactive-bg: ${powerInactiveBg}; --m3-power-active-bg: ${powerActiveBg}; --m3-minus-bg: ${minusBg}; --m3-plus-bg: ${plusBg}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div

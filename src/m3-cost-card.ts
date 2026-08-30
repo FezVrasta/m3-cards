@@ -430,7 +430,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
           <div class="main-row">
             <div
               class="main-icon"
-              style=${`background: ${tintOn(this, isCredit ? COST_BETTER_COLOR : accentColor, this._config.accent_opacity, 18)}; color: ${isCredit ? COST_BETTER_COLOR : accentColor};`}
+              style=${`background: ${tintOn(this, isCredit ? COST_BETTER_COLOR : accentColor, this._config.accent_opacity, 18)}; color: ${tintInk(this, isCredit ? COST_BETTER_COLOR : accentColor, this._config.accent_opacity, 18, 3)};`}
             >
               <ha-icon icon=${icon}></ha-icon>
             </div>
@@ -451,7 +451,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
                       ? html`
                           <div
                             class="chip"
-                            style=${`color: ${comparison.color}; background: color-mix(in srgb, ${comparison.color} 16%, transparent);`}
+                            style=${`color: ${tintInk(this, comparison.color, undefined, 16)}; background: ${tintOn(this, comparison.color, undefined, 16)};`}
                           >
                             <ha-icon icon=${comparison.isMore ? "mdi:arrow-up" : "mdi:arrow-down"}></ha-icon>
                             <span

@@ -29,10 +29,10 @@ import {
   LEAK_ARM_TIMEOUT_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors , tintOn, foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors , tintOn, foregroundOn, foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { shouldAnimate, isReducedMotion } from "./shared/animation";
-import { renderListRow, listRowStyles } from "./shared/list-row";
+import { renderListRow, listRowStyles , listRowSurface} from "./shared/list-row";
 import { formatSince } from "./shared/formatting";
 import { fireEvent } from "./shared/editor-helpers";
 import { discoverLeakSensors } from "./shared/ha-registry";
@@ -385,9 +385,11 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
       "lr-icon-radius": `${LEAK_ICON_RADIUS}px`,
       "lr-row-gap": `${LEAK_ROW_GAP}px`,
       // Fills keep the accent; these twins carry it where it is text.
+      // Measured against the row wash these badges actually sit on; against
+      // the card they land at 4.46:1.
+      "leak-alarm-fg": foregroundOn(LEAK_ALARM_COLOR, listRowSurface(this), 4.5),
+      "leak-stale-fg": foregroundOn(LEAK_STALE_COLOR, listRowSurface(this), 4.5),
       ...foregroundVars(this, {
-        "leak-alarm": LEAK_ALARM_COLOR,
-        "leak-stale": LEAK_STALE_COLOR,
         "m3p-icon-color": bannerColor,
       }),
     });

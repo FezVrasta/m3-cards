@@ -36,7 +36,7 @@ import {
   resolveThemeColor,
   buildCssVars,
   resolveCommonColors,
-  tintOn, foregroundOn, fillColor,
+  tintOn, foregroundOn, fillColor, foregroundColor,
 } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
@@ -456,7 +456,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
                 <div class="self-sufficiency">
                   <div class="self-sufficiency-row">
                     <span class="self-sufficiency-label">${this._t("flow_self_sufficiency")}</span>
-                    <span class="self-sufficiency-value" style=${`color: ${selfSufficiencyColor};`}>
+                    <span class="self-sufficiency-value" style=${`color: ${foregroundColor(this, selfSufficiencyColor)};`}>
                       ${Math.round(selfSufficiency)}%
                     </span>
                   </div>
@@ -524,7 +524,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
             xmlns="http://www.w3.org/1999/xhtml"
             style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box;"
           >
-            <ha-icon icon=${node.icon} style=${`color: ${node.color};`}></ha-icon>
+            <ha-icon icon=${node.icon} style=${`color: ${foregroundOn(node.color, fill)};`}></ha-icon>
           </div>
         </foreignObject>
         <text x=${node.x} y=${node.y + 22} text-anchor="middle" class="node-value">

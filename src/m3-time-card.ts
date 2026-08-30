@@ -53,7 +53,7 @@ import {
   TIME_INSTANT_DEBOUNCE_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
@@ -452,6 +452,8 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
     const cssVars = buildCssVars({
       "m3ti-accent": accent,
       "m3ti-accent-tint": tintOn(this, accent, cfg.accent_opacity, 18),
+      // Chips drawn on that tint take their label colour from it.
+      "m3ti-accent-tint-ink": tintInk(this, accent, cfg.accent_opacity, 18),
       "m3ti-text": textColorCss,
       "m3ti-secondary-text": secondaryTextColorCss,
       "m3ti-radius": resolveCornerRadius(cfg.radius ?? DEFAULT_TIME_RADIUS, cfg.corners),
@@ -929,7 +931,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--m3ti-accent-fg, var(--m3ti-accent));
+        color: var(--m3ti-accent-tint-ink, var(--m3ti-accent-fg, var(--m3ti-accent)));
         background: var(--m3ti-accent-tint);
       }
 
@@ -964,7 +966,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         padding: 4px 9px;
         border-radius: 12px;
-        color: var(--m3ti-accent-fg, var(--m3ti-accent));
+        color: var(--m3ti-accent-tint-ink, var(--m3ti-accent-fg, var(--m3ti-accent)));
         background: var(--m3ti-accent-tint);
       }
 

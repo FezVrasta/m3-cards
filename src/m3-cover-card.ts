@@ -20,7 +20,7 @@ import {
   COVER_MIN_FEEDBACK_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, tintOn, foregroundOn, resolveCommonColors } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -615,15 +615,13 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
 
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(this._config);
     const accent = this._accent();
+    // Resolved rather than a CSS mix, so the glyph on it can be measured.
+    const iconWellCss = tintOn(this, accent, undefined, 20);
     const cssVars = buildCssVars({
-      "m3p-icon-color": accent,
-      "m3p-icon-bg": `color-mix(in srgb, ${accent} 20%, var(--ha-card-background, var(--card-background-color)))`,
+      "m3p-icon-color": foregroundOn(accent, iconWellCss),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
-      // Fills keep the accent; these twins carry it where it is text.
-      ...foregroundVars(this, {
-        "m3p-icon-color": accent,
-      }),
     });
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_COVER_RADIUS, this._config.corners);
 

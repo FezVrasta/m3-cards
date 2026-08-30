@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS, nothing, type PropertyValues } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -24,7 +24,7 @@ import {
   PRESENCE_COLOR_UNKNOWN,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk } from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn, tintInk } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
@@ -311,7 +311,12 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
     const radius = resolveCornerRadius(this._config.radius ?? DEFAULT_PRESENCE_RADIUS, this._config.corners);
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
 
+    // Static CSS cannot run the contrast helpers, so the chip's tint and its
+    // label colour are computed here.
+    const chipBgCss = tintOn(this, PRESENCE_COLOR_HOME, undefined, 20);
     const cssVars = buildCssVars({
+      "presence-chip-bg": chipBgCss,
+      "presence-chip-ink": foregroundOn(PRESENCE_COLOR_HOME, chipBgCss, 4.5),
       "m3p-icon-color": "var(--primary-color)",
       "m3p-icon-bg": "color-mix(in srgb, var(--primary-color) 14%, transparent)",
       "m3p-text": textColorCss,
@@ -411,8 +416,8 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
       }
 
       .presence-chip.some {
-        background: color-mix(in srgb, ${unsafeCSS(PRESENCE_COLOR_HOME)} 20%, transparent);
-        color: ${unsafeCSS(PRESENCE_COLOR_HOME)};
+        background: var(--presence-chip-bg);
+        color: var(--presence-chip-ink);
       }
 
       .presence-chip.empty {

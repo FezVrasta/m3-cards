@@ -27,7 +27,7 @@ import {
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
 import { buildWavePath } from "./shared/wave";
-import { resolveCommonColors, tintOn } from "./shared/color-config";
+import { resolveCommonColors, tintOn, foregroundOn } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 
 console.info(
@@ -377,7 +377,7 @@ export class M3ProgressCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
-        style=${`--m3p-accent: ${accentColor}; --m3p-track: ${trackColorCss}; --m3p-dot: ${dotColorCss}; --m3p-icon-color: ${iconColorCss}; --m3p-icon-bg: ${iconBackgroundCss}; --m3p-text: ${textColorCss}; --m3p-secondary-text: ${secondaryTextColorCss}; border-radius: ${radius};`}
+        style=${`--m3p-accent: ${accentColor}; --m3p-track: ${trackColorCss}; --m3p-dot: ${dotColorCss}; --m3p-icon-color: ${foregroundOn(iconColorCss, iconBackgroundCss)}; --m3p-icon-bg: ${iconBackgroundCss}; --m3p-text: ${textColorCss}; --m3p-secondary-text: ${secondaryTextColorCss}; border-radius: ${radius};`}
       >
         <div
           class="card-inner ${glassCardClass(this._config.glass_background)}"
