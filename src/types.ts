@@ -1513,6 +1513,11 @@ export interface RoomCategoryConfig {
   icon?: string;
   color?: string;
   hidden?: boolean;
+  /**
+   * What the line under the name says. `auto` counts when the category holds
+   * several devices and reports the one device's own state when it holds one.
+   */
+  badge?: "auto" | "count" | "state" | "none";
   tap_action?: HaActionConfig;
 }
 

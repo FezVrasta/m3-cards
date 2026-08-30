@@ -497,7 +497,12 @@ gefunden.
 - [ ] In der Liste: nicht verfügbare Zeilen sind gedimmt und nicht antippbar,
       das Info-Icon öffnet die Detailansicht statt zu schalten
 - [ ] „Alles aus" / „Alle an" wirken auf alle erreichbaren Geräte der Kategorie
-- [ ] Liste schließt per Escape, per Klick auf den Hintergrund und per X
+- [ ] Liste schließt per Escape, per Klick auf den Hintergrund und per X —
+      **mit** Ausblende-Animation, die Karte darunter bleibt bedienbar
+- [ ] Zeilen laufen gestaffelt ein (26 ms Abstand), verlassen die Bühne aber
+      gemeinsam; bei `animation: off` erscheint alles ohne Bewegung
+- [ ] `badge`-Modus je Kategorie: `count` zählt immer, `state` zeigt immer den
+      Zustand, `none` lässt die Zeile weg (nicht nur leer — sie fehlt)
 - [ ] `category_tap: toggle` überspringt die Liste; eine Kachel mit genau einem
       Gerät schaltet immer direkt
 - [ ] **Abgewählte Geräte** (`excluded_entities`) verschwinden aus der Kachel,

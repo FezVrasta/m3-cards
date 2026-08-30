@@ -2696,6 +2696,10 @@ der eine Steckdose hängt.
 
 ### Auswählen, was erscheint
 
+Jede Kategorie hat außerdem ihren eigenen `badge`-Modus: `auto` zählt bei
+mehreren Geräten und zeigt bei einem dessen Zustand, `count` und `state`
+erzwingen jeweils eines davon, `none` lässt die Zeile ganz weg.
+
 Ganze Kategorien lassen sich ausblenden oder umsortieren, und einzelne Geräte
 lassen sich im Editor abwählen — jede Kategorie listet dort alle gefundenen
 Geräte mit einem Schalter. Ein abgewähltes Gerät verschwindet aus der Kachel,
@@ -2733,7 +2737,7 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `hidden_categories` | Liste | – | |
 | `excluded_entities` | Liste | – | Einzelne Geräte, die draußen bleiben, egal in welcher Kategorie |
 | `category_tap` | `list` \| `toggle` | `list` | Was ein Tap tut, wenn hinter der Kachel mehrere Geräte stehen |
-| `categories` | Liste | – | Je Kategorie: `{ domain, name, icon, color, hidden, tap_action }` |
+| `categories` | Liste | – | Je Kategorie: `{ domain, name, icon, color, hidden, badge, tap_action }` |
 | `show_sensors` | boolean | `true` | |
 | `temperature_entity` / `humidity_entity` / `power_entity` | string | erkannt | |
 | `power_threshold` | number | `5` | Watt |

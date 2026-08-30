@@ -2637,6 +2637,10 @@ nothing, and a chip saying so costs a row on every card that has a plug in it.
 
 ### Choosing what appears
 
+Each category also has its own `badge` mode: `auto` counts when it holds
+several devices and reports the one device's state when it holds one, `count`
+and `state` force either, and `none` drops the line entirely.
+
 Whole categories can be hidden or reordered, and individual devices can be
 switched off in the editor's category list — each category shows every device
 it found, with a toggle. An excluded device disappears from the tile, from its
@@ -2673,7 +2677,7 @@ person would rather decide.
 | `hidden_categories` | list | – | |
 | `excluded_entities` | list | – | Individual devices to leave out, whatever category they fall into |
 | `category_tap` | `list` \| `toggle` | `list` | What a tap does when a tile holds several devices |
-| `categories` | list | – | Per category: `{ domain, name, icon, color, hidden, tap_action }` |
+| `categories` | list | – | Per category: `{ domain, name, icon, color, hidden, badge, tap_action }` |
 | `show_sensors` | boolean | `true` | |
 | `temperature_entity` / `humidity_entity` / `power_entity` | string | discovered | |
 | `power_threshold` | number | `5` | Watts |

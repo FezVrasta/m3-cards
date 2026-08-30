@@ -137,6 +137,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     const list = [...(this._config.categories ?? [])];
     const index = list.findIndex((c) => c.domain === domain);
     const merged: Record<string, unknown> = { ...(list[index] ?? { domain }), ...patch, domain };
+    if (merged.badge === "auto") delete merged.badge;
     for (const [k, v] of Object.entries(merged)) {
       if (v === "" || v === undefined || v === null) delete merged[k];
     }
@@ -341,6 +342,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       power_entity: "editor_room_power",
       power_threshold: "editor_room_power_threshold",
       category_tap: "editor_room_category_tap",
+      badge: "editor_room_badge",
       presence_entity: "editor_room_presence_entity",
       presence_style: "editor_room_presence_style",
       animation: "editor_progress_animation",
@@ -413,11 +415,26 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                     .data=${{
                       name: this._override(domain)?.name ?? "",
                       icon: this._override(domain)?.icon ?? "",
+                      badge: this._override(domain)?.badge ?? "auto",
                       tap_action: this._override(domain)?.tap_action,
                     }}
                     .schema=${[
                       { name: "name", selector: { text: {} } },
                       { name: "icon", selector: { icon: {} } },
+                      {
+                        name: "badge",
+                        selector: {
+                          select: {
+                            mode: "dropdown",
+                            options: [
+                              { value: "auto", label: this._t("editor_room_badge_auto") },
+                              { value: "count", label: this._t("editor_room_badge_count") },
+                              { value: "state", label: this._t("editor_room_badge_state") },
+                              { value: "none", label: this._t("editor_room_badge_none") },
+                            ],
+                          },
+                        },
+                      },
                       { name: "tap_action", selector: { ui_action: {} } },
                     ]}
                     .computeLabel=${this._computeLabel}

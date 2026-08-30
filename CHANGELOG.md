@@ -25,7 +25,8 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   of them: a room's four lights are four decisions, not one. "All off" and "All
   on" are there for when it really is one. Individual devices can also be
   excluded in the editor, which is where a plug's indicator light goes when its
-  integration does not mark it as diagnostic.
+  integration does not mark it as diagnostic. Each category picks what its
+  second line says — count, state, or nothing.
 
   Everything is read from the registry snapshots the frontend already keeps on
   `hass`, so discovery costs no websocket round-trip and can run in the render
@@ -118,7 +119,8 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   eine. „Alles aus“ und „Alle an“ stehen für die Fälle bereit, in denen es doch
   nur eine ist. Einzelne Geräte lassen sich außerdem im Editor abwählen — dort
   landet etwa die Status-LED einer Steckdose, wenn ihre Integration sie nicht
-  als Diagnose markiert.
+  als Diagnose markiert. Jede Kategorie bestimmt selbst, was ihre zweite Zeile
+  zeigt: zählen, Zustand oder gar nichts.
 
   Alles kommt aus den Registry-Daten, die das Frontend ohnehin auf `hass`
   bereithält — die Erkennung kostet also keinen Websocket-Aufruf und darf im

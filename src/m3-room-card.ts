@@ -108,9 +108,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   @state() private _config?: M3RoomCardConfig;
   /** Domain of the category whose device picker is open, if any. */
   @state() private _sheet?: string;
+  /** True while the picker plays its exit; the sheet is still in the DOM. */
+  @state() private _sheetClosing = false;
 
   private _holdTimer?: number;
   private _held = false;
+  private _sheetCloseTimer?: number;
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-room-card-editor");
@@ -157,6 +160,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     window.clearTimeout(this._holdTimer);
+    window.clearTimeout(this._sheetCloseTimer);
   }
 
   private get _language(): string {
@@ -266,7 +270,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         live,
         activeCount,
         active: activeCount > 0,
-        badge: live.length === 0 ? "—" : this._badge(domain, entities, live, activeCount),
+        badge:
+          override?.badge === "none"
+            ? ""
+            : live.length === 0
+              ? "—"
+              : this._badge(domain, entities, live, activeCount, override?.badge ?? "auto"),
         override,
       });
     }
@@ -326,8 +335,17 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
    * exactly one it is what that one is doing, which is the whole point of the
    * card over a row of on/off buttons.
    */
-  private _badge(domain: string, entities: string[], live: string[], activeCount: number): string {
-    if (entities.length > 1) return `${activeCount}/${entities.length}`;
+  private _badge(
+    domain: string,
+    entities: string[],
+    live: string[],
+    activeCount: number,
+    mode: "auto" | "count" | "state" | "none" = "auto",
+  ): string {
+    if (mode === "none") return "";
+    if (mode === "count" || (mode === "auto" && entities.length > 1)) {
+      return `${activeCount}/${entities.length}`;
+    }
     const stateObj = this.hass?.states[live[0]];
     if (!stateObj) return "—";
     return this._singleBadge(domain, stateObj);
@@ -544,6 +562,8 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       category.live.length > 1 &&
       (this._config?.category_tap ?? "list") === "list"
     ) {
+      window.clearTimeout(this._sheetCloseTimer);
+      this._sheetClosing = false;
       this._sheet = category.domain;
       return;
     }
@@ -553,7 +573,18 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   // ---- device picker -------------------------------------------------------
 
   private _closeSheet = (): void => {
-    this._sheet = undefined;
+    // Without motion there is nothing to wait for, and holding the sheet in the
+    // DOM for a fifth of a second would just feel unresponsive.
+    if (!shouldAnimate(this._config?.animation)) {
+      this._sheet = undefined;
+      return;
+    }
+    this._sheetClosing = true;
+    window.clearTimeout(this._sheetCloseTimer);
+    this._sheetCloseTimer = window.setTimeout(() => {
+      this._sheet = undefined;
+      this._sheetClosing = false;
+    }, ROOM_SHEET_MS);
   };
 
   private _onSheetKey = (e: KeyboardEvent): void => {
@@ -589,9 +620,9 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     const activeFill = fillColor(this, category.color, 3);
 
     return html`
-      <div class="scrim" @click=${this._closeSheet}>
+      <div class="scrim ${this._sheetClosing ? "closing" : ""}" @click=${this._closeSheet}>
         <div
-          class="sheet"
+          class="sheet ${this._sheetClosing ? "closing" : ""}"
           role="dialog"
           aria-label=${category.name}
           tabindex="-1"
@@ -605,7 +636,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
             </button>
           </div>
           <div class="sheet-list">
-            ${category.entities.map((id) => {
+            ${category.entities.map((id, index) => {
               const stateObj = this.hass?.states[id];
               const dead = !stateObj || UNAVAILABLE.has(stateObj.state);
               const on = !dead && this._isActive(category.domain, stateObj);
@@ -615,7 +646,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
               return html`
                 <div
                   class="sheet-row ${dead ? "dead" : ""}"
-                  style=${`background: ${rowBackground};`}
+                  style=${`background: ${rowBackground}; --row-index: ${index};`}
                   role=${dead ? nothing : "button"}
                   tabindex=${dead ? nothing : "0"}
                   aria-pressed=${dead ? nothing : String(on)}
@@ -724,14 +755,14 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           <ha-icon icon=${category.icon}></ha-icon>
         </div>
         <div class="tile-name" title=${category.name}>${category.name}</div>
-        <div
+        ${category.badge === "" ? nothing : html`<div
           class="tile-badge"
           style=${category.active
             ? `color: ${foregroundOn(category.color, background, 4.5, this)};`
             : ""}
         >
           ${category.badge}
-        </div>
+        </div>`}
       </div>
     `;
   }
@@ -1010,9 +1041,13 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         justify-content: center;
         padding: 8px;
         background: rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-        animation: sheet-fade ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING};
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        animation: sheet-fade ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING} both;
+      }
+
+      .scrim.closing {
+        animation: sheet-fade ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING} reverse both;
       }
 
       .sheet {
@@ -1025,7 +1060,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         padding: 14px;
         border-radius: ${ROOM_SHEET_RADIUS}px;
         background: var(--ha-card-background, var(--card-background-color));
-        animation: sheet-rise ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING};
+        transform-origin: bottom center;
+        animation: sheet-rise ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING} both;
+      }
+
+      .sheet.closing {
+        animation: sheet-rise ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING} reverse both;
       }
 
       @keyframes sheet-fade {
@@ -1036,7 +1076,19 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
       @keyframes sheet-rise {
         from {
-          transform: translateY(12px);
+          /* Grows out of the tile rather than sliding in from nowhere: the
+             scale is what ties the sheet to the thing that was tapped. */
+          transform: translateY(16px) scale(0.96);
+          opacity: 0;
+        }
+      }
+
+      /* The rows arrive one after another, which reads as a list assembling
+         itself instead of a block appearing. 26ms is short enough that the
+         whole run is over before the sheet has settled. */
+      @keyframes sheet-row-in {
+        from {
+          transform: translateY(10px);
           opacity: 0;
         }
       }
@@ -1088,6 +1140,14 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         gap: 10px;
         min-width: 0;
         transition: border-radius ${unsafeCSS(ROOM_TILE_MORPH_MS)}ms ${EASING};
+        animation: sheet-row-in ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING} both;
+        animation-delay: calc(var(--row-index, 0) * 26ms);
+      }
+
+      /* On the way out the rows leave together — staggering an exit only makes
+         the dismissal feel slow. */
+      .sheet.closing .sheet-row {
+        animation: none;
       }
 
       .sheet-row[role="button"] {
@@ -1168,7 +1228,8 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       }
 
       .no-animations .scrim,
-      .no-animations .sheet {
+      .no-animations .sheet,
+      .no-animations .sheet-row {
         animation: none;
       }
 
