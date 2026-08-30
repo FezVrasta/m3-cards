@@ -194,7 +194,7 @@ const tintCache = new Map<string, string>();
  * of light colours, so a light accent mixed into a light surface stays light. A
  * 30% energy-card bar renders rgb(53,83,92) on #111e1c — 2.05:1, clearly
  * visible — and rgb(205,236,242) on #e8f7f3, which is 1.06:1 and effectively
- * invisible. That is what "man erkennt die Balken kaum" looks like as a number.
+ * invisible — which is what "the bars are barely visible" is, as a number.
  *
  * The target is not invented: it is whatever *this* colour at *this* percentage
  * reaches on the reference dark surface. That makes the correction
