@@ -229,13 +229,24 @@ export function tintOn(
   }
 
   const share = percent / 100;
+  const mixed = mixColors(color, surface, share);
   const wanted = contrastRatio(mixColors(color, DARK_REFERENCE, share), DARK_REFERENCE);
-  // Built from the accent's own hue and saturation at the lightness that meets
-  // that target, rather than by mixing into the surface. Mixing is what made
-  // these washes grey: a light accent stirred into a light surface keeps the
-  // lightness and loses the hue, so an 18% icon well came out #d7f0f2 instead
-  // of a recognisable #7cd3fd.
-  const out = toHex(toneAt(color, surface, wanted, SATURATION_BOOST));
+
+  // The plain mix comes first, and for a neutral wash it is the right answer:
+  // `var(--primary-text-color)` is dark in a light theme, so 6% of it over a
+  // light surface already reads as the intended grey. Rebuilding that from hue
+  // and saturation is not just unnecessary, it is wrong — a dark colour mixed
+  // into the dark reference contrasts at about 1.0, so the target came out at
+  // 1.0 and the wash vanished. List rows went white while the tile beside them,
+  // still a CSS literal, kept its grey.
+  //
+  // Only a colour that falls short of what it manages in a dark theme gets
+  // rebuilt: that is the light accent this whole mechanism is for.
+  const out = toHex(
+    contrastRatio(mixed, surface) >= wanted
+      ? mixed
+      : toneAt(color, surface, wanted, SATURATION_BOOST),
+  );
   tintCache.set(key, out);
   return out;
 }
