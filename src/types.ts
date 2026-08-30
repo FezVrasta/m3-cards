@@ -1546,6 +1546,10 @@ export interface M3RoomCardConfig {
   /** Watts below which the power chip is not worth the space. */
   power_threshold?: number;
   extra_sensors?: string[];
+  /** Chip for open windows and doors in the area. */
+  show_windows?: boolean;
+  /** Leave unset to discover them from the area. */
+  window_entities?: string[];
   /** Leave unset to discover it from the area. */
   presence_entity?: string;
   presence_style?: "tint" | "dot_only" | "none";

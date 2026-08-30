@@ -70,6 +70,9 @@ import { hassChangeMatters } from "./shared/should-update";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
+/** Amber, the same one the power chip uses when it has something to say. */
+const PALETTE_WARN = "#f0a24a";
+
 console.info(
   `%c M3-ROOM-CARD %c v${CARD_VERSION} `,
   "color: #222; background: #5dcaa5; font-weight: 700; border-radius: 4px 0 0 4px;",
@@ -77,6 +80,8 @@ console.info(
 );
 
 const PRESENCE_CLASSES = new Set(["occupancy", "motion", "presence"]);
+/** What counts as "a way into the room that can stand open". */
+const OPENING_CLASSES = new Set(["window", "door", "garage_door", "opening"]);
 const UNAVAILABLE = new Set(["unavailable", "unknown"]);
 
 interface Category {
@@ -203,6 +208,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         cfg.power_entity,
         cfg.presence_entity,
         ...(cfg.extra_sensors ?? []),
+        ...(cfg.window_entities ?? []),
       );
     }
     return ids;
@@ -283,6 +289,15 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   }
 
   private _categoryName(domain: string, entities: string[]): string {
+    // With exactly one device behind the tile, the tile *is* that device, so
+    // name it. "Schalter · An" tells nobody what they are about to switch —
+    // and a switch is the one category whose generic name carries no
+    // information at all. The icon still says what kind of thing it is.
+    if (entities.length === 1) {
+      const own = this.hass?.states[entities[0]]?.attributes?.friendly_name as string | undefined;
+      const short = own ? this._withoutAreaName(own) : "";
+      if (short) return short;
+    }
     // A dehumidifier is its own word, and calling it a humidifier would be the
     // card telling the user their device does the opposite of what it does.
     if (domain === "humidifier" && this._allHaveDeviceClass(entities, "dehumidifier")) {
@@ -291,6 +306,39 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     const key = `room_cat_${domain}` as TranslationKey;
     const label = localize(key, this._language);
     return label === key ? domain : label;
+  }
+
+  /**
+   * Drops the room's name from a device name, wherever it sits.
+   *
+   * People name devices after the room they are in, and Home Assistant then
+   * builds the entity name from the device, so a bedroom card repeats
+   * "Schlafzimmer" on every tile. In the width of a tile that repetition is
+   * the part that survives and the distinguishing part is what gets
+   * ellipsised — "Thermostat Schlafzimmer" reads as "Thermostat Schlafz…" when
+   * "Thermostat" was the whole message.
+   *
+   * It is stripped anywhere, not just as a prefix: the room name turns up at
+   * the end ("Thermostat Schlafzimmer") as often as at the front, and in the
+   * middle when the device is a camera ("Kamera Schlafzimmer Floodlight").
+   *
+   * Returns "" when nothing is left — a thermostat whose whole name is the
+   * room would otherwise put the room's own name on a tile inside that room's
+   * card. The caller falls back to the category label there.
+   */
+  private _withoutAreaName(name: string): string {
+    const area =
+      this._config?.area && this.hass
+        ? areaInfo(this.hass, this._config.area)?.name
+        : undefined;
+    if (!area) return name;
+    const escaped = area.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const stripped = name
+      .replace(new RegExp(escaped, "gi"), " ")
+      .replace(/\s+/g, " ")
+      .replace(/^[\s\-–—_:.]+|[\s\-–—_:.]+$/g, "")
+      .trim();
+    return stripped;
   }
 
   private _categoryIcon(domain: string, entities: string[]): string {
@@ -479,11 +527,59 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       }
     }
 
+    const windows = this._windowChip();
+    if (windows) chips.push(windows);
+
     for (const id of cfg.extra_sensors ?? []) {
       const chip = this._chipFor(id, "mdi:gauge");
       if (chip) chips.push(chip);
     }
     return chips;
+  }
+
+  private _windowEntities(): string[] {
+    const cfg = this._config;
+    if (!cfg || cfg.show_windows === false) return [];
+    if (cfg.window_entities?.length) return cfg.window_entities;
+    return this._areaEntities.filter(
+      (id) =>
+        id.startsWith("binary_sensor.") &&
+        OPENING_CLASSES.has(this.hass?.states[id]?.attributes?.device_class as string),
+    );
+  }
+
+  /**
+   * How many ways into the room stand open.
+   *
+   * Shown whenever the room has such a sensor at all, closed included: "all
+   * shut" is the half of the answer you go looking for on the way out of the
+   * house, and a chip that only ever appears when something is wrong cannot
+   * tell you that.
+   */
+  private _windowChip(): Chip | undefined {
+    const entities = this._windowEntities();
+    const live = entities.filter(
+      (id) => !UNAVAILABLE.has(this.hass?.states[id]?.state ?? "unavailable"),
+    );
+    if (live.length === 0) return undefined;
+
+    const open = live.filter((id) => this.hass?.states[id]?.state === "on");
+    if (open.length === 0) {
+      return {
+        key: "windows",
+        icon: "mdi:window-closed-variant",
+        text: this._t("room_windows_closed"),
+      };
+    }
+    return {
+      key: "windows",
+      icon: "mdi:window-open-variant",
+      text:
+        live.length === 1
+          ? this._t("room_window_open")
+          : this._t("room_windows_open").replace("{n}", String(open.length)),
+      color: PALETTE_WARN,
+    };
   }
 
   // ---- interaction ---------------------------------------------------------

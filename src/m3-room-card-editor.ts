@@ -217,6 +217,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
   private _sensorSchema(): SchemaEntry[] {
     return [
       { name: "show_sensors", selector: { boolean: {} } },
+      { name: "show_windows", selector: { boolean: {} } },
       { name: "temperature_entity", selector: { entity: { domain: "sensor" } } },
       { name: "humidity_entity", selector: { entity: { domain: "sensor" } } },
       { name: "power_entity", selector: { entity: { domain: "sensor" } } },
@@ -337,6 +338,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       icon: "editor_icon",
       detail_path: "editor_room_detail_path",
       show_sensors: "editor_room_show_sensors",
+      show_windows: "editor_room_show_windows",
       temperature_entity: "editor_room_temperature",
       humidity_entity: "editor_room_humidity",
       power_entity: "editor_room_power",
@@ -484,6 +486,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .hass=${this.hass}
               .data=${{
                 show_sensors: cfg.show_sensors ?? true,
+                show_windows: cfg.show_windows ?? true,
                 temperature_entity: cfg.temperature_entity ?? "",
                 humidity_entity: cfg.humidity_entity ?? "",
                 power_entity: cfg.power_entity ?? "",
@@ -497,6 +500,12 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               const next = { ...cfg };
               if (values.length) next.extra_sensors = values;
               else delete next.extra_sensors;
+              this._emit(next);
+            })}
+            ${listRow(this._t("editor_room_windows"), cfg.window_entities ?? [], (values) => {
+              const next = { ...cfg };
+              if (values.length) next.window_entities = values;
+              else delete next.window_entities;
               this._emit(next);
             })}
           </div>
