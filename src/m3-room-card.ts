@@ -120,6 +120,9 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   /** Domain of the category whose device picker is open, if any. */
   @state() private _sheet?: string;
   @state() private _folded = false;
+  /** What the DOM currently shows, so a change can be animated from it. */
+  private _appliedFold?: boolean;
+  private _foldTimer?: number;
   /** True while the picker plays its exit; the sheet is still in the DOM. */
   @state() private _sheetClosing = false;
 
@@ -157,9 +160,8 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
   private _toggleFold = (e: Event): void => {
     e.stopPropagation();
-    const next = !this._folded;
-    this._folded = next;
-    writeCollapsed(this.hass, this._foldTarget, next);
+    this._folded = !this._folded;
+    writeCollapsed(this.hass, this._foldTarget, this._folded);
   };
 
   public getCardSize(): number {
@@ -191,14 +193,63 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     window.clearTimeout(this._holdTimer);
     window.clearTimeout(this._sheetCloseTimer);
+    window.clearTimeout(this._foldTimer);
   }
 
   protected updated(): void {
-    if (!this._config?.collapsible) return;
+    if (!this._config?.collapsible) {
+      this._appliedFold = undefined;
+      return;
+    }
     // An entity-backed fold can be changed from another dashboard or by an
     // automation, so it is re-read rather than only written on a tap.
     const wanted = readCollapsed(this.hass, this._foldTarget);
-    if (wanted !== this._folded) this._folded = wanted;
+    if (wanted !== this._folded) {
+      this._folded = wanted;
+      return;
+    }
+    if (this._appliedFold !== this._folded) {
+      // The very first paint jumps to the stored state; only a change animates.
+      this._applyFold(this._appliedFold !== undefined);
+      this._appliedFold = this._folded;
+    }
+  }
+
+  /**
+   * Folds the body by animating its height in pixels, measured each time.
+   *
+   * The CSS-only route — a grid track going 1fr to 0fr — does not work here.
+   * That trick needs the grid to have a definite height; in a card whose height
+   * comes from its content the flexible track is sized by its own contents
+   * instead, so the fold moved the body from 135.6px to 134.98px and looked
+   * broken. A measured height is exact, and scrollHeight still reports the
+   * content while the box is collapsed, so expanding knows where to go.
+   */
+  private _applyFold(animate: boolean): void {
+    const body = this.renderRoot.querySelector(".body") as HTMLElement | null;
+    if (!body) return;
+    window.clearTimeout(this._foldTimer);
+
+    if (!animate || !shouldAnimate(this._config?.animation)) {
+      body.style.height = this._folded ? "0px" : "";
+      return;
+    }
+
+    const from = body.getBoundingClientRect().height;
+    const to = this._folded ? 0 : body.scrollHeight;
+    body.style.height = `${from}px`;
+    // Reading it back commits the starting height, so the browser has two
+    // values to interpolate rather than one.
+    void body.offsetHeight;
+    body.style.height = `${to}px`;
+
+    if (!this._folded) {
+      // Back to auto once it is open, or the body would keep the height it had
+      // at the moment it was unfolded and clip whatever arrives later.
+      this._foldTimer = window.setTimeout(() => {
+        if (!this._folded) body.style.height = "";
+      }, ROOM_FOLD_MS + 40);
+    }
   }
 
   private get _language(): string {
@@ -983,7 +1034,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         <div
           class="card-inner ${glassCardClass(cfg.glass_background)} ${
             shouldAnimate(cfg.animation) ? "" : "no-animations"
-          } ${tinted ? "occupied" : ""}"
+          } ${tinted ? "occupied" : ""} ${cfg.collapsible && this._folded ? "folded" : ""}"
           style=${`border-radius: ${radius};${painted ? ` background: ${painted};` : ""}`}
         >
           <div
@@ -1007,7 +1058,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
             </div>
             ${cfg.collapsible ? this._renderFoldArrow(accent) : nothing}
           </div>
-          <div class="body ${cfg.collapsible && this._folded ? "folded" : ""}">
+          <div class="body">
             <div class="body-inner">
               ${this._renderChips(chips)}
               ${categories.length
@@ -1230,22 +1281,17 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         transform: rotate(-90deg);
       }
 
-      /* 1fr -> 0fr is the one way to animate to a height nobody knows in
-         advance. A max-height guess either clips a room with many tiles or
-         leaves the transition idling through empty space on a room with two. */
+      /* The height is set in pixels from _applyFold; this only says how it
+         moves. Nothing here can be a percentage or a keyword: the card's height
+         comes from its content, so there is no definite height for CSS alone to
+         animate against. */
       .body {
-        display: grid;
-        grid-template-rows: 1fr;
-        transition: grid-template-rows ${unsafeCSS(ROOM_FOLD_MS)}ms ${EASING};
-      }
-
-      .body.folded {
-        grid-template-rows: 0fr;
+        overflow: hidden;
+        min-height: 0;
+        transition: height ${unsafeCSS(ROOM_FOLD_MS)}ms ${EASING};
       }
 
       .body-inner {
-        min-height: 0;
-        overflow: hidden;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -1253,7 +1299,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
       /* The card's own gap would otherwise leave a dead strip under the header
          once the body has nothing left to show. */
-      .card-inner:has(.body.folded) {
+      .card-inner.folded {
         gap: 0;
       }
 
