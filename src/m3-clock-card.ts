@@ -132,6 +132,11 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
   @state() private _rolling: "hours" | "minutes" | "seconds" | "" = "";
   /** Colon phase. Flips once a second at most, so reactive state is fine. */
   @state() private _colonOn = true;
+  /** Which shape cells changed on the last tick, as "h0 h1 m0 m1" keys. Only
+   *  those pop, so a minute change does not jiggle the hours. */
+  @state() private _popped = "";
+  /** True for the length of the drain while the ring wraps back to zero. */
+  @state() private _draining = false;
 
   private _ticker?: VisibleTicker;
   private _resizeObserver?: ResizeObserver;
@@ -142,6 +147,8 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
   /** Shape rotation in radians. Also written straight to the DOM. */
   private _rotation = 0;
   private _rollTimer?: number;
+  private _popTimer?: number;
+  private _drainTimer?: number;
   private _lastNow = 0;
   private _lastFrame = 0;
 
@@ -189,6 +196,8 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
     if (this._rollTimer !== undefined) clearTimeout(this._rollTimer);
+    if (this._popTimer !== undefined) clearTimeout(this._popTimer);
+    if (this._drainTimer !== undefined) clearTimeout(this._drainTimer);
   }
 
   /**
@@ -268,7 +277,11 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     if (key !== this._shown) {
       const previous = this._shown;
       this._shown = key;
-      if (!jumped) this._startRoll(previous, key);
+      if (!jumped) {
+        this._startRoll(previous, key);
+        this._startPop(previous, key);
+        this._startDrain(previous, key);
+      }
     }
 
     if (this._config?.colon_blink ?? true) {
@@ -293,6 +306,49 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       () => (this._rolling = ""),
       CLOCK_ROLL_MS + CLOCK_ROLL_DELAY_MS,
     );
+  }
+
+  /**
+   * Marks the shape cells whose digit actually changed. At the top of an hour
+   * that is all four; a minute later it is one. Popping only what moved is the
+   * difference between a clock that ticks and one that twitches.
+   */
+  private _startPop(previous: string, next: string): void {
+    if (this._style !== "shapes") return;
+    if (!shouldAnimate(this._config?.animation) || isReducedMotion()) return;
+    if (!previous) return;
+    const [ph, pm] = previous.split("|")[0].split(":");
+    const [nh, nm] = next.split("|")[0].split(":");
+    const keys: string[] = [];
+    const vergleich = (alt: string, neu2: string, praefix: string) => {
+      const a = (alt ?? "").padStart(2, " ");
+      const b = (neu2 ?? "").padStart(2, " ");
+      for (let i = 0; i < 2; i++) if (a[i] !== b[i]) keys.push(`${praefix}${i}`);
+    };
+    vergleich(ph, nh, "h");
+    vergleich(pm, nm, "m");
+    if (!keys.length) return;
+    this._popped = keys.join(" ");
+    if (this._popTimer !== undefined) clearTimeout(this._popTimer);
+    this._popTimer = window.setTimeout(() => (this._popped = ""), CLOCK_DIGIT_POP_MS);
+  }
+
+  /**
+   * The ring drains only when it wraps — 59 back to 0 — not on every step.
+   * Without that check every second would restart the animation and the ring
+   * would shimmer instead of filling.
+   */
+  private _startDrain(previous: string, next: string): void {
+    if (this._style !== "ring") return;
+    if ((this._config?.ring_animation ?? "reset") !== "drain") return;
+    if (!shouldAnimate(this._config?.animation) || isReducedMotion()) return;
+    const feld = (this._config?.show_seconds ?? true) ? 2 : 1;
+    const alt = Number(previous.split("|")[0].split(":")[feld]);
+    const neu2 = Number(next.split("|")[0].split(":")[feld]);
+    if (!(alt > neu2)) return;
+    this._draining = true;
+    if (this._drainTimer !== undefined) clearTimeout(this._drainTimer);
+    this._drainTimer = window.setTimeout(() => (this._draining = false), CLOCK_RING_DRAIN_MS);
   }
 
   /**
@@ -764,10 +820,18 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     // Fitting each on its own leaves the deeper-lobed shape visibly smaller.
     const cellRadius = sharedFittedRadius(cell, [hourShape, minuteShape], CLOCK_SHAPE_MARGIN);
 
-    const digitCell = (digit: string, shape: ClockShape, fill: string, ink: string, i: number) => {
+    const digitCell = (
+      digit: string,
+      shape: ClockShape,
+      fill: string,
+      ink: string,
+      i: number,
+      key: string,
+    ) => {
       const r = cellRadius;
+      const pop = this._popped.split(" ").includes(key);
       return html`<div
-        class="cell"
+        class="cell ${pop ? "pop" : ""} ${pop && key.endsWith("1") ? "pop-alt" : ""}"
         style=${`width:${cell}px;height:${cell}px;margin-left:${i === 1 ? overlap : 0}px;z-index:${2 - i};`}
       >
         <svg viewBox=${`0 0 ${cell} ${cell}`} width=${cell} height=${cell} aria-hidden="true">
@@ -784,14 +848,14 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       <div class="shape-row">
         <div class="pair">
           ${hourDigits[0]
-            ? digitCell(hourDigits[0], hourShape, accent, hourInk, 0)
+            ? digitCell(hourDigits[0], hourShape, accent, hourInk, 0, "h0")
             : nothing}
-          ${digitCell(hourDigits[1], hourShape, accent, hourInk, hourDigits[0] ? 1 : 0)}
+          ${digitCell(hourDigits[1], hourShape, accent, hourInk, hourDigits[0] ? 1 : 0, "h1")}
         </div>
         <div class="colon ${this._colonOn ? "" : "dim"}"><i></i><i></i></div>
         <div class="pair">
-          ${digitCell(m1, minuteShape, minuteTint, minuteInk, 0)}
-          ${digitCell(m2, minuteShape, minuteTint, minuteInk, 1)}
+          ${digitCell(m1, minuteShape, minuteTint, minuteInk, 0, "m0")}
+          ${digitCell(m2, minuteShape, minuteTint, minuteInk, 1, "m1")}
         </div>
         ${this._twelveHour ? html`<span class="ampm">${this._ampm(parts)}</span>` : nothing}
       </div>
@@ -916,7 +980,13 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     const segments = [];
     for (let i = 0; i < CLOCK_RING_SEGMENTS; i++) {
       const a = ((i * 6 - 90) * Math.PI) / 180;
-      const on = i <= filled;
+      // While draining every segment is heading for the track colour, but the
+      // last one gets there first — that is what makes it empty backwards
+      // rather than all at once.
+      const on = this._draining ? false : i <= filled;
+      const verzoegerung = this._draining
+        ? ((CLOCK_RING_SEGMENTS - 1 - i) / (CLOCK_RING_SEGMENTS - 1)) * CLOCK_RING_DRAIN_MS
+        : 0;
       segments.push(svg`<line
         class="seg"
         x1=${c + outer * Math.cos(a)} y1=${c + outer * Math.sin(a)}
@@ -924,6 +994,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
         stroke=${on ? lit : track}
         stroke-width=${CLOCK_RING_STROKE}
         stroke-linecap="round"
+        style=${verzoegerung ? `transition-delay: ${verzoegerung.toFixed(0)}ms` : ""}
         opacity=${on && i !== filled ? CLOCK_RING_PAST_OPACITY : 1}></line>`);
     }
 
@@ -1229,7 +1300,9 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     }
 
     .ring-wrap.drain .seg {
-      transition: opacity ${unsafeCSS(String(CLOCK_RING_DRAIN_MS))}ms ${EASING};
+      transition:
+        stroke ${unsafeCSS(String(CLOCK_RING_DRAIN_MS))}ms ${EASING},
+        opacity ${unsafeCSS(String(CLOCK_RING_DRAIN_MS))}ms ${EASING};
     }
 
     /* ---- extras ---- */
@@ -1332,6 +1405,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     .card-inner.no-animations .tile.roll .digits,
     .card-inner.no-animations .colon,
     .card-inner.no-animations .ring-wrap .seg,
+    .card-inner.no-animations .cell,
     .card-inner.no-animations .cell-digit {
       animation: none;
       transition: none;
@@ -1341,6 +1415,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       .tile.roll .digits,
       .colon,
       .ring-wrap .seg,
+      .cell,
       .cell-digit {
         animation: none !important;
         transition: none !important;
