@@ -31,6 +31,7 @@ import {
   CLOCK_LOCK_DECOR_OPACITY,
   CLOCK_LOCK_DIGIT,
   CLOCK_LOCK_DIGIT_NARROW,
+  CLOCK_LOCK_INSET,
   CLOCK_LOCK_STROKE,
   CLOCK_NARROW_PX,
   CLOCK_PAIR_GAP,
@@ -500,7 +501,8 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       ` --clock-tile-r: ${CLOCK_TILE_RADIUS * size}px;` +
       ` --clock-sec-w: ${CLOCK_TILE_SECONDS_WIDTH * size}px;` +
       ` --clock-cell: ${(this._narrow ? CLOCK_CELL_NARROW : CLOCK_CELL) * size}px;` +
-      ` --clock-lock: ${(this._narrow ? CLOCK_LOCK_DIGIT_NARROW : CLOCK_LOCK_DIGIT) * size}px;`;
+      ` --clock-lock: ${(this._narrow ? CLOCK_LOCK_DIGIT_NARROW : CLOCK_LOCK_DIGIT) * size}px;` +
+      ` --clock-lock-inset: ${CLOCK_LOCK_INSET * size}px;`;
 
     const style = this._style;
     const body =
@@ -538,6 +540,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     const showSeconds = cfg.show_seconds ?? true;
     const secondsStyle = cfg.seconds_style ?? "bar";
     return html`
+      <div class="clock-stack">
       <div class="tiles">
         <div class="tile hours ${this._rolling === "hours" ? "roll" : ""}">
           <span class="digits">${parts.hours}</span>
@@ -562,6 +565,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
             )}
           </div>`
         : nothing}
+      </div>
     `;
   }
 
@@ -790,6 +794,18 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
 
     /* ---- tiles ---- */
 
+    /* The seconds row takes its width from the tiles above it rather than from
+       a hard-coded "two tiles wide": with the optional third tile that number
+       was 42px short on each side. */
+    .clock-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: fit-content;
+      max-width: 100%;
+      gap: 10px;
+    }
+
     .tiles {
       display: flex;
       align-items: center;
@@ -876,7 +892,6 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
 
     .sec-track {
       width: 100%;
-      max-width: calc(var(--clock-tile-w) * 2 + 24px);
       height: ${CLOCK_SECONDS_BAR_HEIGHT}px;
       border-radius: ${CLOCK_SECONDS_BAR_RADIUS}px;
       background: var(--clock-sec-track);
@@ -895,7 +910,6 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       gap: 2px;
       justify-content: center;
       width: 100%;
-      max-width: calc(var(--clock-tile-w) * 2 + 24px);
     }
 
     .sec-dots i {
@@ -954,6 +968,9 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
+      /* Left-aligned, but inset — hard against the card padding the digits
+         read as if they had slipped off the edge. */
+      padding-left: var(--clock-lock-inset);
     }
 
     .lock.inline {

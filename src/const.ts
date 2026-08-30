@@ -1199,3 +1199,7 @@ export const CLOCK_RING_DRAIN_MS = 400;
 /** Clearance between a lobed shape's outermost lobe and its cell, so two
  *  neighbours never touch and none of them clips the card edge. */
 export const CLOCK_SHAPE_MARGIN = 3;
+
+/** Left inset for the lockscreen block. Flush against the card padding the
+ *  digits read as if they had slipped off the edge. */
+export const CLOCK_LOCK_INSET = 16;
