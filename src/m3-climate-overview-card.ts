@@ -1011,7 +1011,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 10px;
+        padding: 8px;
         background: rgba(0, 0, 0, 0.45);
         backdrop-filter: blur(3px);
         -webkit-backdrop-filter: blur(3px);
@@ -1027,7 +1027,10 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
          another, which reads as a mistake. */
       .thermo-sheet {
         width: 100%;
-        max-width: 340px;
+        /* Wide enough that the thermostat's own controls stay finger-sized:
+           at 340px the minus/plus pair and the target temperature were sharing
+           a row barely wider than the tile that opened them. */
+        max-width: 420px;
         max-height: 100%;
         overflow-y: auto;
         display: flex;
@@ -1084,6 +1087,29 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         justify-content: center;
         cursor: pointer;
         --mdc-icon-size: 18px;
+        transition:
+          transform ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING},
+          border-radius ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING},
+          background ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING},
+          opacity ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING};
+      }
+
+      .thermo-close:hover {
+        background: rgba(255, 255, 255, 0.26);
+      }
+
+      /* The circle squares off under the finger, the house idiom for a press. */
+      .thermo-close:active {
+        border-radius: 9px;
+        transform: scale(0.9);
+      }
+
+      /* On the way out it turns a quarter and leaves with the sheet, so the
+         thing that was pressed is visibly the thing that closed it. */
+      .thermo-sheet.closing .thermo-close {
+        transform: rotate(90deg) scale(0.8);
+        border-radius: 9px;
+        opacity: 0;
       }
 
       .thermo-close:focus-visible {
@@ -1094,6 +1120,10 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
       .no-animations .scrim,
       .no-animations .thermo-sheet {
         animation: none;
+      }
+
+      .no-animations .thermo-close {
+        transition: none;
       }
 `,
   ];

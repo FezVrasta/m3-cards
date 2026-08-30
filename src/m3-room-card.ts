@@ -1410,6 +1410,24 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       .sheet-close {
         background: var(--room-action-bg);
         color: var(--room-action-ink);
+        transition:
+          transform ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING},
+          border-radius ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING},
+          opacity ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING};
+      }
+
+      /* The circle squares off under the finger, the house idiom for a press. */
+      .sheet-close:active {
+        border-radius: 9px;
+        transform: scale(0.9);
+      }
+
+      /* On the way out it turns a quarter and leaves with the sheet, so the
+         thing that was pressed is visibly the thing that closed it. */
+      .sheet.closing .sheet-close {
+        transform: rotate(90deg) scale(0.8);
+        border-radius: 9px;
+        opacity: 0;
       }
 
       .sheet-close:focus-visible,
@@ -1543,6 +1561,10 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       .no-animations .sheet,
       .no-animations .sheet-row {
         animation: none;
+      }
+
+      .no-animations .sheet-close {
+        transition: none;
       }
 
       .no-animations .dot {
