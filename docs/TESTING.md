@@ -407,6 +407,40 @@ Reine Anzeigekarte — sie liest keine Entität, nur die optionalen Extras tun d
 - [ ] Extras: `progress_range: custom` mit `08:00`/`17:00` rechnet gegen diesen
       Bereich, nicht gegen den ganzen Tag
 
+## M3 Status Card
+
+Die Zuordnung ist der eigentliche Prüfgegenstand, nicht das Layout.
+
+- [ ] Alle vier Layouts rendern: `auto` (Hero bei einem, Raster ab zwei),
+      `hero`, `grid`, `row`
+- [ ] **Regelreihenfolge:** eigene `states` gewinnen vor der `preset`-Liste;
+      innerhalb der Liste gewinnt die erste passende Regel
+- [ ] Regel ganz ohne Bedingung fängt alles ab — als letzter Eintrag gedacht,
+      als erster Eintrag verdeckt sie absichtlich alles danach
+- [ ] Kaputter regulärer Ausdruck (z. B. `[` im Editor halb getippt) zerstört
+      die Karte nicht, die Regel greift einfach nicht
+- [ ] `above`/`below` gegen einen nicht-numerischen Zustand greifen nicht,
+      statt auf `NaN` hereinzufallen
+- [ ] Vorlagen sprechen die Sprache des Dashboards (`yes_no` → „Ja"/„Yes"),
+      eine selbst gesetzte `label` bleibt dagegen wörtlich stehen
+- [ ] Getroffene Regel mit `label`: die Einheit verschwindet („Ja kWh" ist
+      falsch), ein eigenes `suffix` bleibt stehen
+- [ ] **Optimistischer Tap:** `tap_action: toggle` schaltet die Anzeige sofort
+      um. Entität anschließend absichtlich unerreichbar machen — die Anzeige
+      fällt nach 2,5 s auf den echten Zustand zurück, statt hängen zu bleiben
+- [ ] Nicht verfügbare Entität: „—", alles auf 0.4 gedimmt, **neutrale** Farbe
+      statt der grünen des letzten guten Werts
+- [ ] Fehlendes `attribute`: verhält sich wie nicht verfügbar
+- [ ] `value_size: auto` stuft herunter: Zahl 40 px, kurzer Text 34 px, ab 12
+      Zeichen 26 px; Karte schmaler als 200 px eine Stufe tiefer und Raster
+      einspaltig
+- [ ] Trend: `trend_inverted` dreht die Farbe, nicht die Pfeilrichtung; unter
+      1 % Änderung steht „unverändert" statt „+0 %"
+- [ ] Trend ohne Verlaufsdaten (frisch angelegte Entität): kein Chip, keine
+      Fehlermeldung
+- [ ] Beide Themes mit `test/contrast-audit.js` prüfen — der Wert im Hero sitzt
+      auf der **getönten** Karte, nicht auf der Kartenfarbe
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und

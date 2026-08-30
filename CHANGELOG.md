@@ -8,6 +8,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Status Card** (`m3-status-card`) — shows a value large and with meaning:
+  a number, a piece of text, or a yes/no state, from any entity. The point of
+  the card is the mapping in between: a `states` rule list turns `off` into a
+  red "No" with a cross, or a number under 20 into a warning colour, without a
+  template sensor to do it. Five presets (`yes_no`, `on_off`, `ok_problem`,
+  `open_closed`, `traffic`) supply ready-made rule lists in the dashboard's own
+  language, and a card's own rules are tried first, so a preset can be adjusted
+  without being replaced.
+
+  One value gets the large hero treatment, several get a grid or a row list. A
+  `toggle` tap switches the shown state over at once instead of waiting for
+  Home Assistant to confirm it, so a "medication given" card cannot be tapped
+  twice by someone who thinks the first tap missed. An optional trend chip
+  compares against the same entity 24 hours ago, with `trend_inverted` for the
+  values where falling is the win.
+
+- **`src/shared/actions.ts`** — the seven-branch tap/hold action handler, moved
+  out of the button card so the status card's `toggle` and `call-service` use
+  the same code rather than a second copy.
+
 - **M3 Clock Card** (`m3-clock-card`) — a clock in five styles: rounded tiles,
   digits inside lobed shapes, lockscreen typography, an organic analogue dial,
   and a sixty-segment ring. It reads no entity, so it works on any dashboard
@@ -39,6 +59,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Status Card** (`m3-status-card`) — zeigt einen Wert groß und mit
+  Bedeutung: eine Zahl, einen Text oder einen Ja/Nein-Zustand, aus beliebigen
+  Entitäten. Der eigentliche Punkt ist die Zuordnung dazwischen: Eine
+  `states`-Regelliste macht aus `off` ein rotes „Nein“ mit Kreuz oder aus einer
+  Zahl unter 20 eine Warnfarbe — ohne Template-Sensor. Fünf Vorlagen (`yes_no`,
+  `on_off`, `ok_problem`, `open_closed`, `traffic`) liefern fertige Regellisten
+  in der Sprache des Dashboards, und eigene Regeln werden zuerst geprüft: Eine
+  Vorlage lässt sich anpassen, ohne sie zu ersetzen.
+
+  Ein Wert bekommt die große Hero-Darstellung, mehrere ein Raster oder eine
+  Zeilenliste. Ein `toggle`-Tap schaltet die Anzeige sofort um, statt auf die
+  Bestätigung von Home Assistant zu warten — so tippt niemand ein zweites Mal,
+  weil der erste Tap scheinbar nichts getan hat. Ein optionaler Trend-Chip
+  vergleicht mit derselben Entität vor 24 Stunden, mit `trend_inverted` für die
+  Werte, bei denen Fallen der Gewinn ist.
+
+- **`src/shared/actions.ts`** — der Aktions-Handler mit seinen sieben Zweigen,
+  aus der Button-Karte herausgelöst, damit `toggle` und `call-service` der
+  Status-Karte denselben Code nutzen statt einer zweiten Kopie.
 
 - **M3 Clock Card** (`m3-clock-card`) — eine Uhr in fünf Stilen: runde Kacheln,
   Ziffern in gelappten Formen, Sperrbildschirm-Typografie, ein organisches

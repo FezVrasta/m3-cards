@@ -1222,7 +1222,8 @@ export type M3CardConfig =
   | M3CoverCardConfig
   | M3LeakCardConfig
   | M3WasteCardConfig
-  | M3ClockCardConfig;
+  | M3ClockCardConfig
+  | M3StatusCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1383,6 +1384,84 @@ export interface M3OccupancyCardConfig extends NotifyConfigBase {
   card_background?: string;
   animation?: "auto" | "on" | "off";
   glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+/** Which built-in rule set an item starts from before its own `states` apply. */
+export type StatusPreset =
+  | "yes_no"
+  | "on_off"
+  | "ok_problem"
+  | "open_closed"
+  | "traffic";
+
+/**
+ * One mapping rule: a condition plus what it changes.
+ *
+ * The condition forms are deliberately not combinable — a rule matches on
+ * exactly one of value/regex/above/below. Allowing `above` *and* `value` on the
+ * same rule reads as an AND to some people and an OR to others, and a mapping
+ * table nobody can predict is worse than one extra rule.
+ */
+export interface StatusRule {
+  /** Exact state match, compared case-insensitively. */
+  value?: string;
+  /** Matched against the raw state. An invalid pattern is ignored, not thrown. */
+  regex?: string;
+  /** Numeric state strictly greater than this. */
+  above?: number;
+  /** Numeric state strictly less than this. */
+  below?: number;
+  label?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface M3StatusItemConfig {
+  entity?: string;
+  name?: string;
+  icon?: string;
+  /** Show this attribute instead of the state. */
+  attribute?: string;
+  /** Overrides the entity's own unit_of_measurement. */
+  unit?: string;
+  color?: string;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+  /** Free text, or an entity id whose state is shown, under the hero value. */
+  secondary?: string;
+  preset?: StatusPreset;
+  states?: StatusRule[];
+  tap_action?: HaActionConfig;
+  /** Compare against the value `trend_hours` ago and show a chip. */
+  trend?: boolean;
+  trend_hours?: number;
+  /** For values where falling is the good direction (consumption, cost). */
+  trend_inverted?: boolean;
+}
+
+export interface M3StatusCardConfig {
+  type: string;
+  /** Shown above the grid; ignored by the hero layout, which has its own label. */
+  title?: string;
+  items?: M3StatusItemConfig[];
+  layout?: "auto" | "hero" | "grid" | "row";
+  columns?: number;
+  hero_style?: "inline" | "badge";
+  /** A pixel size, or "auto" to pick one from the value's own length. */
+  value_size?: number | "auto";
+  tap_action?: HaActionConfig;
+  accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  unavailable_style?: "dimmed" | "normal" | "hidden";
   radius?: number;
   corners?: CornerRadiusConfig;
   card_version?: string;

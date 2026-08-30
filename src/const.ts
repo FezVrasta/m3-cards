@@ -1211,3 +1211,66 @@ export const CLOCK_ALARM_HORIZON_MS = 24 * 60 * 60 * 1000;
 export const CLOCK_PROGRESS_HEIGHT = 5;
 export const CLOCK_PROGRESS_RADIUS = 3;
 export const CLOCK_PROGRESS_TINT = 9;
+
+// ---- status card -----------------------------------------------------------
+export const DEFAULT_STATUS_RADIUS = RADIUS.card;
+export const DEFAULT_STATUS_ACCENT = PALETTE.home;
+export const DEFAULT_STATUS_ICON = "mdi:information-outline";
+
+/** Semantic colours the built-in presets map onto. */
+export const STATUS_COLOR_GOOD = PALETTE.ok;
+export const STATUS_COLOR_BAD = PALETTE.heat;
+export const STATUS_COLOR_WARN = PALETTE.light;
+
+/** How much of the item colour washes the card (hero) and a tile (grid). */
+export const STATUS_CARD_TINT = 12;
+export const STATUS_TILE_TINT = 9;
+export const STATUS_ICON_TINT = 20;
+export const STATUS_CHIP_TINT = 16;
+
+// Hero
+export const STATUS_HERO_ICON = 34;
+export const STATUS_HERO_ICON_RADIUS = 12;
+export const STATUS_HERO_LABEL_SIZE = 12;
+export const STATUS_BADGE = 52;
+export const STATUS_BADGE_RADIUS = 19;
+/** The badge morphs to this on a state change, so the switch is felt. */
+export const STATUS_BADGE_RADIUS_MORPH = 26;
+export const STATUS_BADGE_MORPH_MS = 420;
+export const STATUS_SECONDARY_SIZE = 11;
+
+// Value sizing. "auto" walks down this ladder as the text gets longer, because
+// a 40px setting that fits "8.412" turns "Wird geliefert" into two clipped
+// lines. The thresholds are character counts of the *formatted* value.
+export const STATUS_VALUE_SIZE_NUMBER = 40;
+export const STATUS_VALUE_SIZE_TEXT = 34;
+export const STATUS_VALUE_SIZE_LONG = 26;
+export const STATUS_VALUE_LONG_CHARS = 12;
+export const STATUS_VALUE_LETTER_SPACING = -1.2;
+/** Unit and suffix, as a share of the value size they sit next to. */
+export const STATUS_UNIT_RATIO = 0.4;
+
+// Trend chip
+export const STATUS_TREND_HEIGHT = 24;
+export const STATUS_TREND_RADIUS = 9;
+export const STATUS_TREND_DEFAULT_HOURS = 24;
+/** Below this the two values count as unchanged — a 0.2% "rise" is noise. */
+export const STATUS_TREND_DEADBAND_PCT = 1;
+
+// Grid
+export const STATUS_GRID_MIN = 96;
+export const STATUS_GRID_GAP = 7;
+export const STATUS_TILE_RADIUS = 16;
+export const STATUS_TILE_RADIUS_ACTIVE = 10;
+export const STATUS_TILE_MORPH_MS = DURATION_MS.roll;
+export const STATUS_TILE_ICON = 24;
+export const STATUS_TILE_ICON_RADIUS = 9;
+export const STATUS_TILE_VALUE_SIZE = 18;
+export const STATUS_TILE_LABEL_SIZE = 9;
+
+// Row
+export const STATUS_ROW_HEIGHT = 48;
+export const STATUS_ROW_RADIUS = 16;
+
+/** Under this width the hero drops a size step and the grid goes one column. */
+export const STATUS_NARROW_PX = 200;

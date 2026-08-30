@@ -28,3 +28,4 @@ export * from "./m3-cover-card";
 export * from "./m3-leak-card";
 export * from "./m3-waste-card";
 export * from "./m3-clock-card";
+export * from "./m3-status-card";
