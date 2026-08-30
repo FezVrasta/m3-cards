@@ -519,6 +519,14 @@ gefunden.
 - [ ] Temperatur-/Feuchte-Chip: eine in den HA-Bereichseinstellungen gesetzte
       Entität gewinnt gegen die device_class-Suche
 - [ ] Verbrauchs-Chip erscheint erst über `power_threshold`
+- [ ] Fenster-Chip: erscheint auch bei „alles zu"; bernstein mit Anzahl, sobald
+      etwas offen ist; fehlt ganz, wenn der Bereich keinen solchen Sensor hat
+- [ ] Fenstersensoren ohne Bereichszuordnung werden **nicht** erkannt —
+      `window_entities` ist dafür da
+- [ ] Kachel mit genau einem Gerät trägt dessen Namen, nicht die Gattung; der
+      Raumname ist herausgestrichen, auch wenn er hinten oder in der Mitte steht
+- [ ] Gerät, das genau wie der Raum heißt: die Kachel fällt auf den
+      Kategorienamen zurück statt den Raumnamen zu wiederholen
 - [ ] Editor: die Kategorieliste zeigt genau die im Bereich erkannten Domains
       mit ihrer Anzahl; Auf/Ab schreibt `category_order`
 - [ ] Editor: eine Kategorie-Überschreibung, die nur noch `domain` enthält,

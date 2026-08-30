@@ -538,6 +538,14 @@ period start), not from long-term statistics, since that period isn't
 complete yet. Data refreshes every 15 minutes in day mode, every 5 minutes
 in hour mode, and hourly in month mode.
 
+Windows and doors get a chip of their own: any `binary_sensor` in the area with
+device class `window`, `door`, `garage_door` or `opening`. It shows whenever
+such a sensor exists, closed included — "all shut" is the half of the answer
+you go looking for on the way out of the house — and turns amber with a count
+when something is open. `window_entities` overrides the discovery, which is
+worth knowing about: window sensors are often left unassigned to an area, and
+nothing can discover what is not filed anywhere.
+
 ### Interaction
 
 Tapping a bar briefly shows a value bubble with the amount (with a slight
@@ -2682,6 +2690,8 @@ person would rather decide.
 | `temperature_entity` / `humidity_entity` / `power_entity` | string | discovered | |
 | `power_threshold` | number | `5` | Watts |
 | `extra_sensors` | list | – | More chips, in order |
+| `show_windows` | boolean | `true` | The window and door chip |
+| `window_entities` | list | – | Overrides the discovery |
 | `presence_entity` | string | discovered | |
 | `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
 

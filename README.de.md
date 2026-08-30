@@ -536,6 +536,15 @@ der Langzeitstatistik, da diese Periode noch nicht abgeschlossen ist. Die
 Daten werden im Tages-Modus alle 15 Minuten, im Stunden-Modus alle 5 Minuten
 und im Monats-Modus stündlich aktualisiert.
 
+Fenster und Türen bekommen einen eigenen Chip: jeder `binary_sensor` im Bereich
+mit device_class `window`, `door`, `garage_door` oder `opening`. Er erscheint,
+sobald es einen solchen Sensor gibt — auch wenn alles zu ist, denn „alles
+geschlossen" ist die Hälfte der Antwort, die man auf dem Weg aus dem Haus
+sucht — und wird bernsteinfarben mit Anzahl, sobald etwas offen steht.
+`window_entities` überschreibt die Erkennung, was öfter nötig ist als gedacht:
+Fenstersensoren sind häufig keinem Bereich zugeordnet, und was nirgends
+einsortiert ist, kann nicht gefunden werden.
+
 ### Interaktion
 
 Tap auf einen Balken zeigt kurz eine Wert-Bubble mit dem Wert (morpht dabei
@@ -2742,6 +2751,8 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `temperature_entity` / `humidity_entity` / `power_entity` | string | erkannt | |
 | `power_threshold` | number | `5` | Watt |
 | `extra_sensors` | Liste | – | Weitere Chips, in dieser Reihenfolge |
+| `show_windows` | boolean | `true` | Chip für Fenster und Türen |
+| `window_entities` | Liste | – | Überschreibt die Erkennung |
 | `presence_entity` | string | erkannt | |
 | `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
 
