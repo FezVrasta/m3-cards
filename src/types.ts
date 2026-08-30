@@ -14,6 +14,8 @@ export interface HomeAssistant {
       temperature: string;
       [key: string]: string;
     };
+    /** IANA zone the Home Assistant instance runs in, e.g. "Europe/Berlin". */
+    time_zone?: string;
   };
   callService: (
     domain: string,
@@ -1123,6 +1125,74 @@ export interface M3WasteCardConfig extends NotifyConfigBase {
   card_version?: string;
 }
 
+export type ClockStyle = "shapes" | "lockscreen" | "scallop" | "tiles" | "ring";
+export type ClockShape = "cookie" | "clover" | "flower" | "scallop" | "squircle";
+export type ClockSecondsStyle = "bar" | "dots" | "none";
+export type ClockTileColorMode = "accent_hours" | "both_accent" | "neutral";
+
+export interface M3ClockCardConfig {
+  type: string;
+  style?: ClockStyle;
+  /** Proportional scale for every measurement of the chosen style, 0.7–1.5. */
+  size?: number;
+
+  // ---- time and date
+  /** IANA zone. Falls back to the Home Assistant instance's own zone. */
+  time_zone?: string;
+  time_format?: "auto" | "12" | "24";
+  show_date?: boolean;
+  date_format?: "auto" | "short" | "long" | "custom";
+  date_custom?: string;
+
+  // ---- seconds
+  show_seconds?: boolean;
+  seconds_style?: ClockSecondsStyle;
+  show_seconds_tile?: boolean;
+  colon_blink?: boolean;
+
+  // ---- shapes (shapes / lockscreen / scallop)
+  shape_hours?: ClockShape;
+  shape_minutes?: ClockShape;
+  /** Negative pulls the two digits of a pair together so they read as one
+   *  number rather than as two separate tiles. */
+  digit_overlap?: number;
+  shape_motion?: boolean;
+  shape_speed?: "slow" | "normal" | "fast";
+  show_decor?: boolean;
+  outline_target?: "minutes" | "hours" | "none";
+  tick_style?: "dots" | "lines" | "none";
+  layout?: "stacked" | "inline";
+
+  // ---- tiles
+  tile_color_mode?: ClockTileColorMode;
+
+  // ---- ring
+  ring_animation?: "reset" | "drain";
+
+  // ---- extras
+  alarm_entity?: string;
+  sun_entity?: string;
+  show_day_progress?: boolean;
+  progress_range?: "day" | "custom";
+  progress_start?: string;
+  progress_end?: string;
+  secondary_zones?: { label: string; time_zone: string }[];
+
+  // ---- appearance (shared conventions)
+  accent_color?: string;
+  secondary_color?: string;
+  digit_color?: string;
+  card_background?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  animation?: "auto" | "on" | "off";
+  tap_action?: unknown;
+  card_version?: string;
+}
+
 export type M3CardConfig =
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
@@ -1151,7 +1221,8 @@ export type M3CardConfig =
   | M3OccupancyCardConfig
   | M3CoverCardConfig
   | M3LeakCardConfig
-  | M3WasteCardConfig;
+  | M3WasteCardConfig
+  | M3ClockCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */

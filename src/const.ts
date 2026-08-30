@@ -1102,3 +1102,96 @@ export const WASTE_COLOR_RULES: Array<[RegExp, string]> = [
   [/glas|glass/i, "#7bc4b0"],
   [/sperrm(ü|ue)ll|bulk/i, "#b8946a"],
 ];
+
+// ---------------------------------------------------------------------------
+// M3 Clock Card
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_CLOCK_RADIUS = RADIUS.card;
+/** Blue, matching the reference designs' hour tiles. */
+export const DEFAULT_CLOCK_ACCENT = PALETTE.home;
+/** Warm amber for the minute pair, the second colour in the reference. */
+export const DEFAULT_CLOCK_SECONDARY = PALETTE.light;
+
+export const CLOCK_SIZE_MIN = 0.7;
+export const CLOCK_SIZE_MAX = 1.5;
+
+// ---- tiles style
+export const CLOCK_TILE_WIDTH = 104;
+export const CLOCK_TILE_HEIGHT = 108;
+export const CLOCK_TILE_RADIUS = 30;
+export const CLOCK_TILE_DIGIT_SIZE = 54;
+/** Third tile when seconds get their own; narrower than the hour/minute pair. */
+export const CLOCK_TILE_SECONDS_WIDTH = 72;
+/** Tint percentages, applied through tintOn so they resolve against the card
+ *  surface in both themes rather than against whatever sits behind it. */
+export const CLOCK_TILE_ACCENT_TINT = 18;
+export const CLOCK_TILE_NEUTRAL_TINT = 8;
+export const CLOCK_COLON_SIZE = 7;
+export const CLOCK_COLON_RADIUS = 2;
+export const CLOCK_COLON_DIM = 0.25;
+export const CLOCK_SECONDS_BAR_HEIGHT = 6;
+export const CLOCK_SECONDS_BAR_RADIUS = 3;
+export const CLOCK_SECONDS_TRACK_TINT = 9;
+/** Roll animation: the outgoing digit leaves, the incoming one follows late. */
+export const CLOCK_ROLL_MS = 400;
+export const CLOCK_ROLL_DELAY_MS = 200;
+
+// ---- narrow layout
+/** Below this the tiles shrink; measured against the card, not the viewport. */
+export const CLOCK_NARROW_PX = 240;
+export const CLOCK_TILE_WIDTH_NARROW = 84;
+export const CLOCK_TILE_HEIGHT_NARROW = 88;
+
+// ---- shape motion
+/** Radians per second, not per frame: a 120Hz display must not spin twice as
+ *  fast as a 60Hz one. */
+export const CLOCK_SHAPE_SPEED_RAD_S = { slow: 0.12, normal: 0.24, fast: 0.5 } as const;
+
+/** A jump larger than this means standby or a DST change, not the clock
+ *  advancing — recompute rather than animate across it. */
+export const CLOCK_TIME_JUMP_MS = 120_000;
+
+// ---- shapes style
+export const CLOCK_CELL = 72;
+export const CLOCK_CELL_NARROW = 56;
+export const CLOCK_CELL_DIGIT = 46;
+/** Negative: the two digits of a pair overlap so "14" reads as one number
+ *  rather than as two separate badges. */
+export const CLOCK_DIGIT_OVERLAP = -12;
+export const CLOCK_DIGIT_OVERLAP_MIN = -20;
+export const CLOCK_DIGIT_OVERLAP_MAX = 0;
+export const CLOCK_PAIR_GAP = 7;
+export const CLOCK_SHAPES_MINUTE_TINT = 22;
+export const CLOCK_DIGIT_POP_MS = 260;
+
+// ---- lockscreen style
+export const CLOCK_LOCK_DIGIT = 78;
+export const CLOCK_LOCK_DIGIT_NARROW = 56;
+export const CLOCK_LOCK_STROKE = 2;
+export const CLOCK_LOCK_DECOR = 86;
+export const CLOCK_LOCK_DECOR_OPACITY = 0.5;
+
+// ---- scallop style
+export const CLOCK_DIAL = 200;
+export const CLOCK_DIAL_OUTER_TINT = 16;
+export const CLOCK_DIAL_INNER_TINT = 10;
+export const CLOCK_HAND_HOUR = 11;
+export const CLOCK_HAND_MINUTE = 7;
+export const CLOCK_TICK_MAJOR_R = 4.5;
+export const CLOCK_TICK_MINOR_R = 2.2;
+export const CLOCK_TICK_MAJOR_OPACITY = 0.7;
+export const CLOCK_TICK_MINOR_OPACITY = 0.25;
+export const CLOCK_HUB_R = 8;
+export const CLOCK_SECOND_FLOWER_R = 9;
+
+// ---- ring style
+export const CLOCK_RING_SEGMENTS = 60;
+export const CLOCK_RING_OUTER = 88;
+export const CLOCK_RING_INNER = 78;
+export const CLOCK_RING_STROKE = 4;
+export const CLOCK_RING_TRACK_TINT = 9;
+export const CLOCK_RING_PAST_OPACITY = 0.75;
+export const CLOCK_RING_TIME_SIZE = 34;
+export const CLOCK_RING_SECONDS_SIZE = 13;
+export const CLOCK_RING_DRAIN_MS = 400;
