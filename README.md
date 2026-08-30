@@ -3,12 +3,6 @@
 > **⚠️ Beta:** This project is new and under active development.
 > Configuration options may still change between versions — please file an
 > issue if you run into something.
->
-> **Known issue — accent colours in a light theme.** The palette is built for
-> dark backgrounds. In a light theme, values set in the accent colour (large
-> figures, percentages, status colours) carry less contrast than the
-> surrounding text and read as pale. Card surfaces, tinted fills and bars were
-> corrected in 2.0; the foreground colours follow in 2.0.1.
 
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
@@ -2249,6 +2243,7 @@ entities:
 | --- | --- | --- | --- |
 | `mode` | `info` \| `reminder` | `info` | Information only, or escalate + acknowledge |
 | `entities` | list | – | Sensors (days-until-collection): id or `{ entity, name, icon, color }` |
+| `calendar_entity` | string | – | A calendar with one event per collection, the event summary naming the bin. Merged with `entities`. |
 | `hero_primary` | `days` \| `weekday` | `days` | Hero shows "in 3 days" or "Monday" |
 | `hero_icon` | `first` \| `multi` | `first` | Single icon or overlapping bin icons |
 | `show_timeline` | boolean | `true` | Two-week timeline |

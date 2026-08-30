@@ -1,7 +1,7 @@
 # Akzentfarben im hellen Theme
 
 Was das Problem war, wie es gelöst wurde und woran man erkennt, dass es gelöst
-bleibt. Geschrieben nach der Umsetzung in 2.0.1 — die Fassung davor hielt nur
+bleibt. Geschrieben nach der Umsetzung in 2.1.0 — die Fassung davor hielt nur
 die Messung und zwei Vorschläge fest.
 
 ## Das Problem

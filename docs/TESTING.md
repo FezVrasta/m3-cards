@@ -32,7 +32,7 @@ Theme-Fehler. Eine, die in beiden auffällt, ist eine Gestaltungsentscheidung �
 weiße Initialen auf dem Präsenz-Avatar und der gedämpfte „Unverändert"-Knopf
 der Zeitkarte stehen dort dauerhaft und sollen so bleiben.
 
-Stand 2.0.1: hell 3, dunkel 4, und alle drei hellen Funde stehen auch in der
+Stand 2.1.0: hell 3, dunkel 4, und alle drei hellen Funde stehen auch in der
 dunklen Liste.
 
 Warum als Datei und nicht als Konsolenschnipsel: Die Ad-hoc-Fassung hat sich an
@@ -377,18 +377,14 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 
 ## Bekannte Einschränkungen
 
-- **Akzentfarben im hellen Theme:** Werte in der Akzentfarbe (große Zahlen,
-  Prozentangaben, Statusfarben) haben im hellen Theme weniger Kontrast als der
-  übrige Text. Ursache ist die für dunkle Gründe entworfene Palette, nicht ein
-  Fehler einer einzelnen Karte. Beim Durchgang im hellen Theme also nicht als
-  Kartenfehler notieren — die Vordergrundfarben werden in 2.0.1 überarbeitet.
+Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und
+der Masonry-Kollaps von `m3-climate-card-mini` und `m3-button-card` — sind mit
+2.1.0 behoben. Was bewusst offen bleibt, steht in
+[`light-theme-colors.md`](light-theme-colors.md) unter „Was bewusst offen
+bleibt": drei Kontrastfunde, die in beiden Themes auftreten und damit
+Gestaltungsentscheidungen sind, keine Fehler.
 
-- **`m3-climate-card-mini` und `m3-button-card` in HA's Standard-„Masonry“-Ansicht:**
-  Beide Karten können in einer Masonry-View (HA's Default-Dashboard-Typ, im
-  Unterschied zur „Sections“-Ansicht) auf 0px Höhe kollabieren und unsichtbar
-  bleiben. Reproduziert nur in Masonry — in „Sections“-Views (der Typ, den alle
-  bisher bekannten produktiven Dashboards verwenden) tritt der Fehler nicht auf.
-  Ursache noch nicht gefunden (ein erster Fix-Versuch — `getGridOptions().rows`
-  von einer festen Zahl auf `"auto"` umgestellt, konsistent mit allen anderen
-  Karten — hat das Problem nicht behoben). Nicht release-blockierend, aber vor
-  einem 1.0-Release oder bei Berichten von Masonry-Nutzern erneut aufgreifen.
+Für die Masonry-Ansicht gilt weiter: Beide Karten haben dort eine Mindesthöhe
+(56 px beziehungsweise 112 px), weil ihre Karte ein Größen-Container ist und
+eine Masonry-Spalte keine Höhe vorgibt. Beim Durchgang also prüfen, dass eine
+kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.

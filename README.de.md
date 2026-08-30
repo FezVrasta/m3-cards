@@ -3,13 +3,6 @@
 > **⚠️ Beta:** Dieses Projekt ist neu und befindet sich in aktiver
 > Entwicklung. Konfigurationsoptionen können sich zwischen Versionen noch
 > ändern — bitte Issues melden, wenn dir etwas auffällt.
->
-> **Bekannte Einschränkung — Akzentfarben im hellen Theme.** Die Farbpalette
-> ist für dunkle Hintergründe entworfen. Im hellen Theme haben Werte, die in
-> der Akzentfarbe gesetzt sind (große Zahlen, Prozentangaben, Statusfarben),
-> weniger Kontrast als der übrige Text und wirken blass. Kartenflächen,
-> getönte Flächen und Balken sind mit 2.0 korrigiert, die Vordergrundfarben
-> folgen in 2.0.1.
 
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
@@ -2299,6 +2292,7 @@ entities:
 | --- | --- | --- | --- |
 | `mode` | `info` \| `reminder` | `info` | Nur Anzeige oder Eskalation + Quittieren |
 | `entities` | Liste | – | Sensoren (Tage bis Abholung): ID oder `{ entity, name, icon, color }` |
+| `calendar_entity` | string | – | Kalender mit einem Eintrag je Abholung, dessen Titel die Tonne benennt. Wird mit `entities` zusammengeführt. |
 | `hero_primary` | `days` \| `weekday` | `days` | Hero zeigt „in 3 Tagen" oder „Montag" |
 | `hero_icon` | `first` \| `multi` | `first` | Einzelnes oder überlappende Tonnen-Icons |
 | `show_timeline` | boolean | `true` | Zwei-Wochen-Zeitleiste |
