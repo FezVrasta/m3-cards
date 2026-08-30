@@ -54,7 +54,12 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3PowerSummaryCardConfig;
+  /** The value actually shown. Only assigned when the *rendered* text would
+   * change, which is what keeps the count-up animation from re-rendering the
+   * card on every frame. */
   @state() private _displayGridValue = 0;
+  /** The precise, per-frame value. Deliberately not @state. */
+  private _preciseGridValue = 0;
 
   private _gridValueInitialized = false;
   private _lerpStart = 0;
@@ -128,6 +133,14 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     }
   }
 
+  /** The granularity the reading is displayed at, so two values that would
+   * render the same text compare equal. Mirrors _formatWatts: whole watts
+   * below the kW threshold, tenths of a kW above it. */
+  private _displayStep(value: number): number {
+    const kwThreshold = this._config?.kw_threshold ?? DEFAULT_SUMMARY_KW_THRESHOLD;
+    return Math.abs(value) >= kwThreshold ? Math.round(value / 100) : Math.round(value);
+  }
+
   private _startLerp(from: number, to: number): void {
     this._lerpFrom = from;
     this._lerpTo = to;
@@ -136,10 +149,19 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     const step = (now: number) => {
       const t = Math.min(1, (now - this._lerpStart) / SUMMARY_VALUE_LERP_MS);
       const eased = 1 - Math.pow(1 - t, 3);
-      this._displayGridValue = this._lerpFrom + (this._lerpTo - this._lerpFrom) * eased;
+      this._preciseGridValue = this._lerpFrom + (this._lerpTo - this._lerpFrom) * eased;
+      // A 500 ms count-up runs about 30 frames, but the reading is rounded to
+      // whole watts (or a tenth of a kW), so most frames would render text
+      // identical to the frame before. Assigning the @state only when the
+      // rounded reading actually moves cut this card from 352 renders in 20
+      // seconds to a handful.
+      if (this._displayStep(this._preciseGridValue) !== this._displayStep(this._displayGridValue)) {
+        this._displayGridValue = this._preciseGridValue;
+      }
       if (t < 1) {
         this._rafId = requestAnimationFrame(step);
       } else {
+        this._preciseGridValue = this._lerpTo;
         this._displayGridValue = this._lerpTo;
         this._rafId = undefined;
       }
@@ -243,12 +265,16 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
     const targetValue = direction === "export" ? gridExportW : direction === "import" ? gridImportW : 0;
     const animate = shouldAnimate(this._config.animation);
     if (!this._gridValueInitialized) {
+      this._preciseGridValue = targetValue;
       this._displayGridValue = targetValue;
       this._gridValueInitialized = true;
     } else if (!animate) {
-      if (this._displayGridValue !== targetValue) this._displayGridValue = targetValue;
+      if (this._displayGridValue !== targetValue) {
+        this._preciseGridValue = targetValue;
+        this._displayGridValue = targetValue;
+      }
     } else if (this._lerpTo !== targetValue) {
-      this._startLerp(this._displayGridValue, targetValue);
+      this._startLerp(this._preciseGridValue, targetValue);
     }
 
     const mainIcon =
