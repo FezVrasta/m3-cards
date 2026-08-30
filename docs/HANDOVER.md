@@ -21,6 +21,11 @@ entries in `docs/TESTING.md`:
 | `m3-heading-card` | Section headings between cards | Draws no card of its own |
 | `m3-room-card` | One card per HA area, everything discovered | The biggest of the four |
 
+The climate overview card also gained `tile_tap_action: thermostat` — a tap on
+a room opens that room's thermostat (`m3-climate-card-mini`, floating over the
+card) instead of the sensor's history graph. Asked for on Reddit. The default
+is unchanged, and a room with no thermostat falls back to the graph.
+
 Four new shared modules:
 
 - `shared/shapes.ts` — the lobed-shape generator (cookie, clover, flower,
@@ -146,5 +151,9 @@ status card's toggle. It can be deleted.
 5. **Group B of the old light-theme list** — eight cards that set colours
    outside `buildCssVars`. Largely absorbed by later work, never formally
    closed.
-6. **The status card's alarm-chip path is untested** — no `next_alarm` entity
+6. **Climate overview, thermostat tap:** a room grouped by *device* rather than
+   by area has no area to look a thermostat up in, so auto-discovery finds
+   nothing there. `climate_entity` per room is the answer. If this comes up
+   often, `discoverClimateRooms` could resolve the device's area into `areaId`.
+7. **The status card's alarm-chip path is untested** — no `next_alarm` entity
    exists on the author's instance.

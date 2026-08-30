@@ -542,6 +542,18 @@ gefunden.
 - [ ] Beide Themes mit `test/contrast-audit.js` prüfen — aktive Kacheln tragen
       Tinte auf einer Volltonfläche, inaktive auf einer neutralen Tönung
 
+## M3 Climate Overview — Thermostat-Tap
+
+- [ ] Ohne `tile_tap_action`: ein Tap öffnet wie bisher den Sensordialog
+- [ ] `tile_tap_action: thermostat`: der Tap öffnet das Thermostat des Raums,
+      das sich in der Karte bedienen lässt
+- [ ] Raum ohne auffindbares Thermostat: fällt auf den Verlauf zurück, der Tap
+      läuft **nicht** ins Leere
+- [ ] Über das Gerät gruppierter Raum (ohne Bereich): findet nichts automatisch,
+      `climate_entity` je Raum ist dafür da
+- [ ] Schließen per X und per Klick auf den Hintergrund, mit Ausblenden
+- [ ] `animation: off`: öffnet und schließt ohne Übergang
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und

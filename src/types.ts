@@ -777,6 +777,9 @@ export interface ClimateOverviewRoomConfig {
   icon?: string;
   temperature_entity: string;
   humidity_entity?: string;
+  /** The room's thermostat, for `tile_tap_action: thermostat`. Discovered from
+   *  the room's area when unset. */
+  climate_entity?: string;
   color?: string;
 }
 
@@ -792,6 +795,12 @@ export interface M3ClimateOverviewCardConfig extends NotifyConfigBase {
   name?: string;
   icon?: string;
   sort?: ClimateOverviewSort;
+  /**
+   * What a tap on a room does. `history` opens the sensor's own dialog, which
+   * is the graph; `thermostat` opens that room's thermostat instead, which is
+   * what people reach for when they tap a temperature.
+   */
+  tile_tap_action?: "history" | "thermostat";
   show_scale?: boolean;
   /** Room names along the comparison scale; off leaves only the dots. */
   show_scale_labels?: boolean;

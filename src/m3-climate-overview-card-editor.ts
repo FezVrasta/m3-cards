@@ -234,6 +234,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       { name: "icon", selector: { icon: {} } },
       { name: "temperature_entity", required: true, selector: { entity: { domain: "sensor", device_class: "temperature" } } },
       { name: "humidity_entity", selector: { entity: { domain: "sensor", device_class: "humidity" } } },
+      { name: "climate_entity", selector: { entity: { domain: "climate" } } },
     ];
   }
 
@@ -251,6 +252,18 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               { value: "temp_desc", label: this._t("editor_climate_overview_sort_temp_desc") },
               { value: "temp_asc", label: this._t("editor_climate_overview_sort_temp_asc") },
               { value: "name", label: this._t("editor_climate_overview_sort_name") },
+            ],
+          },
+        },
+      },
+      {
+        name: "tile_tap_action",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "history", label: this._t("editor_climate_tap_history") },
+              { value: "thermostat", label: this._t("editor_climate_tap_thermostat") },
             ],
           },
         },
@@ -329,6 +342,8 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       icon: "editor_icon",
       temperature_entity: "editor_climate_overview_room_temp_entity",
       humidity_entity: "editor_climate_overview_room_humidity_entity",
+      climate_entity: "editor_climate_room_climate",
+      tile_tap_action: "editor_climate_tile_tap",
       sort: "editor_climate_overview_sort",
       show_scale: "editor_climate_overview_show_scale",
       show_scale_labels: "editor_climate_overview_show_scale_labels",
@@ -511,6 +526,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       name: this._config.name,
       icon: this._config.icon,
       sort: this._config.sort ?? "area",
+      tile_tap_action: this._config.tile_tap_action ?? "history",
       show_scale: this._config.show_scale ?? true,
       show_scale_labels: this._config.show_scale_labels ?? true,
       show_outlier_chip: this._config.show_outlier_chip ?? true,

@@ -1521,6 +1521,33 @@ Raums in der letzten Stunde um mehr als 0,5 K geändert hat (über die
 History-API abgerufen, alle 15 Minuten aktualisiert). `show_mold_warning`
 zeigt ein Warnsymbol auf Kacheln über 65 % Feuchte **und** unter 18 °C.
 
+### Statt des Verlaufs das Thermostat öffnen
+
+Ein Tap auf einen Raum öffnet den Dialog des Sensors — also seinen
+Verlaufsgraphen. `tile_tap_action: thermostat` öffnet stattdessen das Thermostat
+des Raums: das eigene `m3-climate-card-mini` der Suite, schwebend über der
+Karte und dort direkt bedienbar.
+
+```yaml
+type: custom:m3-climate-overview-card
+tile_tap_action: thermostat
+```
+
+Gesucht wird eine `climate`-Entität im selben Bereich wie der Raum. Räume
+stammen meist aus einem Bereich, das trifft also weit öfter zu als nicht — ein
+über das *Gerät* gruppierter Raum hat aber keinen Bereich, in dem gesucht
+werden könnte. Dort benennt `climate_entity` es direkt:
+
+```yaml
+rooms:
+  - name: Wohnzimmer
+    temperature_entity: sensor.wohnzimmer_temperatur
+    climate_entity: climate.wohnzimmer
+```
+
+Ein Raum ohne Thermostat verhält sich wie bisher und öffnet den Verlauf. Ein
+Tap, der nichts öffnet, wäre schlimmer als einer, der das Falsche öffnet.
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -1531,6 +1558,7 @@ zeigt ein Warnsymbol auf Kacheln über 65 % Feuchte **und** unter 18 °C.
 | `rooms` | Liste (`name`, `icon`, `temperature_entity`, `humidity_entity`) | – | Manuelle Raumliste statt Auto-Discovery |
 | `name_strip` | list\<string\> | siehe oben | Namens-Suffixe/-Präfixe, die aus automatisch erkannten Namen entfernt werden |
 | `name` / `icon` | string | "Raumklima" / `mdi:thermometer` | Header |
+| `tile_tap_action` | `history` \| `thermostat` | `history` | Was ein Tap auf einen Raum öffnet |
 | `sort` | `area` \| `temp_desc` \| `temp_asc` \| `name` | `area` | Kachel-Reihenfolge |
 | `show_scale` | boolean | `true` | Vergleichsskala unter dem Kachelraster |
 | `show_outlier_chip` | boolean | `true` | Header-Chip für den auffälligsten Raum |

@@ -1394,3 +1394,6 @@ export const ROOM_ARROW = HEADING_ARROW;
 export const ROOM_ARROW_RADIUS = HEADING_ARROW_RADIUS;
 export const ROOM_ARROW_RADIUS_FOLDED = HEADING_ARROW_RADIUS_COLLAPSED;
 export const ROOM_ARROW_TINT = HEADING_ARROW_TINT;
+
+/** The thermostat sheet the climate overview opens on a room tap. */
+export const CLIMATE_SHEET_MS = ROOM_SHEET_MS;

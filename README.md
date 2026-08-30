@@ -1500,6 +1500,32 @@ than 0.5 K in the last hour (fetched via the History API, refreshed every
 15 minutes). `show_mold_warning` adds a warning icon on tiles above 65%
 humidity **and** below 18°C.
 
+### Opening the thermostat instead of the graph
+
+A tap on a room opens that sensor's own dialog, which is its history graph.
+`tile_tap_action: thermostat` opens the room's thermostat instead — the suite's
+own `m3-climate-card-mini`, floating over the card, adjustable there and then.
+
+```yaml
+type: custom:m3-climate-overview-card
+tile_tap_action: thermostat
+```
+
+The thermostat is found by looking for a `climate` entity in the same Home
+Assistant area as the room. Rooms are usually derived from an area, so that is
+right far more often than not — but a room grouped by *device* has no area to
+look in, and there `climate_entity` names it outright:
+
+```yaml
+rooms:
+  - name: Living room
+    temperature_entity: sensor.living_room_temperature
+    climate_entity: climate.living_room
+```
+
+A room with no thermostat keeps the old behaviour and opens the graph. A tap
+that opens nothing would be worse than one that opens the wrong thing.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -1510,6 +1536,7 @@ humidity **and** below 18°C.
 | `rooms` | list (`name`, `icon`, `temperature_entity`, `humidity_entity`) | – | Manual room list instead of auto-discovery |
 | `name_strip` | list\<string\> | see above | Name suffixes/prefixes to remove from auto-discovered names |
 | `name` / `icon` | string | "Climate" / `mdi:thermometer` | Header |
+| `tile_tap_action` | `history` \| `thermostat` | `history` | What a tap on a room opens |
 | `sort` | `area` \| `temp_desc` \| `temp_asc` \| `name` | `area` | Tile order |
 | `show_scale` | boolean | `true` | Comparison scale below the tile grid |
 | `show_outlier_chip` | boolean | `true` | Header chip for the most conspicuous room |

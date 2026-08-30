@@ -8,6 +8,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Climate Overview — `tile_tap_action: thermostat`.** A tap on a room
+  opened the sensor's dialog, which is its history graph; it can now open that
+  room's thermostat instead — `m3-climate-card-mini`, floating over the card and
+  adjustable there. The thermostat is found in the room's own Home Assistant
+  area, or named per room with `climate_entity`. A room with no thermostat
+  keeps the graph rather than going dead. Asked for on Reddit; the default is
+  unchanged.
+
 - **M3 Room Card — folding.** `collapsible: true` puts a chevron in the header
   and folds the card down to it. The subtitle stays, because "occupied · 3
   devices on" is exactly what a folded room still needs to say. The state
@@ -106,6 +114,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Climate Overview — `tile_tap_action: thermostat`.** Ein Tap auf einen
+  Raum öffnete den Sensordialog, also dessen Verlaufsgraphen; er kann jetzt
+  stattdessen das Thermostat des Raums öffnen — `m3-climate-card-mini`,
+  schwebend über der Karte und dort bedienbar. Gefunden wird es im Bereich des
+  Raums oder je Raum über `climate_entity` benannt. Ein Raum ohne Thermostat
+  behält den Verlauf, statt tot zu sein. Auf Reddit gewünscht; die Vorgabe
+  bleibt unverändert.
 
 - **M3 Room Card — Einklappen.** `collapsible: true` setzt einen Pfeil in die
   Kopfzeile und klappt die Karte auf ebendiese zusammen. Der Untertitel bleibt

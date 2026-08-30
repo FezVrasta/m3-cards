@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS, nothing, type PropertyValues } from "lit";
+import { LitElement, html, css, unsafeCSS, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -9,6 +9,7 @@ import type {
   LovelaceGridOptions,
 } from "./types";
 import {
+  CLIMATE_SHEET_MS,
   CARD_VERSION,
   DEFAULT_CLIMATE_OVERVIEW_RADIUS,
   DEFAULT_CLIMATE_OVERVIEW_ICON,
@@ -44,7 +45,7 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { fireEvent } from "./shared/editor-helpers";
-import { discoverClimateRooms, type DiscoveredClimateRoom } from "./shared/ha-registry";
+import { areaEntityIds, discoverClimateRooms, type DiscoveredClimateRoom } from "./shared/ha-registry";
 import { fetchValueHoursAgo } from "./shared/ha-statistics";
 import { formatNumber } from "./shared/formatting";
 import { guessRoomIcon } from "./shared/room-icons";
@@ -72,6 +73,8 @@ interface ClimateOverviewTile {
   humidityUnavailable: boolean;
   hasHumidity: boolean;
   tempColor: string;
+  /** The room's thermostat, when one is configured or discoverable. */
+  climateEntity?: string;
 }
 
 
@@ -82,6 +85,13 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
   @state() private _config?: M3ClimateOverviewCardConfig;
   @state() private _discovered: DiscoveredClimateRoom[] = [];
   @state() private _trendValues: Map<string, number> = new Map();
+  /** The climate entity whose thermostat sheet is open, if any. */
+  @state() private _thermostat?: string;
+  @state() private _thermostatClosing = false;
+  private _thermostatName?: string;
+  private _thermostatTimer?: number;
+  private _miniCard?: HTMLElement;
+  private _miniEntity?: string;
 
   private _lastDiscoverKey?: string;
   private _discoverInFlight = false;
@@ -282,6 +292,8 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           icon: r.icon,
           tempEntity: r.temperature_entity,
           humidityEntity: r.humidity_entity,
+          climateEntity: r.climate_entity,
+          areaId: undefined as string | undefined,
           color: r.color,
         }))
       : this._discovered.map((r) => ({
@@ -290,6 +302,8 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           icon: r.icon,
           tempEntity: r.temperatureEntity,
           humidityEntity: r.humidityEntity,
+          climateEntity: undefined as string | undefined,
+          areaId: r.areaId,
           color: undefined as string | undefined,
         }));
 
@@ -318,6 +332,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         humidityUnavailable,
         hasHumidity: !!room.humidityEntity,
         tempColor: room.color ? resolveThemeColor(room.color) : this._tempColor(stage),
+        climateEntity: this._climateFor(room.areaId, room.climateEntity),
       };
     });
   }
@@ -358,6 +373,98 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
 
   private _moreInfo(entityId: string): () => void {
     return () => fireEvent(this, "hass-more-info", { entityId });
+  }
+
+  /**
+   * The thermostat a room's tile should open.
+   *
+   * Configured per room first, then the first `climate` entity sitting in the
+   * same Home Assistant area as the room. Rooms here are usually *derived*
+   * from an area, so that lookup is right far more often than it is wrong —
+   * and where it is wrong, `climate_entity` says so outright.
+   */
+  private _climateFor(areaId: string | undefined, configured?: string): string | undefined {
+    if (configured) return configured;
+    if (!areaId || !this.hass) return undefined;
+    return areaEntityIds(this.hass, areaId).find((id) => id.startsWith("climate."));
+  }
+
+  private _onTileTap(tile: ClimateOverviewTile): () => void {
+    return () => {
+      if (this._config?.tile_tap_action !== "thermostat") {
+        fireEvent(this, "hass-more-info", { entityId: tile.entity });
+        return;
+      }
+      // A tap that opens nothing is worse than one that opens the graph, so a
+      // room with no thermostat keeps the old behaviour rather than going dead.
+      if (!tile.climateEntity) {
+        fireEvent(this, "hass-more-info", { entityId: tile.entity });
+        return;
+      }
+      window.clearTimeout(this._thermostatTimer);
+      this._thermostatClosing = false;
+      this._thermostat = tile.climateEntity;
+      this._thermostatName = tile.name;
+    };
+  }
+
+  private _closeThermostat = (): void => {
+    if (!shouldAnimate(this._config?.animation)) {
+      this._thermostat = undefined;
+      return;
+    }
+    this._thermostatClosing = true;
+    window.clearTimeout(this._thermostatTimer);
+    this._thermostatTimer = window.setTimeout(() => {
+      this._thermostat = undefined;
+      this._thermostatClosing = false;
+    }, CLIMATE_SHEET_MS);
+  };
+
+  /**
+   * The suite's own thermostat, kept as one element and re-pointed rather than
+   * rebuilt: recreating it on every render would restart its animations and
+   * drop any adjustment in flight.
+   */
+  private _thermostatCard(entityId: string): HTMLElement {
+    if (!this._miniCard || this._miniEntity !== entityId) {
+      const el = document.createElement("m3-climate-card-mini");
+      el.setConfig({ type: "custom:m3-climate-card-mini", entity: entityId });
+      this._miniCard = el;
+      this._miniEntity = entityId;
+    }
+    (this._miniCard as HTMLElement & { hass?: HomeAssistant }).hass = this.hass;
+    return this._miniCard;
+  }
+
+  private _renderThermostatSheet(): TemplateResult | typeof nothing {
+    const entityId = this._thermostat;
+    if (!entityId) return nothing;
+    return html`
+      <div
+        class="scrim ${this._thermostatClosing ? "closing" : ""}"
+        @click=${this._closeThermostat}
+      >
+        <div
+          class="thermo-sheet ${this._thermostatClosing ? "closing" : ""}"
+          role="dialog"
+          aria-label=${this._thermostatName ?? entityId}
+          @click=${(e: Event) => e.stopPropagation()}
+        >
+          <div class="thermo-head">
+            <span class="thermo-title">${this._thermostatName ?? ""}</span>
+            <button
+              class="thermo-close"
+              aria-label=${localize("room_close", this._language)}
+              @click=${this._closeThermostat}
+            >
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+          ${this._thermostatCard(entityId)}
+        </div>
+      </div>
+    `;
   }
 
   // The single most conspicuous room: whichever tile deviates furthest
@@ -623,6 +730,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
             : html`<div class="room-grid">${tiles.map((t) => this._renderTile(t))}</div>`}
 
           ${this._config.show_scale !== false ? this._renderCompareScale(tiles) : nothing}
+          ${this._renderThermostatSheet()}
         </div>
       </ha-card>
     `;
@@ -640,8 +748,8 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         tabindex="0"
         aria-label=${tile.name}
         title=${tile.name}
-        @click=${this._moreInfo(tile.entity)}
-        @keydown=${activateOnKey(this._moreInfo(tile.entity))}
+        @click=${this._onTileTap(tile)}
+        @keydown=${activateOnKey(this._onTileTap(tile))}
       >
         <div class="tile-header">
           <ha-icon icon=${tile.icon}></ha-icon>
@@ -889,7 +997,105 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         color: var(--m3p-secondary-text);
         margin-top: 2px;
       }
-    `,
+    
+      /* ---- thermostat sheet ---- */
+
+      .card-inner {
+        position: relative;
+      }
+
+      .scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        animation: thermo-fade ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING} both;
+      }
+
+      .scrim.closing {
+        animation: thermo-fade ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING} reverse both;
+      }
+
+      /* The thermostat keeps its own card frame and simply floats on the
+         scrim. Wrapping it in a second panel would put one card border inside
+         another, which reads as a mistake. */
+      .thermo-sheet {
+        width: 100%;
+        max-width: 340px;
+        max-height: 100%;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        animation: thermo-rise ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING} both;
+      }
+
+      .thermo-sheet.closing {
+        animation: thermo-rise ${unsafeCSS(CLIMATE_SHEET_MS)}ms ${EASING} reverse both;
+      }
+
+      @keyframes thermo-fade {
+        from {
+          opacity: 0;
+        }
+      }
+
+      @keyframes thermo-rise {
+        from {
+          transform: translateY(12px) scale(0.96);
+          opacity: 0;
+        }
+      }
+
+      .thermo-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 4px;
+      }
+
+      .thermo-title {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .thermo-close {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        --mdc-icon-size: 18px;
+      }
+
+      .thermo-close:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+
+      .no-animations .scrim,
+      .no-animations .thermo-sheet {
+        animation: none;
+      }
+`,
   ];
 }
 
