@@ -1121,8 +1121,6 @@ export const CLOCK_TILE_WIDTH = 104;
 export const CLOCK_TILE_HEIGHT = 108;
 export const CLOCK_TILE_RADIUS = 30;
 export const CLOCK_TILE_DIGIT_SIZE = 54;
-/** Third tile when seconds get their own; narrower than the hour/minute pair. */
-export const CLOCK_TILE_SECONDS_WIDTH = 72;
 /** Tint percentages, applied through tintOn so they resolve against the card
  *  surface in both themes rather than against whatever sits behind it. */
 export const CLOCK_TILE_ACCENT_TINT = 18;

@@ -65,7 +65,6 @@ import {
   CLOCK_TILE_HEIGHT_NARROW,
   CLOCK_TILE_NEUTRAL_TINT,
   CLOCK_TILE_RADIUS,
-  CLOCK_TILE_SECONDS_WIDTH,
   CLOCK_TILE_WIDTH,
   CLOCK_TILE_WIDTH_NARROW,
   CLOCK_TIME_JUMP_MS,
@@ -499,8 +498,7 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       ` --clock-tile-h: ${(this._narrow ? CLOCK_TILE_HEIGHT_NARROW : CLOCK_TILE_HEIGHT) * size}px;` +
       ` --clock-digit: ${CLOCK_TILE_DIGIT_SIZE * size}px;` +
       ` --clock-tile-r: ${CLOCK_TILE_RADIUS * size}px;` +
-      ` --clock-sec-w: ${CLOCK_TILE_SECONDS_WIDTH * size}px;` +
-      ` --clock-cell: ${(this._narrow ? CLOCK_CELL_NARROW : CLOCK_CELL) * size}px;` +
+           ` --clock-cell: ${(this._narrow ? CLOCK_CELL_NARROW : CLOCK_CELL) * size}px;` +
       ` --clock-lock: ${(this._narrow ? CLOCK_LOCK_DIGIT_NARROW : CLOCK_LOCK_DIGIT) * size}px;` +
       ` --clock-lock-inset: ${CLOCK_LOCK_INSET * size}px;`;
 
@@ -828,14 +826,13 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
       color: var(--clock-hour-ink);
     }
 
+    /* Same size as the hour and minute tiles. The spec had this one narrower,
+       but three tiles of one size read as a set; a short third one reads as an
+       afterthought. */
     .tile.minutes,
     .tile.seconds {
       background: var(--clock-minute-bg);
       color: var(--clock-minute-ink);
-    }
-
-    .tile.seconds {
-      width: var(--clock-sec-w);
     }
 
     .digits {
