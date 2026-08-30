@@ -211,6 +211,11 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
     if (
       previous.locale !== this.hass.locale ||
       previous.language !== this.hass.language ||
+      // A theme change repaints every colour on the card, and it is the one
+      // signal the ticker cannot supply: while the card is scrolled out of
+      // view the ticker is stopped by design, so without this the card keeps
+      // the previous theme's tints until it happens to tick again.
+      previous.themes !== this.hass.themes ||
       previous.config?.time_zone !== this.hass.config?.time_zone
     ) {
       return true;

@@ -28,6 +28,17 @@
 // coloured avatar and a deliberately muted disabled button both show up, and
 // both are fine. Compare the two themes — a site that reports in only one of
 // them is a theme fault; one that reports in both is a design decision.
+//
+// Two limits worth knowing before chasing a finding:
+//
+//   It composites CSS backgrounds only. Text laid over an SVG fill — the clock
+//   card's digits inside their lobed shapes — is measured against the card
+//   behind the SVG instead, so it reports a failure where the real pair is
+//   fine. Check the fill by hand before believing one of those.
+//
+//   Run it on a settled theme. Switching and measuring straight away catches
+//   the page mid-repaint and returns a mixture of both themes' colours, which
+//   looks exactly like a real inconsistency.
 
 (function () {
   const ZIEL_TEXT_KLEIN = 4.5; // WCAG AA, body text
