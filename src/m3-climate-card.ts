@@ -663,7 +663,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       border-radius: 16px;
       font-size: 13px;
       font-weight: 500;
-      background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       color: var(--primary-text-color);
     }
 
@@ -681,7 +681,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
     }
 
     .battery-chip {
-      background: color-mix(in srgb, var(--error-color, #eb5757) 16%, transparent);
+      background: color-mix(in srgb, var(--error-color, #eb5757) 16%, var(--ha-card-background, var(--card-background-color)));
       color: var(--error-color, #eb5757);
     }
 
@@ -699,7 +699,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       justify-content: center;
       border: none;
       border-radius: 26px;
-      background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       color: var(--primary-text-color);
       cursor: pointer;
       padding: 0;
@@ -748,7 +748,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       gap: 6px;
       padding: 0 14px;
       border-radius: 18px;
-      background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       color: var(--primary-text-color);
       font-size: 13px;
       font-weight: 500;
@@ -769,7 +769,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       gap: 8px;
       border: none;
       border-radius: 24px;
-      background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       color: var(--primary-text-color);
       font-size: 14px;
       font-weight: 600;
@@ -796,7 +796,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       font-size: 24px;
       font-weight: 500;
       color: var(--primary-text-color);
-      background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -826,7 +826,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       flex: 1;
       min-width: 0;
       border-radius: 12px;
-      background: color-mix(in srgb, var(--primary-text-color) 4%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 4%, var(--ha-card-background, var(--card-background-color)));
       display: flex;
       flex-direction: column;
       align-content: center;

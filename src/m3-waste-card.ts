@@ -530,8 +530,8 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
     glassCardStyles,
     css`
       .card-inner.escalate {
-        background: color-mix(in srgb, var(--waste-accent) 7%, transparent);
-        border-color: color-mix(in srgb, var(--waste-accent) 30%, transparent);
+        background: color-mix(in srgb, var(--waste-accent) 7%, var(--ha-card-background, var(--card-background-color)));
+        border-color: color-mix(in srgb, var(--waste-accent) 30%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .hero {
@@ -540,10 +540,10 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
         gap: 12px;
         padding: 13px;
         border-radius: 20px;
-        background: color-mix(in srgb, var(--waste-accent) 9%, transparent);
+        background: color-mix(in srgb, var(--waste-accent) 9%, var(--ha-card-background, var(--card-background-color)));
       }
       .hero.escalate {
-        background: color-mix(in srgb, var(--waste-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--waste-accent) 20%, var(--ha-card-background, var(--card-background-color)));
       }
       .hero-icon {
         flex-shrink: 0;
@@ -621,7 +621,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
         align-items: center;
         font-size: 12px;
         font-weight: 600;
-        background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 10%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
       }
       .ack-btn {
@@ -631,7 +631,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
         border: none;
         border-radius: 23px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 12%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 12%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -666,7 +666,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
         height: 3px;
         transform: translateY(-50%);
         border-radius: 2px;
-        background: color-mix(in srgb, var(--primary-text-color) 12%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 12%, var(--ha-card-background, var(--card-background-color)));
       }
       .tl-dot {
         position: absolute;
@@ -741,7 +741,7 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
         border: none;
         border-radius: 14px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
         display: flex;
         align-items: center;

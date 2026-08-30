@@ -840,7 +840,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         min-width: 0;
         height: ${SUPPLY_DOT_HEIGHT}px;
         border-radius: ${SUPPLY_DOT_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 9%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 9%, var(--ha-card-background, var(--card-background-color)));
         transition: background 300ms ${EASING};
       }
 
@@ -864,7 +864,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         position: relative;
         height: ${SUPPLY_BAR_HEIGHT}px;
         border-radius: ${SUPPLY_BAR_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 9%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 9%, var(--ha-card-background, var(--card-background-color)));
         overflow: hidden;
       }
 
@@ -892,7 +892,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         user-select: none;
         color: var(--m3s-accent-fg, var(--m3s-accent));
-        background: color-mix(in srgb, var(--m3s-accent) 16%, transparent);
+        background: color-mix(in srgb, var(--m3s-accent) 16%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .shop-chip.done {
@@ -927,7 +927,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         user-select: none;
         color: var(--m3s-text);
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         transition: transform 150ms ${EASING};
       }
 

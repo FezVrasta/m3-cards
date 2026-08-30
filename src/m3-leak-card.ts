@@ -493,8 +493,8 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
     listRowStyles,
     css`
       .card-inner.state-alarm {
-        background: color-mix(in srgb, var(--leak-alarm) 9%, transparent);
-        border-color: color-mix(in srgb, var(--leak-alarm) 40%, transparent);
+        background: color-mix(in srgb, var(--leak-alarm) 9%, var(--ha-card-background, var(--card-background-color)));
+        border-color: color-mix(in srgb, var(--leak-alarm) 40%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .banner {
@@ -503,10 +503,10 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         gap: 12px;
         padding: 13px;
         border-radius: 22px;
-        background: color-mix(in srgb, var(--m3p-icon-color) 14%, transparent);
+        background: color-mix(in srgb, var(--m3p-icon-color) 14%, var(--ha-card-background, var(--card-background-color)));
       }
       .banner.alarm {
-        background: color-mix(in srgb, var(--leak-alarm) 20%, transparent);
+        background: color-mix(in srgb, var(--leak-alarm) 20%, var(--ha-card-background, var(--card-background-color)));
       }
       .banner-icon {
         flex-shrink: 0;
@@ -516,7 +516,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: color-mix(in srgb, var(--m3p-icon-color) 22%, transparent);
+        background: color-mix(in srgb, var(--m3p-icon-color) 22%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
       }
       .banner-icon ha-icon {
@@ -564,11 +564,11 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         cursor: pointer;
       }
       .valve-chip.open {
-        background: color-mix(in srgb, #6ba7dc 20%, transparent);
+        background: color-mix(in srgb, #6ba7dc 20%, var(--ha-card-background, var(--card-background-color)));
         color: #6ba7dc;
       }
       .valve-chip.closed {
-        background: color-mix(in srgb, var(--leak-stale) 20%, transparent);
+        background: color-mix(in srgb, var(--leak-stale) 20%, var(--ha-card-background, var(--card-background-color)));
         color: var(--leak-stale-fg, var(--leak-stale));
       }
       .test-chip {
@@ -581,7 +581,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
-        background: color-mix(in srgb, var(--leak-stale) 18%, transparent);
+        background: color-mix(in srgb, var(--leak-stale) 18%, var(--ha-card-background, var(--card-background-color)));
         color: var(--leak-stale-fg, var(--leak-stale));
       }
       .test-chip ha-icon {
@@ -624,7 +624,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         border: none;
         border-radius: 28px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 10%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -657,10 +657,10 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         opacity: 0.9;
       }
       .lr-row.row-wet {
-        background: color-mix(in srgb, var(--leak-alarm) 16%, transparent);
+        background: color-mix(in srgb, var(--leak-alarm) 16%, var(--ha-card-background, var(--card-background-color)));
       }
       .lr-row.row-stale {
-        background: color-mix(in srgb, var(--leak-stale) 12%, transparent);
+        background: color-mix(in srgb, var(--leak-stale) 12%, var(--ha-card-background, var(--card-background-color)));
       }
       .bat {
         display: inline-flex;
@@ -701,7 +701,7 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
         border: none;
         border-radius: 14px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
         display: flex;
         align-items: center;

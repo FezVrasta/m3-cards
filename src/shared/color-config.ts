@@ -70,7 +70,7 @@ export function tintBackground(
  * text kept the raw accent and stayed at 1.34:1 while the highlighted row next
  * to it was corrected properly.
  */
-function resolveVarCss(host: HTMLElement | undefined, css: string): string {
+export function resolveVarCss(host: HTMLElement | undefined, css: string): string {
   const m = css.trim().match(/^var\(\s*(--[\w-]+)\s*(?:,\s*([\s\S]+))?\)$/);
   if (!m) return css;
   if (host?.isConnected) {
@@ -275,8 +275,16 @@ export function fillColor(
  * at similar lightness, and the glyph disappears — measured against the well,
  * it darkens instead.
  */
-export function foregroundOn(colorCss: string, surfaceCss: string, target = 3): string {
-  return readableCached(colorCss, surfaceCss, target);
+export function foregroundOn(
+  colorCss: string,
+  surfaceCss: string,
+  target = 3,
+  host?: HTMLElement,
+): string {
+  // The host is optional but matters: without it a colour given as a custom
+  // property cannot be parsed, and this silently hands back the input — the
+  // same quiet no-op that left the waste card's rows uncorrected.
+  return readableCached(resolveVarCss(host, colorCss), surfaceCss, target);
 }
 
 /**
@@ -300,5 +308,10 @@ export function tintInk(
   defaultPercent: number,
   target = 4.5,
 ): string {
-  return foregroundOn(colorCss, tintOn(host, colorCss, opacityPercent, defaultPercent), target);
+  return foregroundOn(
+    colorCss,
+    tintOn(host, colorCss, opacityPercent, defaultPercent),
+    target,
+    host,
+  );
 }

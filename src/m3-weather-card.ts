@@ -719,7 +719,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
         height: 30px;
         padding: 0 10px;
         border-radius: ${WEATHER_CHIP_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -892,7 +892,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       .day-row {
         height: ${WEATHER_DAY_ROW_HEIGHT}px;
         border-radius: ${WEATHER_DAY_ROW_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 5%, var(--ha-card-background, var(--card-background-color)));
         display: flex;
         align-items: center;
         gap: 10px;
@@ -952,7 +952,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
         flex: 1;
         height: 4px;
         border-radius: 2px;
-        background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 10%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .day-fill {

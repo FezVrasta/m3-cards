@@ -836,7 +836,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         font-family: inherit;
         color: var(--m3t-text);
         border-radius: ${TODO_INPUT_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)));
         transition:
           border-radius 300ms ${EASING},
           background 300ms ${EASING};
@@ -844,7 +844,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
 
       .todo-input.focused {
         border-radius: ${TODO_INPUT_RADIUS_FOCUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 11%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 11%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .card-inner.no-animations .todo-input {
@@ -911,7 +911,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         user-select: none;
         color: var(--m3t-text);
-        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)));
         transition:
           border-radius ${TODO_QUICK_MORPH_MS}ms ${EASING},
           background ${TODO_QUICK_MORPH_MS}ms ${EASING};
@@ -953,7 +953,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         box-sizing: border-box;
         border-radius: ${TODO_ROW_RADIUS}px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .row.pulse {
@@ -963,7 +963,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
       @keyframes pulse {
         0%,
         100% {
-          background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+          background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         }
         30% {
           background: var(--m3t-accent-tint);
@@ -1090,7 +1090,7 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
         box-sizing: border-box;
         border-radius: ${TODO_TOGGLE_RADIUS}px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         transition: border-radius ${TODO_CHECK_MORPH_MS}ms ${EASING};
       }
 

@@ -345,7 +345,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
       : DEFAULT_COUNTER_ACCENT;
     const cellBackgroundCss = this._config.cell_background
       ? resolveThemeColor(this._config.cell_background)
-      : "color-mix(in srgb, var(--primary-text-color) 8%, transparent)";
+      : "color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)))";
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );
@@ -688,7 +688,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         opacity: 0.7;
         color: var(--m3p-secondary-text, var(--secondary-text-color));
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         transition: opacity 200ms ease;
       }
 
@@ -721,7 +721,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
         font-family: inherit;
         font-variant-numeric: tabular-nums;
         color: var(--m3p-text, var(--primary-text-color));
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .adjust-btn {
@@ -735,7 +735,7 @@ export class M3CounterCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         cursor: pointer;
         color: var(--primary-text-color);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .adjust-btn.save {

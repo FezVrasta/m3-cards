@@ -233,7 +233,7 @@ export class M3GaugeCard extends LitElement implements LovelaceCard {
       : DEFAULT_GAUGE_SEGMENT_B;
     const trackColorCss = this._config.track_color
       ? resolveThemeColor(this._config.track_color)
-      : "color-mix(in srgb, var(--primary-text-color) 12%, transparent)";
+      : "color-mix(in srgb, var(--primary-text-color) 12%, var(--ha-card-background, var(--card-background-color)))";
     const { textColorCss, secondaryTextColorCss, cardBackgroundCss } = resolveCommonColors(
       this._config,
     );

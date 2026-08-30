@@ -472,7 +472,7 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         gap: 4px;
-        background: color-mix(in srgb, ${CRITICAL_COLOR_CSS} 18%, transparent);
+        background: color-mix(in srgb, ${CRITICAL_COLOR_CSS} 18%, var(--ha-card-background, var(--card-background-color)));
         color: ${CRITICAL_COLOR_CSS};
         font-size: 13px;
         font-weight: 700;
@@ -569,7 +569,7 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
         box-sizing: border-box;
         cursor: pointer;
         opacity: 0.7;
-        background: color-mix(in srgb, var(--primary-text-color) 4%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 4%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .compact-row:focus-visible {

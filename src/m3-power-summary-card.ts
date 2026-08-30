@@ -391,13 +391,13 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
       ? tintOn(this, explicitColor, flowTintOpacity, 14)
       : isProducer
         ? tintOn(this, producerColor, flowTintOpacity, 14)
-        : "color-mix(in srgb, var(--primary-text-color) 7%, transparent)";
+        : "color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)))";
     const iconColor = explicitColor ?? (isProducer ? producerColor : "var(--primary-text-color)");
     const iconBg = explicitColor
       ? tintOn(this, explicitColor, flowTintOpacity, 24)
       : isProducer
         ? tintOn(this, producerColor, flowTintOpacity, 24)
-        : "color-mix(in srgb, var(--primary-text-color) 12%, transparent)";
+        : "color-mix(in srgb, var(--primary-text-color) 12%, var(--ha-card-background, var(--card-background-color)))";
     const name = metric.name || state?.attributes.friendly_name || metric.entity;
     const icon = metric.icon || state?.attributes.icon || "mdi:power-plug";
     const formatted = this._formatWatts(value);

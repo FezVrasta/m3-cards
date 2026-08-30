@@ -335,10 +335,10 @@ export class M3ProgressCard extends LitElement implements LovelaceCard {
     const accentColor = this._resolveAccentForCategory(category);
     const trackColorCss = this._config.track_color
       ? this._resolveColor(this._config.track_color)
-      : "color-mix(in srgb, var(--primary-text-color) 12%, transparent)";
+      : "color-mix(in srgb, var(--primary-text-color) 12%, var(--ha-card-background, var(--card-background-color)))";
     const dotColorCss = this._config.dot_color
       ? this._resolveColor(this._config.dot_color)
-      : "color-mix(in srgb, var(--primary-text-color) 70%, transparent)";
+      : "color-mix(in srgb, var(--primary-text-color) 70%, var(--ha-card-background, var(--card-background-color)))";
     const iconColorCss = this._config.icon_color
       ? this._resolveColor(this._config.icon_color)
       : accentColor;

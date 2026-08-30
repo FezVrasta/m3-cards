@@ -429,7 +429,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
       right: html`<div class="row-value idle-value">${this._formatNumber(row.power)} W</div>`,
       onClick: this._moreInfo(row.entity),
       extraClass: "idle-row",
-      style: `--lr-row-height: ${POWER_LIST_IDLE_ROW_HEIGHT}px; --lr-row-radius: ${POWER_LIST_IDLE_ROW_RADIUS}px; --lr-row-bg: color-mix(in srgb, var(--primary-text-color) 4%, transparent); opacity: 0.5;`,
+      style: `--lr-row-height: ${POWER_LIST_IDLE_ROW_HEIGHT}px; --lr-row-radius: ${POWER_LIST_IDLE_ROW_RADIUS}px; --lr-row-bg: color-mix(in srgb, var(--primary-text-color) 4%, var(--ha-card-background, var(--card-background-color))); opacity: 0.5;`,
     });
   }
 
@@ -496,7 +496,7 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
         height: ${POWER_LIST_TOGGLE_HEIGHT}px;
         border-radius: ${POWER_LIST_TOGGLE_RADIUS}px;
         border: none;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;

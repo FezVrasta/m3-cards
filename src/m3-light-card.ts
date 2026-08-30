@@ -1040,7 +1040,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         height: 36px;
         border: none;
         border-radius: 12px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -1194,7 +1194,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         padding: 0 14px;
         border: none;
         border-radius: 17px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -1230,7 +1230,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         height: 30px;
         border: none;
         border-radius: 10px;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--primary-text-color);
         display: flex;
         align-items: center;

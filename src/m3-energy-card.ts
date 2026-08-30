@@ -1117,7 +1117,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
         position: absolute;
         left: 0;
         right: 0;
-        border-top: 1.5px dashed color-mix(in srgb, var(--primary-text-color) 28%, transparent);
+        border-top: 1.5px dashed color-mix(in srgb, var(--primary-text-color) 28%, var(--ha-card-background, var(--card-background-color)));
         pointer-events: none;
       }
 
@@ -1139,7 +1139,7 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
       }
 
       .comparison-chip.neutral {
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
       }
 

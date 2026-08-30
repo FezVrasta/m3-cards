@@ -619,7 +619,7 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
         margin-top: 6px;
         height: 10px;
         border-radius: 5px;
-        background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 10%, var(--ha-card-background, var(--card-background-color)));
         overflow: hidden;
       }
 

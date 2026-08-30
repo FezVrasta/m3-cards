@@ -959,7 +959,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         right: 0;
         bottom: 0;
         height: ${UPDATES_PROGRESS_HEIGHT}px;
-        background: color-mix(in srgb, var(--upd-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--upd-accent) 20%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .core-progress-fill {
@@ -986,7 +986,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         height: ${UPDATES_ROW_HEIGHT}px;
         border-radius: ${UPDATES_ROW_RADIUS}px;
         padding: 0 12px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         cursor: pointer;
         min-width: 0;
       }
@@ -1050,7 +1050,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         height: ${UPDATES_TOGGLE_HEIGHT}px;
         border-radius: ${UPDATES_TOGGLE_RADIUS}px;
         border: none;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -1063,7 +1063,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       }
 
       .toggle.accent-toggle {
-        background: color-mix(in srgb, var(--upd-accent) 14%, transparent);
+        background: color-mix(in srgb, var(--upd-accent) 14%, var(--ha-card-background, var(--card-background-color)));
         color: var(--upd-accent-fg, var(--upd-accent));
       }
 
@@ -1099,7 +1099,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         height: 30px;
         border: none;
         border-radius: 11px;
-        background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 10%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -1121,7 +1121,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       }
 
       .uptodate-toggle {
-        background: color-mix(in srgb, ${unsafeCSS(UPDATES_COLOR_OK)} 14%, transparent);
+        background: color-mix(in srgb, ${unsafeCSS(UPDATES_COLOR_OK)} 14%, var(--ha-card-background, var(--card-background-color)));
         color: ${unsafeCSS(UPDATES_COLOR_OK)};
       }
 
@@ -1143,7 +1143,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         height: ${UPDATES_COMPACT_ROW_HEIGHT}px;
         border-radius: ${UPDATES_COMPACT_ROW_RADIUS}px;
         padding: 0 12px;
-        background: color-mix(in srgb, var(--primary-text-color) 4%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 4%, var(--ha-card-background, var(--card-background-color)));
         cursor: pointer;
         min-width: 0;
       }
@@ -1180,7 +1180,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         height: ${UPDATES_COMPACT_ROW_HEIGHT}px;
         border: none;
         border-radius: ${UPDATES_TOGGLE_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 5%, var(--ha-card-background, var(--card-background-color)));
         font-size: 12px;
         font-family: inherit;
         opacity: 0.6;

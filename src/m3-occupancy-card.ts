@@ -641,12 +641,12 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         border-radius: ${OCCUPANCY_ROW_RADIUS}px;
         cursor: pointer;
         box-sizing: border-box;
-        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_FREE}%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_FREE}%, var(--ha-card-background, var(--card-background-color)));
         transition: border-radius 350ms ${EASING};
       }
 
       .row.occupied {
-        background: color-mix(in srgb, var(--m3o-accent) ${OCCUPANCY_TINT_OCCUPIED}%, transparent);
+        background: color-mix(in srgb, var(--m3o-accent) ${OCCUPANCY_TINT_OCCUPIED}%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .row.dead {
@@ -676,12 +676,12 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         align-items: center;
         justify-content: center;
         color: var(--m3o-secondary-text);
-        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .row.occupied .row-icon {
         color: var(--m3o-accent-fg, var(--m3o-accent));
-        background: color-mix(in srgb, var(--m3o-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--m3o-accent) 20%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .row-icon ha-icon {
@@ -758,7 +758,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         min-width: 0;
         height: ${OCCUPANCY_SEGMENT_HEIGHT}px;
         border-radius: ${OCCUPANCY_SEGMENT_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 7%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .segment.on {

@@ -771,7 +771,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         gap: 2px;
         padding: ${NAS_TILE_PADDING}px 6px;
         border-radius: ${NAS_TILE_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         min-width: 0;
       }
 
@@ -804,7 +804,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         height: ${NAS_TOGGLE_HEIGHT}px;
         border-radius: ${NAS_TOGGLE_RADIUS}px;
         border: none;
-        background: color-mix(in srgb, var(--nas-status) 14%, transparent);
+        background: color-mix(in srgb, var(--nas-status) 14%, var(--ha-card-background, var(--card-background-color)));
         color: var(--nas-status-fg, var(--nas-status));
         display: flex;
         align-items: center;
@@ -865,7 +865,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
         height: 36px;
         border-radius: 14px;
         padding: 0 12px;
-        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 5%, var(--ha-card-background, var(--card-background-color)));
         cursor: pointer;
         min-width: 0;
       }

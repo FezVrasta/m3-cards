@@ -1,8 +1,8 @@
 # Akzentfarben im hellen Theme
 
-Vorarbeit für 2.0.1. Hält fest, was gemessen wurde, welche Entscheidung ansteht
-und was danach zu tun ist — damit die Analyse nicht bei jedem Anlauf neu
-beginnt.
+Was das Problem war, wie es gelöst wurde und woran man erkennt, dass es gelöst
+bleibt. Geschrieben nach der Umsetzung in 2.0.1 — die Fassung davor hielt nur
+die Messung und zwei Vorschläge fest.
 
 ## Das Problem
 
@@ -29,81 +29,86 @@ dunkle (`#1c1c1c`):
 **Alle 13 fallen im hellen Theme unter 4,5:1. Im dunklen besteht jede.** Das
 ist keine Eigenart einzelner Karten, sondern die Palette selbst.
 
-Kartenflächen und getönte Flächen sind mit 2.0 behoben (`glassBackground` und
-`tintBackground` mischen nicht mehr gegen `transparent`, sondern in die
-Kartenfläche). Offen sind die Stellen, an denen der Akzent als **Vordergrund**
-dient.
+Ein fester Mischungsanteil kann das nicht beheben: Wie weit eine Farbe
+verschoben werden muss, hängt an ihrer Eigenhelligkeit und schwankt über die
+Palette zwischen 64 % und 99 % für 3:1 beziehungsweise 47 % und 81 % für 4,5:1.
+Die Korrektur wird deshalb vom Zielkontrast gesteuert, nicht von einem
+Prozentwert — was zugleich für die Farben funktioniert, die Nutzer über
+`accent_color` selbst setzen.
 
-## Umfang
+## Die Lösung
 
-| Art | Stellen |
-|---|---:|
-| `color: var(--*-accent)` | 51 |
-| `color: var(--leak-alarm)`, `--nas-status`, `--cv-*`, … | 46 |
-| Inline gesetzt, `color: ${row.color}` | 58 |
-| **Summe** | **≈ 155** |
+Vier Helfer in `src/shared/`, für vier verschiedene Aufgaben. Der wiederkehrende
+Fehler in diesem Projekt war, sie zu verwechseln.
 
-Verteilt über 17+ Karten.
+| Helfer | wofür | Ziel |
+|---|---|---|
+| `foregroundColor(host, farbe)` | Akzent als Text **auf der Karte** | 4,5:1 |
+| `foregroundOn(farbe, fläche, ziel, host)` | Text oder Icon auf **einer anderen Fläche** | 3:1 |
+| `tintOn(host, farbe, …)` | gemischte Fläche (Chip, Icon-Feld, Balken) | Dunkel-Parität |
+| `fillColor(host, farbe)` | **volltonige** Datenfläche | 3:1 |
 
-Nach WCAG-Größenklasse (Stichprobe über die 51 `-accent`-Stellen): 5 groß
-(3:1 genügt), 13 klein (4,5:1 nötig), 32 ohne Größenangabe im selben
-Regelblock. Die Mehrheit ist also **kleiner** Text — Chips und Labels mit
-9–15px.
+Drei Entscheidungen dahinter, die sich nicht ineinander überführen lassen:
 
-## Zwei Wege
+**Helligkeit ändern, nicht Richtung Schwarz blenden.** Der erste Anlauf erreichte
+die Zielwerte durch Blenden gegen Schwarz. Rechnerisch korrekt, gestalterisch
+falsch: `#85b7eb` landete auf `#537293`, einem Graublau mit 28 % Sättigung. Das
+ganze helle Theme wirkte ausgewaschen — und genau so wurde es gemeldet. `vividOn`
+hält den Farbton, hebt die Sättigung um 25 % und nimmt den Kontrast allein aus
+der Helligkeit: dieselbe Farbe wird `#0b6ed5` mit 90 %.
 
-### A — Kontrastgesteuerte Kompensation *(empfohlen)*
+**Tönungen treffen ihr Ziel, Vordergrund überschreitet es.** `toneAt` setzt die
+Helligkeit so, dass der Kontrast *auf* dem Zielwert landet; `vividOn` sucht die
+am wenigsten veränderte Farbe, die ihn *überschreitet*. Nimmt man `vividOn` für
+eine Tönung, kommt ein ohnehin kontrastreicher Akzent in voller Stärke zurück —
+das Icon-Feld wird volltonfarben und das gleichfarbige Icon darauf unsichtbar.
 
-Den Akzent zur Laufzeit Richtung Textfarbe ziehen, bis der Zielkontrast
-erreicht ist. Selbstkorrigierend in beiden Themes, weil HA `--primary-text-color`
-themerichtig liefert: im Hellen dunkelt es ab, im Dunklen hellt es auf.
+**Flächen bekommen die Dunkel-Parität, nicht einen erfundenen Wert.** Zielwert
+einer Tönung ist der Kontrast, den dieselbe Farbe bei demselben Prozentsatz auf
+einer dunklen Referenzfläche ohnehin erreicht. Das skaliert von selbst — eine
+8-%-Chip-Tönung bleibt zart, ein 30-%-Datenbalken wird deutlich — und ist im
+dunklen Theme wirkungslos.
 
-**Ein fester Prozentsatz reicht nicht.** Der nötige Anteil hängt an der
-Eigenhelligkeit der Farbe und schwankt zwischen 64 % und 99 % für 3:1
-beziehungsweise 47 % und 81 % für 4,5:1. Es braucht dieselbe Bisektion wie
-`ensureInkContrast` in `m3-media-card.ts`.
+Für *volltonige* Flächen gilt das nicht: Ein heller Akzent auf dunklem Grund ist
+von Natur aus kontraststark (`#89CFF0` auf `#1c1c1c` sind 10,7:1), und das auf
+Fast-Weiß zu verlangen hieße, einen fast schwarzen Balken zu zeichnen. Dort gilt
+der WCAG-Wert für grafische Objekte, 3:1 — bequem über den rund 2:1 der
+getönten Balken, damit die Hervorhebung eine Hervorhebung bleibt.
 
-Ergebnis bei 4,5:1 (Auszug):
+## Die zwei Fallen
 
-| Farbe | Original | angepasst | Sättigung |
-|---|---|---|---|
-| `media` | `#a58fe8` | `#796ba6` | 0,66 → 0,25 |
-| `solar` | `#f0a24a` | `#976a38` | 0,85 → 0,46 |
-| `cover` | `#9fd6bf` | `#5f796e` | 0,40 → 0,12 |
+**Vordergrund muss gegen die Fläche gemessen werden, auf der er wirklich sitzt.**
+Solange die Tönungen blass waren, fiel nicht auf, dass Chips ihre Textfarbe von
+der *Karte* nahmen. Mit farbigen Tönungen ergab das `#81c784` auf `#9cdc9f` —
+1,26:1, unsichtbar. Betroffen war jedes Bauteil, das Fläche und Inhalt zugleich
+trägt: Icon-Felder, Chips, Aufklapp-Umschalter, Zähler-Badges. Der Unterschied
+ist auch dann relevant, wenn er klein aussieht: eine gegen die Karte auf 4,5:1
+korrigierte Farbe landet auf einer Listenzeile bei 4,10:1.
 
-Der Sättigungsverlust wirkt zunächst wie ein Mangel, ist aber genau das
-Material-3-Modell: „on-container"-Farben sind dort per Definition tiefe,
-gedämpfte Varianten des Akzents. Ein Blick in eine beliebige M3-App im hellen
-Modus bestätigt das.
+**Ein `var()` als Farbe macht jede Korrektur still wirkungslos.** `parseColor`
+kann es nicht auflösen, die Helfer geben die Eingabe unverändert zurück, und es
+sieht aus wie „hier war nichts zu tun". Daran lag es, dass in der Abfallkarte
+die hervorgehobene Zeile korrekt war und die drei darunter bei 1,34:1 blieben.
+`resolveVarCss(host, …)` löst jetzt vorab auf — deshalb nehmen `tintOn`,
+`fillColor` und `tintInk` einen Host entgegen, und `foregroundOn` einen
+optionalen.
 
-**Vorteil:** funktioniert mit *jeder* Farbe — auch mit den über `accent_color`
-vom Nutzer gesetzten, die eine gepflegte Palette nie abdecken könnte.
+## Was bewusst offen bleibt
 
-### B — Zweite Palette für den hellen Modus
+Nach der Umstellung meldet der Audit (siehe `docs/TESTING.md`) **hell 3, dunkel
+4**, und alle drei hellen Funde stehen auch in der dunklen Liste. Sie sind damit
+keine Theme-Fehler, sondern langjährige Entscheidungen:
 
-Zu jeder Palettenfarbe eine dunklere Variante von Hand wählen, umgeschaltet
-über `prefers-color-scheme`. Gestalterisch feiner steuerbar, aber doppelte
-Pflege — und **greift nicht bei benutzerdefinierten Farben**, die in diesem
-Projekt bei jeder Karte konfigurierbar sind.
+- weiße Initialen auf dem grünen Präsenz-Avatar (2,01:1)
+- der bewusst gedämpfte „Unverändert"-Knopf der Zeitkarte
+- der rote Zählwert der Supply-Karte im dunklen Theme (3,04:1)
 
-## Vorgehen, wenn A gewählt wird
+Ebenfalls absichtlich unberührt: 15 `color-mix(…, transparent)` in Gradienten,
+`white`/`black`-Überlagerungen und zwei Textfarben mit reduzierter Deckkraft.
+Dort *ist* Transparenz der Zweck. Die übrigen 146 mischen inzwischen in die
+Kartenfläche, hängen also nicht mehr davon ab, was durch das Glas hinter der
+Karte durchscheint.
 
-1. `readableOn(colorCss, ziel)` in `src/shared/color-config.ts`, gebaut wie
-   `ensureInkContrast` — Bisektion Richtung `--primary-text-color`, bis der
-   Zielkontrast steht. Zielwert 4,5:1, für nachweislich große Elemente 3:1.
-2. Für jede Akzentvariable eine Vordergrund-Schwester erzeugen. `buildCssVars`
-   ist der gemeinsame Punkt: alle 24 Karten laufen darüber.
-3. Die 51 `color: var(--*-accent)` auf die neue Variable umstellen. Flächen
-   (`background`, `fill`, `stroke`) behalten den reinen Akzent — die Trennung
-   Fläche/Vordergrund ist der Kern der Änderung.
-4. Die 46 sonstigen Farbvariablen und die 58 inline gesetzten Farben nachziehen.
-5. Die rund 160 CSS-Literale, die weiterhin gegen `transparent` mischen,
-   angleichen.
-6. Durchgang über alle 29 Karten in beiden Themes.
-
-## Was schon erledigt ist
-
-- `glassBackground` (2.0): Kartenfläche statt Textfarbe als Schleier
-- `tintBackground` (2.0): getönte Flächen mischen in die Kartenfläche
-- `ensureInkContrast` (2.0, Media Card): die Bisektion existiert bereits und
-  kann als Vorlage dienen
+Die Karten-Editoren (`src/m3-*-editor.ts`) mischen weiterhin gegen `transparent`.
+Sie rendern im Konfigurationsdialog, nicht in einer `ha-card`; dort wäre
+`--ha-card-background` die falsche Bezugsfläche.

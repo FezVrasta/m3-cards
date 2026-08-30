@@ -651,7 +651,7 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
         height: ${TOP_CONSUMERS_REST_ROW_HEIGHT}px;
         border-radius: ${TOP_CONSUMERS_REST_ROW_RADIUS}px;
         border: none;
-        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 5%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;

@@ -9,6 +9,39 @@ diese Liste live in einer echten Home-Assistant-Instanz durchgegangen.
 ersetzt aber keinen manuellen Durchlauf, da beide nichts über Laufzeitverhalten,
 WebSocket-Antworten oder visuelles Rendering aussagen.
 
+## Kontrastprüfung
+
+Zwei Prüfungen, die nicht am Auge hängen:
+
+**`npm run test:contrast`** — Unit-Test für `src/shared/contrast.ts`. Reine
+Funktionen ohne DOM, deshalb die einzige Ausnahme von „keine automatisierten
+Tests". Prüft, dass jede Palettenfarbe ihr Ziel erreicht, dass der Farbton
+dabei erhalten bleibt, und dass im dunklen Theme nichts angefasst wird.
+
+**`test/contrast-audit.js`** — misst die *gerenderte* Seite. In die
+Browser-Konsole eines Dashboards einfügen, dann:
+
+```js
+m3ContrastAudit({ gruppiert: true })   // Anzahl je Karte
+m3ContrastAudit()                      // Einzelfunde, schlechtester zuerst
+```
+
+**Einmal je Theme ausführen und die beiden Listen vergleichen.** Das ist der
+eigentliche Punkt: Eine Stelle, die nur in *einem* Theme auffällt, ist ein
+Theme-Fehler. Eine, die in beiden auffällt, ist eine Gestaltungsentscheidung —
+weiße Initialen auf dem Präsenz-Avatar und der gedämpfte „Unverändert"-Knopf
+der Zeitkarte stehen dort dauerhaft und sollen so bleiben.
+
+Stand 2.0.1: hell 3, dunkel 4, und alle drei hellen Funde stehen auch in der
+dunklen Liste.
+
+Warum als Datei und nicht als Konsolenschnipsel: Die Ad-hoc-Fassung hat sich an
+einem Nachmittag zweimal geirrt — einmal maß sie den Hintergrund ab dem
+*Elternelement* und übersah damit jedes Chip, das Tönung und Beschriftung
+zugleich trägt (25 Funde sahen aus wie 0), einmal kannte ihr Parser die
+`color(srgb …)`-Schreibweise nicht und übersprang getönte Flächen stillschweigend.
+Beide Fehler ließen die Seite besser aussehen, als sie war.
+
 ## Voraussetzungen
 
 - Eine HA-Testinstanz mit: mindestens einer `climate`-Entität, einem `light` mit

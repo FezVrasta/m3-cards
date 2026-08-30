@@ -669,7 +669,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         padding: 0 12px;
         display: flex;
         align-items: center;
-        background: color-mix(in srgb, var(--m3p-icon-color) 20%, transparent);
+        background: color-mix(in srgb, var(--m3p-icon-color) 20%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-icon-color-fg, var(--m3p-icon-color));
         font-size: 14px;
         font-weight: 700;
@@ -690,7 +690,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         width: 96px;
         height: 96px;
         border-radius: 20px;
-        border: 2px solid color-mix(in srgb, var(--cv-accent) 35%, transparent);
+        border: 2px solid color-mix(in srgb, var(--cv-accent) 35%, var(--ha-card-background, var(--card-background-color)));
         overflow: hidden;
       }
       .preview-inner {
@@ -705,13 +705,13 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
       }
       .shutter {
         position: absolute;
-        background: color-mix(in srgb, var(--primary-text-color) 30%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 30%, var(--ha-card-background, var(--card-background-color)));
         background-image: repeating-linear-gradient(
           to bottom,
           color-mix(in srgb, var(--primary-text-color) 34%, transparent) 0,
           color-mix(in srgb, var(--primary-text-color) 34%, transparent) 4px,
-          color-mix(in srgb, var(--primary-text-color) 22%, transparent) 4px,
-          color-mix(in srgb, var(--primary-text-color) 22%, transparent) 7px
+          color-mix(in srgb, var(--primary-text-color) 22%, var(--ha-card-background, var(--card-background-color))) 4px,
+          color-mix(in srgb, var(--primary-text-color) 22%, var(--ha-card-background, var(--card-background-color))) 7px
         );
       }
       .shutter.curtain {
@@ -719,8 +719,8 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
           to right,
           color-mix(in srgb, var(--primary-text-color) 34%, transparent) 0,
           color-mix(in srgb, var(--primary-text-color) 34%, transparent) 4px,
-          color-mix(in srgb, var(--primary-text-color) 22%, transparent) 4px,
-          color-mix(in srgb, var(--primary-text-color) 22%, transparent) 7px
+          color-mix(in srgb, var(--primary-text-color) 22%, var(--ha-card-background, var(--card-background-color))) 4px,
+          color-mix(in srgb, var(--primary-text-color) 22%, var(--ha-card-background, var(--card-background-color))) 7px
         );
       }
       .shutter.neutral {
@@ -745,7 +745,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         flex: 1;
         border: none;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -791,7 +791,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         right: 0;
         height: 12px;
         border-radius: 6px;
-        background: color-mix(in srgb, var(--primary-text-color) 12%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 12%, var(--ha-card-background, var(--card-background-color)));
       }
       .slider-fill {
         position: absolute;
@@ -839,7 +839,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         height: 40px;
         border: none;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -868,7 +868,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         height: 54px;
         border: none;
         cursor: pointer;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         display: flex;
         align-items: center;
@@ -905,7 +905,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         overflow: hidden;
       }
       .grp-row.dimmed {
@@ -916,7 +916,7 @@ export class M3CoverCard extends LitElement implements LovelaceCard {
         top: 0;
         left: 0;
         bottom: 0;
-        background: color-mix(in srgb, var(--cv-accent) 14%, transparent);
+        background: color-mix(in srgb, var(--cv-accent) 14%, var(--ha-card-background, var(--card-background-color)));
       }
       .grp-text {
         position: relative;

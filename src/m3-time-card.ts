@@ -980,7 +980,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         border-radius: 13px;
         cursor: pointer;
         color: var(--warning-color, #f0a24a);
-        background: color-mix(in srgb, var(--warning-color, #f0a24a) 15%, transparent);
+        background: color-mix(in srgb, var(--warning-color, #f0a24a) 15%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .external ha-icon {
@@ -1011,7 +1011,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         user-select: none;
         color: var(--m3ti-secondary-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         transition: background 200ms ${EASING};
       }
 
@@ -1026,7 +1026,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
       }
 
       .step-btn:active {
-        background: color-mix(in srgb, var(--primary-text-color) 14%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 14%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .step-btn ha-icon {
@@ -1048,7 +1048,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
            not twitch as you step through it. */
         font-variant-numeric: tabular-nums;
         color: var(--m3ti-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         transition:
           background 200ms ${EASING},
           color 200ms ${EASING};
@@ -1056,7 +1056,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
 
       .field.active {
         color: var(--m3ti-accent-fg, var(--m3ti-accent));
-        background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--m3ti-accent) 20%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .field:focus-visible,
@@ -1104,7 +1104,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-size: 12px;
         font-weight: 700;
         color: var(--m3ti-secondary-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         transition:
           border-radius 250ms ${EASING},
           background 250ms ${EASING},
@@ -1114,7 +1114,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
       .half.on {
         border-radius: 9px;
         color: var(--m3ti-accent-fg, var(--m3ti-accent));
-        background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--m3ti-accent) 20%, var(--ha-card-background, var(--card-background-color)));
       }
 
       /* ---- wheel ---- */
@@ -1127,7 +1127,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         gap: 4px;
         height: ${TIME_WHEEL_HEIGHT}px;
         border-radius: ${TIME_WHEEL_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 5%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 5%, var(--ha-card-background, var(--card-background-color)));
         overflow: hidden;
       }
 
@@ -1232,7 +1232,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         cursor: pointer;
         user-select: none;
         color: var(--m3ti-secondary-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .nudge.minus {
@@ -1261,7 +1261,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
         color: var(--m3ti-accent-fg, var(--m3ti-accent));
-        background: color-mix(in srgb, var(--m3ti-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--m3ti-accent) 20%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .nudge:focus-visible,
@@ -1293,7 +1293,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         font-weight: 600;
         font-variant-numeric: tabular-nums;
         color: var(--m3ti-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         transition:
           border-radius 250ms ${EASING},
           background 250ms ${EASING},
@@ -1331,8 +1331,8 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         cursor: default;
         user-select: none;
         /* Resting state reads as a label, not a button: nothing to press yet. */
-        color: color-mix(in srgb, var(--m3ti-text) 40%, transparent);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        color: color-mix(in srgb, var(--m3ti-text) 40%, var(--ha-card-background, var(--card-background-color)));
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         transition:
           border-radius ${TIME_APPLY_MORPH_MS}ms ${EASING},
           background 250ms ${EASING},
@@ -1361,7 +1361,7 @@ export class M3TimeCard extends LitElement implements LovelaceCard {
         justify-content: center;
         cursor: pointer;
         color: var(--m3ti-secondary-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .revert ha-icon {

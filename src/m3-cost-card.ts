@@ -466,7 +466,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
                     ? html`
                         <div
                           class="chip"
-                          style=${`color: ${budgetChip.overBudget ? COST_WORSE_COLOR : COST_BETTER_COLOR}; background: color-mix(in srgb, ${budgetChip.overBudget ? COST_WORSE_COLOR : COST_BETTER_COLOR} 16%, transparent);`}
+                          style=${`color: ${budgetChip.overBudget ? COST_WORSE_COLOR : COST_BETTER_COLOR}; background: color-mix(in srgb, ${budgetChip.overBudget ? COST_WORSE_COLOR : COST_BETTER_COLOR} 16%, var(--ha-card-background, var(--card-background-color)));`}
                         >
                           <span>${this._t("cost_budget_percent").replace("{value}", String(budgetChip.percent))}</span>
                         </div>
@@ -717,7 +717,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       }
 
       .chip.neutral {
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
         font-weight: 500;
       }
@@ -796,7 +796,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
         flex-shrink: 0;
         border: none;
         color: var(--m3p-text);
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -832,7 +832,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
         min-width: 0;
         height: ${COST_TARIFF_ROW_HEIGHT}px;
         border-radius: ${COST_TARIFF_ROW_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -875,7 +875,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       .tariff-info {
         height: ${COST_TARIFF_ROW_HEIGHT}px;
         border-radius: ${COST_TARIFF_ROW_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
         display: flex;
         align-items: center;
         gap: 10px;

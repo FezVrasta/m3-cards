@@ -536,7 +536,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       font-size: 18px;
       font-weight: 500;
       color: var(--primary-text-color);
-      background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -573,7 +573,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       align-items: center;
       justify-content: center;
       border-radius: 8px;
-      background: color-mix(in srgb, var(--primary-text-color) 4%, transparent);
+      background: color-mix(in srgb, var(--primary-text-color) 4%, var(--ha-card-background, var(--card-background-color)));
       text-align: center;
       font-size: 16px;
       font-weight: 700;

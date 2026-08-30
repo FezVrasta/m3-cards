@@ -314,11 +314,12 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
     // Static CSS cannot run the contrast helpers, so the chip's tint and its
     // label colour are computed here.
     const chipBgCss = tintOn(this, PRESENCE_COLOR_HOME, undefined, 20);
+    const iconWellCss = tintOn(this, "var(--primary-color)", undefined, 14);
     const cssVars = buildCssVars({
       "presence-chip-bg": chipBgCss,
       "presence-chip-ink": foregroundOn(PRESENCE_COLOR_HOME, chipBgCss, 4.5),
-      "m3p-icon-color": "var(--primary-color)",
-      "m3p-icon-bg": "color-mix(in srgb, var(--primary-color) 14%, transparent)",
+      "m3p-icon-color": foregroundOn("var(--primary-color)", iconWellCss, 3, this),
+      "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
@@ -421,7 +422,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
       }
 
       .presence-chip.empty {
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
       }
 

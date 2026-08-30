@@ -1221,7 +1221,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
         overflow: hidden;
         aspect-ratio: 16 / 9;
         cursor: pointer;
-        background: color-mix(in srgb, var(--m3p-text) 8%, transparent);
+        background: color-mix(in srgb, var(--m3p-text) 8%, var(--ha-card-background, var(--card-background-color)));
       }
 
       .camera-banner {
@@ -1359,7 +1359,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
         height: ${AQUARIUM_CAMERA_THUMB_SIZE}px;
         border-radius: ${AQUARIUM_CAMERA_THUMB_RADIUS}px;
         cursor: pointer;
-        background: color-mix(in srgb, var(--m3p-text) 8%, transparent);
+        background: color-mix(in srgb, var(--m3p-text) 8%, var(--ha-card-background, var(--card-background-color)));
         transition: border-radius ${AQUARIUM_TILE_MORPH_MS}ms ${EASING};
       }
 
@@ -1514,7 +1514,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
         gap: 5px;
         font-size: 12px;
         font-weight: 600;
-        background: color-mix(in srgb, var(--m3p-text) 10%, transparent);
+        background: color-mix(in srgb, var(--m3p-text) 10%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
       }
 
@@ -1524,7 +1524,7 @@ export class M3AquariumCard extends LitElement implements LovelaceCard {
       }
 
       .chip.warn {
-        background: color-mix(in srgb, ${unsafeCSS(AQUARIUM_WATER_COLOR_WARN)} 18%, transparent);
+        background: color-mix(in srgb, ${unsafeCSS(AQUARIUM_WATER_COLOR_WARN)} 18%, var(--ha-card-background, var(--card-background-color)));
         color: ${unsafeCSS(AQUARIUM_WATER_COLOR_WARN)};
       }
 

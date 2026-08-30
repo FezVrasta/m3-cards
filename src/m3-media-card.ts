@@ -1876,7 +1876,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       }
 
       .progress-track {
-        stroke: color-mix(in srgb, var(--primary-text-color) 16%, transparent);
+        stroke: color-mix(in srgb, var(--primary-text-color) 16%, var(--ha-card-background, var(--card-background-color)));
         stroke-width: ${MEDIA_PROGRESS_STROKE}px;
         stroke-linecap: round;
       }
@@ -2044,7 +2044,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         width: ${MEDIA_MUTE_BTN_HEIGHT}px;
         border: none;
         border-radius: 20px;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-secondary-text);
         cursor: pointer;
         display: flex;
@@ -2091,7 +2091,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
       }
 
       .volume-track {
-        stroke: color-mix(in srgb, var(--primary-text-color) 16%, transparent);
+        stroke: color-mix(in srgb, var(--primary-text-color) 16%, var(--ha-card-background, var(--card-background-color)));
         stroke-width: 6px;
         stroke-linecap: round;
       }
@@ -2405,7 +2405,7 @@ export class M3MediaCard extends LitElement implements LovelaceCard {
         padding: 0 12px;
         border: none;
         border-radius: 15px;
-        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+        background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
         color: var(--m3p-text);
         font-size: 12px;
         font-family: inherit;

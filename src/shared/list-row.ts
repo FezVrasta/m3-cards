@@ -65,7 +65,7 @@ export function renderListRow(p: ListRowParams): TemplateResult {
         : nothing}
       <div
         class="lr-icon"
-        style=${`--lr-icon-color: ${foregroundOn(p.iconColor, p.iconBackground)}; --lr-icon-bg: ${p.iconBackground};`}
+        style=${`--lr-icon-color: ${foregroundOn(p.iconColor, p.iconBackground, 3, p.host)}; --lr-icon-bg: ${p.iconBackground};`}
       >
         <ha-icon icon=${p.icon}></ha-icon>
       </div>
@@ -134,7 +134,7 @@ export const listRowStyles = css`
     overflow: hidden;
     cursor: pointer;
     box-sizing: border-box;
-    background: var(--lr-row-bg, color-mix(in srgb, var(--primary-text-color) 6%, transparent));
+    background: var(--lr-row-bg, color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color))));
     transition: border-radius 350ms ${EASING};
   }
 
