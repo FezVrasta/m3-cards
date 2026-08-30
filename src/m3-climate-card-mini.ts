@@ -363,13 +363,25 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
   }
 
   static styles = css`
+    /* See the note in m3-button-card: ha-card is a size container, so a
+       percentage height that does not resolve leaves it at 0. This card had no
+       min-height at all, so in a masonry column it collapsed entirely — host
+       included.
+
+       112px is the smallest height at which the compact layout still fits
+       without clipping — measured, not chosen. A floor has to be low enough
+       that it never overrides a height someone configured: 168px, the natural
+       full-layout height, looked right on its own but silently forced a
+       configured 110px tile up to 168 and broke the compact mode that exists
+       for exactly those sizes. The three sizes below 112px that this does
+       raise were already clipping their own content before it. */
     :host {
-      display: block;
+      display: grid;
       height: 100%;
+      min-height: 112px;
     }
 
     ha-card {
-      height: 100%;
       border-radius: 28px;
       overflow: hidden;
       box-shadow: none;

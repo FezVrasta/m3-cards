@@ -698,14 +698,26 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
   }
 
   static styles = css`
+    /* Grid rather than block, and the card stretches into the grid area
+       instead of taking height: 100%.
+
+       ha-card is a size container, so its own contents cannot give it a
+       height — that is what size containment means. A percentage height only
+       resolves against a parent whose height is definite, which it is in the
+       sections view but not in a masonry column, and an unresolved percentage
+       on a size-contained box collapses to 0. The card vanished, and with it
+       the cqh units every padding here is expressed in.
+
+       A grid area is definite as soon as the host has a used height, so the
+       card fills it and cqh resolves. min-height below is what gives the host
+       that height when nothing else does. */
     :host {
-      display: block;
+      display: grid;
       height: 100%;
       min-height: 56px;
     }
 
     ha-card {
-      height: 100%;
       overflow: hidden;
       box-shadow: none;
       background: transparent;
