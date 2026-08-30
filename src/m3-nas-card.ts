@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS, nothing } from "lit";
+import { LitElement, html, css, unsafeCSS, nothing , type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type {
@@ -42,6 +42,7 @@ import { renderListRow, listRowStyles } from "./shared/list-row";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-NAS-CARD %c v${CARD_VERSION} `,
@@ -445,6 +446,21 @@ export class M3NasCard extends LitElement implements LovelaceCard {
     const hours = Math.floor(minutes / 60);
     if (hours < 48) return this._t("nas_uptime_hours").replace("{n}", String(hours));
     return this._t("nas_uptime_days").replace("{n}", String(Math.floor(hours / 24)));
+  }
+
+  // _byKey holds everything discovery found, and every read goes through it or
+  // through the sync list, so together they are the full set this card reads.
+  private _watchedEntities(): string[] {
+    const cfg = this._config;
+    const glance = Object.values(this._byKey).flatMap((list) =>
+      (list ?? []).map((e) => e.entityId),
+    );
+    const sync = cfg?.sync_entities?.length ? cfg.sync_entities : this._syncEntities;
+    return [...glance, ...sync];
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._watchedEntities());
   }
 
   protected render() {

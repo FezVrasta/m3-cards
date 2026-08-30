@@ -51,6 +51,7 @@ import { renderListRow, captureRowRects, flipRows, listRowStyles, listRowSurface
 import { discoverBatteryEntities } from "./shared/ha-registry";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-BATTERY-CARD %c v${CARD_VERSION} `,
@@ -339,6 +340,20 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
         </div>
       </div>
     `;
+  }
+
+  // Auto-discovery runs from updated(), so a tick filtered out here would also
+  // stop a newly added battery sensor from ever being found. discoveryChangeMatters
+  // lets a change in the entity count through for exactly that reason.
+  private _watchedEntities(): string[] {
+    if (!this._config) return [];
+    return this._config.auto_discover
+      ? this._discovered
+      : (this._config.entities ?? []).map((e) => e.entity);
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._watchedEntities());
   }
 
   protected render() {

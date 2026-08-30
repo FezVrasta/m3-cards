@@ -33,6 +33,7 @@ import { discoverPersonEntities } from "./shared/ha-registry";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-PRESENCE-CARD %c v${CARD_VERSION} `,
@@ -293,6 +294,17 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
     } else if (action.action === "url" && action.url_path) {
       window.open(action.url_path, action.new_tab === false ? "_self" : "_blank");
     }
+  }
+
+  private _watchedEntities(): string[] {
+    if (!this._config) return [];
+    return (this._config.auto_discover ?? true)
+      ? this._discovered
+      : (this._config.entities ?? []);
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._watchedEntities());
   }
 
   protected render() {

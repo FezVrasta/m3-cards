@@ -66,3 +66,48 @@ export function listEntities(
   }
   return out;
 }
+
+// Counting the entity ids means walking every key in hass.states — about a
+// thousand on a real install. Doing that once per card per tick would cost more
+// than the renders this module exists to avoid, so the count is memoised
+// against the states object itself: every card on the dashboard is handed the
+// same one, so the walk happens once per tick no matter how many ask.
+const stateCountCache = new WeakMap<object, number>();
+
+function stateCount(hass: HomeAssistant): number {
+  let n = stateCountCache.get(hass.states);
+  if (n === undefined) {
+    n = Object.keys(hass.states).length;
+    stateCountCache.set(hass.states, n);
+  }
+  return n;
+}
+
+/**
+ * For cards that find their entities by scanning `hass.states` rather than
+ * reading them from config.
+ *
+ * They need one thing more than `hassChangeMatters` gives them: the discovery
+ * itself runs from `updated()`, so a `shouldUpdate` that filters a tick out
+ * also stops the card from ever noticing a newly added sensor. Listing the
+ * entities it currently reads is not enough — the entity it should start
+ * reading is by definition not in that list.
+ *
+ * So a change in the *number* of entities also lets the tick through. A count
+ * catches every addition and removal, which is what discovery reacts to. It
+ * misses a rename that removes one id and adds another within the same tick;
+ * that is rare, it resolves on the next reload, and the alternative — comparing
+ * a thousand keys on every state change anywhere in the system — costs more
+ * than it is worth.
+ */
+export function discoveryChangeMatters(
+  changed: PropertyValues,
+  hass: HomeAssistant | undefined,
+  entities: (string | undefined)[],
+): boolean {
+  if (hassChangeMatters(changed, hass, entities)) return true;
+
+  const previous = changed.get("hass") as HomeAssistant | undefined;
+  if (!previous || !hass) return true;
+  return stateCount(previous) !== stateCount(hass);
+}

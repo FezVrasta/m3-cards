@@ -46,6 +46,7 @@ import { fetchPeriodChangeByEntity } from "./shared/ha-statistics";
 import { resolveEffectivePrice, formatCurrency } from "./shared/pricing";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-TOP-CONSUMERS-CARD %c v${CARD_VERSION} `,
@@ -296,6 +297,17 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
 
   private _moreInfo(entityId: string): () => void {
     return () => fireEvent(this, "hass-more-info", { entityId });
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    // In "energy" mode the rows come from fetched statistics rather than from
+    // states, so _consumption is what the card actually reads; _sourceEntities
+    // covers both that and the configured list.
+    return discoveryChangeMatters(
+      changed,
+      this.hass,
+      this._sourceEntities().map((e) => e.entity),
+    );
   }
 
   protected render() {

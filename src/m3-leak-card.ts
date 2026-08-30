@@ -37,6 +37,7 @@ import { formatSince } from "./shared/formatting";
 import { fireEvent } from "./shared/editor-helpers";
 import { discoverLeakSensors } from "./shared/ha-registry";
 import { localize, type TranslationKey } from "./localize";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-LEAK-CARD %c v${CARD_VERSION} `,
@@ -359,6 +360,16 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
     return html`<div class="test-chip" role="button" tabindex="0" @click=${() => this._setTestDate()}>
       <ha-icon icon="mdi:test-tube"></ha-icon>${this._t("leak_test_due")}
     </div>`;
+  }
+
+  // Each sensor contributes two entities: the moisture sensor and, if set, the
+  // battery sensor whose level the row shows.
+  private _watchedEntities(): (string | undefined)[] {
+    return this._sensors.flatMap((c) => [c.entity, c.battery_entity]);
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._watchedEntities());
   }
 
   protected render() {

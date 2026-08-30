@@ -49,6 +49,7 @@ import { fetchValueHoursAgo } from "./shared/ha-statistics";
 import { formatNumber } from "./shared/formatting";
 import { guessRoomIcon } from "./shared/room-icons";
 import { localize, type TranslationKey } from "./localize";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-CLIMATE-OVERVIEW-CARD %c v${CARD_VERSION} `,
@@ -538,6 +539,18 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         </div>
       </div>
     `;
+  }
+
+  private _watchedEntities(): (string | undefined)[] {
+    const cfg = this._config;
+    if (!cfg) return [];
+    return cfg.rooms?.length
+      ? cfg.rooms.flatMap((r) => [r.temperature_entity, r.humidity_entity])
+      : this._discovered.flatMap((r) => [r.temperatureEntity, r.humidityEntity]);
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._watchedEntities());
   }
 
   protected render() {

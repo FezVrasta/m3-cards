@@ -56,6 +56,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-ENERGY-CARD %c v${CARD_VERSION} `,
@@ -638,6 +639,16 @@ export class M3EnergyCard extends LitElement implements LovelaceCard {
     }
 
     return { bars, hasForecast };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    // The bars come from fetched statistics, not from states, and the fetch is
+    // driven by config rather than by hass ticks. Only two entities are read
+    // live: the one the card is pointed at, and the solar forecast attribute.
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.entity,
+      this._config?.forecast_entity,
+    ]);
   }
 
   protected render() {

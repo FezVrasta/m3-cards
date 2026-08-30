@@ -1,4 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
+import type { PropertyValues } from "lit";
+import { hassChangeMatters } from "./shared/should-update";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -175,6 +177,14 @@ export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
 
   private _moreInfo(entityId: string): () => void {
     return () => fireEvent(this, "hass-more-info", { entityId });
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.grid_entity,
+      this._config?.consumption_entity,
+      ...this._solarEntities(),
+    ]);
   }
 
   protected render() {

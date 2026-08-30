@@ -51,6 +51,7 @@ import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { fetchTodoItems, todoSupports, TODO_FEATURE, type TodoItem } from "./shared/ha-todo";
 import { collectSupplyChips } from "./shared/supply-chips";
 import { localize, type TranslationKey } from "./localize";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-TODO-CARD %c v${CARD_VERSION} `,
@@ -453,6 +454,10 @@ export class M3TodoCard extends LitElement implements LovelaceCard {
   }
 
   // ---- render -----------------------------------------------------------
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [this._config?.entity]);
+  }
 
   protected render() {
     const cfg = this._config;

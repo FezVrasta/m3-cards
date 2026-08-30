@@ -51,6 +51,7 @@ import { guessRoomIcon } from "./shared/room-icons";
 import { discoverOccupancyRooms, type DiscoveredOccupancyRoom } from "./shared/ha-registry";
 import { fetchOccupancySegments } from "./shared/occupancy-history";
 import { localize, type TranslationKey } from "./localize";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-OCCUPANCY-CARD %c v${CARD_VERSION} `,
@@ -396,6 +397,10 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         }),
       );
     };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._rooms.flatMap((r) => r.entities));
   }
 
   protected render() {

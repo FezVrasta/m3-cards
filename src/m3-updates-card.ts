@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS, nothing } from "lit";
+import { LitElement, html, css, unsafeCSS, nothing , type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type {
@@ -53,6 +53,7 @@ import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-UPDATES-CARD %c v${CARD_VERSION} `,
@@ -256,6 +257,10 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     return [...custom, ...rest] as UpdateGroup[];
   }
 
+  /** Entity ids the last render read. Not reactive: writing it must not
+   * schedule another render. */
+  private _watchedIds: string[] = [];
+
   private _buildRows(): UpdateRow[] {
     if (!this.hass || !this._config) return [];
     const cfg = this._config;
@@ -263,6 +268,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
     const ids = cfg.auto_discover
       ? Object.keys(this.hass.states).filter((id) => id.startsWith("update.") && !excluded.has(id))
       : (cfg.entities ?? []).filter((id) => !excluded.has(id));
+    this._watchedIds = ids;
 
     const include = cfg.include_types?.length ? new Set(cfg.include_types) : undefined;
     const rows: UpdateRow[] = [];
@@ -368,6 +374,15 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
       default:
         return c?.update_color ? resolveThemeColor(c.update_color) : UPDATES_COLOR_AVAILABLE;
     }
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    // Recorded during the last render rather than recomputed here: in
+    // auto_discover mode the list comes from scanning every entity id, and
+    // doing that on each hass tick would cost more than the render it saves.
+    // discoveryChangeMatters still lets a change in the entity count through,
+    // which is what brings a newly added update entity into the list.
+    return discoveryChangeMatters(changed, this.hass, this._watchedIds);
   }
 
   protected render() {

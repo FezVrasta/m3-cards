@@ -44,6 +44,7 @@ import { shouldAnimate } from "./shared/animation";
 import { getEnergyDashboardEntities, fetchTodayChangeSum } from "./shared/ha-energy";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
+import { hassChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-ENERGY-FLOW-CARD %c v${CARD_VERSION} `,
@@ -352,6 +353,15 @@ export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
     }
 
     return { nodes, flows, viewHeight: showBattery ? VIEW_HEIGHT_WITH_BATTERY : VIEW_HEIGHT };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return hassChangeMatters(changed, this.hass, [
+      this._config?.solar_entity,
+      this._config?.grid_import_entity,
+      this._config?.grid_export_entity,
+      this._config?.battery_entity,
+    ]);
   }
 
   protected render() {

@@ -40,6 +40,7 @@ import { discoverPowerEntities } from "./shared/ha-registry";
 import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
+import { discoveryChangeMatters } from "./shared/should-update";
 
 console.info(
   `%c M3-POWER-LIST-CARD %c v${CARD_VERSION} `,
@@ -201,6 +202,17 @@ export class M3PowerListCard extends LitElement implements LovelaceCard {
 
   private _moreInfo(entityId: string): () => void {
     return () => fireEvent(this, "hass-more-info", { entityId });
+  }
+
+  private _watchedEntities(): string[] {
+    if (!this._config) return [];
+    return this._config.auto_discover
+      ? this._discovered
+      : (this._config.entities ?? []).map((e) => e.entity);
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    return discoveryChangeMatters(changed, this.hass, this._watchedEntities());
   }
 
   protected render() {
