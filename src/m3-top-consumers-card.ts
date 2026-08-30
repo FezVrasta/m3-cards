@@ -34,7 +34,7 @@ import {
   TOP_CONSUMERS_REFRESH_MS,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
@@ -108,6 +108,13 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
   @state() private _noDeviceSection = false;
   @state() private _price?: number;
   @state() private _noPriceConfigured = false;
+
+
+  // The row wash. Shared by render() (which publishes it as a variable) and by
+  // the row builders, which need the resolved value to measure their ink.
+  private _rowSurface(): string {
+    return tintOn(this, "var(--primary-text-color)", undefined, 6);
+  }
 
   private _refreshTimer?: number;
   private _lastFetchKey?: string;
@@ -315,7 +322,9 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
     // The glyph sits on this well, not on the card, so its contrast has to be
     // measured against the well.
     const iconWellCss = tintOn(this, accentColor, this._config.accent_opacity, 18);
+    const rowSurfaceCss = this._rowSurface();
     const cssVars = buildCssVars({
+      "tc-row-bg": rowSurfaceCss,
       "m3p-icon-color": foregroundOn(accentColor, iconWellCss),
       "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
@@ -473,15 +482,15 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
         @keydown=${activateOnKey(this._moreInfo(row.entity))}
         title=${row.name}
       >
-        <div class="bar-fill" style=${`width: ${barPct}%; background: color-mix(in srgb, ${row.color} 22%, transparent);`}></div>
-        <div class="icon-squircle" style=${`background: color-mix(in srgb, ${row.color} 20%, transparent); color: ${row.color};`}>
+        <div class="bar-fill" style=${`width: ${barPct}%; background: ${tintOn(this, row.color, undefined, 22)};`}></div>
+        <div class="icon-squircle" style=${`background: ${tintOn(this, row.color, undefined, 20)}; color: ${tintInk(this, row.color, undefined, 20, 3)};`}>
           <ha-icon icon=${row.icon}></ha-icon>
         </div>
         <div class="row-text">
           <div class="row-name">${row.name}</div>
           <div class="row-percent">${subtitle}</div>
         </div>
-        <div class="row-value" style=${`color: ${row.color};`}>
+        <div class="row-value" style=${`color: ${foregroundOn(row.color, this._rowSurface(), 4.5)};`}>
           ${costMode ? formatCurrency(rowValue, currency, this._language) : this._formatKwh(rowValue)}
         </div>
       </div>
@@ -501,11 +510,11 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
         @keydown=${activateOnKey(this._moreInfo(row.entity))}
         title=${row.name}
       >
-        <div class="icon-squircle small" style=${`background: color-mix(in srgb, ${row.color} 20%, transparent); color: ${row.color};`}>
+        <div class="icon-squircle small" style=${`background: ${tintOn(this, row.color, undefined, 20)}; color: ${tintInk(this, row.color, undefined, 20, 3)};`}>
           <ha-icon icon=${row.icon}></ha-icon>
         </div>
         <div class="row-name">${row.name}</div>
-        <div class="row-value" style=${`color: ${row.color};`}>
+        <div class="row-value" style=${`color: ${foregroundOn(row.color, this._rowSurface(), 4.5)};`}>
           ${costMode ? formatCurrency(rowValue, currency, this._language) : this._formatKwh(rowValue)}
         </div>
       </div>
@@ -544,7 +553,7 @@ export class M3TopConsumersCard extends LitElement implements LovelaceCard {
         position: relative;
         height: ${TOP_CONSUMERS_ROW_HEIGHT}px;
         border-radius: ${TOP_CONSUMERS_ROW_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+        background: var(--tc-row-bg);
         display: flex;
         align-items: center;
         gap: 10px;

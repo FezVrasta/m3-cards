@@ -288,15 +288,17 @@ export function foregroundOn(colorCss: string, surfaceCss: string, target = 3): 
  * unreadable. Measuring the ink against the tint it sits on rather than
  * against the card is the whole fix.
  *
- * Default target 3:1, which suits an icon or a bold chip label; pass 4.5 for
- * small body text.
+ * Defaults to 4.5:1, because most tinted surfaces in these cards carry a label
+ * and the labels are small — 9 to 15px. Pass 3 for a well that holds nothing
+ * but an icon, where the WCAG floor for graphical objects applies and 4.5
+ * would render the glyph heavier than the design wants.
  */
 export function tintInk(
   host: HTMLElement | undefined,
   colorCss: string,
   opacityPercent: number | undefined,
   defaultPercent: number,
-  target = 3,
+  target = 4.5,
 ): string {
   return foregroundOn(colorCss, tintOn(host, colorCss, opacityPercent, defaultPercent), target);
 }

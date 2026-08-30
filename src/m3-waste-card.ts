@@ -341,13 +341,13 @@ export class M3WasteCard extends LitElement implements LovelaceCard {
       const three = sameDayStreams.slice(0, 3);
       return html`<div class="hero-multi">
         ${three.map(
-          (s, i) => html`<div class="mini" style=${`background: ${tintOn(this, s.color, undefined, 22)}; color: ${tintInk(this, s.color, undefined, 22)}; margin-left: ${i === 0 ? 0 : -8}px; z-index: ${3 - i};`}>
+          (s, i) => html`<div class="mini" style=${`background: ${tintOn(this, s.color, undefined, 22)}; color: ${tintInk(this, s.color, undefined, 22, 3)}; margin-left: ${i === 0 ? 0 : -8}px; z-index: ${3 - i};`}>
             <ha-icon icon=${s.icon}></ha-icon>
           </div>`,
         )}
       </div>`;
     }
-    return html`<div class="hero-icon" style=${`background: ${tintOn(this, primaryColor, undefined, 22)}; color: ${tintInk(this, primaryColor, undefined, 22)};`}>
+    return html`<div class="hero-icon" style=${`background: ${tintOn(this, primaryColor, undefined, 22)}; color: ${tintInk(this, primaryColor, undefined, 22, 3)};`}>
       <ha-icon icon=${sameDayStreams[0]?.icon ?? DEFAULT_WASTE_ICON}></ha-icon>
     </div>`;
   }

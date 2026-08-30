@@ -47,7 +47,7 @@ import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
-import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
+import { renderListRow, captureRowRects, flipRows, listRowStyles, listRowSurface } from "./shared/list-row";
 import { discoverBatteryEntities } from "./shared/ha-registry";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
@@ -306,7 +306,7 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
         </div>
       `,
       right: html`
-        <div class="battery-value" style=${`color: ${color};`}>
+        <div class="battery-value" style=${`color: ${foregroundOn(color, listRowSurface(this), 4.5)};`}>
           ${row.unavailable ? this._t("battery_value_unavailable") : `${Math.round(row.value)} %`}
         </div>
       `,
@@ -377,7 +377,12 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
     // The glyph sits on this well, not on the card, so its contrast has to be
     // measured against the well.
     const iconWellCss = tintOn(this, headerColor, this._config.stage_tint_opacity, 18);
+    // Static CSS cannot run the contrast helpers, so the expand toggle's
+    // tint and its label colour are computed here instead.
+    const toggleBg = tintOn(this, BATTERY_COLOR_OK, undefined, 14);
     const cssVars = buildCssVars({
+      "bat-toggle-bg": toggleBg,
+      "bat-toggle-ink": foregroundOn(BATTERY_COLOR_OK, toggleBg, 4.5),
       "m3p-icon-color": foregroundOn(headerColor, iconWellCss),
       "m3p-icon-bg": iconWellCss,
       "m3p-text": textColorCss,
@@ -519,8 +524,8 @@ export class M3BatteryCard extends LitElement implements LovelaceCard {
         height: ${BATTERY_TOGGLE_HEIGHT}px;
         border-radius: ${BATTERY_TOGGLE_RADIUS}px;
         border: none;
-        background: color-mix(in srgb, ${unsafeCSS(BATTERY_COLOR_OK)} 14%, transparent);
-        color: ${unsafeCSS(BATTERY_COLOR_OK)};
+        background: var(--bat-toggle-bg);
+        color: var(--bat-toggle-ink);
         display: flex;
         align-items: center;
         justify-content: center;

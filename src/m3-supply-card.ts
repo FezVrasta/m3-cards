@@ -48,9 +48,9 @@ import {
 } from "./const";
 import { supplyPackSize, supplyLimits } from "./shared/supply-thresholds";
 import { fetchConsumptionRates, type ConsumptionRate } from "./shared/supply-history";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
-import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./shared/list-row";
+import { renderListRow, captureRowRects, flipRows, listRowStyles, listRowSurface } from "./shared/list-row";
 import { repeat } from "lit/directives/repeat.js";
 import { activateOnKey } from "./shared/a11y";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
@@ -678,7 +678,7 @@ export class M3SupplyCard extends LitElement implements LovelaceCard {
       middle: html`<div class="row-name">${entry.name}</div>`,
       right: html`
         <div class="row-value">
-          <span class="row-count" style=${`color: ${entry.colorCss};`}
+          <span class="row-count" style=${`color: ${foregroundOn(entry.colorCss, listRowSurface(this), 4.5)};`}
             >${entry.available ? this._formatCount(entry.value) : "–"}</span
           ><span class="row-max">/ ${this._formatCount(entry.packSize)}</span>
         </div>

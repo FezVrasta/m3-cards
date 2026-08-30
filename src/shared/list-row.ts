@@ -26,9 +26,24 @@ export interface ListRowParams {
   label?: string;
   extraClass?: string;
   style?: string;
+  /** Overrides the row's own background. */
+  rowBackground?: string;
   /** The card element, so the bar tint can be resolved against the actual
    * card surface. Without it the tint falls back to a plain CSS mix. */
   host?: HTMLElement;
+}
+
+/**
+ * The surface a row actually draws on, so a card can measure the ink it puts
+ * in `middle` or `right` against the row rather than against the card.
+ *
+ * The row's own wash was the last place still mixing toward transparent, which
+ * both made it depend on whatever sits behind the card and left it unparseable
+ * for the contrast helpers — so a coloured row value stayed at 1.73:1 in a
+ * light theme.
+ */
+export function listRowSurface(host?: HTMLElement, override?: string): string {
+  return override ?? tintOn(host, "var(--primary-text-color)", undefined, 6);
 }
 
 export function renderListRow(p: ListRowParams): TemplateResult {
@@ -38,7 +53,7 @@ export function renderListRow(p: ListRowParams): TemplateResult {
     <div
       class="lr-row ${p.extraClass ?? ""}"
       data-row-key=${p.key}
-      style=${p.style ?? ""}
+      style=${`--lr-row-bg: ${listRowSurface(p.host, p.rowBackground)}; ${p.style ?? ""}`}
       role=${interactive ? "button" : nothing}
       tabindex=${interactive ? "0" : nothing}
       aria-label=${interactive ? (p.label ?? p.key) : nothing}

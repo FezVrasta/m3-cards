@@ -719,7 +719,7 @@ export class M3UpdatesCard extends LitElement implements LovelaceCard {
         @click=${this._moreInfo(row.entity)}
         @keydown=${activateOnKey(this._moreInfo(row.entity))}
       >
-        <div class="row-icon" style=${`background: ${tintOn(this, color, undefined, 20)}; color: ${tintInk(this, color, undefined, 20)};`}>
+        <div class="row-icon" style=${`background: ${tintOn(this, color, undefined, 20)}; color: ${tintInk(this, color, undefined, 20, 3)};`}>
           ${row.picture
             ? html`<img src=${row.picture} alt="" />`
             : html`<ha-icon icon=${GROUP_ICONS[row.group]}></ha-icon>`}

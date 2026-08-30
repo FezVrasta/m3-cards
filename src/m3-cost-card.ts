@@ -343,7 +343,7 @@ export class M3CostCard extends LitElement implements LovelaceCard {
             style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
           >
             <div class="main-row">
-              <div class="main-icon" style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 18)}; color: ${tintInk(this, accentColor, this._config.accent_opacity, 18)};`}>
+              <div class="main-icon" style=${`background: ${tintOn(this, accentColor, this._config.accent_opacity, 18)}; color: ${tintInk(this, accentColor, this._config.accent_opacity, 18, 3)};`}>
                 <ha-icon icon=${icon}></ha-icon>
               </div>
               <div class="main-text">

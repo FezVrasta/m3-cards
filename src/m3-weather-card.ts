@@ -34,7 +34,7 @@ import {
   WEATHER_DAYS_TOGGLE_RADIUS_OPEN,
   resolveCornerRadius,
 } from "./const";
-import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, foregroundOn , foregroundVars} from "./shared/color-config";
+import { resolveThemeColor, buildCssVars, resolveCommonColors, tintOn, tintInk, foregroundOn , foregroundVars} from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -389,6 +389,8 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       "wc-precip": precipColor,
       "wc-gradient": gradientColor,
       "wc-days-toggle-bg": tintOn(this, accentColor, this._config.accent_opacity, 14),
+      // The label sits on that tint, not on the card.
+      "wc-days-toggle-ink": tintInk(this, accentColor, this._config.accent_opacity, 14),
       // Fills keep the accent; these twins carry it where it is text.
       ...foregroundVars(this, {
         "m3p-icon-color": accentColor,
@@ -858,7 +860,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
         border-radius: ${WEATHER_DAYS_TOGGLE_RADIUS}px;
         border: none;
         background: var(--wc-days-toggle-bg);
-        color: var(--wc-accent-fg, var(--wc-accent));
+        color: var(--wc-days-toggle-ink, var(--wc-accent-fg, var(--wc-accent)));
         display: flex;
         align-items: center;
         justify-content: center;
