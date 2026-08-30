@@ -629,6 +629,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           @click=${(e: Event) => e.stopPropagation()}
           @keydown=${this._onSheetKey}
         >
+          <div class="sheet-grip"></div>
           <div class="sheet-head">
             <span class="sheet-title">${category.name}</span>
             <button class="sheet-close" aria-label=${this._t("room_close")} @click=${this._closeSheet}>
@@ -1052,7 +1053,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
       .sheet {
         width: 100%;
-        max-height: ${ROOM_SHEET_MAX_HEIGHT}vh;
+        /* Bounded by the card, not the viewport: 60vh let a five-device list
+           grow 160px taller than the card it lives in, and since the card
+           clips its overflow the sheet's whole header — the close button with
+           it — was cut off above the top edge. A picker you cannot close is
+           worse than no picker. */
+        max-height: min(100%, ${ROOM_SHEET_MAX_HEIGHT}vh);
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
@@ -1123,11 +1129,39 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         --mdc-icon-size: 18px;
       }
 
+      .sheet-close {
+        background: var(--room-action-bg);
+        color: var(--room-action-ink);
+      }
+
+      .sheet-close:focus-visible,
+      .sheet-info:focus-visible {
+        outline: 2px solid var(--m3p-text, var(--primary-text-color));
+        outline-offset: 2px;
+      }
+
+      /* The grab bar says "sheet" before anything is read, and gives the
+         header a second, wider target on the way to the close button. */
+      .sheet-grip {
+        align-self: center;
+        width: 32px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--m3h-grip, currentColor);
+        opacity: 0.25;
+        flex-shrink: 0;
+      }
+
       .sheet-list {
         display: flex;
         flex-direction: column;
         gap: 6px;
         overflow-y: auto;
+        /* Without this a flex child refuses to shrink below its content, so
+           the list pushes the sheet past its max-height instead of scrolling —
+           which is how the header ended up outside the card. */
+        min-height: 0;
+        overscroll-behavior: contain;
       }
 
       .sheet-row {
