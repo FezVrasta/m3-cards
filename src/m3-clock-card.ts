@@ -548,7 +548,8 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
           <span class="digits">${parts.minutes}</span>
         </div>
         ${cfg.show_seconds_tile
-          ? html`<div class="tile seconds"><span class="digits">${parts.seconds}</span></div>`
+          ? html`<div class="colon ${this._colonOn ? "" : "dim"}"><i></i><i></i></div>
+              <div class="tile seconds"><span class="digits">${parts.seconds}</span></div>`
           : nothing}
         ${this._twelveHour ? html`<span class="ampm">${this._ampm(parts)}</span>` : nothing}
       </div>
