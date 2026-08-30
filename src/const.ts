@@ -1312,3 +1312,67 @@ export const HEADING_LABEL_SIZE = 10;
 
 /** Below this the action button drops its label and keeps only the icon. */
 export const HEADING_NARROW_PX = 260;
+
+// ---- room card -------------------------------------------------------------
+export const DEFAULT_ROOM_RADIUS = RADIUS.card;
+export const DEFAULT_ROOM_ACCENT = PALETTE.home;
+export const ROOM_PRESENCE_COLOR = PALETTE.dryAuto;
+
+export const ROOM_HEADER_ICON = 56;
+export const ROOM_HEADER_ICON_RADIUS = RADIUS.squircle56;
+export const ROOM_DOT = 10;
+export const ROOM_DOT_PULSE_MS = 2200;
+
+export const ROOM_CHIP_HEIGHT = 30;
+export const ROOM_CHIP_RADIUS = RADIUS.chip;
+export const ROOM_CHIP_TINT = 10;
+/** Watts under which the power chip says nothing worth the room it takes. */
+export const ROOM_POWER_THRESHOLD = 5;
+
+export const ROOM_TILE_MIN = 74;
+export const ROOM_TILE_GAP = 7;
+export const ROOM_TILE_RADIUS = 16;
+export const ROOM_TILE_RADIUS_ACTIVE = 10;
+export const ROOM_TILE_TINT_ACTIVE = 14;
+export const ROOM_TILE_TINT_IDLE = 6;
+export const ROOM_TILE_ICON = 36;
+export const ROOM_TILE_ICON_RADIUS = 13;
+export const ROOM_TILE_ICON_TINT_IDLE = 12;
+export const ROOM_TILE_MORPH_MS = DURATION_MS.roll;
+
+/** Card wash and border while the room is occupied. */
+export const ROOM_PRESENCE_TINT = 7;
+export const ROOM_PRESENCE_BORDER = 25;
+
+/** How long a press counts as a hold rather than a tap. */
+export const ROOM_HOLD_MS = 500;
+
+export interface RoomCategoryDef {
+  domain: string;
+  icon: string;
+  color: string;
+  /** Which service a tap uses. "none" means the tap opens more-info instead —
+   *  a lock and a vacuum have no meaningful toggle, and inventing one would be
+   *  the card guessing at something a person would rather decide. */
+  toggle: "homeassistant" | "cover" | "none";
+}
+
+/** The built-in categories, in their default order. */
+export const ROOM_CATEGORIES: RoomCategoryDef[] = [
+  { domain: "light", icon: "mdi:lightbulb", color: PALETTE.light, toggle: "homeassistant" },
+  { domain: "fan", icon: "mdi:fan", color: PALETTE.cool, toggle: "homeassistant" },
+  { domain: "humidifier", icon: "mdi:air-humidifier", color: PALETTE.dryAuto, toggle: "homeassistant" },
+  { domain: "climate", icon: "mdi:thermostat", color: PALETTE.home, toggle: "homeassistant" },
+  { domain: "media_player", icon: "mdi:speaker", color: PALETTE.media, toggle: "homeassistant" },
+  { domain: "cover", icon: "mdi:window-shutter", color: PALETTE.cover, toggle: "cover" },
+  { domain: "switch", icon: "mdi:power-plug", color: "#d6a86f", toggle: "homeassistant" },
+  { domain: "vacuum", icon: "mdi:robot-vacuum", color: PALETTE.fan, toggle: "none" },
+  { domain: "lock", icon: "mdi:lock", color: PALETTE.heat, toggle: "none" },
+];
+
+/** A domain the user added via `extra_domains` gets this, so it still renders. */
+export const ROOM_FALLBACK_CATEGORY: Omit<RoomCategoryDef, "domain"> = {
+  icon: "mdi:shape-outline",
+  color: PALETTE.home,
+  toggle: "homeassistant",
+};

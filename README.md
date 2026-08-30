@@ -63,6 +63,7 @@ card links to its full documentation further down.
 | [Clock](#m3-clock-card) | `m3-clock-card` | A clock in five styles, from rounded tiles to an organic analogue dial |
 | [Status](#m3-status-card) | `m3-status-card` | Big numbers, text and yes/no states, with a rule list behind them |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Section headings between the cards: simple, with status, a divider, or collapsible |
+| [Room](#m3-room-card) | `m3-room-card` | One card per area: every device type it finds, climate readings and presence |
 
 ### 🛠️ System & maintenance
 
@@ -2562,6 +2563,103 @@ collapse_state_entity: input_boolean.media_section_collapsed
 | `action` | object | – | `status` only: `{ name, icon, tap_action }` |
 | `default_collapsed` | boolean | `false` | `collapsible` only |
 | `collapse_state_entity` | string | – | `collapsible` only: an `input_boolean` holding the state |
+
+
+## M3 Room Card
+
+One card per room. Point it at a Home Assistant area and it works out the rest:
+which kinds of device are in there, what each of them is doing, the climate
+readings, and whether anyone is in the room.
+
+<!-- TODO: docs/images/room-card.png — screenshot still to be taken, together with the other new cards -->
+
+```yaml
+type: custom:m3-room-card
+area: living_room
+```
+
+That is the whole minimal configuration. Everything below only overrides what
+the card already found.
+
+### What it detects
+
+Every entity assigned to the area, directly or through its device, grouped by
+domain into nine built-in categories — light, fan, humidifier, climate, media,
+cover, switch, vacuum, lock — plus anything named in `extra_domains`. A tile
+appears only for a category that actually has an entity in the room, so the
+grid grows with the house rather than showing empty placeholders.
+
+Three kinds of entity are left out, and the first one matters more than it
+sounds: entities Home Assistant marks as configuration or diagnostic. A single
+smart plug contributes a child lock, an indicator light and a power-on
+behaviour, all in the `switch` domain. Measured on one real install, a living
+room holds 32 switches, of which 2 are things a person would call a switch.
+Hidden and disabled entities are left out too, because the user has already
+said they do not want to see them.
+
+### The badges
+
+The badge under each tile is the point of the card. With more than one device
+it counts them — `2/4`. With exactly one it says what that device is doing:
+
+| Category | Badge |
+| --- | --- |
+| `fan` | Preset, or the step derived from the fan's own `percentage_step` |
+| `humidifier` | The target humidity |
+| `climate` | The target temperature, or the HVAC mode when it has none |
+| `media_player` | The title, or the source, shortened to 16 characters |
+| `cover` | Open, Closed, or the position in percent |
+| `lock` | Locked / Unlocked |
+| everything else | On / Off |
+
+An unavailable entity counts as not on; a category where *every* entity is
+unavailable shows `—`, dims to 40% and cannot be tapped.
+
+### Presence
+
+A `binary_sensor` in the area with device class `occupancy`, `motion` or
+`presence` is picked up on its own. While the room is occupied a dot pulses on
+the room icon, the card takes a 7% wash of the presence colour, and the
+subtitle reads "occupied · 3 devices on" instead of just the count.
+
+`presence_style: dot_only` keeps the dot and drops the wash; `none` switches
+the whole thing off. The pulse respects `animation: off` and the system's
+reduced-motion setting.
+
+### Sensor chips
+
+Temperature, humidity and power, discovered from the area. Temperature and
+humidity come from Home Assistant's own area settings first when they are set
+there — a deliberate choice beats anything the card could guess — and from a
+matching `device_class` otherwise. The power chip only appears above
+`power_threshold` (5W by default): a room drawing 0.4W is a room drawing
+nothing, and a chip saying so costs a row on every card that has a plug in it.
+
+### Interaction
+
+A tap toggles the whole category — every entity in it that is actually
+reachable, so what happens matches what the tile shows. A hold opens
+`detail_path` if one is set, otherwise more-info for the first entity. Vacuums
+and locks have no meaningful toggle, so a tap opens more-info instead of the
+card guessing at something a person would rather decide.
+
+### Configuration options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `area` | string | – | The HA area id. Required |
+| `name` / `icon` | string | the area's own | The icon falls back to a guess from the room name |
+| `detail_path` | string | – | Opened on hold |
+| `extra_domains` | list | – | Domains beyond the built-in nine |
+| `category_order` | list | – | Domains in the order you want them; the rest follow behind |
+| `hidden_categories` | list | – | |
+| `categories` | list | – | Per category: `{ domain, name, icon, color, hidden, tap_action }` |
+| `show_sensors` | boolean | `true` | |
+| `temperature_entity` / `humidity_entity` / `power_entity` | string | discovered | |
+| `power_threshold` | number | `5` | Watts |
+| `extra_sensors` | list | – | More chips, in order |
+| `presence_entity` | string | discovered | |
+| `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
 
 
 ## License

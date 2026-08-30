@@ -460,3 +460,110 @@ export async function discoverLeakSensors(
   }
   return out;
 }
+
+// ---- Area contents ---------------------------------------------------------
+
+/**
+ * Every entity that belongs to an area, ready to use in a render path.
+ *
+ * Unlike the discover* functions above this needs no websocket round-trip: the
+ * modern frontend hands the card `hass.areas`, `hass.devices` and
+ * `hass.entities` directly, so an area's contents are already in memory. That
+ * matters here because the room card resolves its whole layout from this, on
+ * every tick, rather than once at setup.
+ *
+ * Three kinds of entity are dropped, and the first is the important one:
+ *
+ *   `entity_category` — a device's own config and diagnostic entities. A single
+ *   Zigbee plug contributes a child lock, an indicator light and a power-on
+ *   behaviour select, all in the `switch` and `select` domains. Measured on the
+ *   author's install: the living room holds 32 switches, of which 2 are things
+ *   a person would call a switch. Without this filter the card is unusable.
+ *
+ *   hidden and disabled entities, because the user has already said they do not
+ *   want to see them.
+ *
+ *   entities with no state, which are in the registry but not loaded.
+ */
+interface AreaCache {
+  devices: unknown;
+  byArea: Map<string, string[]>;
+}
+
+// Keyed on the entity registry object itself: every card on the dashboard is
+// handed the same one, so the ~3400-entry walk happens once per registry
+// version per area no matter how many room cards ask for it.
+const areaCache = new WeakMap<object, AreaCache>();
+
+export function areaEntityIds(hass: HomeAssistant, areaId: string): string[] {
+  const registry = hass.entities as unknown as Record<string, RegistryEntity> | undefined;
+  const devices = hass.devices as unknown as Record<string, { area_id?: string | null }> | undefined;
+  if (!registry || !devices) return [];
+
+  let cache = areaCache.get(registry);
+  if (!cache || cache.devices !== devices) {
+    cache = { devices, byArea: new Map() };
+    areaCache.set(registry, cache);
+  }
+  const hit = cache.byArea.get(areaId);
+  if (hit) return hit;
+
+  const ids: string[] = [];
+  for (const [entityId, entry] of Object.entries(registry)) {
+    if (entry.entity_category) continue;
+    if (entry.hidden || entry.hidden_by || entry.disabled_by) continue;
+    const area = entry.area_id ?? (entry.device_id ? devices[entry.device_id]?.area_id : undefined);
+    if (area !== areaId) continue;
+    if (!hass.states[entityId]) continue;
+    ids.push(entityId);
+  }
+  ids.sort();
+  cache.byArea.set(areaId, ids);
+  return ids;
+}
+
+interface RegistryEntity {
+  area_id?: string | null;
+  device_id?: string | null;
+  entity_category?: string | null;
+  hidden?: boolean;
+  hidden_by?: string | null;
+  disabled_by?: string | null;
+}
+
+export interface AreaInfo {
+  areaId: string;
+  name: string;
+  icon?: string;
+  /** Set in HA's own area settings; the best source for the climate chips. */
+  temperatureEntity?: string;
+  humidityEntity?: string;
+}
+
+export function areaInfo(hass: HomeAssistant, areaId: string): AreaInfo | undefined {
+  const areas = hass.areas as unknown as Record<string, {
+    area_id: string;
+    name: string;
+    icon?: string | null;
+    temperature_entity_id?: string | null;
+    humidity_entity_id?: string | null;
+  }> | undefined;
+  const area = areas?.[areaId];
+  if (!area) return undefined;
+  return {
+    areaId: area.area_id,
+    name: area.name,
+    icon: area.icon ?? undefined,
+    temperatureEntity: area.temperature_entity_id ?? undefined,
+    humidityEntity: area.humidity_entity_id ?? undefined,
+  };
+}
+
+export function listAreas(hass: HomeAssistant): AreaInfo[] {
+  const areas = hass.areas as unknown as Record<string, { area_id: string }> | undefined;
+  if (!areas) return [];
+  return Object.keys(areas)
+    .map((id) => areaInfo(hass, id))
+    .filter((a): a is AreaInfo => !!a)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}

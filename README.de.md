@@ -63,6 +63,7 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Clock](#m3-clock-card) | `m3-clock-card` | Uhr in fünf Stilen, von runden Kacheln bis zum organischen Zifferblatt |
 | [Status](#m3-status-card) | `m3-status-card` | Große Zahlen, Texte und Ja/Nein-Zustände, mit einer Regelliste dahinter |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Abschnitts-Überschriften zwischen den Karten: schlicht, mit Status, als Trenner oder aufklappbar |
+| [Room](#m3-room-card) | `m3-room-card` | Eine Karte je Bereich: alle gefundenen Gerätetypen, Klimawerte und Präsenz |
 
 ### 🛠️ System & Wartung
 
@@ -2617,6 +2618,108 @@ collapse_state_entity: input_boolean.medien_eingeklappt
 | `action` | Objekt | – | Nur `status`: `{ name, icon, tap_action }` |
 | `default_collapsed` | boolean | `false` | Nur `collapsible` |
 | `collapse_state_entity` | string | – | Nur `collapsible`: ein `input_boolean` mit dem Zustand |
+
+
+## M3 Room Card
+
+Eine Karte pro Raum. Man gibt ihr einen Bereich aus Home Assistant, den Rest
+findet sie selbst: welche Gerätearten dort hängen, was jede davon gerade tut,
+die Klimawerte und ob jemand im Raum ist.
+
+<!-- TODO: docs/images/room-card.png — Screenshot folgt zusammen mit den anderen neuen Karten -->
+
+```yaml
+type: custom:m3-room-card
+area: wohnzimmer
+```
+
+Das ist die vollständige Minimalkonfiguration. Alles Weitere überschreibt nur,
+was die Karte ohnehin schon gefunden hat.
+
+### Was erkannt wird
+
+Jede Entität, die dem Bereich zugeordnet ist — direkt oder über ihr Gerät —,
+nach Domain gruppiert in neun eingebaute Kategorien: Licht, Ventilator,
+Befeuchter, Klima, Medien, Rollo, Schalter, Sauger, Schloss. Dazu alles, was
+unter `extra_domains` steht. Eine Kachel erscheint nur für eine Kategorie, die
+im Raum tatsächlich eine Entität hat; das Raster wächst also mit dem Haus,
+statt leere Platzhalter zu zeigen.
+
+Drei Arten von Entitäten bleiben draußen, und die erste zählt mehr, als es
+klingt: alles, was Home Assistant als Konfiguration oder Diagnose markiert.
+Eine einzelne smarte Steckdose steuert eine Kindersicherung, eine
+Status-LED und ein Einschaltverhalten bei — alle in der Domain `switch`. Auf
+einer echten Installation gemessen: Im Wohnzimmer liegen 32 Schalter, von denen
+2 das sind, was ein Mensch einen Schalter nennt. Ausgeblendete und deaktivierte
+Entitäten bleiben ebenfalls draußen, denn da hat der Nutzer bereits gesagt,
+dass er sie nicht sehen will.
+
+### Die Badges
+
+Der Text unter jeder Kachel ist der eigentliche Punkt der Karte. Bei mehreren
+Geräten zählt er — `2/4`. Bei genau einem sagt er, was dieses Gerät tut:
+
+| Kategorie | Badge |
+| --- | --- |
+| `fan` | Preset oder die Stufe, abgeleitet aus dem `percentage_step` des Lüfters |
+| `humidifier` | Die Zielfeuchte |
+| `climate` | Die Zieltemperatur, sonst der HVAC-Modus |
+| `media_player` | Titel oder Quelle, auf 16 Zeichen gekürzt |
+| `cover` | Offen, Geschlossen oder die Position in Prozent |
+| `lock` | Verriegelt / Entriegelt |
+| alles andere | An / Aus |
+
+Eine nicht verfügbare Entität zählt als nicht an; eine Kategorie, in der
+*jede* Entität nicht verfügbar ist, zeigt `—`, wird auf 40% gedimmt und lässt
+sich nicht antippen.
+
+### Präsenz
+
+Ein `binary_sensor` im Bereich mit device_class `occupancy`, `motion` oder
+`presence` wird von allein gefunden. Solange der Raum belegt ist, pulsiert ein
+Punkt am Raum-Icon, die Karte bekommt 7% Präsenzfarbe, und der Untertitel
+lautet „belegt · 3 Geräte aktiv“ statt nur der Zahl.
+
+`presence_style: dot_only` behält den Punkt und lässt die Färbung weg, `none`
+schaltet beides ab. Der Puls respektiert `animation: off` und die
+Systemeinstellung für reduzierte Bewegung.
+
+### Sensor-Chips
+
+Temperatur, Luftfeuchte und Verbrauch, aus dem Bereich erkannt. Temperatur und
+Feuchte kommen zuerst aus den Bereichseinstellungen von Home Assistant, wenn
+sie dort gesetzt sind — eine bewusste Zuordnung schlägt jede Vermutung der
+Karte —, sonst aus der passenden `device_class`. Der Verbrauchs-Chip erscheint
+erst ab `power_threshold` (Standard 5 W): Ein Raum mit 0,4 W ist ein Raum ohne
+Verbrauch, und ein Chip, der das sagt, kostet eine Zeile auf jeder Karte, in
+der eine Steckdose hängt.
+
+### Interaktion
+
+Ein Tap schaltet die ganze Kategorie um — alle Entitäten darin, die auch
+wirklich erreichbar sind, damit das Ergebnis zu dem passt, was die Kachel
+anzeigt. Ein langer Druck öffnet `detail_path`, sonst die Detailansicht der
+ersten Entität. Sauger und Schlösser haben kein sinnvolles Umschalten, dort
+öffnet ein Tap die Detailansicht, statt dass die Karte etwas rät, das man
+lieber selbst entscheidet.
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+| --- | --- | --- | --- |
+| `area` | string | – | Die Bereichs-ID aus HA. Pflicht |
+| `name` / `icon` | string | aus dem Bereich | Das Icon wird sonst aus dem Raumnamen geraten |
+| `detail_path` | string | – | Öffnet sich bei langem Druck |
+| `extra_domains` | Liste | – | Domains über die neun eingebauten hinaus |
+| `category_order` | Liste | – | Domains in gewünschter Reihenfolge, der Rest folgt dahinter |
+| `hidden_categories` | Liste | – | |
+| `categories` | Liste | – | Je Kategorie: `{ domain, name, icon, color, hidden, tap_action }` |
+| `show_sensors` | boolean | `true` | |
+| `temperature_entity` / `humidity_entity` / `power_entity` | string | erkannt | |
+| `power_threshold` | number | `5` | Watt |
+| `extra_sensors` | Liste | – | Weitere Chips, in dieser Reihenfolge |
+| `presence_entity` | string | erkannt | |
+| `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
 
 
 ## Lizenz

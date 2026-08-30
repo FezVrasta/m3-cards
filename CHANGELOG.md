@@ -8,6 +8,24 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Room Card** (`m3-room-card`) — one card per area. Point it at a Home
+  Assistant area and it works out the rest: which kinds of device are in the
+  room, what each of them is doing, the climate readings, and whether anyone is
+  in there. Nine categories are built in, `extra_domains` adds more, and a tile
+  appears only for a category that actually has an entity in the room.
+
+  The badge under each tile is the point of it: with several devices it counts
+  them (`2/4`), with one it says what that device is doing — the fan's step,
+  the thermostat's target, the media title, the blind's position. Entities Home
+  Assistant marks as configuration or diagnostic are left out, which is what
+  makes the switch category usable at all: on the author's install a living
+  room holds 32 switches, of which 2 are things a person would call a switch.
+
+  Everything is read from the registry snapshots the frontend already keeps on
+  `hass`, so discovery costs no websocket round-trip and can run in the render
+  path, memoised against the registry object so the walk happens once per tick
+  no matter how many room cards are on the dashboard.
+
 - **M3 Heading Card** (`m3-heading-card`) — section headings for the space
   between cards, in four variants: a plain icon and title, one with a count chip
   and an action button, a divider rule with a small-caps label, and a
@@ -74,6 +92,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Room Card** (`m3-room-card`) — eine Karte je Bereich. Man gibt ihr einen
+  Bereich aus Home Assistant, den Rest findet sie selbst: welche Gerätearten im
+  Raum hängen, was jede davon tut, die Klimawerte und ob jemand da ist. Neun
+  Kategorien sind eingebaut, `extra_domains` ergänzt weitere, und eine Kachel
+  erscheint nur für eine Kategorie, die im Raum tatsächlich eine Entität hat.
+
+  Der Text unter der Kachel ist der eigentliche Punkt: Bei mehreren Geräten
+  zählt er (`2/4`), bei einem sagt er, was dieses Gerät tut — die Stufe des
+  Lüfters, die Zieltemperatur, den Medientitel, die Rollo-Position. Entitäten,
+  die Home Assistant als Konfiguration oder Diagnose markiert, bleiben draußen;
+  erst das macht die Schalter-Kategorie überhaupt brauchbar: Im Wohnzimmer der
+  Testinstallation liegen 32 Schalter, von denen 2 das sind, was ein Mensch
+  einen Schalter nennt.
+
+  Alles kommt aus den Registry-Daten, die das Frontend ohnehin auf `hass`
+  bereithält — die Erkennung kostet also keinen Websocket-Aufruf und darf im
+  Render-Pfad laufen, memoisiert gegen das Registry-Objekt, sodass der
+  Durchlauf einmal pro Tick passiert, egal wie viele Raumkarten auf dem
+  Dashboard liegen.
 
 - **M3 Heading Card** (`m3-heading-card`) — Abschnitts-Überschriften für den
   Raum zwischen den Karten, in vier Varianten: schlicht mit Icon und Titel, mit

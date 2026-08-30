@@ -2,6 +2,12 @@ import type { NotifyConfigBase } from "./shared/notify-editor";
 
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
+  /** Registry snapshots the modern frontend keeps on `hass` itself, so a card
+   *  can resolve areas without a websocket round-trip. Optional because an
+   *  older frontend does not provide them. */
+  areas?: Record<string, unknown>;
+  devices?: Record<string, unknown>;
+  entities?: Record<string, unknown>;
   locale: {
     language: string;
     number_format?: string;
@@ -1224,7 +1230,8 @@ export type M3CardConfig =
   | M3WasteCardConfig
   | M3ClockCardConfig
   | M3StatusCardConfig
-  | M3HeadingCardConfig;
+  | M3HeadingCardConfig
+  | M3RoomCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1496,6 +1503,51 @@ export interface M3HeadingCardConfig {
   /** Collapsible only: an input_boolean holding the state, instead of localStorage. */
   collapse_state_entity?: string;
   animation?: "auto" | "on" | "off";
+  card_version?: string;
+}
+
+export interface RoomCategoryConfig {
+  /** The entity domain this overrides, e.g. "light". */
+  domain: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+  hidden?: boolean;
+  tap_action?: HaActionConfig;
+}
+
+export interface M3RoomCardConfig {
+  type: string;
+  /** HA area id. Everything else is discovered from it. */
+  area: string;
+  name?: string;
+  icon?: string;
+  /** Opened on hold; falls back to more-info of the category's first entity. */
+  detail_path?: string;
+  /** Domains beyond the built-in nine, e.g. ["water_heater"]. */
+  extra_domains?: string[];
+  /** Domains in the order they should appear; the rest follow in default order. */
+  category_order?: string[];
+  hidden_categories?: string[];
+  categories?: RoomCategoryConfig[];
+  show_sensors?: boolean;
+  temperature_entity?: string;
+  humidity_entity?: string;
+  power_entity?: string;
+  /** Watts below which the power chip is not worth the space. */
+  power_threshold?: number;
+  extra_sensors?: string[];
+  /** Leave unset to discover it from the area. */
+  presence_entity?: string;
+  presence_style?: "tint" | "dot_only" | "none";
+  accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
   card_version?: string;
 }
 

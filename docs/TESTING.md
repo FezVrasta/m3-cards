@@ -474,6 +474,41 @@ in das Raster einfügt und das Einklappen nichts kaputt macht.
       nicht auf einer Kartenfläche; der Trennstrich mischt aus der Textfarbe
       und muss in beiden Themes sichtbar sein
 
+## M3 Room Card
+
+Die Erkennung ist der Prüfgegenstand — was die Karte anzeigt, hat sie selbst
+gefunden.
+
+- [ ] **Rauschfilter:** In einem Raum mit vielen Zigbee-Geräten enthält die
+      Schalter-Kachel nur echte Schalter, keine Kindersicherungen und
+      Status-LEDs (Entitäten mit `entity_category`)
+- [ ] Bereich ohne erkennbare Geräte: nur Header und Chips, dazu der Hinweis —
+      keine leeren Kacheln
+- [ ] Neues Gerät im Bereich: die Kachel erscheint ohne Reload der Karte
+      (Registry-Änderung lässt den Tick durch)
+- [ ] Badge bei mehreren Geräten `{an}/{gesamt}`, bei genau einem der konkrete
+      Zustand — Lüfterstufe, Zieltemperatur, Medientitel, Rollo-Position
+- [ ] Kategorie, in der **jede** Entität nicht verfügbar ist: Badge „—",
+      gedimmt auf 0.4, kein `role="button"`, kein Tap möglich
+- [ ] Kategorie mit teilweise nicht verfügbaren Entitäten: der Tap schaltet
+      **nur** die erreichbaren; der Nenner im Badge bleibt die Gesamtzahl
+- [ ] Sauger und Schloss: der Tap öffnet die Detailansicht statt zu schalten
+- [ ] Langer Druck öffnet `detail_path`, ohne dass beim Loslassen zusätzlich
+      geschaltet wird
+- [ ] Präsenz: Punkt pulsiert, Karte bekommt die Färbung, Untertitel „belegt · …"
+- [ ] `presence_style: dot_only` — Punkt bleibt, Färbung weg; `none` — beides weg
+- [ ] `animation: off` und „Bewegung reduzieren": der Punkt bleibt stehen,
+      verschwindet aber nicht
+- [ ] Temperatur-/Feuchte-Chip: eine in den HA-Bereichseinstellungen gesetzte
+      Entität gewinnt gegen die device_class-Suche
+- [ ] Verbrauchs-Chip erscheint erst über `power_threshold`
+- [ ] Editor: die Kategorieliste zeigt genau die im Bereich erkannten Domains
+      mit ihrer Anzahl; Auf/Ab schreibt `category_order`
+- [ ] Editor: eine Kategorie-Überschreibung, die nur noch `domain` enthält,
+      verschwindet wieder aus der Konfiguration
+- [ ] Beide Themes mit `test/contrast-audit.js` prüfen — aktive Kacheln tragen
+      Tinte auf einer Volltonfläche, inaktive auf einer neutralen Tönung
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und
