@@ -1201,3 +1201,13 @@ export const CLOCK_SHAPE_MARGIN = 3;
 /** Left inset for the lockscreen block. Flush against the card padding the
  *  digits read as if they had slipped off the edge. */
 export const CLOCK_LOCK_INSET = 16;
+
+// ---- clock extras
+export const CLOCK_CHIP_HEIGHT = 26;
+export const CLOCK_CHIP_RADIUS = 13;
+export const CLOCK_CHIP_TINT = 12;
+/** An alarm further out than this is not what the card is for. */
+export const CLOCK_ALARM_HORIZON_MS = 24 * 60 * 60 * 1000;
+export const CLOCK_PROGRESS_HEIGHT = 5;
+export const CLOCK_PROGRESS_RADIUS = 3;
+export const CLOCK_PROGRESS_TINT = 9;

@@ -11,9 +11,13 @@ import type {
 } from "./types";
 import {
   CARD_VERSION,
+  CLOCK_ALARM_HORIZON_MS,
   CLOCK_CELL,
   CLOCK_CELL_DIGIT,
   CLOCK_CELL_NARROW,
+  CLOCK_CHIP_HEIGHT,
+  CLOCK_CHIP_RADIUS,
+  CLOCK_CHIP_TINT,
   CLOCK_COLON_DIM,
   CLOCK_COLON_RADIUS,
   CLOCK_COLON_SIZE,
@@ -35,6 +39,9 @@ import {
   CLOCK_LOCK_STROKE,
   CLOCK_NARROW_PX,
   CLOCK_PAIR_GAP,
+  CLOCK_PROGRESS_HEIGHT,
+  CLOCK_PROGRESS_RADIUS,
+  CLOCK_PROGRESS_TINT,
   CLOCK_RING_DRAIN_MS,
   CLOCK_RING_INNER,
   CLOCK_RING_OUTER,
@@ -485,6 +492,14 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
         CLOCK_SECONDS_TRACK_TINT,
       ),
       "clock-sec-fill": foregroundColor(this, secondary, 3),
+      "clock-chip-bg": tintOn(this, accent, undefined, CLOCK_CHIP_TINT),
+      "clock-chip-ink": tintInk(this, accent, undefined, CLOCK_CHIP_TINT),
+      "clock-progress-track": tintOn(
+        this,
+        "var(--primary-text-color)",
+        undefined,
+        CLOCK_PROGRESS_TINT,
+      ),
       "m3p-text": textColorCss,
       "m3p-secondary-text": secondaryTextColorCss,
     });
@@ -526,9 +541,158 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
           ${(cfg.show_date ?? true) && style !== "ring"
             ? html`<div class="date">${this._dateText(parts.date)}</div>`
             : nothing}
+          ${this._extras()}
         </div>
       </ha-card>
     `;
+  }
+
+  // ---- extras (shared across styles) ---------------------------------------
+
+  /** A short time in the card's locale and zone, e.g. "06:30" or "6:30 AM". */
+  private _clockTime(date: Date): string {
+    try {
+      return new Intl.DateTimeFormat(this._language, {
+        hour: this._twelveHour ? "numeric" : "2-digit",
+        minute: "2-digit",
+        hour12: this._twelveHour,
+        timeZone: this._zone,
+      }).format(date);
+    } catch {
+      return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+    }
+  }
+
+  private _stateDate(entityId?: string): Date | undefined {
+    if (!entityId || !this.hass) return undefined;
+    const raw = this.hass.states[entityId]?.state;
+    if (!raw || raw === "unknown" || raw === "unavailable") return undefined;
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+
+  private _chip(icon: string, label: string) {
+    return html`<span class="chip"
+      ><ha-icon icon=${icon}></ha-icon><span>${label}</span></span
+    >`;
+  }
+
+  /** Only worth showing while it is actually the next thing to happen. */
+  private _alarmChip() {
+    const at = this._stateDate(this._config?.alarm_entity);
+    if (!at) return nothing;
+    const away = at.getTime() - (this._lastNow || Date.now());
+    if (away < 0 || away > CLOCK_ALARM_HORIZON_MS) return nothing;
+    return this._chip("mdi:alarm", `${this._t("clock_alarm")} ${this._clockTime(at)}`);
+  }
+
+  private _sunChip() {
+    const cfg = this._config;
+    if (!cfg?.sun_entity) return nothing;
+    const st = this.hass?.states[cfg.sun_entity];
+    if (!st) return nothing;
+    const up = st.state === "above_horizon";
+    // While the sun is up the next event is sunset, and vice versa.
+    const raw = (up ? st.attributes?.next_setting : st.attributes?.next_rising) as
+      | string
+      | undefined;
+    if (!raw) return nothing;
+    const at = new Date(raw);
+    if (Number.isNaN(at.getTime())) return nothing;
+    return this._chip(
+      up ? "mdi:weather-sunset-down" : "mdi:weather-sunset-up",
+      `${this._t(up ? "clock_sunset" : "clock_sunrise")} ${this._clockTime(at)}`,
+    );
+  }
+
+  /** Minutes since midnight in the card's zone, so the bar tracks the clock
+   *  rather than the browser's own timezone. */
+  private _minutesOfDay(now: number): number {
+    const p = this._parts(now);
+    return p.hours24 * 60 + p.minutesNum + p.secondsNum / 60;
+  }
+
+  private _parseHm(value: string | undefined, fallback: number): number {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(value ?? "");
+    if (!m) return fallback;
+    return Math.min(1440, Number(m[1]) * 60 + Number(m[2]));
+  }
+
+  private _dayProgress() {
+    const cfg = this._config;
+    if (!cfg?.show_day_progress) return nothing;
+    const custom = cfg.progress_range === "custom";
+    const start = custom ? this._parseHm(cfg.progress_start, 0) : 0;
+    const end = custom ? this._parseHm(cfg.progress_end, 1440) : 1440;
+    const span = Math.max(1, end - start);
+    const now = this._minutesOfDay(this._lastNow || Date.now());
+    const done = Math.max(0, Math.min(1, (now - start) / span));
+    const leftMin = Math.max(0, end - now);
+    const leftH = Math.round(leftMin / 60);
+    const label =
+      leftMin <= 0
+        ? this._t("clock_day_done")
+        : leftH <= 1
+          ? this._t("clock_day_left_one")
+          : this._t("clock_day_left").replace("{n}", String(leftH));
+    return html`
+      <div class="progress">
+        <div class="progress-track">
+          <div class="progress-fill" style=${`width: ${(done * 100).toFixed(1)}%;`}></div>
+        </div>
+        <span class="progress-label">${label}</span>
+      </div>
+    `;
+  }
+
+  private _zonesRow() {
+    const zones = this._config?.secondary_zones;
+    if (!zones?.length) return nothing;
+    const now = new Date(this._lastNow || Date.now());
+    return html`
+      <div class="zones">
+        ${zones.map((z) => {
+          let text: string;
+          try {
+            text = new Intl.DateTimeFormat(this._language, {
+              hour: this._twelveHour ? "numeric" : "2-digit",
+              minute: "2-digit",
+              hour12: this._twelveHour,
+              timeZone: z.time_zone,
+            }).format(now);
+          } catch {
+            // An unknown zone drops that entry rather than the whole row.
+            return nothing;
+          }
+          return html`<span class="zone"
+            ><span class="zone-label">${z.label}</span><span class="zone-time">${text}</span></span
+          >`;
+        })}
+      </div>
+    `;
+  }
+
+  /**
+   * Everything optional, in one block under the date.
+   *
+   * The spec put these top-right for the tiles and lockscreen styles, but the
+   * lockscreen's decor blob already lives in that corner, and one predictable
+   * position reads better across five styles than two rules.
+   */
+  private _extras() {
+    const alarm = this._alarmChip();
+    const sun = this._sunChip();
+    const progress = this._dayProgress();
+    const zones = this._zonesRow();
+    if (alarm === nothing && sun === nothing && progress === nothing && zones === nothing) {
+      return nothing;
+    }
+    return html`<div class="extras">
+      ${alarm !== nothing || sun !== nothing
+        ? html`<div class="chips">${alarm}${sun}</div>`
+        : nothing}
+      ${progress}${zones}
+    </div>`;
   }
 
   // ---- style: tiles --------------------------------------------------------
@@ -1060,6 +1224,93 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
 
     .ring-wrap.drain .seg {
       transition: opacity ${unsafeCSS(String(CLOCK_RING_DRAIN_MS))}ms ${EASING};
+    }
+
+    /* ---- extras ---- */
+
+    .extras {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: ${CLOCK_CHIP_HEIGHT}px;
+      padding: 0 10px;
+      border-radius: ${CLOCK_CHIP_RADIUS}px;
+      background: var(--clock-chip-bg);
+      color: var(--clock-chip-ink);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .chip ha-icon {
+      --mdc-icon-size: 15px;
+    }
+
+    .progress {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: ${CLOCK_PROGRESS_HEIGHT}px;
+      border-radius: ${CLOCK_PROGRESS_RADIUS}px;
+      background: var(--clock-progress-track);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--clock-sec-fill);
+    }
+
+    .progress-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--m3p-secondary-text);
+    }
+
+    .zones {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+
+    .zone {
+      display: inline-flex;
+      gap: 5px;
+    }
+
+    .zone-label {
+      color: var(--m3p-secondary-text);
+    }
+
+    .zone-time {
+      font-weight: 700;
+      color: var(--m3p-text);
+      font-variant-numeric: tabular-nums;
     }
 
     /* ---- shared ---- */
