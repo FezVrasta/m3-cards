@@ -1376,3 +1376,14 @@ export const ROOM_FALLBACK_CATEGORY: Omit<RoomCategoryDef, "domain"> = {
   color: PALETTE.home,
   toggle: "homeassistant",
 };
+
+// ---- room card: the device picker -------------------------------------------
+export const ROOM_SHEET_RADIUS = 28;
+export const ROOM_SHEET_ROW_HEIGHT = 52;
+export const ROOM_SHEET_ROW_RADIUS = 18;
+export const ROOM_SHEET_ROW_TINT = 6;
+export const ROOM_SHEET_ICON = 32;
+export const ROOM_SHEET_ICON_RADIUS = 12;
+export const ROOM_SHEET_MS = 240;
+/** Above this many devices the list scrolls rather than growing the sheet. */
+export const ROOM_SHEET_MAX_HEIGHT = 60;

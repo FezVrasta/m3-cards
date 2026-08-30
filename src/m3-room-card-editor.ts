@@ -99,6 +99,35 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     );
   }
 
+  /** Every entity of a domain in the area, excluded ones included: a device you
+   *  cannot see in the list is a device you cannot switch back on. */
+  private _entitiesOf(domain: string): string[] {
+    const cfg = this._config;
+    if (!this.hass || !cfg?.area) return [];
+    return areaEntityIds(this.hass, cfg.area).filter((id) => id.startsWith(`${domain}.`));
+  }
+
+  private _entityName(entityId: string): string {
+    return (
+      (this.hass?.states[entityId]?.attributes?.friendly_name as string | undefined) ?? entityId
+    );
+  }
+
+  private _isExcluded(entityId: string): boolean {
+    return (this._config?.excluded_entities ?? []).includes(entityId);
+  }
+
+  private _setExcluded(entityId: string, excluded: boolean): void {
+    if (!this._config) return;
+    const set = new Set(this._config.excluded_entities ?? []);
+    if (excluded) set.add(entityId);
+    else set.delete(entityId);
+    const next = { ...this._config };
+    if (set.size) next.excluded_entities = [...set];
+    else delete next.excluded_entities;
+    this._emit(next);
+  }
+
   private _override(domain: string): RoomCategoryConfig | undefined {
     return this._config?.categories?.find((c) => c.domain === domain);
   }
@@ -164,6 +193,23 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "detail_path", selector: { text: {} } },
+    ];
+  }
+
+  private _tapSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "category_tap",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "list", label: this._t("editor_room_tap_list") },
+              { value: "toggle", label: this._t("editor_room_tap_toggle") },
+            ],
+          },
+        },
+      },
     ];
   }
 
@@ -294,6 +340,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       humidity_entity: "editor_room_humidity",
       power_entity: "editor_room_power",
       power_threshold: "editor_room_power_threshold",
+      category_tap: "editor_room_category_tap",
       presence_entity: "editor_room_presence_entity",
       presence_style: "editor_room_presence_style",
       animation: "editor_progress_animation",
@@ -380,9 +427,30 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                   ${colorRow(this._t("editor_mode_color"), this._override(domain)?.color, (v) =>
                     this._patchCategory(domain, { color: v }),
                   )}
+                  <div class="hint">${this._t("editor_room_entities")}</div>
+                  ${this._entitiesOf(domain).map(
+                    (id) => html`
+                      <div class="ent">
+                        <span class="ent-name" title=${id}>${this._entityName(id)}</span>
+                        <ha-switch
+                          .checked=${!this._isExcluded(id)}
+                          @change=${(e: Event) =>
+                            this._setExcluded(id, !(e.target as HTMLInputElement).checked)}
+                        ></ha-switch>
+                      </div>
+                    `,
+                  )}
                 </div>
               `,
             )}
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ category_tap: cfg.category_tap ?? "list" }}
+              .schema=${this._tapSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_room_entities_hint")}</div>
             ${listRow(this._t("editor_room_extra_domains"), cfg.extra_domains ?? [], (values) => {
               const next = { ...cfg };
               if (values.length) next.extra_domains = values;
@@ -506,6 +574,22 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
         min-width: 0;
         font-size: 14px;
         font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .ent {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 4px;
+      }
+
+      .ent-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

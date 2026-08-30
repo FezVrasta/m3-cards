@@ -2694,14 +2694,32 @@ erst ab `power_threshold` (Standard 5 W): Ein Raum mit 0,4 W ist ein Raum ohne
 Verbrauch, und ein Chip, der das sagt, kostet eine Zeile auf jeder Karte, in
 der eine Steckdose hängt.
 
+### Auswählen, was erscheint
+
+Ganze Kategorien lassen sich ausblenden oder umsortieren, und einzelne Geräte
+lassen sich im Editor abwählen — jede Kategorie listet dort alle gefundenen
+Geräte mit einem Schalter. Ein abgewähltes Gerät verschwindet aus der Kachel,
+aus ihrer Zählung und aus allem, was die Kachel schaltet. Dorthin gehört zum
+Beispiel die Status-LED einer Steckdose, wenn ihre Integration sie nicht als
+Diagnose-Entität markiert.
+
+Für die Sensor-Chips gilt dasselbe: `temperature_entity`, `humidity_entity` und
+`power_entity` überschreiben das Erkannte, `extra_sensors` ergänzt Chips in der
+angegebenen Reihenfolge.
+
 ### Interaktion
 
-Ein Tap schaltet die ganze Kategorie um — alle Entitäten darin, die auch
-wirklich erreichbar sind, damit das Ergebnis zu dem passt, was die Kachel
-anzeigt. Ein langer Druck öffnet `detail_path`, sonst die Detailansicht der
-ersten Entität. Sauger und Schlösser haben kein sinnvolles Umschalten, dort
-öffnet ein Tap die Detailansicht, statt dass die Karte etwas rät, das man
-lieber selbst entscheidet.
+Steht ein einzelnes Gerät hinter einer Kachel, schaltet ein Tap es um. Bei
+mehreren öffnet ein Tap eine Auswahl, die jedes Gerät mit seinem Zustand
+auflistet — die vier Lampen eines Raums sind vier Entscheidungen, nicht eine —
+dazu „Alles aus“ und „Alle an“ für die Fälle, in denen es doch nur eine ist.
+Mit `category_tap: toggle` entfällt die Auswahl und alles schaltet sofort.
+
+In jedem Fall werden nur Geräte geschaltet, die auch antworten, damit das
+Ergebnis zu dem passt, was die Kachel angezeigt hat. Ein langer Druck öffnet
+`detail_path`, sonst die Detailansicht der ersten Entität. Sauger und Schlösser
+haben kein sinnvolles Umschalten, dort öffnet ein Tap die Detailansicht, statt
+dass die Karte etwas rät, das man lieber selbst entscheidet.
 
 ### Konfigurationsoptionen
 
@@ -2713,6 +2731,8 @@ lieber selbst entscheidet.
 | `extra_domains` | Liste | – | Domains über die neun eingebauten hinaus |
 | `category_order` | Liste | – | Domains in gewünschter Reihenfolge, der Rest folgt dahinter |
 | `hidden_categories` | Liste | – | |
+| `excluded_entities` | Liste | – | Einzelne Geräte, die draußen bleiben, egal in welcher Kategorie |
+| `category_tap` | `list` \| `toggle` | `list` | Was ein Tap tut, wenn hinter der Kachel mehrere Geräte stehen |
 | `categories` | Liste | – | Je Kategorie: `{ domain, name, icon, color, hidden, tap_action }` |
 | `show_sensors` | boolean | `true` | |
 | `temperature_entity` / `humidity_entity` / `power_entity` | string | erkannt | |

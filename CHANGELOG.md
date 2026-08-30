@@ -21,6 +21,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   makes the switch category usable at all: on the author's install a living
   room holds 32 switches, of which 2 are things a person would call a switch.
 
+  A tile holding several devices opens a picker on tap rather than switching all
+  of them: a room's four lights are four decisions, not one. "All off" and "All
+  on" are there for when it really is one. Individual devices can also be
+  excluded in the editor, which is where a plug's indicator light goes when its
+  integration does not mark it as diagnostic.
+
   Everything is read from the registry snapshots the frontend already keeps on
   `hass`, so discovery costs no websocket round-trip and can run in the render
   path, memoised against the registry object so the walk happens once per tick
@@ -106,6 +112,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   erst das macht die Schalter-Kategorie überhaupt brauchbar: Im Wohnzimmer der
   Testinstallation liegen 32 Schalter, von denen 2 das sind, was ein Mensch
   einen Schalter nennt.
+
+  Eine Kachel mit mehreren Geräten öffnet beim Tap eine Auswahl, statt alle
+  umzuschalten: Die vier Lampen eines Raums sind vier Entscheidungen, nicht
+  eine. „Alles aus“ und „Alle an“ stehen für die Fälle bereit, in denen es doch
+  nur eine ist. Einzelne Geräte lassen sich außerdem im Editor abwählen — dort
+  landet etwa die Status-LED einer Steckdose, wenn ihre Integration sie nicht
+  als Diagnose markiert.
 
   Alles kommt aus den Registry-Daten, die das Frontend ohnehin auf `hass`
   bereithält — die Erkennung kostet also keinen Websocket-Aufruf und darf im

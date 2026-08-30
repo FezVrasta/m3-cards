@@ -1530,6 +1530,10 @@ export interface M3RoomCardConfig {
   category_order?: string[];
   hidden_categories?: string[];
   categories?: RoomCategoryConfig[];
+  /** Individual entities to leave out, whatever category they fall into. */
+  excluded_entities?: string[];
+  /** What a tap on a category holding several devices does. */
+  category_tap?: "list" | "toggle";
   show_sensors?: boolean;
   temperature_entity?: string;
   humidity_entity?: string;

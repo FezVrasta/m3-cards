@@ -28,6 +28,14 @@ import {
   ROOM_PRESENCE_BORDER,
   ROOM_PRESENCE_COLOR,
   ROOM_PRESENCE_TINT,
+  ROOM_SHEET_ICON,
+  ROOM_SHEET_ICON_RADIUS,
+  ROOM_SHEET_MAX_HEIGHT,
+  ROOM_SHEET_MS,
+  ROOM_SHEET_RADIUS,
+  ROOM_SHEET_ROW_HEIGHT,
+  ROOM_SHEET_ROW_RADIUS,
+  ROOM_SHEET_ROW_TINT,
   ROOM_TILE_GAP,
   ROOM_TILE_ICON,
   ROOM_TILE_ICON_RADIUS,
@@ -98,6 +106,8 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3RoomCardConfig;
+  /** Domain of the category whose device picker is open, if any. */
+  @state() private _sheet?: string;
 
   private _holdTimer?: number;
   private _held = false;
@@ -160,6 +170,21 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   // ---- discovery -----------------------------------------------------------
 
   private get _areaEntities(): string[] {
+    if (!this.hass || !this._config?.area) return [];
+    const all = areaEntityIds(this.hass, this._config.area);
+    const excluded = this._config.excluded_entities;
+    if (!excluded?.length) return all;
+    const drop = new Set(excluded);
+    return all.filter((id) => !drop.has(id));
+  }
+
+  /**
+   * The area's entities *before* the user's exclusions, for the editor.
+   *
+   * The editor has to offer the excluded ones too — a device you cannot see in
+   * the list is a device you cannot switch back on.
+   */
+  public allAreaEntities(): string[] {
     if (!this.hass || !this._config?.area) return [];
     return areaEntityIds(this.hass, this._config.area);
   }
@@ -509,7 +534,138 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       this._held = false;
       return;
     }
+    // With several devices behind one tile, switching all of them is rarely
+    // what the tap meant: a room's four lights are four decisions, not one.
+    // So the tile opens a picker instead, unless the config says otherwise or
+    // there is only one device to pick.
+    if (
+      !category.override?.tap_action &&
+      category.def.toggle !== "none" &&
+      category.live.length > 1 &&
+      (this._config?.category_tap ?? "list") === "list"
+    ) {
+      this._sheet = category.domain;
+      return;
+    }
     this._toggleCategory(category);
+  }
+
+  // ---- device picker -------------------------------------------------------
+
+  private _closeSheet = (): void => {
+    this._sheet = undefined;
+  };
+
+  private _onSheetKey = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      this._closeSheet();
+    }
+  };
+
+  private _toggleOne(category: Category, entityId: string): void {
+    if (!this.hass) return;
+    const domain = category.def.toggle === "cover" ? "cover" : "homeassistant";
+    this.hass.callService(domain, "toggle", { entity_id: entityId });
+  }
+
+  private _setAll(category: Category, on: boolean): void {
+    if (!this.hass || category.live.length === 0) return;
+    const domain = category.def.toggle === "cover" ? "cover" : "homeassistant";
+    const service = category.def.toggle === "cover" ? (on ? "open_cover" : "close_cover") : on ? "turn_on" : "turn_off";
+    this.hass.callService(domain, service, { entity_id: category.live });
+  }
+
+  private _entityName(entityId: string): string {
+    const stateObj = this.hass?.states[entityId];
+    return (stateObj?.attributes?.friendly_name as string | undefined) ?? entityId;
+  }
+
+  private _renderSheet(categories: Category[]): TemplateResult | typeof nothing {
+    const category = categories.find((c) => c.domain === this._sheet);
+    if (!category) return nothing;
+
+    const rowBackground = tintOn(this, "var(--primary-text-color)", undefined, ROOM_SHEET_ROW_TINT);
+    const activeFill = fillColor(this, category.color, 3);
+
+    return html`
+      <div class="scrim" @click=${this._closeSheet}>
+        <div
+          class="sheet"
+          role="dialog"
+          aria-label=${category.name}
+          tabindex="-1"
+          @click=${(e: Event) => e.stopPropagation()}
+          @keydown=${this._onSheetKey}
+        >
+          <div class="sheet-head">
+            <span class="sheet-title">${category.name}</span>
+            <button class="sheet-close" aria-label=${this._t("room_close")} @click=${this._closeSheet}>
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+          <div class="sheet-list">
+            ${category.entities.map((id) => {
+              const stateObj = this.hass?.states[id];
+              const dead = !stateObj || UNAVAILABLE.has(stateObj.state);
+              const on = !dead && this._isActive(category.domain, stateObj);
+              const wellBackground = on
+                ? activeFill
+                : tintOn(this, "var(--primary-text-color)", undefined, ROOM_TILE_ICON_TINT_IDLE);
+              return html`
+                <div
+                  class="sheet-row ${dead ? "dead" : ""}"
+                  style=${`background: ${rowBackground};`}
+                  role=${dead ? nothing : "button"}
+                  tabindex=${dead ? nothing : "0"}
+                  aria-pressed=${dead ? nothing : String(on)}
+                  @click=${dead ? nothing : () => this._toggleOne(category, id)}
+                  @keydown=${dead ? nothing : activateOnKey(() => this._toggleOne(category, id))}
+                >
+                  <div
+                    class="sheet-icon"
+                    style=${`background: ${wellBackground}; color: ${
+                      on
+                        ? inkOn(wellBackground, this)
+                        : foregroundOn("var(--primary-text-color)", wellBackground, 3, this)
+                    };`}
+                  >
+                    <ha-icon icon=${category.icon}></ha-icon>
+                  </div>
+                  <span class="sheet-name" title=${this._entityName(id)}
+                    >${this._entityName(id)}</span
+                  >
+                  <span
+                    class="sheet-state"
+                    style=${on ? `color: ${foregroundOn(category.color, rowBackground, 4.5, this)};` : ""}
+                    >${dead ? "—" : this._singleBadge(category.domain, stateObj!)}</span
+                  >
+                  <button
+                    class="sheet-info"
+                    aria-label=${this._entityName(id)}
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._moreInfo(id);
+                    }}
+                  >
+                    <ha-icon icon="mdi:information-outline"></ha-icon>
+                  </button>
+                </div>
+              `;
+            })}
+          </div>
+          <div class="sheet-foot">
+            <span class="sheet-hint">${this._t("room_pick_hint")}</span>
+            <button class="sheet-action" @click=${() => this._setAll(category, false)}>
+              ${this._t("room_all_off")}
+            </button>
+            <button class="sheet-action" @click=${() => this._setAll(category, true)}>
+              ${this._t("room_all_on")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   // ---- rendering -----------------------------------------------------------
@@ -632,6 +788,8 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         occupied && showPresence
           ? foregroundOn(presenceColor, inkSurface, 4.5, this)
           : "var(--m3p-secondary-text, var(--secondary-text-color))",
+      "room-action-bg": tintOn(this, accent, undefined, 12),
+      "room-action-ink": foregroundOn(accent, tintOn(this, accent, undefined, 12), 4.5, this),
       "room-border": tinted
         ? tintOn(this, presenceColor, undefined, ROOM_PRESENCE_BORDER)
         : undefined,
@@ -663,6 +821,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           ${categories.length
             ? html`<div class="grid">${categories.map((c) => this._renderTile(c))}</div>`
             : html`<div class="empty">${this._t("room_empty")}</div>`}
+          ${this._sheet ? this._renderSheet(categories) : nothing}
         </div>
       </ha-card>
     `;
@@ -673,6 +832,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     css`
       .card-inner {
         gap: 12px;
+        position: relative;
       }
 
       .card-inner.occupied {
@@ -836,6 +996,180 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         font-size: 12px;
         opacity: 0.6;
         color: var(--m3p-secondary-text, var(--secondary-text-color));
+      }
+
+
+      /* ---- device picker ---- */
+
+      .scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        animation: sheet-fade ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING};
+      }
+
+      .sheet {
+        width: 100%;
+        max-height: ${ROOM_SHEET_MAX_HEIGHT}vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 14px;
+        border-radius: ${ROOM_SHEET_RADIUS}px;
+        background: var(--ha-card-background, var(--card-background-color));
+        animation: sheet-rise ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING};
+      }
+
+      @keyframes sheet-fade {
+        from {
+          opacity: 0;
+        }
+      }
+
+      @keyframes sheet-rise {
+        from {
+          transform: translateY(12px);
+          opacity: 0;
+        }
+      }
+
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .sheet-title {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--m3p-text, var(--primary-text-color));
+      }
+
+      .sheet-close,
+      .sheet-info {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 15px;
+        background: transparent;
+        color: var(--m3p-secondary-text, var(--secondary-text-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        --mdc-icon-size: 18px;
+      }
+
+      .sheet-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        overflow-y: auto;
+      }
+
+      .sheet-row {
+        flex-shrink: 0;
+        height: ${ROOM_SHEET_ROW_HEIGHT}px;
+        border-radius: ${ROOM_SHEET_ROW_RADIUS}px;
+        padding: 0 6px 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        transition: border-radius ${unsafeCSS(ROOM_TILE_MORPH_MS)}ms ${EASING};
+      }
+
+      .sheet-row[role="button"] {
+        cursor: pointer;
+      }
+
+      .sheet-row[role="button"]:active {
+        border-radius: ${ROOM_TILE_RADIUS_ACTIVE}px;
+      }
+
+      .sheet-row:focus-visible {
+        outline: 2px solid var(--m3p-text, var(--primary-text-color));
+        outline-offset: -2px;
+      }
+
+      .sheet-row.dead {
+        opacity: 0.4;
+      }
+
+      .sheet-icon {
+        flex-shrink: 0;
+        width: ${ROOM_SHEET_ICON}px;
+        height: ${ROOM_SHEET_ICON}px;
+        border-radius: ${ROOM_SHEET_ICON_RADIUS}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --mdc-icon-size: 18px;
+      }
+
+      .sheet-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--m3p-text, var(--primary-text-color));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sheet-state {
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--m3p-secondary-text, var(--secondary-text-color));
+      }
+
+      .sheet-foot {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .sheet-hint {
+        flex: 1;
+        min-width: 0;
+        font-size: 11px;
+        opacity: 0.5;
+        color: var(--m3p-secondary-text, var(--secondary-text-color));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sheet-action {
+        flex-shrink: 0;
+        height: 32px;
+        padding: 0 14px;
+        border: none;
+        border-radius: 16px;
+        background: var(--room-action-bg);
+        color: var(--room-action-ink);
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      .no-animations .scrim,
+      .no-animations .sheet {
+        animation: none;
       }
 
       .no-animations .dot {

@@ -2635,13 +2635,31 @@ matching `device_class` otherwise. The power chip only appears above
 `power_threshold` (5W by default): a room drawing 0.4W is a room drawing
 nothing, and a chip saying so costs a row on every card that has a plug in it.
 
+### Choosing what appears
+
+Whole categories can be hidden or reordered, and individual devices can be
+switched off in the editor's category list — each category shows every device
+it found, with a toggle. An excluded device disappears from the tile, from its
+count, and from anything the tile switches. This is where a plug's indicator
+light goes when its integration does not mark it as a diagnostic entity.
+
+The sensor chips work the same way: `temperature_entity`, `humidity_entity` and
+`power_entity` override what was discovered, and `extra_sensors` adds chips in
+the order given.
+
 ### Interaction
 
-A tap toggles the whole category — every entity in it that is actually
-reachable, so what happens matches what the tile shows. A hold opens
-`detail_path` if one is set, otherwise more-info for the first entity. Vacuums
-and locks have no meaningful toggle, so a tap opens more-info instead of the
-card guessing at something a person would rather decide.
+With one device behind a tile, a tap toggles it. With several, a tap opens a
+picker listing each device with its own state — a room's four lights are four
+decisions, not one — plus "All off" and "All on" for when it really is one
+decision. Set `category_tap: toggle` to skip the picker and switch everything
+at once.
+
+Whatever the route, only devices that actually answer are switched, so the
+result matches what the tile showed. A hold opens `detail_path` if one is set,
+otherwise more-info for the first entity. Vacuums and locks have no meaningful
+toggle, so a tap opens more-info instead of the card guessing at something a
+person would rather decide.
 
 ### Configuration options
 
@@ -2653,6 +2671,8 @@ card guessing at something a person would rather decide.
 | `extra_domains` | list | – | Domains beyond the built-in nine |
 | `category_order` | list | – | Domains in the order you want them; the rest follow behind |
 | `hidden_categories` | list | – | |
+| `excluded_entities` | list | – | Individual devices to leave out, whatever category they fall into |
+| `category_tap` | `list` \| `toggle` | `list` | What a tap does when a tile holds several devices |
 | `categories` | list | – | Per category: `{ domain, name, icon, color, hidden, tap_action }` |
 | `show_sensors` | boolean | `true` | |
 | `temperature_entity` / `humidity_entity` / `power_entity` | string | discovered | |

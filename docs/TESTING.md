@@ -492,6 +492,18 @@ gefunden.
       gedimmt auf 0.4, kein `role="button"`, kein Tap möglich
 - [ ] Kategorie mit teilweise nicht verfügbaren Entitäten: der Tap schaltet
       **nur** die erreichbaren; der Nenner im Badge bleibt die Gesamtzahl
+- [ ] **Geräteauswahl:** Kachel mit mehreren Geräten öffnet beim Tap die Liste;
+      ein Tap auf eine Zeile schaltet **nur** dieses Gerät
+- [ ] In der Liste: nicht verfügbare Zeilen sind gedimmt und nicht antippbar,
+      das Info-Icon öffnet die Detailansicht statt zu schalten
+- [ ] „Alles aus" / „Alle an" wirken auf alle erreichbaren Geräte der Kategorie
+- [ ] Liste schließt per Escape, per Klick auf den Hintergrund und per X
+- [ ] `category_tap: toggle` überspringt die Liste; eine Kachel mit genau einem
+      Gerät schaltet immer direkt
+- [ ] **Abgewählte Geräte** (`excluded_entities`) verschwinden aus der Kachel,
+      aus dem Nenner im Badge und aus allem, was die Kachel schaltet
+- [ ] Editor: die Geräteliste zeigt auch die abgewählten Geräte — sonst ließen
+      sie sich nicht zurückholen
 - [ ] Sauger und Schloss: der Tap öffnet die Detailansicht statt zu schalten
 - [ ] Langer Druck öffnet `detail_path`, ohne dass beim Loslassen zusätzlich
       geschaltet wird
