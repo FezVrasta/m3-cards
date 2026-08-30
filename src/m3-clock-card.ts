@@ -6,6 +6,7 @@ import type {
   ClockStyle,
   HomeAssistant,
   LovelaceCard,
+  LovelaceCardEditor,
   LovelaceGridOptions,
   M3ClockCardConfig,
 } from "./types";
@@ -143,6 +144,11 @@ export class M3ClockCard extends LitElement implements LovelaceCard {
   private _rollTimer?: number;
   private _lastNow = 0;
   private _lastFrame = 0;
+
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import("./m3-clock-card-editor");
+    return document.createElement("m3-clock-card-editor") as unknown as LovelaceCardEditor;
+  }
 
   public static getStubConfig(): Partial<M3ClockCardConfig> {
     return { style: "tiles", show_seconds: true, show_date: true };
