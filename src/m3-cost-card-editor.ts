@@ -36,16 +36,8 @@ import {
   saveNotifyAutomation,
   resolveAutomationId,
   type NotifyAutomationSpec,
-  meterCycle,
 } from "./shared/notify-editor";
 import { formatCurrencyParts } from "./shared/pricing";
-
-// The card sums long-term statistics, where the recorder has already
-// normalized every energy statistic to kWh. An automation can only read a raw
-// entity state, so the unit has to be converted explicitly — and anything
-// outside this list can't be priced per kWh at all (that's what the "custom"
-// price unit with its own quantity factor is for).
-const KWH_FACTOR: Record<string, number> = { Wh: 0.001, kWh: 1, MWh: 1000 };
 
 // Days in the current month as a Jinja expression — HA has no helper for it.
 const DAYS_IN_MONTH =
@@ -106,94 +98,110 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
     return undefined;
   }
 
-  // The month's cost as a Jinja expression, or the localize key explaining why
-  // it can't be expressed. `mode` only changes the base fee: at month end the
-  // full monthly fee has accrued, mid-month only the elapsed share (the card
-  // prorates the same way).
-  private _costExpression(
+  /**
+   * The actions that work out the month's cost, plus the expression that names
+   * it. Not a plain Jinja expression over `states()` any more, and that is the
+   * whole point of this: for a counter, `states()` is the meter reading, not
+   * the period's consumption. On the author's install the card said 112.66 €
+   * for August while its own notification said 26,844.38 € — the reading times
+   * the price.
+   *
+   * `recorder.get_statistics` reads exactly what the card reads, with the same
+   * statistic type and the same unit normalisation, so the two can no longer
+   * disagree. A template can reach neither statistics nor history, so this has
+   * to be an action rather than a variable.
+   */
+  private _costPlan(
     mode: "budget" | "month_end",
-  ): { expr: string; entity: string } | { error: TranslationKey } {
+  ): { prelude: Record<string, unknown>[]; expr: string; entity: string } | { error: TranslationKey } {
     const cfg = this._config;
-    const entity = cfg?.notify_cost_entity;
+    // Defaults to the card's own entity: a separate picker invited exactly the
+    // mismatch that caused this, where the notification read a different sensor
+    // from the card above it.
+    const entity = cfg?.notify_cost_entity || cfg?.entity;
     const st = entity ? this.hass?.states[entity] : undefined;
     if (!cfg || !entity || !st) return { error: "editor_cost_notify_no_entity" };
 
-    const stateClass = String(st.attributes.state_class ?? "");
-    // The automation can only read `states()`, and for a total_increasing
-    // sensor that is the meter reading, not the period's consumption. The card
-    // itself reads long-term statistics and so gets the right number — which is
-    // exactly how this went unnoticed: the card said 112.66 € while its own
-    // notification said 26,844.38 €, the reading times the price.
-    //
-    // Templates have no access to statistics and no way to read history, so
-    // there is nothing to compute here. The entity has to be one whose *state*
-    // is already the period's value.
-    if (st.attributes.device_class !== "monetary" && stateClass === "total_increasing") {
-      return { error: "editor_cost_notify_cumulative" };
-    }
+    const monetary = st.attributes.device_class === "monetary";
+    const isCustom = cfg.price_unit === "custom";
+    // Mirrors the card: "state" unless told otherwise, because a daily
+    // resetting counter often populates only that. A cost entity is summed by
+    // its change, the way the card sums the energy dashboard's cost sensors.
+    const statType = monetary ? "change" : (cfg.statistic_type ?? "state");
 
-    const stateExpr = `(states('${entity}') | float(0))`;
-    let expr: string;
-    if (st.attributes.device_class === "monetary") {
-      // Already a cost — no price needed, so this also covers price_source
-      // "energy_dashboard".
-      expr = stateExpr;
+    let quantityToCost: string;
+    if (monetary) {
+      quantityToCost = "m3_qty";
     } else {
       const price = this._priceExpression();
       if (!price) return { error: "editor_cost_notify_no_price" };
-      if (cfg.price_unit === "custom") {
-        // Same contract as the card: the user's factor converts the entity's
-        // own unit into whatever the price is quoted per.
-        expr = `${stateExpr} * ${cfg.price_quantity_factor ?? 1} * ${price}`;
-      } else {
-        const factor = KWH_FACTOR[String(st.attributes.unit_of_measurement ?? "").trim()];
-        if (factor === undefined) return { error: "editor_cost_notify_bad_unit" };
-        expr = factor === 1 ? `${stateExpr} * ${price}` : `${stateExpr} * ${factor} * ${price}`;
-      }
+      quantityToCost = isCustom
+        ? `m3_qty * ${cfg.price_quantity_factor ?? 1} * ${price}`
+        : `m3_qty * ${price}`;
     }
 
     const baseFee = cfg.base_fee ?? 0;
-    if (baseFee) {
-      expr +=
-        mode === "month_end"
-          ? ` + ${baseFee}`
-          : ` + (${baseFee} * now().day / ${DAYS_IN_MONTH})`;
-    }
-    return { expr, entity };
+    const expr =
+      baseFee === 0
+        ? quantityToCost
+        : mode === "month_end"
+          ? `${quantityToCost} + ${baseFee}`
+          : `${quantityToCost} + (${baseFee} * now().day / ${DAYS_IN_MONTH})`;
+
+    // Same normalisation the card asks the recorder for. Skipped in custom
+    // mode, where the user's own factor does the converting.
+    const deviceClass = String(st.attributes.device_class ?? "");
+    const units =
+      monetary || isCustom
+        ? undefined
+        : deviceClass === "gas" || deviceClass === "water"
+          ? { volume: "m³" }
+          : { energy: "kWh" };
+
+    const prelude: Record<string, unknown>[] = [
+      {
+        action: "recorder.get_statistics",
+        data: {
+          start_time: "{{ now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) }}",
+          end_time: "{{ now() }}",
+          statistic_ids: [entity],
+          period: "day",
+          types: [statType],
+          ...(units ? { units } : {}),
+        },
+        response_variable: "m3_stats",
+      },
+      {
+        variables: {
+          m3_qty: `{{ (m3_stats.statistics['${entity}'] | default([])) | map(attribute='${statType}') | map('float', 0) | sum }}`,
+          m3_cost: `{{ ${expr} }}`,
+        },
+      },
+    ];
+
+    return { prelude, expr, entity };
   }
 
-  // Everything that would make the generated automation report a wrong number.
-  // Surfaced in the panel and used to disable the button — better an honest
-  // "can't do this" than a plausible-looking automation built on nonsense.
   private _notifyBlocker(): TranslationKey | undefined {
     const cfg = this._config;
     if (!cfg) return "editor_cost_notify_no_entity";
     if (this._notifyMode === "budget" && !cfg.budget) return "editor_cost_notify_no_budget";
-    const cost = this._costExpression(this._notifyMode);
-    return "error" in cost ? cost.error : undefined;
+    const plan = this._costPlan(this._notifyMode);
+    return "error" in plan ? plan.error : undefined;
   }
 
   // utility_meter and friends advertise their cycle; a daily or yearly meter
   // would silently answer a different question than "this month". Only a
   // warning — a cron-driven meter can be monthly without saying so.
+  // The cycle of a utility_meter no longer matters — the notification sums the
+  // month out of the statistics itself, whatever the meter resets on. What does
+  // matter is reading a *different* entity from the card, because the card's
+  // statistic_type travels with it and may not suit another sensor.
   private _notifyPeriodWarning(): string | undefined {
-    const entity = this._config?.notify_cost_entity;
-    if (!entity) return undefined;
-    const cycle = meterCycle(this.hass, entity);
-    if (cycle !== "monthly" && cycle !== "other") {
-      return this._t("editor_cost_notify_period_warn").replace("{period}", cycle);
-    }
-    // A `total` sensor whose cycle cannot be derived is either a meter that has
-    // not rolled over yet — fine — or a running total that never resets, which
-    // would report the reading rather than the month. The card cannot tell them
-    // apart, so it says so rather than guessing either way. `total_increasing`
-    // is not covered here: that one is certainly a running total and is
-    // refused outright in _costExpression.
-    const stateClass = String(this.hass?.states[entity]?.attributes?.state_class ?? "");
-    if (cycle === "other" && stateClass === "total") {
-      return this._t("editor_cost_notify_reset_unknown");
-    }
-    return undefined;
+    const cfg = this._config;
+    const chosen = cfg?.notify_cost_entity;
+    if (!chosen || !cfg?.entity || chosen === cfg.entity) return undefined;
+    return this._t("editor_cost_notify_other_entity");
   }
 
   private _currencySymbol(): string {
@@ -235,8 +243,8 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
       return;
     }
     const mode = this._notifyMode;
-    const cost = this._costExpression(mode);
-    if ("error" in cost) return; // already handled by the blocker check
+    const plan = this._costPlan(mode);
+    if ("error" in plan) return; // already handled by the blocker check
 
     this._notifyBusy = true;
     this._notifyStatus = "idle";
@@ -252,7 +260,6 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
         )}`,
         description: this._t("editor_cost_notify_description"),
         mode: "single" as const,
-        variables: { m3_cost: `{{ ${cost.expr} }}` },
       };
 
       let spec: NotifyAutomationSpec;
@@ -267,25 +274,35 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
         spec = {
           id: automationId,
           ...base,
-          // numeric_state fires only on the crossing from below to above, so
-          // this warns once instead of every single update above the line —
-          // and re-arms by itself when the meter resets into the next month.
-          // (A daily time trigger would repeat all month.)
-          triggers: [
+          // This used to be a numeric_state trigger with a value_template, which
+          // fires exactly once on the crossing — but a trigger template cannot
+          // call a service, and the cost now comes from recorder.get_statistics.
+          // So it checks on a schedule instead, and "once per month" is kept by
+          // asking the automation when it last fired. `this` is the automation's
+          // own state object inside its templates.
+          triggers: [{ trigger: "time_pattern", minutes: "/30" }],
+          conditions: [
             {
-              trigger: "numeric_state",
-              entity_id: cost.entity,
-              above: threshold,
-              value_template: `{{ ${cost.expr} }}`,
+              condition: "template",
+              value_template:
+                "{{ this.attributes.last_triggered is none or " +
+                "this.attributes.last_triggered.month != now().month }}",
             },
           ],
-          actions: notifyActions(targets, cardName, message,
+          actions: [
+            ...plan.prelude,
+            {
+              condition: "template",
+              value_template: `{{ (m3_cost | float(0)) >= ${threshold} }}`,
+            },
+            ...notifyActions(targets, cardName, message,
           { title: cfg.notify_title, message: cfg.notify_message, tokens: {
             betrag: valueText,
             waehrung: symbol,
             budget: String(cfg.budget ?? ""),
             zeitraum: "{{ now().strftime('%m/%Y') }}",
           } }),
+          ],
         };
       } else {
         const message = this._t("editor_cost_notify_month_end_message")
@@ -302,13 +319,16 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
               value_template: "{{ (now() + timedelta(days=1)).month != now().month }}",
             },
           ],
-          actions: notifyActions(targets, cardName, message,
-          { title: cfg.notify_title, message: cfg.notify_message, tokens: {
-            betrag: valueText,
-            waehrung: symbol,
-            budget: String(cfg.budget ?? ""),
-            zeitraum: "{{ now().strftime('%m/%Y') }}",
-          } }),
+          actions: [
+            ...plan.prelude,
+            ...notifyActions(targets, cardName, message,
+            { title: cfg.notify_title, message: cfg.notify_message, tokens: {
+              betrag: valueText,
+              waehrung: symbol,
+              budget: String(cfg.budget ?? ""),
+              zeitraum: "{{ now().strftime('%m/%Y') }}",
+            } }),
+          ],
         };
       }
 

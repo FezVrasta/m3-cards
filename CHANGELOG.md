@@ -118,15 +118,25 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   36.81 ct. The card was right; it reads long-term statistics, which is
   precisely why nobody noticed the notification disagreeing with it.
 
-  A template can reach neither statistics nor history, so there is nothing to
-  compute in the automation: the entity has to be one whose *state* is already
-  the period's value. Such an entity is now refused with an explanation, and a
-  `total` sensor whose reset cycle cannot be derived gets a warning rather than
-  a refusal — a utility_meter that has not rolled over yet looks exactly like a
-  running total and it would be wrong to block it.
+  The automation now calls `recorder.get_statistics` and sums the same daily
+  buckets the card sums, with the same statistic type and the same unit
+  normalisation, so the two cannot disagree again. A template can reach neither
+  statistics nor history, so this had to become an action rather than a
+  variable — and the budget mode's trigger had to change with it, since a
+  trigger's `value_template` cannot call a service. It checks every half hour
+  instead and stays once-a-month by asking itself when it last fired.
+
+  Two smaller things fell out of the same investigation. The notification's
+  entity picker had no default, which invited exactly this: the card was
+  reading one sensor while its own notification read another. It now defaults
+  to the card's entity, and choosing a different one says why that is worth a
+  second look. And the old check for a meter's reset cycle is gone — it needed
+  both `last_reset` and `next_reset`, went quiet on a sensor carrying only the
+  first, and no longer matters now that the month is summed from statistics.
 
   **An automation created before this fix keeps its old template.** Open the
-  card's notification settings and save again, or check the automation by hand.
+  card's notification settings and save again, or check the automation by
+  hand.
 
 - **M3 Heading Card — the divider was barely visible, in four separate ways.**
   Found while photographing the card for the README, and each one had to be
@@ -282,13 +292,23 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   dagegen **26 844,38 €**: 72 926,89 kWh mal 36,81 ct. Die Karte lag richtig,
   sie liest die Langzeitstatistik; genau deshalb fiel der Widerspruch nie auf.
 
-  Ein Template erreicht weder Statistiken noch Verlauf, in der Automation ist
-  also nichts zu rechnen: Die Entität muss eine sein, deren *Zustand* bereits
-  der Wert der Periode ist. Eine solche wird jetzt mit Begründung abgelehnt,
-  und ein `total`-Sensor, dessen Zyklus sich nicht ableiten lässt, bekommt eine
-  Warnung statt einer Ablehnung — ein utility_meter, der noch nie umgesprungen
-  ist, sieht genauso aus wie ein fortlaufender Zähler, und ihn zu blockieren
-  wäre falsch.
+  Die Automation ruft jetzt `recorder.get_statistics` auf und summiert
+  dieselben Tageswerte wie die Karte, mit derselben Statistik-Art und derselben
+  Einheiten-Normalisierung — beide können also nicht mehr auseinanderlaufen.
+  Ein Template erreicht weder Statistiken noch Verlauf, deshalb musste daraus
+  eine Aktion statt einer Variablen werden. Und der Auslöser des
+  Budget-Modus musste mit: Das `value_template` eines Triggers kann keinen
+  Dienst aufrufen. Er prüft nun halbstündlich und bleibt trotzdem einmal im
+  Monat, indem er sich selbst fragt, wann er zuletzt ausgelöst hat.
+
+  Zwei kleinere Dinge fielen dabei mit ab. Das Auswahlfeld für die Entität der
+  Benachrichtigung hatte keine Vorgabe — genau die Einladung zu diesem Fehler:
+  Die Karte las den einen Sensor, ihre eigene Meldung einen anderen. Es steht
+  jetzt auf der Entität der Karte, und eine abweichende Wahl sagt, warum sie
+  einen zweiten Blick verdient. Und die alte Prüfung des Zählerzyklus ist
+  entfallen: Sie brauchte `last_reset` **und** `next_reset`, schwieg bei einem
+  Sensor mit nur dem ersten, und ist gegenstandslos, seit der Monat aus
+  Statistiken summiert wird.
 
   **Eine vor dieser Behebung angelegte Automation behält ihr altes Template.**
   Die Benachrichtigungs-Einstellungen der Karte erneut speichern oder die
