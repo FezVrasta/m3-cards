@@ -4,9 +4,12 @@
   "description": "Material 3 style Lovelace cards for Home Assistant \u2014 30 cards across energy, climate, light and media, household and safety \u2014 built natively with Lit, with no button-card or card-mod dependency.",
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch --mode development",
-    "build": "vite build",
-    "lint": "tsc --noEmit",
+    "dev": "node scripts/dev-server.mjs",
+    "build": "node scripts/build.mjs",
+    "deploy": "npm run build && bash scripts/deploy.sh",
+    "check": "tsc --noEmit && eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:contrast": "esbuild src/shared/contrast.ts --format=esm --outfile=.contrast.mjs --log-level=error && node test/contrast.test.mjs $PWD/.contrast.mjs; rm -f .contrast.mjs"
   },
   "keywords": [
@@ -28,7 +31,10 @@
     "lit": "^3.2.1"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "typescript": "^5.7.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.15.0",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^3.0.0"
   }
 }

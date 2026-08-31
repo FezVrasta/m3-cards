@@ -19,3 +19,8 @@ dev/
 # own instance. Neither has ever been in a release tag.
 CLAUDE.md
 docs/HANDOVER.md
+
+# Private workspace tooling (not part of the public HACS release)
+templates/
+scripts/deploy.sh
+dev-dashboard.yaml

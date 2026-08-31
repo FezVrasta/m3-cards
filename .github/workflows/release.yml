@@ -23,8 +23,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type-check
-        run: npm run lint
+      - name: Check
+        run: npm run check
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build
@@ -33,11 +36,11 @@ jobs:
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/m3-cards.js
+          files: dist/m3x-cards.js
 
       - name: Upload workflow artifact
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: m3-cards
-          path: dist/m3-cards.js
+          name: m3x-cards
+          path: dist/m3x-cards.js

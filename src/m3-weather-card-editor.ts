@@ -172,7 +172,7 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
     const showCorners = ev.detail.value.use_corners as boolean;
     this._appearance = { ...this._appearance, showCorners };
     if (!showCorners) {
-      const { corners, ...rest } = this._config;
+      const { corners: _corners, ...rest } = this._config;
       this._config = rest;
       fireEvent(this, "config-changed", { config: this._config });
     }
