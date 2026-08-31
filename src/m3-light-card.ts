@@ -53,6 +53,7 @@ import { stopSwipe } from "./shared/swipe";
 import { hexToHs, hsToRgb, rgbToHex, rgbToHs } from "./shared/color-picker";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
+import { DragThrottle } from "./shared/drag-throttle";
 
 console.info(
   `%c M3-LIGHT-CARD %c v${CARD_VERSION} `,
@@ -62,52 +63,6 @@ console.info(
 
 const EASING = unsafeCSS(STANDARD_EASING);
 const DEFAULT_SLIDER_WIDTH = 220;
-
-// Throttles a fast-firing continuous value (drag/pointer-move) down to at
-// most one service call per `ms`, always flushing the final value — shared
-// by the brightness slider, color-temp slider, and color wheel, which all
-// need the exact same "call light.turn_on at most every N ms while
-// dragging, but never miss the value you released on" behavior.
-class DragThrottle<T> {
-  private timer?: number;
-  private pending?: T;
-  private lastCallTs = 0;
-
-  constructor(
-    private readonly fn: (value: T) => void,
-    private readonly ms = LIGHT_THROTTLE_MS,
-  ) {}
-
-  call(value: T): void {
-    this.pending = value;
-    const elapsed = performance.now() - this.lastCallTs;
-    if (elapsed >= this.ms) {
-      this.flush(value);
-    } else if (this.timer === undefined) {
-      this.timer = window.setTimeout(() => {
-        this.timer = undefined;
-        if (this.pending !== undefined) this.flush(this.pending);
-      }, this.ms - elapsed);
-    }
-  }
-
-  flush(value: T): void {
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-      this.timer = undefined;
-    }
-    this.pending = undefined;
-    this.lastCallTs = performance.now();
-    this.fn(value);
-  }
-
-  clear(): void {
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-      this.timer = undefined;
-    }
-  }
-}
 
 @customElement("m3-light-card")
 export class M3LightCard extends LitElement implements LovelaceCard {
@@ -148,9 +103,9 @@ export class M3LightCard extends LitElement implements LovelaceCard {
   private _entityPct = 0;
   private _unavailable = false;
 
-  private readonly _brightnessThrottle = new DragThrottle<number>((pct) => this._setBrightnessNow(pct));
-  private readonly _tempThrottle = new DragThrottle<number>((kelvin) => this._setColorTempNow(kelvin));
-  private readonly _hsThrottle = new DragThrottle<[number, number]>((hs) => this._setHsNow(hs));
+  private readonly _brightnessThrottle = new DragThrottle<number>((pct) => this._setBrightnessNow(pct), LIGHT_THROTTLE_MS);
+  private readonly _tempThrottle = new DragThrottle<number>((kelvin) => this._setColorTempNow(kelvin), LIGHT_THROTTLE_MS);
+  private readonly _hsThrottle = new DragThrottle<[number, number]>((hs) => this._setHsNow(hs), LIGHT_THROTTLE_MS);
 
   public static getStubConfig(hass: HomeAssistant): M3LightCardConfig {
     const entities = Object.keys(hass?.states ?? {}).filter((eid) =>
