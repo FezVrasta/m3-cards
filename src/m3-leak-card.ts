@@ -64,6 +64,9 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
   @state() private _config?: M3LeakCardConfig;
   @state() private _discovered: LeakSensorConfig[] = [];
   @state() private _expanded = false;
+  /** Separate from _expanded: that one is "the all-OK list is open at all",
+   *  this one is "show every row rather than the first few". */
+  @state() private _showAll = false;
   @state() private _shutoffDone = false;
   @state() private _armShutoff = false;
   @state() private _now = Date.now();
@@ -437,6 +440,14 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
     }
 
     const collapseOk = this._config.collapse_ok === true && state === "ok";
+
+    // A long list of quiet sensors is worth keeping short. An alarm is not:
+    // whichever sensor is wet must be on screen without another tap, so the
+    // limit is dropped as soon as anything is wrong.
+    const maxVisible = state === "alarm" ? 0 : (this._config.max_visible ?? 0);
+    const visibleRows =
+      maxVisible > 0 && !this._showAll ? rows.slice(0, maxVisible) : rows;
+    const hiddenCount = maxVisible > 0 ? Math.max(0, rows.length - maxVisible) : 0;
     const showShutoff = state === "alarm" && !!this._config.valve_entity;
 
     return html`
@@ -492,7 +503,25 @@ export class M3LeakCard extends LitElement implements LovelaceCard {
             : nothing}
 
           ${!collapseOk || this._expanded
-            ? html`<div class="row-list">${rows.map((r) => this._renderRow(r))}</div>`
+            ? html`
+                <div class="row-list">${visibleRows.map((r) => this._renderRow(r))}</div>
+                ${hiddenCount > 0
+                  ? html`<button
+                      class="collapse-toggle"
+                      @click=${() => (this._showAll = !this._showAll)}
+                    >
+                      <span
+                        >${this._showAll
+                          ? this._t("leak_show_less")
+                          : this._t("leak_show_more").replace("{n}", String(hiddenCount))}</span
+                      >
+                      <ha-icon
+                        class="chevron ${this._showAll ? "open" : ""}"
+                        icon="mdi:chevron-down"
+                      ></ha-icon>
+                    </button>`
+                  : nothing}
+              `
             : nothing}
         </div>
       </ha-card>

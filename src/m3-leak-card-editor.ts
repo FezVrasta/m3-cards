@@ -113,6 +113,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "collapse_ok", selector: { boolean: {} } },
+      { name: "max_visible", selector: { number: { min: 0, max: 30, mode: "box" } } },
     ];
   }
 
@@ -230,6 +231,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
       test_interval_days: "editor_leak_test_interval",
       last_test_entity: "editor_leak_last_test",
       collapse_ok: "editor_leak_collapse_ok",
+      max_visible: "editor_leak_max_visible",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -324,6 +326,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
       name: this._config.name,
       icon: this._config.icon,
       collapse_ok: this._config.collapse_ok ?? false,
+      max_visible: this._config.max_visible ?? 0,
     };
 
     return html`

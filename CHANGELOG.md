@@ -8,6 +8,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Leak Card — `max_visible`.** The same "show N more" toggle the power
+  list, battery, NAS, updates and occupancy cards already had; the leak card
+  only had the all-or-nothing `collapse_ok`. The limit steps aside during an
+  alarm, because whichever sensor is wet has to be on screen without another
+  tap.
+
 - **M3 Climate Overview — `tile_tap_action: thermostat`.** A tap on a room
   opened the sensor's dialog, which is its history graph; it can now open that
   room's thermostat instead — `m3-climate-card-mini`, floating over the card and
@@ -114,6 +120,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Leak Card — `max_visible`.** Derselbe „N weitere anzeigen"-Umschalter,
+  den Power-List, Batterie, NAS, Updates und Belegung längst haben; die
+  Leak-Karte hatte nur das Alles-oder-nichts von `collapse_ok`. Im Alarmfall
+  tritt die Begrenzung zurück, denn welcher Sensor nass ist, muss ohne zweiten
+  Tap sichtbar sein.
 
 - **M3 Climate Overview — `tile_tap_action: thermostat`.** Ein Tap auf einen
   Raum öffnete den Sensordialog, also dessen Verlaufsgraphen; er kann jetzt

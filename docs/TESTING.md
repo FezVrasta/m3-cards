@@ -560,6 +560,17 @@ gefunden.
       eine Vierteldrehung mit heraus — in beiden Blättern gleich
 - [ ] `animation: off`: öffnet und schließt ohne Übergang
 
+## M3 Leak Card — Liste kürzen
+
+- [ ] `max_visible: 3` zeigt drei Sensoren plus „N weitere anzeigen"; der
+      Umschalter klappt auf und wieder zu
+- [ ] Ohne `max_visible` (oder 0) stehen alle Sensoren da wie bisher
+- [ ] **Im Alarmfall** greift die Begrenzung nicht — alle Sensoren sind ohne
+      zweiten Tap sichtbar
+- [ ] Mit `collapse_ok` zusammen: erst öffnet sich die OK-Liste, darin gilt
+      dann die Begrenzung; beide Umschalter sind unabhängig
+- [ ] Weniger Sensoren als `max_visible`: kein Umschalter
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und

@@ -2254,6 +2254,10 @@ valve_entity: valve.main_water        # optional: valve / switch / cover
 # siren_entity: siren.alarm           # optional, for the acknowledge button
 ```
 
+`max_visible` keeps the list short: the first few sensors are shown and the
+rest sit behind a "show N more" toggle. It steps aside during an alarm —
+whichever sensor is wet has to be on screen without another tap.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -2267,6 +2271,7 @@ valve_entity: valve.main_water        # optional: valve / switch / cover
 | `stale_hours` | number | `6` | A sensor silent longer than this counts as "stale" |
 | `battery_warn` / `battery_critical` | number | `40` / `20` | Battery chip thresholds |
 | `test_interval_days` | number | `0` | Show a "test due" chip after N days (with `last_test_entity`) |
+| `max_visible` | number | – | Show only this many sensors, the rest behind a toggle |
 | `collapse_ok` | boolean | `false` | Collapse the list while all dry |
 | `notify_service` / `notify_enabled` | – | – | Optional push on water detection (off by default) |
 

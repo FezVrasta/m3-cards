@@ -2304,6 +2304,10 @@ valve_entity: valve.hauptwasser      # optional: valve / switch / cover
 # siren_entity: siren.alarm          # optional, für die Quittieren-Taste
 ```
 
+`max_visible` hält die Liste kurz: Die ersten Sensoren stehen da, der Rest
+liegt hinter einem „N weitere anzeigen". Im Alarmfall tritt die Begrenzung
+zurück — welcher Sensor nass ist, muss ohne zweiten Tap sichtbar sein.
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -2317,6 +2321,7 @@ valve_entity: valve.hauptwasser      # optional: valve / switch / cover
 | `stale_hours` | number | `6` | Länger stiller Sensor gilt als „still" |
 | `battery_warn` / `battery_critical` | number | `40` / `20` | Schwellen des Batterie-Chips |
 | `test_interval_days` | number | `0` | „Test fällig"-Chip nach N Tagen (mit `last_test_entity`) |
+| `max_visible` | number | – | Zeigt nur so viele Sensoren, der Rest hinter einem Umschalter |
 | `collapse_ok` | boolean | `false` | Liste einklappen, solange alles trocken |
 | `notify_service` / `notify_enabled` | – | – | Optionale Push bei Wasser (standardmäßig aus) |
 

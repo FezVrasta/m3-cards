@@ -1087,6 +1087,8 @@ export interface M3LeakCardConfig extends NotifyConfigBase {
   test_interval_days?: number;
   last_test_entity?: string;
   collapse_ok?: boolean;
+  /** Show only this many sensors, the rest behind a toggle. 0 or unset shows all. */
+  max_visible?: number;
   name?: string;
   icon?: string;
   accent_color?: string;
