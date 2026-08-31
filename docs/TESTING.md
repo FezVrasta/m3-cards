@@ -216,6 +216,7 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 | Power-Button | Bei `on`/`off` antippen | Schaltet Licht, Button-Radius morpht |
 | Ohne Helligkeitsunterstützung | Entität ohne `brightness` in `supported_color_modes` | Wave-Slider wird nicht gerendert, nur Header + Power-Button |
 | Entität `unavailable` während Drag | Während des Ziehens Entität extern auf `unavailable` setzen | Kein Absturz, Drag-Session bricht sauber ab |
+| Helligkeit nur einmal im Bild | Eingeschaltete Lampe ansehen, dann am Regler ziehen | Die Prozentangabe steht **ausschließlich** unter dem Namen und folgt dem Ziehen; am Reglergriff steht keine zweite |
 
 ## M3 Battery Card
 
@@ -365,15 +366,6 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 | Hero | Sensor mit 0, 1 und mehreren Tagen | „nächste Abfuhr in N Tagen" korrekt, heute als Sonderfall |
 | Mehrere Tonnen am selben Tag | Zwei Sensoren mit gleichem Tag | Hero zeigt „N Tonnen" mit Mehrfach-Icon |
 | Zeitleiste | Zwei Wochen Vorschau | Marker an den richtigen Tagen |
-
-## Vor jedem Release
-
-1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
-   durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
-   eine mit Animation wie Progress/Light).
-2. Jede der 33 Karten mindestens einmal mit einer Minimal-Config und einmal mit
-   einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
-3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
 
 ## M3 Clock Card
 
@@ -553,8 +545,11 @@ gefunden.
       das sich in der Karte bedienen lässt
 - [ ] Raum ohne auffindbares Thermostat: fällt auf den Verlauf zurück, der Tap
       läuft **nicht** ins Leere
-- [ ] Über das Gerät gruppierter Raum (ohne Bereich): findet nichts automatisch,
-      `climate_entity` je Raum ist dafür da
+- [ ] Über das Gerät gruppierter Raum (ohne Bereich): ein Thermostat, das am
+      selben Gerät hängt wie der Temperatursensor, wird gefunden
+- [ ] Raum ohne Bereich, dessen Thermostat an einem **anderen** Gerät hängt:
+      findet nichts automatisch, `climate_entity` je Raum ist dafür da
+- [ ] `climate_entity` sticht beide Automatiken
 - [ ] Schließen per X und per Klick auf den Hintergrund, mit Ausblenden
 - [ ] Das X quittiert den Druck (Radius-Morph) und dreht sich beim Schließen
       eine Vierteldrehung mit heraus — in beiden Blättern gleich
@@ -592,3 +587,12 @@ Für die Masonry-Ansicht gilt weiter: Beide Karten haben dort eine Mindesthöhe
 (56 px beziehungsweise 112 px), weil ihre Karte ein Größen-Container ist und
 eine Masonry-Spalte keine Höhe vorgibt. Beim Durchgang also prüfen, dass eine
 kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.
+
+## Vor jedem Release
+
+1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
+   durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
+   eine mit Animation wie Progress/Light).
+2. Jede der 33 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+   einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
+3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.

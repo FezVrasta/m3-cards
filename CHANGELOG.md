@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [2.2.0]
 
 ### Added
 
@@ -20,9 +20,9 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   adjustable there. The thermostat is found in the room's own Home Assistant
   area — or, for a room that has no area because its sensors group by device,
   on that same device, which is how a thermostat reporting its own room
-  temperature is found — or named per room with `climate_entity`. A room with no thermostat
-  keeps the graph rather than going dead. Asked for on Reddit; the default is
-  unchanged.
+  temperature is found — or named per room with `climate_entity`. A room with
+  no thermostat keeps the graph rather than going dead. Asked for on Reddit;
+  the default is unchanged.
 
 - **M3 Room Card — folding.** `collapsible: true` puts a chevron in the header
   and folds the card down to it. The subtitle stays, because "occupied · 3
@@ -140,9 +140,9 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   schwebend über der Karte und dort bedienbar. Gefunden wird es im Bereich des
   Raums — oder, wenn ein Raum mangels Bereich über sein Gerät gruppiert wird,
   an ebendiesem Gerät, womit ein Thermostat gefunden wird, das seine eigene
-  Raumtemperatur meldet — oder je Raum über `climate_entity` benannt. Ein Raum ohne Thermostat
-  behält den Verlauf, statt tot zu sein. Auf Reddit gewünscht; die Vorgabe
-  bleibt unverändert.
+  Raumtemperatur meldet — oder je Raum über `climate_entity` benannt. Ein Raum
+  ohne Thermostat behält den Verlauf, statt tot zu sein. Auf Reddit gewünscht;
+  die Vorgabe bleibt unverändert.
 
 - **M3 Room Card — Einklappen.** `collapsible: true` setzt einen Pfeil in die
   Kopfzeile und klappt die Karte auf ebendiese zusammen. Der Untertitel bleibt
