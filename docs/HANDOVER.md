@@ -191,9 +191,16 @@ status card's toggle. It can be deleted.
    afterwards**, plus a deliberately unreachable third calendar so the warning
    line has something to report.
 
-2. **Screenshots for the humidifier and calendar cards.** Both READMEs carry
-   `<!-- TODO: docs/images/... -->` markers. Cut a capture at a *card's edge*,
-   never mid-background — see the note under the older screenshots below.
+2. ~~**Screenshots for the humidifier and calendar cards.**~~ Done 2026-08-31.
+   `humidifier-card.png` stacks the full card and the same device under
+   `layout: [slider, modes]`. The calendar has two: `calendar-card.png` for the
+   agenda — which happens to show a three-day event as "Day 1/2/3 of 3", the
+   hardest thing about it to explain in prose — and `calendar-card-month.png`
+   under "The two views".
+
+   One honesty note baked into the text: the humidifier shot has a **flat**
+   slider, because the wave only moves while the device is working. The block
+   table says so rather than leaving the picture to contradict the word "wavy".
 3. ~~**Screenshots for the first four new cards.**~~ Done 2026-08-31. All eight TODO
    markers in the two READMEs are replaced. The images were shot off a
    dedicated `m3-alle` view holding only the new cards, each column one card in

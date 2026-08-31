@@ -2762,7 +2762,9 @@ It also does not insist that `entity` is a `humidifier`. Plenty of dehumidifiers
 are exposed as a switch plus a number plus a sensor, and those work here too;
 see "Devices that are not humidifier entities" below.
 
-<!-- TODO: docs/images/humidifier-card.png — screenshot still to be taken -->
+<img src="docs/images/humidifier-card.png" alt="Humidifier Card" width="440">
+
+<sub>The same device twice: everything, and then `layout: [slider, modes]`.</sub>
 
 ```yaml
 type: custom:m3-humidifier-card
@@ -2776,7 +2778,7 @@ and target humidity, the modes and the range all come off the entity.
 
 | Block | What it draws |
 | --- | --- |
-| `slider` | The wavy target-humidity slider, with the label and value above it |
+| `slider` | The target-humidity slider, with the label and value above it. Its wave only moves while the device is actually working; at idle it flattens to a bar, which is what the screenshot above shows |
 | `modes` | A pill per mode, plus an off pill — turning the device off is not a mode |
 | `fan` | A pill per fan step, with a three-bar icon that fills with the step |
 | `chips` | Water tank, toggleable switches, read-only readings |
@@ -2890,7 +2892,7 @@ it is full — "not full" is not news.
 An agenda and a month grid for any number of calendars, in this suite's design
 language.
 
-<!-- TODO: docs/images/calendar-card.png — screenshot still to be taken -->
+<img src="docs/images/calendar-card.png" alt="Calendar Card" width="440">
 
 ```yaml
 type: custom:m3-calendar-card
@@ -2922,6 +2924,8 @@ The **agenda** groups by day, with "Today" in the accent colour, then
 time, a bar in its calendar's colour, the title and the location. A running
 event is tinted and carries a **now** badge; a finished one fades. `max_events`
 caps the list and adds a "+n more" line.
+
+<img src="docs/images/calendar-card-month.png" alt="Calendar Card, month view" width="440">
 
 The **month** grid draws up to three dots per day in the calendars' colours, a
 third dot becoming a "+" when there are more. Today is tinted, a tapped day

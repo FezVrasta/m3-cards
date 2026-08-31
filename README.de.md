@@ -2825,7 +2825,9 @@ Sie setzt außerdem nicht voraus, dass `entity` eine `humidifier`-Entität ist.
 Viele Entfeuchter erscheinen als Schalter plus `number` plus `sensor`, und die
 funktionieren hier ebenso; siehe „Geräte, die keine humidifier-Entität sind".
 
-<!-- TODO: docs/images/humidifier-card.png — Screenshot fehlt noch -->
+<img src="docs/images/humidifier-card.png" alt="Humidifier Card" width="440">
+
+<sub>Dasselbe Gerät zweimal: alles, und darunter `layout: [slider, modes]`.</sub>
 
 ```yaml
 type: custom:m3-humidifier-card
@@ -2839,7 +2841,7 @@ Zielfeuchte, Modi und Bereich kommen alle von der Entität.
 
 | Block | Was er zeichnet |
 | --- | --- |
-| `slider` | Der wellige Zielfeuchte-Regler, darüber Beschriftung und Wert |
+| `slider` | Der Zielfeuchte-Regler, darüber Beschriftung und Wert. Seine Welle bewegt sich nur, solange das Gerät wirklich arbeitet; im Leerlauf flacht sie zum Balken ab — so wie im Bild oben |
 | `modes` | Eine Pille je Modus, dazu eine Aus-Pille — Ausschalten ist kein Modus |
 | `fan` | Eine Pille je Lüfterstufe, mit Balken-Icon, das mit der Stufe füllt |
 | `chips` | Wassertank, schaltbare Zusatzfunktionen, reine Anzeigen |
@@ -2955,7 +2957,7 @@ einen Chip, wenn er voll ist — „nicht voll" ist keine Nachricht.
 Agenda und Monatsraster für beliebig viele Kalender, in der Designsprache dieser
 Suite.
 
-<!-- TODO: docs/images/calendar-card.png — Screenshot fehlt noch -->
+<img src="docs/images/calendar-card.png" alt="Calendar Card" width="440">
 
 ```yaml
 type: custom:m3-calendar-card
@@ -2987,6 +2989,8 @@ Die **Agenda** gruppiert nach Tagen, mit „Heute" in der Akzentfarbe, dann
 einen Balken in der Farbe ihres Kalenders, den Titel und den Ort. Ein laufender
 Termin ist getönt und trägt ein **Jetzt**-Abzeichen, ein beendeter verblasst.
 `max_events` begrenzt die Liste und ergänzt eine Zeile „+n weitere".
+
+<img src="docs/images/calendar-card-month.png" alt="Calendar Card, Monatsansicht" width="440">
 
 Das **Monatsraster** zeichnet bis zu drei Punkte je Tag in den Kalenderfarben,
 wobei der dritte zum „+" wird, wenn es mehr sind. Heute ist getönt, ein
