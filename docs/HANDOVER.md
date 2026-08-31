@@ -165,9 +165,21 @@ status card's toggle. It can be deleted.
 
 1. **The author tests the four cards by hand.** That was the plan for the day
    after this session was written.
-2. **Screenshots for all four new cards**, to be taken together at release
-   time. The READMEs carry `<!-- TODO: docs/images/... -->` markers where they
-   go.
+2. ~~**Screenshots for all four new cards.**~~ Done 2026-08-31. All eight TODO
+   markers in the two READMEs are replaced. The images were shot off a
+   dedicated `m3-alle` view holding only the new cards, each column one card in
+   its variants, with the frontend switched to English and the entity states
+   faked so nothing reads "all off".
+
+   Three of the four are stitched from two or three captures, because a column
+   of five clocks does not fit one viewport. `clock-card.png` and
+   `room-card.png` join invisibly; **`status-card.png` has a faint bright line
+   at each of its two seams**, where one capture's bottom edge meets the next
+   one's top and the wallpaper does not line up. To avoid that, zoom the
+   browser out until the whole column fits and take a single capture.
+
+   Still on the old 35-card view: **`cards-overview.png`**. It also predates the
+   light card's duplicate-percentage fix, so it shows the bug.
 3. **Version bump to 2.2.0** at release: `package.json` and `CARD_VERSION` in
    `src/const.ts`. The card counts in the docs are already right.
 4. **Two known cosmetic points**, both raised and deliberately left:

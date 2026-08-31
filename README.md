@@ -2353,7 +2353,7 @@ The card only redraws while it is actually on screen: a clock on a wall tablet
 would otherwise animate for weeks to an empty room. Styles that need no
 per-frame movement drop to a timer that wakes on the minute.
 
-<!-- TODO: docs/images/clock-card.png — screenshot still to be taken, in the same style as the others -->
+<img src="docs/images/clock-card.png" alt="Clock Card" width="440">
 
 ```yaml
 type: custom:m3-clock-card
@@ -2416,7 +2416,7 @@ attribute of something else — and the point of the card is the mapping in
 between: a rule list turns `off` into "No" in red with a cross, or a number
 below 20 into a warning colour, without a template sensor to do it.
 
-<!-- TODO: docs/images/status-card.png — screenshot still to be taken, together with the other new cards -->
+<img src="docs/images/status-card.png" alt="Status Card" width="440">
 
 ```yaml
 type: custom:m3-status-card
@@ -2524,7 +2524,7 @@ of its own — no frame, no glass, no shadow — so it reads as a label for what
 follows rather than as another tile in the grid. It replaces Home Assistant's
 built-in heading, which does the job but not in this suite's design language.
 
-<!-- TODO: docs/images/heading-card.png — screenshot still to be taken, together with the other new cards -->
+<img src="docs/images/heading-card.png" alt="Heading Card" width="440">
 
 ```yaml
 type: custom:m3-heading-card
@@ -2629,7 +2629,7 @@ One card per room. Point it at a Home Assistant area and it works out the rest:
 which kinds of device are in there, what each of them is doing, the climate
 readings, and whether anyone is in the room.
 
-<!-- TODO: docs/images/room-card.png — screenshot still to be taken, together with the other new cards -->
+<img src="docs/images/room-card.png" alt="Room Card" width="440">
 
 ```yaml
 type: custom:m3-room-card

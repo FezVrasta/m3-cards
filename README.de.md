@@ -2404,7 +2404,7 @@ einem Wandtablet würde sonst wochenlang für einen leeren Raum animieren. Stile
 ohne Bewegung zwischen den Sekunden schalten auf einen Timer um, der erst zur
 vollen Minute aufwacht.
 
-<!-- TODO: docs/images/clock-card.png — Screenshot fehlt noch, im gleichen Stil wie die übrigen -->
+<img src="docs/images/clock-card.png" alt="Clock Card" width="440">
 
 ```yaml
 type: custom:m3-clock-card
@@ -2468,7 +2468,7 @@ Karte ist die Zuordnung dazwischen: eine Regelliste macht aus `off` ein rotes
 „Nein“ mit Kreuz oder aus einer Zahl unter 20 eine Warnfarbe, ganz ohne
 Template-Sensor.
 
-<!-- TODO: docs/images/status-card.png — Screenshot folgt zusammen mit den anderen neuen Karten -->
+<img src="docs/images/status-card.png" alt="Status Card" width="440">
 
 ```yaml
 type: custom:m3-status-card
@@ -2577,7 +2577,7 @@ als Beschriftung für das Folgende gelesen wird und nicht als weitere Kachel im
 Raster. Sie ersetzt die eingebaute heading-Karte von Home Assistant, die ihren
 Zweck erfüllt, aber nicht in der Designsprache dieser Suite.
 
-<!-- TODO: docs/images/heading-card.png — Screenshot folgt zusammen mit den anderen neuen Karten -->
+<img src="docs/images/heading-card.png" alt="Heading Card" width="440">
 
 ```yaml
 type: custom:m3-heading-card
@@ -2686,7 +2686,7 @@ Eine Karte pro Raum. Man gibt ihr einen Bereich aus Home Assistant, den Rest
 findet sie selbst: welche Gerätearten dort hängen, was jede davon gerade tut,
 die Klimawerte und ob jemand im Raum ist.
 
-<!-- TODO: docs/images/room-card.png — Screenshot folgt zusammen mit den anderen neuen Karten -->
+<img src="docs/images/room-card.png" alt="Room Card" width="440">
 
 ```yaml
 type: custom:m3-room-card
