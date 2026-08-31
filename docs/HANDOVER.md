@@ -189,5 +189,9 @@ status card's toggle. It can be deleted.
    `deviceId`, `deviceEntityIds` is the device-scoped twin of `areaEntityIds`,
    and `_climateFor` falls back to a `climate` entity on the same device.
    `climate_entity` still overrides everything.
-7. **The status card's alarm-chip path is untested** — no `next_alarm` entity
-   exists on the author's instance.
+7. **The alarm chip is untested** — no `next_alarm` entity exists on the
+   author's instance. It belongs to the **clock** card (`alarm_entity`,
+   `_alarmChip`), not the status card, which is what this item claimed until
+   2026-08-31. `dev/showcase.js` now fakes `sensor.m3demo_next_alarm` seven
+   hours out, which is inside the card's 24 h horizon, so applying the showcase
+   exercises the path.
