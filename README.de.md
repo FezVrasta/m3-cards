@@ -1635,6 +1635,9 @@ sitzen): eine Kachel pro Raum mit An/Aus-Status und Anzahl, oder eine flache
 Liste aller Lichter. Ein Tap schaltet die Lichter des Raums; Hold öffnet ein
 Popup.
 
+<img src="docs/images/lights-overview-card.png" alt="Lights Overview Card" width="440">
+<img src="docs/images/lights-overview-card-popup.png" alt="Lights Overview Card, Popup" width="440">
+
 ```yaml
 type: custom:m3-lights-overview-card
 auto_discover: true

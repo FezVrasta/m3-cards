@@ -1612,6 +1612,9 @@ A room-by-room light overview, on the same pattern as Climate Overview above
 on/off state and count, or a flat list of every light. A tap toggles the
 room's lights; hold opens a popup.
 
+<img src="docs/images/lights-overview-card.png" alt="Lights Overview Card" width="440">
+<img src="docs/images/lights-overview-card-popup.png" alt="Lights Overview Card, popup" width="440">
+
 ```yaml
 type: custom:m3-lights-overview-card
 auto_discover: true
