@@ -165,6 +165,12 @@ export interface DiscoverClimateRoomsOptions {
 export interface DiscoveredClimateRoom {
   key: string;
   areaId?: string;
+  /**
+   * The device the sensors sit on, when they have one. Only interesting for a
+   * room that has no area: that is the one case where the device is the sole
+   * remaining handle on what else belongs to this room.
+   */
+  deviceId?: string;
   name: string;
   icon?: string;
   temperatureEntity: string;
@@ -266,6 +272,7 @@ export async function discoverClimateRooms(
     rooms.push({
       key: bucket.key,
       areaId: bucket.areaId,
+      deviceId: bucket.deviceId,
       name,
       icon: area?.icon ?? undefined,
       temperatureEntity: bucket.temp,
@@ -488,6 +495,7 @@ export async function discoverLeakSensors(
 interface AreaCache {
   devices: unknown;
   byArea: Map<string, string[]>;
+  byDevice: Map<string, string[]>;
 }
 
 // Keyed on the entity registry object itself: every card on the dashboard is
@@ -502,7 +510,7 @@ export function areaEntityIds(hass: HomeAssistant, areaId: string): string[] {
 
   let cache = areaCache.get(registry);
   if (!cache || cache.devices !== devices) {
-    cache = { devices, byArea: new Map() };
+    cache = { devices, byArea: new Map(), byDevice: new Map() };
     areaCache.set(registry, cache);
   }
   const hit = cache.byArea.get(areaId);
@@ -519,6 +527,40 @@ export function areaEntityIds(hass: HomeAssistant, areaId: string): string[] {
   }
   ids.sort();
   cache.byArea.set(areaId, ids);
+  return ids;
+}
+
+/**
+ * Every entity belonging to one device, filtered like `areaEntityIds`.
+ *
+ * The area lookup is the one to reach for normally. This exists for the rooms
+ * that have no area at all: a thermostat that exposes both its own temperature
+ * sensor and its `climate` entity groups by device, and then the device is the
+ * only thing tying the two together.
+ */
+export function deviceEntityIds(hass: HomeAssistant, deviceId: string): string[] {
+  const registry = hass.entities as unknown as Record<string, RegistryEntity> | undefined;
+  const devices = hass.devices as unknown as Record<string, { area_id?: string | null }> | undefined;
+  if (!registry || !devices) return [];
+
+  let cache = areaCache.get(registry);
+  if (!cache || cache.devices !== devices) {
+    cache = { devices, byArea: new Map(), byDevice: new Map() };
+    areaCache.set(registry, cache);
+  }
+  const hit = cache.byDevice.get(deviceId);
+  if (hit) return hit;
+
+  const ids: string[] = [];
+  for (const [entityId, entry] of Object.entries(registry)) {
+    if (entry.device_id !== deviceId) continue;
+    if (entry.entity_category) continue;
+    if (entry.hidden || entry.hidden_by || entry.disabled_by) continue;
+    if (!hass.states[entityId]) continue;
+    ids.push(entityId);
+  }
+  ids.sort();
+  cache.byDevice.set(deviceId, ids);
   return ids;
 }
 

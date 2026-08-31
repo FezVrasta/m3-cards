@@ -45,7 +45,12 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { fireEvent } from "./shared/editor-helpers";
-import { areaEntityIds, discoverClimateRooms, type DiscoveredClimateRoom } from "./shared/ha-registry";
+import {
+  areaEntityIds,
+  deviceEntityIds,
+  discoverClimateRooms,
+  type DiscoveredClimateRoom,
+} from "./shared/ha-registry";
 import { fetchValueHoursAgo } from "./shared/ha-statistics";
 import { formatNumber } from "./shared/formatting";
 import { guessRoomIcon } from "./shared/room-icons";
@@ -295,6 +300,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           humidityEntity: r.humidity_entity,
           climateEntity: r.climate_entity,
           areaId: undefined as string | undefined,
+          deviceId: undefined as string | undefined,
           color: r.color,
         }))
       : this._discovered.map((r) => ({
@@ -305,6 +311,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           humidityEntity: r.humidityEntity,
           climateEntity: undefined as string | undefined,
           areaId: r.areaId,
+          deviceId: r.deviceId,
           color: undefined as string | undefined,
         }));
 
@@ -333,7 +340,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         humidityUnavailable,
         hasHumidity: !!room.humidityEntity,
         tempColor: room.color ? resolveThemeColor(room.color) : this._tempColor(stage),
-        climateEntity: this._climateFor(room.areaId, room.climateEntity),
+        climateEntity: this._climateFor(room.areaId, room.deviceId, room.climateEntity),
       };
     });
   }
@@ -383,11 +390,24 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
    * same Home Assistant area as the room. Rooms here are usually *derived*
    * from an area, so that lookup is right far more often than it is wrong —
    * and where it is wrong, `climate_entity` says so outright.
+   *
+   * A room with no area falls back to the device its sensors sit on. That is
+   * the thermostat that reports its own room temperature: the `sensor` and the
+   * `climate` entity are the same physical device, so the device is a reliable
+   * link even though no area was ever assigned. Without this the tap did
+   * nothing at all for those rooms.
    */
-  private _climateFor(areaId: string | undefined, configured?: string): string | undefined {
+  private _climateFor(
+    areaId: string | undefined,
+    deviceId: string | undefined,
+    configured?: string,
+  ): string | undefined {
     if (configured) return configured;
-    if (!areaId || !this.hass) return undefined;
-    return areaEntityIds(this.hass, areaId).find((id) => id.startsWith("climate."));
+    if (!this.hass) return undefined;
+    const isClimate = (id: string): boolean => id.startsWith("climate.");
+    if (areaId) return areaEntityIds(this.hass, areaId).find(isClimate);
+    if (deviceId) return deviceEntityIds(this.hass, deviceId).find(isClimate);
+    return undefined;
   }
 
   private _onTileTap(tile: ClimateOverviewTile): () => void {
