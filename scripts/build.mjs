@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const ENTRY = 'src/index.ts'; // ggf. an den Einstiegspunkt des Forks anpassen
-const OUTFILE = 'dist/m3x-cards.js';
+const OUTFILE = 'dist/m3-cards.js';
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 
 await esbuild.build({
