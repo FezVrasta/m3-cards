@@ -66,7 +66,9 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
   private _contentSchema(): SchemaEntry[] {
     return [
       { name: "name", selector: { text: {} } },
+      { name: "show_current", selector: { boolean: {} } },
       { name: "hours", selector: { number: { min: 0, max: 24, step: 1, mode: "box" } } },
+      { name: "show_chart", selector: { boolean: {} } },
       { name: "show_hour_labels", selector: { boolean: {} } },
       { name: "group_hourly_conditions", selector: { boolean: {} } },
       { name: "show_hourly_icons", selector: { boolean: {} } },
@@ -117,7 +119,9 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
     const labelMap: Record<string, TranslationKey> = {
       entity: "editor_entity",
       name: "editor_name",
+      show_current: "editor_weather_show_current",
       hours: "editor_weather_hours",
+      show_chart: "editor_weather_show_chart",
       show_hour_labels: "editor_weather_show_hour_labels",
       group_hourly_conditions: "editor_weather_group_hourly_conditions",
       show_hourly_icons: "editor_weather_show_hourly_icons",
@@ -214,7 +218,9 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
     const entityData = { entity: this._config.entity };
     const contentData = {
       name: this._config.name,
+      show_current: this._config.show_current ?? true,
       hours: this._config.hours,
+      show_chart: this._config.show_chart ?? true,
       show_hour_labels: this._config.show_hour_labels ?? false,
       group_hourly_conditions: this._config.group_hourly_conditions ?? false,
       show_hourly_icons: this._config.show_hourly_icons ?? true,

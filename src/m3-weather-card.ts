@@ -168,7 +168,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
   @state() private _curveRevealed = false;
   @state() private _daysExpanded = false;
 
-  @query(".chart-track") private _chartTrackEl?: HTMLDivElement;
+  @query(".hourly-wrap") private _hourlyWrapEl?: HTMLDivElement;
 
   private readonly _instanceId = ++instanceCounter;
   private _refreshTimer?: number;
@@ -202,6 +202,8 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       hours: DEFAULT_WEATHER_HOURS,
       days: DEFAULT_WEATHER_DAYS,
       chips: DEFAULT_WEATHER_CHIPS,
+      show_current: true,
+      show_chart: true,
       show_sun: true,
       show_days_toggle: true,
       show_hour_labels: false,
@@ -246,15 +248,15 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     this._maybeFetch();
-    if (this._chartTrackEl && !this._resizeObserver) {
+    if (this._hourlyWrapEl && !this._resizeObserver) {
       this._resizeObserver = new ResizeObserver((entries) => {
         const width = entries[0]?.contentRect.width;
         if (width && Math.abs(width - this._measuredWidth) > 0.5) {
           this._measuredWidth = width;
         }
       });
-      this._resizeObserver.observe(this._chartTrackEl);
-      const rect = this._chartTrackEl.getBoundingClientRect();
+      this._resizeObserver.observe(this._hourlyWrapEl);
+      const rect = this._hourlyWrapEl.getBoundingClientRect();
       if (rect.width) this._measuredWidth = rect.width;
     }
     if (!this._curveRevealed && this._hourly && this._hourly.length > 0) {
@@ -422,6 +424,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
     const hours = Math.max(0, this._config.hours ?? DEFAULT_WEATHER_HOURS);
     const chips = this._config.chips ?? DEFAULT_WEATHER_CHIPS;
     const days = this._config.days ?? DEFAULT_WEATHER_DAYS;
+    const showCurrent = this._config.show_current ?? true;
 
     return html`
       <ha-card style=${`${cssVars} border-radius: ${radius};`}>
@@ -429,26 +432,34 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
           class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
         >
-          <div
-            class="header"
-            role="button"
-            tabindex="0"
-            aria-label=${name}
-            @click=${() => this._fireMoreInfo()}
-            @keydown=${activateOnKey(() => this._fireMoreInfo())}
-          >
-            <div class="header-icon-swatch">
-              <ha-icon icon=${headerIcon}></ha-icon>
-            </div>
-            <div class="header-text">
-              <div class="header-temp">
-                ${currentTemp !== undefined ? `${this._formatNumber(currentTemp)}°` : "–"}
-              </div>
-              <div class="header-condition">${conditionText}</div>
-              ${staleHint ? html`<div class="header-stale">${staleHint}</div>` : nothing}
-            </div>
-            ${chips.length > 0 ? html`<div class="header-chips">${chips.map((c) => this._renderChip(c, attrs, tempUnit))}</div>` : nothing}
-          </div>
+          ${showCurrent || chips.length > 0
+            ? html`
+                <div
+                  class="header"
+                  role="button"
+                  tabindex="0"
+                  aria-label=${name}
+                  @click=${() => this._fireMoreInfo()}
+                  @keydown=${activateOnKey(() => this._fireMoreInfo())}
+                >
+                  ${showCurrent
+                    ? html`
+                        <div class="header-icon-swatch">
+                          <ha-icon icon=${headerIcon}></ha-icon>
+                        </div>
+                        <div class="header-text">
+                          <div class="header-temp">
+                            ${currentTemp !== undefined ? `${this._formatNumber(currentTemp)}°` : "–"}
+                          </div>
+                          <div class="header-condition">${conditionText}</div>
+                          ${staleHint ? html`<div class="header-stale">${staleHint}</div>` : nothing}
+                        </div>
+                      `
+                    : nothing}
+                  ${chips.length > 0 ? html`<div class="header-chips">${chips.map((c) => this._renderChip(c, attrs, tempUnit))}</div>` : nothing}
+                </div>
+              `
+            : nothing}
 
           ${hours > 0 ? this._renderHourly(hours, accentColor, precipColor, gradientColor) : nothing}
           ${days > 0 ? this._renderDaily(days) : nothing}
@@ -510,6 +521,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
     const groupHourly = this._config?.group_hourly_conditions ?? false;
     const showHourlyIcons = this._config?.show_hourly_icons ?? true;
     const showHourlyTemps = this._config?.show_hourly_temperatures ?? true;
+    const showChart = this._config?.show_chart ?? true;
     const labelStride = showLabels ? displayStride(n, width, WEATHER_HOUR_LABEL_MIN_WIDTH_PX) : 1;
     const hourlyStride = groupHourly ? displayStride(n, width, WEATHER_HOURLY_SLOT_MIN_WIDTH_PX) : 1;
     const isHourlySlotVisible = (i: number) => i === 0 || i % hourlyStride === 0;
@@ -535,51 +547,55 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
             `
           : nothing}
 
-        <div class="chart-track">
-          <svg
-            class="curve-svg ${this._curveRevealed ? "revealed" : ""}"
-            viewBox="0 0 ${width} ${height}"
-            width="100%"
-            height=${height}
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient id="wc-grad-${this._instanceId}" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color=${gradientColor} stop-opacity="0.18"></stop>
-                <stop offset="100%" stop-color=${gradientColor} stop-opacity="0"></stop>
-              </linearGradient>
-            </defs>
-            ${sunMarkers.map(
-              (m) => svg`<line class="sun-marker" x1=${m.x} y1="0" x2=${m.x} y2=${height}></line>`,
-            )}
-            <path class="curve-fill" d=${fillPath} fill="url(#wc-grad-${this._instanceId})"></path>
-            <path class="curve-stroke" d=${curvePath} fill="none" stroke=${accentColor}></path>
-            ${points.map((p, i) =>
-              i % WEATHER_HOUR_DOT_STRIDE === 0
-                ? svg`<circle class="curve-dot" cx=${p.x} cy=${p.y} r="2.5" fill=${accentColor}></circle>`
-                : nothing,
-            )}
-          </svg>
-          ${this._config?.show_temp_axis ? this._renderTempAxis(minTemp, maxTemp, yFor) : nothing}
-        </div>
-
-        <div class="precip-row">
-          ${items.map(
-            (_it, i) => html`
-              <div class="hour-slot">
-                ${bars[i].value > 0
-                  ? html`
-                      <span class="precip-label">${this._formatNumber(bars[i].value, 1)}</span>
-                      <div
-                        class="precip-bar"
-                        style=${`height: ${bars[i].heightPx}px; background: ${precipColor};`}
-                      ></div>
-                    `
-                  : html`<div class="precip-bar empty"></div>`}
+        ${showChart
+          ? html`
+              <div class="chart-track">
+                <svg
+                  class="curve-svg ${this._curveRevealed ? "revealed" : ""}"
+                  viewBox="0 0 ${width} ${height}"
+                  width="100%"
+                  height=${height}
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient id="wc-grad-${this._instanceId}" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color=${gradientColor} stop-opacity="0.18"></stop>
+                      <stop offset="100%" stop-color=${gradientColor} stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  ${sunMarkers.map(
+                    (m) => svg`<line class="sun-marker" x1=${m.x} y1="0" x2=${m.x} y2=${height}></line>`,
+                  )}
+                  <path class="curve-fill" d=${fillPath} fill="url(#wc-grad-${this._instanceId})"></path>
+                  <path class="curve-stroke" d=${curvePath} fill="none" stroke=${accentColor}></path>
+                  ${points.map((p, i) =>
+                    i % WEATHER_HOUR_DOT_STRIDE === 0
+                      ? svg`<circle class="curve-dot" cx=${p.x} cy=${p.y} r="2.5" fill=${accentColor}></circle>`
+                      : nothing,
+                  )}
+                </svg>
+                ${this._config?.show_temp_axis ? this._renderTempAxis(minTemp, maxTemp, yFor) : nothing}
               </div>
-            `,
-          )}
-        </div>
+
+              <div class="precip-row">
+                ${items.map(
+                  (_it, i) => html`
+                    <div class="hour-slot">
+                      ${bars[i].value > 0
+                        ? html`
+                            <span class="precip-label">${this._formatNumber(bars[i].value, 1)}</span>
+                            <div
+                              class="precip-bar"
+                              style=${`height: ${bars[i].heightPx}px; background: ${precipColor};`}
+                            ></div>
+                          `
+                        : html`<div class="precip-bar empty"></div>`}
+                    </div>
+                  `,
+                )}
+              </div>
+            `
+          : nothing}
 
         ${showLabels
           ? html`

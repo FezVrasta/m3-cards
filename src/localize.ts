@@ -752,7 +752,9 @@ const translations = {
     weather_last_known: "Letzter bekannter Stand",
     weather_days_expand: "{n} weitere anzeigen",
     weather_days_collapse: "Einklappen",
+    editor_weather_show_current: "Icon & Temperatur anzeigen",
     editor_weather_hours: "Anzahl Stunden",
+    editor_weather_show_chart: "Temperaturkurve & Niederschlag anzeigen",
     editor_weather_days: "Anzahl Tage",
     editor_weather_days_helper:
       "0 = Tagesvorhersage ausblenden. Wie viele Tage tatsächlich angezeigt werden, hängt von der Wetter-Integration ab (Met.no liefert z.B. maximal 6 Tage) — ab 4 Tagen ist die Liste standardmäßig aufklappbar.",
@@ -2489,7 +2491,9 @@ const translations = {
     weather_last_known: "Last known reading",
     weather_days_expand: "Show {n} more",
     weather_days_collapse: "Collapse",
+    editor_weather_show_current: "Show icon & temperature",
     editor_weather_hours: "Number of hours",
+    editor_weather_show_chart: "Show temperature curve & precipitation",
     editor_weather_days: "Number of days",
     editor_weather_days_helper:
       "0 = hide the daily forecast. How many days actually show up depends on the weather integration (Met.no delivers 6 days max) — from 4 days on, the list is collapsible by default.",

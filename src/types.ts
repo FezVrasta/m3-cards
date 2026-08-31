@@ -694,6 +694,8 @@ export interface M3WeatherCardConfig {
   hours?: number;
   days?: number;
   chips?: WeatherChipType[];
+  show_current?: boolean;
+  show_chart?: boolean;
   show_sun?: boolean;
   show_days_toggle?: boolean;
   show_hour_labels?: boolean;
