@@ -183,15 +183,18 @@ status card's toggle. It can be deleted.
    its variants, with the frontend switched to English and the entity states
    faked so nothing reads "all off".
 
-   Three of the four are stitched from two or three captures, because a column
-   of five clocks does not fit one viewport. `clock-card.png` and
-   `room-card.png` join invisibly; **`status-card.png` has a faint bright line
-   at each of its two seams**, where one capture's bottom edge meets the next
-   one's top and the wallpaper does not line up. To avoid that, zoom the
-   browser out until the whole column fits and take a single capture.
+   Three of the four are stitched from two captures, because a column of five
+   clocks does not fit one viewport. All the joins are invisible, and the reason
+   is worth remembering: the captures were cut **at a card's edge**, so the seam
+   falls in the thin strip between two cards rather than in the middle of the
+   wallpaper. The first attempt cut mid-background and left a visible bright line
+   at every seam. `dev/` holds no tool for this — the stitching was done with a
+   throwaway dependency-free PNG script, since neither Pillow nor ImageMagick is
+   installed and installing one for four images was not worth it.
 
-   Still on the old 35-card view: **`cards-overview.png`**. It also predates the
-   light card's duplicate-percentage fix, so it shows the bug.
+   Deliberately left alone: **`cards-overview.png`**. It still shows the old
+   35-card view and predates the light card's duplicate-percentage fix. The
+   author's call — it belongs to a later release.
 3. **Version bump to 2.2.0** at release: `package.json` and `CARD_VERSION` in
    `src/const.ts`. The card counts in the docs are already right.
 4. **Two known cosmetic points**, both raised and deliberately left:
