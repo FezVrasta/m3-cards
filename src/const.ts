@@ -1493,3 +1493,70 @@ export const HUMIDIFIER_MODE_PALETTE = [
   PALETTE.media,
   PALETTE.cover,
 ] as const;
+
+// ---- m3-calendar-card -----------------------------------------------------
+
+export const DEFAULT_CALENDAR_RADIUS = RADIUS.card;
+export const DEFAULT_CALENDAR_ICON = "mdi:calendar-month";
+export const CALENDAR_DAYS_AHEAD = 7;
+export const CALENDAR_DAYS_AHEAD_MIN = 1;
+export const CALENDAR_DAYS_AHEAD_MAX = 30;
+/** How often the card re-reads, on top of reacting to calendar state changes. */
+export const CALENDAR_REFRESH_MS = 5 * 60 * 1000;
+
+// Colours handed out in order to calendars that configure none. Chosen so
+// adjacent entries stay distinguishable side by side in a month cell's dots,
+// where they appear as three 4px circles with nothing else to tell them apart.
+export const CALENDAR_PALETTE = [
+  PALETTE.home,
+  PALETTE.media,
+  PALETTE.dryAuto,
+  PALETTE.solar,
+  PALETTE.heat,
+  PALETTE.light,
+] as const;
+
+// View switch.
+export const CALENDAR_SWITCH_RADIUS = 16;
+export const CALENDAR_SWITCH_PAD = 3;
+export const CALENDAR_SWITCH_TINT = 6;
+export const CALENDAR_SWITCH_BTN = 28;
+export const CALENDAR_SWITCH_BTN_RADIUS = 13;
+export const CALENDAR_SWITCH_BTN_RADIUS_ACTIVE = 10;
+
+// Agenda.
+export const CALENDAR_DAY_LABEL_SIZE = 12;
+export const CALENDAR_DAY_DATE_SIZE = 10;
+export const CALENDAR_ROW_RADIUS = 16;
+export const CALENDAR_ROW_RADIUS_ACTIVE = 9;
+export const CALENDAR_ROW_TINT = 5;
+export const CALENDAR_TIME_COL = 44;
+/** "10:30 AM" does not fit the 24-hour column, and wrapped onto two lines. */
+export const CALENDAR_TIME_COL_12H = 62;
+export const CALENDAR_TIME_SIZE = 12;
+export const CALENDAR_TIME_END_SIZE = 9;
+export const CALENDAR_BAR_WIDTH = 4;
+export const CALENDAR_BAR_RADIUS = 2;
+export const CALENDAR_TITLE_SIZE = 12;
+export const CALENDAR_LOCATION_SIZE = 10;
+export const CALENDAR_PAST_OPACITY = 0.45;
+export const CALENDAR_RUNNING_TINT = 12;
+export const CALENDAR_NOW_BADGE_HEIGHT = 22;
+export const CALENDAR_NOW_BADGE_RADIUS = 8;
+
+// Month grid.
+export const CALENDAR_NAV_BTN = 32;
+export const CALENDAR_NAV_RADIUS = 11;
+export const CALENDAR_NAV_TINT = 7;
+export const CALENDAR_MONTH_TITLE_SIZE = 13;
+export const CALENDAR_WEEKDAY_SIZE = 9;
+export const CALENDAR_GRID_GAP = 3;
+export const CALENDAR_CELL_NUM_SIZE = 12;
+export const CALENDAR_DOT_SIZE = 4;
+export const CALENDAR_DOTS_MAX = 3;
+export const CALENDAR_TODAY_TINT = 16;
+export const CALENDAR_TODAY_RADIUS = 14;
+export const CALENDAR_SELECTED_RADIUS = 10;
+export const CALENDAR_ADJACENT_OPACITY = 0.3;
+export const CALENDAR_DAY_ROW_HEIGHT = 40;
+export const CALENDAR_DAY_ROW_RADIUS = 14;

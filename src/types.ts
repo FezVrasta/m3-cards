@@ -1719,3 +1719,53 @@ export interface M3HumidifierCardConfig {
   corners?: CornerRadiusConfig;
   card_version?: string;
 }
+
+// ---- m3-calendar-card -----------------------------------------------------
+
+export interface CalendarSourceConfig {
+  entity: string;
+  name?: string;
+  color?: string;
+}
+
+export type CalendarView = "agenda" | "month";
+
+export interface M3CalendarCardConfig {
+  type: string;
+  /**
+   * Calendars to merge. A bare entity id is accepted alongside the full object,
+   * because `entities: [calendar.a, calendar.b]` is what people write first and
+   * there is no reason to reject it.
+   */
+  entities: Array<string | CalendarSourceConfig>;
+  name?: string;
+  icon?: string;
+
+  view?: CalendarView;
+  show_view_switch?: boolean;
+
+  /** Agenda window, 1–30 days. */
+  days_ahead?: number;
+  /** 0 shows everything in the window. */
+  max_events?: number;
+  /** Hide today's finished events instead of dimming them. */
+  hide_past_today?: boolean;
+  /** Month grid: draw the days either side of the month. */
+  show_adjacent_days?: boolean;
+  /** Header chip with the next event and how far off it is. */
+  show_next_chip?: boolean;
+
+  tap_action?: "detail" | "more-info" | "navigate" | "none";
+  /** Where `navigate` goes; also the target of the dialog's calendar button. */
+  navigation_path?: string;
+
+  accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
