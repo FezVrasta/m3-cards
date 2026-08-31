@@ -4,6 +4,43 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [2.3.0]
+
+### Added
+
+- **M3 Lights Overview Card** (`m3-lights-overview-card`) — a room-by-room
+  light overview auto-discovered by area, on the same "overview" pattern as
+  the Climate Overview card (which it's meant to sit stacked with on a
+  dashboard). Shows a tile per room with on/off state and count, or switches
+  to a flat per-entity view. A tap toggles the room's lights; hold opens a
+  popup — either this same card re-scoped to the room, HA's own more-info
+  dialog, or a custom card built from a `[[token]]`-resolved skeleton.
+  What's *shown* on a tile and what a tap actually *switches* are independent
+  filters, so a room can display all its lights while only toggling a subset
+  (`toggle_filter`, `exclude_toggle_entities`).
+- **M3 Climate Overview Card — `popup.mode`.** The popup is now a three-way
+  choice, selectable in the GUI editor: "Overview grid (filtered)" (the
+  previous default — this same card again, re-scoped to the tapped room),
+  "Default detail view" (Home Assistant's own more-info dialog), or "Custom
+  card" — any Lovelace card config (`popup.card`), with string values able to
+  reference `[[area_id]]`, `[[device_id]]`, `[[entity_id]]`, `[[name]]`,
+  `[[temperature_entity]]`, `[[humidity_entity]]` placeholders resolved
+  against the tapped room before the card is built. Defaults to the grid, so
+  existing configs are unaffected.
+- **M3 Climate Overview Card — `mode`.** Switches auto-discovery between
+  dedicated temperature sensors ("Temperature only", the previous default
+  behaviour), thermostats with a sensor fallback ("Thermostats incl.
+  temperature"), and thermostats only. Manual `rooms` gain an optional
+  `climate_entity` so a tap opens the thermostat instead of the sensor.
+
+### Changed
+
+- **M3 Climate Overview Card — `tile_tap_action` and `tap_action` now
+  coexist.** `tile_tap_action: thermostat` still opens the sliding thermostat
+  sheet on a plain tap, as before; it only sets the *default* tap behaviour,
+  so an explicitly configured `tap_action` (the newer, more general
+  mechanism) takes over instead once one is set.
+
 ## [2.2.0]
 
 ### Added
@@ -423,43 +460,6 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   war damit in jedem dunklen Theme still wirkungslos, seit es geschrieben
   wurde. Bis jetzt folgenlos, weil ein heller Akzent auf seiner eigenen dunklen
   Tönung zufällig gut kontrastiert.
-
-## [2.3.0]
-
-### Added
-
-- **M3 Lights Overview Card** (`m3-lights-overview-card`) — a room-by-room
-  light overview auto-discovered by area, on the same "overview" pattern as
-  the Climate Overview card (which it's meant to sit stacked with on a
-  dashboard). Shows a tile per room with on/off state and count, or switches
-  to a flat per-entity view. A tap toggles the room's lights; hold opens a
-  popup — either this same card re-scoped to the room, HA's own more-info
-  dialog, or a custom card built from a `[[token]]`-resolved skeleton.
-  What's *shown* on a tile and what a tap actually *switches* are independent
-  filters, so a room can display all its lights while only toggling a subset
-  (`toggle_filter`, `exclude_toggle_entities`).
-- **M3 Climate Overview Card — `popup.mode`.** The popup is now a three-way
-  choice, selectable in the GUI editor: "Overview grid (filtered)" (the
-  previous default — this same card again, re-scoped to the tapped room),
-  "Default detail view" (Home Assistant's own more-info dialog), or "Custom
-  card" — any Lovelace card config (`popup.card`), with string values able to
-  reference `[[area_id]]`, `[[device_id]]`, `[[entity_id]]`, `[[name]]`,
-  `[[temperature_entity]]`, `[[humidity_entity]]` placeholders resolved
-  against the tapped room before the card is built. Defaults to the grid, so
-  existing configs are unaffected.
-- **M3 Climate Overview Card — `mode`.** Switches auto-discovery between
-  dedicated temperature sensors ("Temperature only", the previous default
-  behaviour), thermostats with a sensor fallback ("Thermostats incl.
-  temperature"), and thermostats only. Manual `rooms` gain an optional
-  `climate_entity` so a tap opens the thermostat instead of the sensor.
-
-### Changed
-
-- **M3 Climate Overview Card — `tile_tap_action` and `tap_action` now
-  coexist.** `tile_tap_action: thermostat` still opens the sliding thermostat
-  sheet on a plain tap, as before; it only sets the *default* tap behaviour,
-  so an explicitly configured `tap_action` (the newer, more general
-  mechanism) takes over instead once one is set.
 
 ## [2.1.0]
 
