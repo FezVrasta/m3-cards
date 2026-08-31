@@ -1404,3 +1404,92 @@ export const ROOM_ARROW_TINT = HEADING_ARROW_TINT;
 
 /** The thermostat sheet the climate overview opens on a room tap. */
 export const CLIMATE_SHEET_MS = ROOM_SHEET_MS;
+
+// ---- m3-humidifier-card ---------------------------------------------------
+
+export const DEFAULT_HUMIDIFIER_RADIUS = RADIUS.card;
+export const HUMIDIFIER_ICON_TINT = 20;
+
+/** Fallback range when the entity reports no min/max, which many do not. */
+export const HUMIDIFIER_MIN_DEFAULT = 30;
+export const HUMIDIFIER_MAX_DEFAULT = 80;
+export const HUMIDIFIER_STEP_DEFAULT = 1;
+/** Same interval the light card's sliders use; one service call per drag tick. */
+export const HUMIDIFIER_THROTTLE_MS = 200;
+/** How long the optimistic value holds after release, waiting for the echo. */
+export const HUMIDIFIER_DRAG_SETTLE_MS = 500;
+export const HUMIDIFIER_WAVE_AMPLITUDE_LERP = 0.12;
+
+// Target slider. Its own numbers rather than the light card's, because this
+// wave is wider and calmer: a humidity target moves in whole percent, not in
+// 255 brightness steps, so a taller amplitude would read as busier than the
+// value actually is.
+export const HUMIDIFIER_SLIDER_HEIGHT = 44;
+export const HUMIDIFIER_WAVE_STROKE = 11;
+export const HUMIDIFIER_WAVE_AMPLITUDE = 3.2;
+export const HUMIDIFIER_WAVE_WAVELENGTH = 24;
+export const HUMIDIFIER_WAVE_GAP = 12;
+export const HUMIDIFIER_HANDLE_WIDTH = 5;
+export const HUMIDIFIER_HANDLE_HEIGHT = 26;
+export const HUMIDIFIER_HANDLE_RADIUS = 2.5;
+export const HUMIDIFIER_LABEL_SIZE = 11;
+export const HUMIDIFIER_VALUE_SIZE = 26;
+export const HUMIDIFIER_CAPTION_SIZE = 10;
+
+// Mode row.
+export const HUMIDIFIER_MODE_HEIGHT = 50;
+export const HUMIDIFIER_MODE_RADIUS = 25;
+export const HUMIDIFIER_MODE_RADIUS_ACTIVE = 15;
+export const HUMIDIFIER_MODE_TINT = 8;
+/** Above this many modes the row becomes a dropdown on its own. */
+export const HUMIDIFIER_MODE_DROPDOWN_FROM = 5;
+
+// Fan row.
+export const HUMIDIFIER_FAN_HEIGHT = 44;
+export const HUMIDIFIER_FAN_RADIUS = 22;
+export const HUMIDIFIER_FAN_RADIUS_ACTIVE = 13;
+export const HUMIDIFIER_FAN_TINT = 28;
+export const HUMIDIFIER_BAR_WIDTH = 3;
+export const HUMIDIFIER_BAR_RADIUS = 1.5;
+export const HUMIDIFIER_BAR_HEIGHTS = [8, 11, 14] as const;
+
+// Chips.
+export const HUMIDIFIER_CHIP_HEIGHT = 32;
+export const HUMIDIFIER_CHIP_RADIUS = RADIUS.chip + 1;
+export const HUMIDIFIER_CHIP_RADIUS_ACTIVE = 10;
+export const HUMIDIFIER_CHIP_GAP = SPACING.rowGap;
+export const HUMIDIFIER_CHIP_TINT = 10;
+
+export const HUMIDIFIER_TANK_WARN = 70;
+export const HUMIDIFIER_TANK_FULL = 95;
+
+/** Below this the mode pills drop their labels and the fan row wraps. */
+export const HUMIDIFIER_NARROW_PX = 320;
+
+// Mode colours. Keyed by the lowercased mode name HA reports, because those
+// strings are integration-defined and vary; anything unmatched walks the
+// palette below in order, so an unknown mode still looks deliberate.
+export const HUMIDIFIER_MODE_COLORS: Record<string, string> = {
+  off: PALETTE.off,
+  normal: PALETTE.cool,
+  comfort: PALETTE.cool,
+  auto: PALETTE.dryAuto,
+  boost: PALETTE.solar,
+  turbo: PALETTE.solar,
+  max: PALETTE.solar,
+  sleep: PALETTE.grid,
+  night: PALETTE.grid,
+  baby: PALETTE.light,
+  eco: PALETTE.ok,
+  home: PALETTE.home,
+  away: PALETTE.fan,
+};
+export const HUMIDIFIER_MODE_PALETTE = [
+  PALETTE.cool,
+  PALETTE.dryAuto,
+  PALETTE.solar,
+  PALETTE.grid,
+  PALETTE.light,
+  PALETTE.media,
+  PALETTE.cover,
+] as const;

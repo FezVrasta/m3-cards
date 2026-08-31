@@ -1616,3 +1616,106 @@ export interface LovelaceCard<T extends M3CardConfig = M3CardConfig>
   getCardSize?: () => number | Promise<number>;
   getGridOptions?: () => LovelaceGridOptions;
 }
+
+// ---- m3-humidifier-card ---------------------------------------------------
+
+/**
+ * One entry in the mode row. `mode` is the value handed to
+ * `humidifier.set_mode` (or written to a `select`), everything else is
+ * presentation. A card with no `modes` list reads `available_modes` off the
+ * entity, so the common case needs no configuration at all.
+ */
+export interface HumidifierModeConfig {
+  mode: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+  hidden?: boolean;
+}
+
+/**
+ * One step of the fan row. Which field is used depends on what the fan is:
+ * `preset` for a fan with `preset_modes`, `percentage` for a percentage fan,
+ * `option` when the speed lives on a `select` instead of a `fan`. Setting more
+ * than one is allowed — the card picks the field its entity understands.
+ */
+export interface HumidifierStepConfig {
+  name?: string;
+  icon?: string;
+  preset?: string;
+  percentage?: number;
+  option?: string;
+}
+
+/** A free chip: a switch to toggle, a select/number to step, or a read-only sensor. */
+export interface HumidifierChipConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+  /** Shown instead of the state, e.g. "Filter ok". */
+  label?: string;
+}
+
+/** The blocks the card can draw, in the order they should appear. */
+export type HumidifierBlock = "slider" | "modes" | "fan" | "chips";
+
+export interface M3HumidifierCardConfig {
+  type: string;
+  /**
+   * The entity the card turns on and off. A `humidifier` is the normal case and
+   * supplies everything else by itself. It may equally be a `switch` or `fan`,
+   * because plenty of dehumidifiers are not exposed as a humidifier at all —
+   * then `current_entity` and `target_entity` fill in what is missing.
+   */
+  entity: string;
+  name?: string;
+  icon?: string;
+  /** Overrides the device_class, which decides wording and the default icon. */
+  device_kind?: "humidifier" | "dehumidifier";
+
+  /** Where the readings come from when `entity` does not carry them. */
+  current_entity?: string;
+  target_entity?: string;
+  action_entity?: string;
+
+  humidity_step?: number;
+  min_humidity?: number;
+  max_humidity?: number;
+
+  /** Modes from a `select` instead of the humidifier's own `available_modes`. */
+  mode_entity?: string;
+  modes?: HumidifierModeConfig[];
+  mode_style?: "icon_label" | "icon_only" | "dropdown";
+
+  /** A `fan` (presets or percentage) or a `select` holding the speed. */
+  fan_entity?: string;
+  fan_steps?: HumidifierStepConfig[];
+
+  tank_entity?: string;
+  tank_warn?: number;
+  tank_full?: number;
+  tank_style?: "chip" | "bar";
+
+  /** Toggled or stepped from the card. */
+  controls?: HumidifierChipConfig[];
+  /** Read-only. */
+  sensors?: HumidifierChipConfig[];
+
+  /**
+   * Which blocks to draw and in what order. Leaving a block out hides it, so
+   * this is both the ordering and the visibility control — one mechanism rather
+   * than an array plus a set of show_* flags that can disagree with it.
+   */
+  layout?: HumidifierBlock[];
+
+  accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
