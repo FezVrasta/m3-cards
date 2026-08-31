@@ -466,6 +466,8 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
     /* No ha-card, no background, no border, no shadow: the heading floats
        between the cards rather than sitting on one of its own. */
     :host {
+      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
+      -webkit-tap-highlight-color: transparent;
       display: block;
       background: none;
     }

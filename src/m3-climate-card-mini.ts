@@ -376,6 +376,8 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
        for exactly those sizes. The three sizes below 112px that this does
        raise were already clipping their own content before it. */
     :host {
+      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
+      -webkit-tap-highlight-color: transparent;
       display: grid;
       height: 100%;
       min-height: 112px;

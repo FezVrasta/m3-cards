@@ -26,6 +26,13 @@ export const glassCardStyles = css`
   :host {
     display: block;
     height: 100%;
+    /* The browser paints a grey rectangle over whatever is tapped, and it does
+       not follow the border radius — on a rounded card it appears as a box
+       sticking out past the corner, only while the finger is down. It also
+       fights the press feedback this suite actually uses, which is the radius
+       morph. Reported on the room card's header; every card has the same
+       problem wherever it is tappable. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   ha-card {

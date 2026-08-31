@@ -712,6 +712,8 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
        card fills it and cqh resolves. min-height below is what gives the host
        that height when nothing else does. */
     :host {
+      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
+      -webkit-tap-highlight-color: transparent;
       display: grid;
       height: 100%;
       min-height: 56px;

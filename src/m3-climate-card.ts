@@ -547,6 +547,8 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
 
   static styles = css`
     :host {
+      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
+      -webkit-tap-highlight-color: transparent;
       display: block;
       height: 100%;
     }

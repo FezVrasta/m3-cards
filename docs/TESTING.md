@@ -571,6 +571,14 @@ gefunden.
       dann die Begrenzung; beide Umschalter sind unabhängig
 - [ ] Weniger Sensoren als `max_visible`: kein Umschalter
 
+## Touch-Feedback (alle Karten)
+
+- [ ] **Auf einem Touchgerät** eine Kachel, Zeile oder Kopfzeile gedrückt
+      halten: es erscheint **kein** graues Rechteck über dem Element. Die
+      Rückmeldung ist der Radius-Morph, sonst nichts
+- [ ] Besonders dort prüfen, wo ein antippbares Element bis an eine gerundete
+      Kartenkante reicht — dort trat es zuerst auf (Kopfzeile der Raumkarte)
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und

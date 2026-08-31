@@ -100,6 +100,15 @@ the top of the file.
 change.** The clock's hand-written `shouldUpdate` omitted `themes` and kept the
 old theme's tints. `hassChangeMatters` covers this; a hand-written one must too.
 
+**The browser's tap highlight is a rectangle and ignores the border radius.**
+Reported as "a box appears when you press" on the room card's header, and the
+clue that solved it was the user's: *it only shows while the finger is down*.
+No card in the suite had ever set `-webkit-tap-highlight-color`, so every
+tappable element on a touch device got a grey rectangle over its box, sticking
+out past the rounded corner — and fighting the press feedback this suite
+actually uses, which is the radius morph. Now `transparent` in
+`glass-card.ts`'s `:host`, plus the four cards that build their own frame.
+
 **A flex `gap` cannot be animated away with a height.** The room card folded by
 animating its body's height while switching `.card-inner`'s gap from 12px to 0,
 so the collapsed body would not leave a dead strip. A gap applies between items
