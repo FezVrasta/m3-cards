@@ -13,3 +13,9 @@ graphify-out/
 # Local dev/screenshot tooling
 dev/
 .contrast.mjs
+
+# Working notes for Claude sessions — local only. They describe how this
+# repository is worked on, not what the cards do, and they name the author's
+# own instance. Neither has ever been in a release tag.
+CLAUDE.md
+docs/HANDOVER.md
