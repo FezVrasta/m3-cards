@@ -110,6 +110,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **M3 Heading Card — the divider's label was below the contrast target.** Its
+  10px small caps sat at `opacity: 0.42`, which reaches 4.02:1 against a dark
+  card and 2.58:1 against a light one; the target is 4.5:1, because bold only
+  counts as large text from 14px up. Now 0.65. The house value for a muted
+  label is 0.6, and that still misses in a light theme at 4.35:1 — so this one
+  sits above it on purpose. Found while photographing the card for the README:
+  over a dashboard wallpaper the label was barely readable, and the card draws
+  no surface of its own to guarantee anything better.
+
 - **M3 Light Card showed the brightness twice.** The percentage stood under the
   lamp's name and again above the slider handle. The subtitle is the live one —
   it already follows the value while the handle is being dragged — and it is
@@ -234,6 +243,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   für die Uhr.
 
 ### Behoben
+
+- **M3 Heading Card — die Beschriftung der Trennlinie lag unter dem
+  Kontrastziel.** Ihre 10px-Kapitälchen standen auf `opacity: 0.42`, das sind
+  4,02:1 auf dunkler und 2,58:1 auf heller Karte; das Ziel ist 4,5:1, denn fett
+  gilt erst ab 14px als große Schrift. Jetzt 0,65. Der Hauswert für gedämpfte
+  Beschriftungen ist 0,6, und der verfehlt das Ziel im hellen Theme mit 4,35:1
+  noch — dieser Wert liegt also mit Absicht darüber. Aufgefallen beim
+  Fotografieren der Karte fürs README: über einer Dashboard-Tapete war die
+  Beschriftung kaum zu lesen, und die Karte zeichnet keine eigene Fläche, die
+  etwas Besseres garantieren könnte.
 
 - **M3 Light Card zeigte die Helligkeit doppelt.** Die Prozentangabe stand
   unter dem Namen der Lampe und noch einmal über dem Reglergriff. Die

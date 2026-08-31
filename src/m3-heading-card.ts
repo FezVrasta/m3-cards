@@ -612,7 +612,14 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.2px;
-      opacity: 0.42;
+      /* Higher than the 0.6 the rest of the suite uses for a muted label, and
+         deliberately so. At ${HEADING_LABEL_SIZE}px the WCAG target is 4.5:1 even
+         though the text is bold — "large" starts at 14px — and 0.6 reaches only
+         4.35:1 against a light card. The light theme is the binding case here,
+         as it usually is. This label also has no card of its own behind it: the
+         heading card draws no surface, so whatever the dashboard uses as a
+         background is what it has to read against. */
+      opacity: 0.65;
       color: var(--primary-text-color);
     }
 
