@@ -220,6 +220,7 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
    *   masonry:  div.column    > hui-card > m3-heading-card
    */
   private _gridItem(): HTMLElement | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- walks up from `this`, reassigning as it climbs
     let node: HTMLElement | null = this;
     for (let depth = 0; depth < 6 && node; depth++) {
       const parent: HTMLElement | null = node.parentElement;

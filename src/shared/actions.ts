@@ -1,4 +1,4 @@
-import type { HaActionConfig, HomeAssistant } from "../types";
+import type { HomeAssistant, HaActionConfig } from "../types";
 
 // The tap/hold/double-tap action config every Lovelace card understands, run
 // from one place.
@@ -49,7 +49,6 @@ export function handleAction(
 ): void {
   if (!hass) return;
   const cfg = action ?? { action: "more-info" as const };
-
   switch (cfg.action) {
     case "none":
       return;
@@ -91,4 +90,83 @@ export function handleAction(
 /** Whether an action would do nothing, so a card can skip the pointer affordances. */
 export function isActionable(action: HaActionConfig | undefined): boolean {
   return (action?.action ?? "more-info") !== "none";
+}
+
+export interface RunActionContext {
+  /** Default `entity_id` target for toggle/perform-action/more-info, when the
+   * action config itself doesn't set one. */
+  entityId?: string;
+  /** Overrides the default `homeassistant.toggle` on `entityId` — e.g. a room
+   * tile toggles an explicit list of light entities rather than one entity. */
+  toggle?: () => void;
+  /** Handles the "popup" action kind (see shared/popup-card.ts). A "popup"
+   * action no-ops if this is unset, same as any action a card doesn't wire up. */
+  openPopup?: () => void;
+  fireMoreInfo: (entityId?: string) => void;
+  navigate: (path: string) => void;
+}
+
+// Executes a standard HaActionConfig the same way every M3 card's tap/hold/
+// double-tap handler wants to: toggle/more-info/perform-action/navigate/url,
+// plus the two hooks (toggle/openPopup) a card supplies for the parts that
+// aren't generic. Extracted from m3-button-card's inline _handleAction, which
+// keeps its own copy rather than migrating onto this (see the lights-overview
+// modularization plan) — behavior here matches it exactly for the cases both
+// share. Distinct from handleAction() above (upstream's version, used by the
+// heading/room/status cards): this one adds the "popup" action kind and lets
+// a card override what "toggle" does, which climate-overview and
+// lights-overview both need for a tile that represents more than one entity.
+export function runHaAction(
+  hass: HomeAssistant,
+  action: HaActionConfig | undefined,
+  ctx: RunActionContext,
+): void {
+  const cfg = action ?? { action: "more-info" };
+  switch (cfg.action) {
+    case "none":
+      return;
+    case "toggle":
+      if (ctx.toggle) {
+        ctx.toggle();
+        return;
+      }
+      if (!ctx.entityId) return;
+      hass.callService("homeassistant", "toggle", { entity_id: ctx.entityId });
+      return;
+    case "more-info":
+      ctx.fireMoreInfo(ctx.entityId);
+      return;
+    case "popup":
+      ctx.openPopup?.();
+      return;
+    case "call-service":
+    case "perform-action": {
+      const serviceStr = cfg.perform_action ?? cfg.service;
+      if (!serviceStr) return;
+      const [domain, service] = serviceStr.split(".");
+      if (!domain || !service) return;
+      hass.callService(domain, service, {
+        ...(cfg.target ? {} : ctx.entityId ? { entity_id: ctx.entityId } : {}),
+        ...(cfg.target ?? {}),
+        ...(cfg.data ?? cfg.service_data ?? {}),
+      });
+      return;
+    }
+    case "navigate":
+      if (cfg.navigation_path) ctx.navigate(cfg.navigation_path);
+      return;
+    case "url":
+      if (cfg.url_path) window.open(cfg.url_path, cfg.new_tab === false ? "_self" : "_blank");
+      return;
+    default:
+      return;
+  }
+}
+
+// Standard navigate() implementation — pushes history state and fires the
+// location-changed event HA's frontend listens for. Identical across every
+// card that implements the "navigate" action.
+export function navigateTo(host: EventTarget, path: string): void {
+  window.history.pushState(null, "", path);
+  host.dispatchEvent(new CustomEvent("location-changed", { bubbles: true, composed: true, detail: { replace: false } }));
 }

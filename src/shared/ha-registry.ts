@@ -1,10 +1,12 @@
 import type { HomeAssistant } from "../types";
+import { buildEntityFilterPredicate, type EntityFilterConfig } from "./entity-filter";
 
 interface EntityRegistryEntry {
   entity_id: string;
   area_id?: string | null;
   device_id?: string | null;
   labels?: string[];
+  platform?: string | null;
 }
 
 interface DeviceRegistryEntry {
@@ -12,6 +14,8 @@ interface DeviceRegistryEntry {
   area_id?: string | null;
   name?: string | null;
   name_by_user?: string | null;
+  labels?: string[];
+  model?: string | null;
 }
 
 interface AreaRegistryEntry {
@@ -157,9 +161,63 @@ export async function discoverPersonEntities(
 }
 
 export interface DiscoverClimateRoomsOptions {
-  includeAreas?: string[];
-  excludeEntities?: string[];
+  filter?: EntityFilterConfig;
   nameStrip?: string[];
+}
+
+// Recognizes what kind of climate device an entity belongs to, so "mixed"
+// mode (see m3-climate-overview-card's `mode` config) can prefer a group
+// thermostat's own reading over an individual radiator valve's inaccurate
+// onboard sensor. "plain" is the fallback when nothing matches.
+export type ClimateTier = "group" | "wall" | "valve" | "plain";
+
+const TIER_PATTERNS: Record<Exclude<ClimateTier, "plain">, string[]> = {
+  group: [
+    "HmIP-HEATING",
+    "heizgruppe",
+    "heating[ _-]?group",
+    // Integrations whose whole purpose is to front several real thermostats.
+    "versatile_thermostat",
+    "better_thermostat",
+    "generic_thermostat",
+    "climate[ _-]?group",
+  ],
+  wall: ["HmIP-STHD", "HmIP-WTH", "wandthermostat", "wall[ _-]?thermostat"],
+  valve: ["HmIP-eTRV", "eTRV", "TRV", "ventil", "radiator[ _-]?valve"],
+};
+
+function classifyTier(haystack: string): ClimateTier {
+  const matches = (patterns: string[]) =>
+    patterns.some((pattern) => {
+      try {
+        return new RegExp(pattern, "i").test(haystack);
+      } catch {
+        return false;
+      }
+    });
+  if (matches(TIER_PATTERNS.group)) return "group";
+  if (matches(TIER_PATTERNS.wall)) return "wall";
+  if (matches(TIER_PATTERNS.valve)) return "valve";
+  return "plain";
+}
+
+// Temperature sensors prefer a freestanding ("plain") sensor over one built
+// into a wall thermostat or radiator valve — those run warmer/cooler than
+// the room — unless a "group" thermostat (fronting several real devices)
+// offers its own reading. Climate entities go the other way: a group
+// thermostat wins outright, then a wall thermostat, then a valve.
+const TEMP_TIER_PRIORITY: ClimateTier[] = ["group", "plain", "wall", "valve"];
+const CLIMATE_TIER_PRIORITY: ClimateTier[] = ["group", "wall", "valve", "plain"];
+
+function pickByTier(
+  candidates: Map<ClimateTier, string>,
+  priority: ClimateTier[],
+): { entity?: string; tier?: ClimateTier } {
+  for (const tier of priority) {
+    const entity = candidates.get(tier);
+    if (entity) return { entity, tier };
+  }
+  return {};
 }
 
 export interface DiscoveredClimateRoom {
@@ -173,8 +231,13 @@ export interface DiscoveredClimateRoom {
   deviceId?: string;
   name: string;
   icon?: string;
-  temperatureEntity: string;
+  /** Undefined when the room has only a thermostat and no dedicated
+   * temperature sensor. */
+  temperatureEntity?: string;
   humidityEntity?: string;
+  climateEntity?: string;
+  /** Tier of `climateEntity`, when present — see `ClimateTier`. */
+  climateTier?: ClimateTier;
 }
 
 function stripFallbackName(raw: string, patterns: string[]): string {
@@ -193,34 +256,37 @@ interface ClimateRoomBucket {
   key: string;
   areaId?: string;
   deviceId?: string;
-  temp?: string;
+  temps: Map<ClimateTier, string>;
+  climates: Map<ClimateTier, string>;
   humidity?: string;
   fallbackName: string;
 }
 
-// Groups temperature/humidity sensors into "rooms": entities assigned to a
-// Home Assistant area are grouped by that area (using the area's registry
-// name/icon); entities without an area but sharing a device (e.g. a combo
-// temp+humidity sensor) are grouped by device instead, using the device's
-// name; anything left over becomes a solo room named from its own
-// (name_strip-cleaned) friendly name. Rooms without a temperature entity are
-// dropped — humidity alone doesn't make a room.
+// Groups temperature sensors, humidity sensors and thermostats into "rooms":
+// entities assigned to a Home Assistant area are grouped by that area (using
+// the area's registry name/icon); entities without an area but sharing a
+// device (e.g. a combo temp+humidity sensor) are grouped by device instead,
+// using the device's name; anything left over becomes a solo room named from
+// its own (name_strip-cleaned) friendly name. Rooms with neither a
+// temperature sensor nor a thermostat are dropped — humidity alone doesn't
+// make a room.
 export async function discoverClimateRooms(
   hass: HomeAssistant,
   opts: DiscoverClimateRoomsOptions,
 ): Promise<DiscoveredClimateRoom[]> {
-  const exclude = new Set(opts.excludeEntities ?? []);
   const nameStrip = opts.nameStrip ?? [];
+  const passesFilter = buildEntityFilterPredicate(opts.filter);
 
-  const isCandidate = (entityId: string, deviceClass: string): boolean => {
-    if (!entityId.startsWith("sensor.") || exclude.has(entityId)) return false;
+  const isSensor = (entityId: string, deviceClass: string): boolean => {
+    if (!entityId.startsWith("sensor.")) return false;
     const st = hass.states[entityId];
     return !!st && st.attributes.device_class === deviceClass;
   };
 
-  const tempIds = Object.keys(hass.states).filter((id) => isCandidate(id, "temperature"));
-  const humidityIds = Object.keys(hass.states).filter((id) => isCandidate(id, "humidity"));
-  if (tempIds.length === 0) return [];
+  const tempIds = Object.keys(hass.states).filter((id) => isSensor(id, "temperature"));
+  const humidityIds = Object.keys(hass.states).filter((id) => isSensor(id, "humidity"));
+  const climateIds = Object.keys(hass.states).filter((id) => id.startsWith("climate."));
+  if (tempIds.length === 0 && climateIds.length === 0) return [];
 
   const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
     hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
@@ -231,52 +297,71 @@ export async function discoverClimateRooms(
   const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
   const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
 
-  const includeAreas = opts.includeAreas?.length ? new Set(opts.includeAreas) : undefined;
-
-  function resolve(entityId: string): { areaId?: string; deviceId?: string } {
+  function resolve(entityId: string): { areaId?: string; deviceId?: string; labels: string[]; tier: ClimateTier } {
     const entry = entryByEntityId.get(entityId);
-    if (!entry) return {};
-    const device = entry.device_id ? deviceById.get(entry.device_id) : undefined;
+    const device = entry?.device_id ? deviceById.get(entry.device_id) : undefined;
+    const haystack = [
+      device?.model ?? "",
+      device?.name_by_user ?? device?.name ?? "",
+      entry?.platform ?? "",
+      entityId,
+      hass.states[entityId]?.attributes.friendly_name ?? "",
+    ].join(" ");
     return {
-      areaId: entry.area_id ?? device?.area_id ?? undefined,
-      deviceId: entry.device_id ?? undefined,
+      areaId: entry?.area_id ?? device?.area_id ?? undefined,
+      deviceId: entry?.device_id ?? undefined,
+      labels: [...(entry?.labels ?? []), ...(device?.labels ?? [])],
+      tier: classifyTier(haystack),
     };
   }
 
   const buckets = new Map<string, ClimateRoomBucket>();
 
-  function bucketFor(entityId: string, isTemp: boolean): void {
-    const { areaId, deviceId } = resolve(entityId);
-    if (includeAreas && (!areaId || !includeAreas.has(areaId))) return;
+  function bucketFor(entityId: string, kind: "temp" | "humidity" | "climate"): void {
+    const { areaId, deviceId, labels, tier } = resolve(entityId);
+    if (!passesFilter({ entityId, areaId, labels })) return;
     const key = areaId ? `area:${areaId}` : deviceId ? `device:${deviceId}` : `solo:${entityId}`;
     let bucket = buckets.get(key);
     if (!bucket) {
       const friendlyName = hass.states[entityId]?.attributes.friendly_name ?? entityId;
-      bucket = { key, areaId, deviceId, fallbackName: stripFallbackName(friendlyName, nameStrip) };
+      bucket = {
+        key,
+        areaId,
+        deviceId,
+        temps: new Map(),
+        climates: new Map(),
+        fallbackName: stripFallbackName(friendlyName, nameStrip),
+      };
       buckets.set(key, bucket);
     }
-    if (isTemp && !bucket.temp) bucket.temp = entityId;
-    if (!isTemp && !bucket.humidity) bucket.humidity = entityId;
+    if (kind === "temp" && !bucket.temps.has(tier)) bucket.temps.set(tier, entityId);
+    if (kind === "climate" && !bucket.climates.has(tier)) bucket.climates.set(tier, entityId);
+    if (kind === "humidity" && !bucket.humidity) bucket.humidity = entityId;
   }
 
-  for (const id of tempIds) bucketFor(id, true);
-  for (const id of humidityIds) bucketFor(id, false);
+  for (const id of tempIds) bucketFor(id, "temp");
+  for (const id of climateIds) bucketFor(id, "climate");
+  for (const id of humidityIds) bucketFor(id, "humidity");
 
   const rooms: DiscoveredClimateRoom[] = [];
   for (const bucket of buckets.values()) {
-    if (!bucket.temp) continue;
+    if (bucket.temps.size === 0 && bucket.climates.size === 0) continue;
     const area = bucket.areaId ? areaById.get(bucket.areaId) : undefined;
     const device = !area && bucket.deviceId ? deviceById.get(bucket.deviceId) : undefined;
     const rawName = area?.name ?? device?.name_by_user ?? device?.name ?? bucket.fallbackName;
     const name = area ? rawName : stripFallbackName(rawName, nameStrip);
+    const temp = pickByTier(bucket.temps, TEMP_TIER_PRIORITY);
+    const climate = pickByTier(bucket.climates, CLIMATE_TIER_PRIORITY);
     rooms.push({
       key: bucket.key,
       areaId: bucket.areaId,
       deviceId: bucket.deviceId,
       name,
       icon: area?.icon ?? undefined,
-      temperatureEntity: bucket.temp,
+      temperatureEntity: temp.entity,
       humidityEntity: bucket.humidity,
+      climateEntity: climate.entity,
+      climateTier: climate.tier,
     });
   }
   return rooms;
@@ -608,4 +693,126 @@ export function listAreas(hass: HomeAssistant): AreaInfo[] {
     .map((id) => areaInfo(hass, id))
     .filter((a): a is AreaInfo => !!a)
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ---- Lights overview ------------------------------------------------------------
+
+export type LightGroupHandling = "all" | "prefer_groups" | "prefer_members";
+
+export interface DiscoverLightRoomsOptions {
+  filter?: EntityFilterConfig;
+  groupHandling?: LightGroupHandling;
+  /** Defaults to `filter` — pass a narrower one when what's shown and what a
+   * tap actually switches should differ. */
+  toggleFilter?: EntityFilterConfig;
+  toggleGroupHandling?: LightGroupHandling;
+}
+
+export interface DiscoveredLightRoom {
+  areaId: string;
+  name: string;
+  icon?: string;
+  /** Lights shown on this room's tile, after the display filter. */
+  entities: string[];
+  /** Subset a tap actually switches, after the (separate) toggle filter. */
+  toggleEntities: string[];
+}
+
+// Groups light.* entities into rooms by Home Assistant area — unlike
+// discoverClimateRooms/discoverOccupancyRooms, a light with no area to switch
+// as a group isn't useful here, so device-only and area-less lights are
+// dropped rather than falling back to a solo room.
+//
+// Two independent EntityFilterConfig predicates decide, per light, whether
+// it's *shown* on the tile and whether it's *switched* by tapping it — a
+// caller that only needs one filter passes the same config for both (the
+// default). groupHandling/toggleGroupHandling additionally drop one side of a
+// `light.group` + its members when set, so a group and its members aren't
+// both counted as separate lights in the same room.
+//
+// Deliberately state-blind: include_state/exclude_state are not applied
+// here. A light's state changes far more often than its area/label
+// assignment, and this result is only recomputed when the filter key
+// changes — baking state in would mean a light that turns off stays shown
+// until the next unrelated re-discovery. Callers apply EntityFilterConfig's
+// state predicate themselves, live, on every render.
+export async function discoverLightRooms(
+  hass: HomeAssistant,
+  opts: DiscoverLightRoomsOptions,
+): Promise<DiscoveredLightRoom[]> {
+  const lightIds = Object.keys(hass.states).filter((id) => id.startsWith("light."));
+  if (lightIds.length === 0) return [];
+
+  const showEntity = buildEntityFilterPredicate(opts.filter);
+  const toggleFilter = opts.toggleFilter ?? opts.filter;
+  const toggleEntity = buildEntityFilterPredicate(toggleFilter);
+
+  const groupHandling = opts.groupHandling ?? "all";
+  const toggleGroupHandling = opts.toggleGroupHandling ?? groupHandling;
+
+  // A light group exposes its members via `entity_id` on its own state
+  // attributes — cheaper than a second registry round-trip, and the
+  // attribute is already loaded in hass.states for every card.
+  const groupIds = new Set<string>();
+  const memberIds = new Set<string>();
+  if (groupHandling !== "all" || toggleGroupHandling !== "all") {
+    for (const id of lightIds) {
+      const members = hass.states[id]?.attributes.entity_id;
+      if (Array.isArray(members) && members.length > 0) {
+        groupIds.add(id);
+        for (const member of members) if (typeof member === "string") memberIds.add(member);
+      }
+    }
+  }
+  const passesGrouping = (id: string, handling: LightGroupHandling): boolean => {
+    if (handling === "prefer_groups") return !memberIds.has(id);
+    if (handling === "prefer_members") return !groupIds.has(id);
+    return true;
+  };
+
+  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
+    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
+    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
+    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
+  ]);
+  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
+  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
+  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+
+  const buckets = new Map<string, { shown: string[]; switchable: string[] }>();
+
+  for (const id of lightIds) {
+    const entry = entryByEntityId.get(id);
+    const device = entry?.device_id ? deviceById.get(entry.device_id) : undefined;
+    const areaId = entry?.area_id ?? device?.area_id ?? undefined;
+    if (!areaId) continue;
+
+    const labels = [...(entry?.labels ?? []), ...(device?.labels ?? [])];
+    const ctx = { entityId: id, areaId, labels };
+    const shown = passesGrouping(id, groupHandling) && showEntity(ctx);
+    const switchable = passesGrouping(id, toggleGroupHandling) && toggleEntity(ctx);
+    if (!shown && !switchable) continue;
+
+    let bucket = buckets.get(areaId);
+    if (!bucket) {
+      bucket = { shown: [], switchable: [] };
+      buckets.set(areaId, bucket);
+    }
+    if (shown) bucket.shown.push(id);
+    if (switchable) bucket.switchable.push(id);
+  }
+
+  const rooms: DiscoveredLightRoom[] = [];
+  for (const [areaId, bucket] of buckets) {
+    if (bucket.shown.length === 0) continue;
+    const area = areaById.get(areaId);
+    rooms.push({
+      areaId,
+      name: area?.name ?? areaId,
+      icon: area?.icon ?? undefined,
+      entities: bucket.shown.sort(),
+      toggleEntities: bucket.switchable.sort(),
+    });
+  }
+  return rooms;
 }

@@ -561,6 +561,20 @@ export const CLIMATE_OVERVIEW_TREND_THRESHOLD_K = 0.5;
 export const CLIMATE_OVERVIEW_MOLD_HUMIDITY_THRESHOLD = 65;
 export const CLIMATE_OVERVIEW_MOLD_TEMP_THRESHOLD = 18;
 
+// ---- Lights overview card -------------------------------------------------------
+// Tile/grid geometry matches climate-overview's exactly (both const names kept
+// separate rather than shared, so either can diverge later without touching
+// the other) — the two are meant to sit stacked on a dashboard and read as one
+// family of "overview" cards.
+export const DEFAULT_LIGHTS_OVERVIEW_RADIUS = RADIUS.card;
+export const DEFAULT_LIGHTS_OVERVIEW_ICON = "mdi:lightbulb-group";
+export const LIGHTS_OVERVIEW_GRID_GAP = CLIMATE_OVERVIEW_GRID_GAP;
+export const LIGHTS_OVERVIEW_GRID_MIN_COL = CLIMATE_OVERVIEW_GRID_MIN_COL;
+export const LIGHTS_OVERVIEW_ENTITY_GRID_MIN_COL = 140;
+export const LIGHTS_OVERVIEW_TILE_RADIUS = CLIMATE_OVERVIEW_TILE_RADIUS;
+export const LIGHTS_OVERVIEW_COLOR_ON = PALETTE.light;
+export const LIGHTS_OVERVIEW_COLOR_OFF = PALETTE.off;
+
 // ---- Media card -----------------------------------------------------------
 export const DEFAULT_MEDIA_RADIUS = RADIUS.card;
 export const DEFAULT_MEDIA_ACCENT = PALETTE.media;
