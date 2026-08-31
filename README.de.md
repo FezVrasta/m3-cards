@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **30 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **33 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.

@@ -18,7 +18,9 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   opened the sensor's dialog, which is its history graph; it can now open that
   room's thermostat instead — `m3-climate-card-mini`, floating over the card and
   adjustable there. The thermostat is found in the room's own Home Assistant
-  area, or named per room with `climate_entity`. A room with no thermostat
+  area — or, for a room that has no area because its sensors group by device,
+  on that same device, which is how a thermostat reporting its own room
+  temperature is found — or named per room with `climate_entity`. A room with no thermostat
   keeps the graph rather than going dead. Asked for on Reddit; the default is
   unchanged.
 
@@ -108,6 +110,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **M3 Light Card showed the brightness twice.** The percentage stood under the
+  lamp's name and again above the slider handle. The subtitle is the live one —
+  it already follows the value while the handle is being dragged — and it is
+  what every other card puts in that spot, so the label on the slider is gone.
+
 - **`tintOn` on a dark surface** returned a CSS `color-mix` string rather than a
   colour. `tintInk` feeds that back in as the surface to measure ink against,
   and an unparseable surface means the ink comes back unchanged — so `tintInk`
@@ -131,7 +138,9 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Raum öffnete den Sensordialog, also dessen Verlaufsgraphen; er kann jetzt
   stattdessen das Thermostat des Raums öffnen — `m3-climate-card-mini`,
   schwebend über der Karte und dort bedienbar. Gefunden wird es im Bereich des
-  Raums oder je Raum über `climate_entity` benannt. Ein Raum ohne Thermostat
+  Raums — oder, wenn ein Raum mangels Bereich über sein Gerät gruppiert wird,
+  an ebendiesem Gerät, womit ein Thermostat gefunden wird, das seine eigene
+  Raumtemperatur meldet — oder je Raum über `climate_entity` benannt. Ein Raum ohne Thermostat
   behält den Verlauf, statt tot zu sein. Auf Reddit gewünscht; die Vorgabe
   bleibt unverändert.
 
@@ -225,6 +234,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   für die Uhr.
 
 ### Behoben
+
+- **M3 Light Card zeigte die Helligkeit doppelt.** Die Prozentangabe stand
+  unter dem Namen der Lampe und noch einmal über dem Reglergriff. Die
+  Unterzeile ist die lebende Anzeige — sie folgt dem Wert schon während des
+  Ziehens — und sie ist das, was jede andere Karte an dieser Stelle zeigt; die
+  Marke am Regler ist deshalb entfallen.
 
 - **`tintOn` auf dunkler Fläche** gab einen CSS-`color-mix`-String zurück statt
   einer Farbe. `tintInk` reicht genau das als Bezugsfläche zurück, und eine

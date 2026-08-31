@@ -43,9 +43,10 @@ already in memory in a modern frontend, so area discovery costs no websocket
 round-trip and can run in the render path. It is memoised against the registry
 object, the same trick `stateCount` uses.
 
-**Version numbers are still 2.1.0 everywhere** (`package.json`, the card-count
-sentence in both READMEs, `docs/TESTING.md`). That is deliberate — they get
-bumped at release. The suite now registers 33 cards; the docs still say 30.
+**The version is still 2.1.0** in `package.json` and `src/const.ts`
+(`CARD_VERSION`). That is deliberate — it gets bumped at release. The card
+count, which is a plain fact rather than a release step, has been corrected to
+33 in both READMEs and `docs/TESTING.md`.
 
 ---
 
@@ -167,8 +168,8 @@ status card's toggle. It can be deleted.
 2. **Screenshots for all four new cards**, to be taken together at release
    time. The READMEs carry `<!-- TODO: docs/images/... -->` markers where they
    go.
-3. **Version bump to 2.2.0** at release: `package.json`, the "30 cards"
-   sentence in both READMEs, and `docs/TESTING.md` (33 cards now).
+3. **Version bump to 2.2.0** at release: `package.json` and `CARD_VERSION` in
+   `src/const.ts`. The card counts in the docs are already right.
 4. **Two known cosmetic points**, both raised and deliberately left:
    - In a light theme a grid of status tiles can look uneven — an amber tile
      next to pink ones. That is the dark-parity rule in `tintOn`, not the card.
@@ -178,9 +179,15 @@ status card's toggle. It can be deleted.
 5. **Group B of the old light-theme list** — eight cards that set colours
    outside `buildCssVars`. Largely absorbed by later work, never formally
    closed.
-6. **Climate overview, thermostat tap:** a room grouped by *device* rather than
-   by area has no area to look a thermostat up in, so auto-discovery finds
-   nothing there. `climate_entity` per room is the answer. If this comes up
-   often, `discoverClimateRooms` could resolve the device's area into `areaId`.
+6. ~~**Climate overview, thermostat tap:** a room grouped by device has no area
+   to look a thermostat up in.~~ Done. The suggested fix was already in place —
+   `resolve()` in `discoverClimateRooms` has always fallen back to the device's
+   `area_id`, so a device bucket means neither the entity nor the device has an
+   area and there is nothing left to resolve. What was actually missing is the
+   case that matters here: a thermostat exposing both its own temperature
+   sensor and its `climate` entity. `DiscoveredClimateRoom` now carries
+   `deviceId`, `deviceEntityIds` is the device-scoped twin of `areaEntityIds`,
+   and `_climateFor` falls back to a `climate` entity on the same device.
+   `climate_entity` still overrides everything.
 7. **The status card's alarm-chip path is untested** — no `next_alarm` entity
    exists on the author's instance.
