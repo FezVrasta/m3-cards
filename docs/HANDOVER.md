@@ -91,6 +91,18 @@ first.
 
 ## 3. Traps that cost real time in this session
 
+**Deploying the bundle.** Every paste-based route into the File editor has
+failed at some point — `cmd+a` does not select in that editor, a locked screen
+kills synthetic keys, a background window blocks the paste. The route that
+works needs no keyboard at all: serve `dist/` on **127.0.0.1** with both
+`Access-Control-Allow-Origin: *` and `Access-Control-Allow-Private-Network:
+true`, open the File editor at its **ingress URL directly** so the Ace editor is
+the top-level document, then `fetch` the file in that page, `editor.setValue`,
+`save()`. Verify with FNV-1a over the file fetched back from `/local/`, never by
+size, and bump the Lovelace resource `?v=` afterwards. The Mac's LAN IP does not
+work — the firewall refuses inbound — but Chrome reaches loopback because it
+runs on the same machine.
+
 **Contrast auditing.** `test/contrast-audit.js` composites CSS backgrounds
 only, so text over an SVG fill is measured against the wrong thing and reports
 a failure that is not one. It must also run on a *settled* theme — measuring
