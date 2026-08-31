@@ -7,7 +7,7 @@
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
 `button-card`, `card-mod`, `mod-card`, or `stack-in-card`. A single bundle
-(`m3-cards.js`) registers **33 cards**, all sharing one design language.
+(`m3-cards.js`) registers **35 cards**, all sharing one design language.
 
 New here? Start with the category that matches what you want to show — every
 card links to its full documentation further down.
@@ -64,6 +64,8 @@ card links to its full documentation further down.
 | [Status](#m3-status-card) | `m3-status-card` | Big numbers, text and yes/no states, with a rule list behind them |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Section headings between the cards: simple, with status, a divider, or collapsible |
 | [Room](#m3-room-card) | `m3-room-card` | One card per area: every device type it finds, climate readings and presence |
+| [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Target humidity, mode, fan speed and extras — and it need not be a humidifier entity |
+| [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda and month grid for any number of calendars |
 
 ### 🛠️ System & maintenance
 
@@ -2749,6 +2751,217 @@ person would rather decide.
 | `collapse_state_entity` | string | – | An `input_boolean` holding the folded state |
 | `strip_area_name` | boolean | `false` | Remove the room's name from a single device's name. Off because it assumes a convention |
 
+
+## M3 Humidifier Card
+
+Target humidity, mode, fan speed and a device's extras in one card. Home
+Assistant's own humidifier card cannot set a fan speed, so the usual answer is a
+second card beside it — this is the one card.
+
+It also does not insist that `entity` is a `humidifier`. Plenty of dehumidifiers
+are exposed as a switch plus a number plus a sensor, and those work here too;
+see "Devices that are not humidifier entities" below.
+
+<!-- TODO: docs/images/humidifier-card.png — screenshot still to be taken -->
+
+```yaml
+type: custom:m3-humidifier-card
+entity: humidifier.basement
+```
+
+That is the whole configuration for a device that reports properly: the current
+and target humidity, the modes and the range all come off the entity.
+
+### The four blocks
+
+| Block | What it draws |
+| --- | --- |
+| `slider` | The wavy target-humidity slider, with the label and value above it |
+| `modes` | A pill per mode, plus an off pill — turning the device off is not a mode |
+| `fan` | A pill per fan step, with a three-bar icon that fills with the step |
+| `chips` | Water tank, toggleable switches, read-only readings |
+
+`layout` sets both the order and what appears at all. Leaving a block out of the
+list hides it — one mechanism rather than an array plus a set of `show_*` flags
+that can contradict it.
+
+```yaml
+type: custom:m3-humidifier-card
+entity: humidifier.basement
+layout: [slider, modes]     # no fan row, no chips
+```
+
+### Devices that are not humidifier entities
+
+A Tuya or Zigbee dehumidifier is often a `switch` for on/off, a `number` for the
+target and a `sensor` for the reading. Point the card at the switch and name the
+rest:
+
+```yaml
+type: custom:m3-humidifier-card
+entity: switch.basement_dehumidifier
+device_kind: dehumidifier
+current_entity: sensor.basement_humidity
+target_entity: number.basement_target
+mode_entity: select.basement_mode        # modes from a select
+fan_entity: select.basement_fan_speed    # fan speed from a select
+tank_entity: sensor.basement_tank
+controls:
+  - entity: switch.basement_ioniser
+    name: Ioniser
+    icon: mdi:air-filter
+    color: "#8f79e0"
+sensors:
+  - entity: sensor.basement_filter
+    label: Filter ok
+    icon: mdi:air-filter
+```
+
+`humidifier`, `switch`, `fan`, `select`, `input_select`, `number` and
+`input_number` are all handled; the card works out which service each one wants.
+
+### Modes
+
+Modes come from `available_modes`, from `mode_entity`'s options, or from an
+explicit `modes` list. Each mode may carry a name, an icon and a colour, and an
+unrecognised mode still gets a deliberate-looking colour from a palette rather
+than a grey one.
+
+```yaml
+modes:
+  - mode: sleep
+    name: Night
+    icon: mdi:weather-night
+    color: "#8f79e0"
+  - mode: turbo
+    hidden: true
+```
+
+`mode_style` is `icon_label`, `icon_only`, or `dropdown`; more than five modes
+switch to a dropdown on their own, and a narrow card drops the labels.
+
+### Fan speed
+
+The row reads whichever of the three shapes the entity has: a fan's
+`preset_modes`, a fan's percentage (mapped to off / low / medium / high), or a
+`select`'s options. `fan_steps` overrides all of it:
+
+```yaml
+fan_steps:
+  - { name: Off }
+  - { name: Quiet, preset: sleep }
+  - { name: Normal, percentage: 60 }
+  - { name: Max, option: turbo }
+```
+
+### Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `entity` | — | Required. The thing the card turns on and off |
+| `current_entity` | the entity's `current_humidity` | Where the reading comes from |
+| `target_entity` | the entity's `humidity` | Where the target lives |
+| `action_entity` | the entity's `action` | Drying / humidifying / idle |
+| `device_kind` | from `device_class` | `humidifier` or `dehumidifier` — wording and icon |
+| `min_humidity` / `max_humidity` | from the entity, else 30 / 80 | Slider range |
+| `humidity_step` | `1` | Step for dragging and for the arrow keys |
+| `mode_entity` | — | A `select` holding the mode |
+| `modes` | from the entity | Explicit list, with name, icon, colour, `hidden` |
+| `mode_style` | `icon_label` | `icon_label`, `icon_only`, `dropdown` |
+| `fan_entity` | — | A `fan` or a `select`. Unset hides the row |
+| `fan_steps` | derived | Explicit steps |
+| `tank_entity` | — | A level sensor or a `binary_sensor` |
+| `tank_warn` / `tank_full` | `70` / `95` | Percentages at which the chip turns amber, then red |
+| `tank_style` | `chip` | `chip` or `bar` (hidden) |
+| `controls` | — | Chips that toggle: switch, button, select |
+| `sensors` | — | Read-only chips |
+| `layout` | all four | Which blocks, in which order |
+
+### What it does when things are missing
+
+`action` is optional in the humidifier contract and many integrations omit it.
+Without it the card infers drying or humidifying from the direction between
+current and target rather than showing nothing. A device with no modes gets no
+mode row. A tank sensor that is a plain `binary_sensor` shows a chip only when
+it is full — "not full" is not news.
+
+## M3 Calendar Card
+
+An agenda and a month grid for any number of calendars, in this suite's design
+language.
+
+<!-- TODO: docs/images/calendar-card.png — screenshot still to be taken -->
+
+```yaml
+type: custom:m3-calendar-card
+entities:
+  - calendar.family
+  - calendar.work
+```
+
+A bare entity id is accepted alongside the full object, because that is what
+people write first:
+
+```yaml
+entities:
+  - entity: calendar.family
+    name: Family
+    color: "#85b7eb"
+  - calendar.work
+```
+
+Without a colour each calendar takes one from a palette, in order.
+
+### The two views
+
+`view` is `agenda` or `month`; the switch in the header changes it, and
+`show_view_switch: false` fixes it.
+
+The **agenda** groups by day, with "Today" in the accent colour, then
+"Tomorrow", then weekday names. Each row carries the start time above the end
+time, a bar in its calendar's colour, the title and the location. A running
+event is tinted and carries a **now** badge; a finished one fades. `max_events`
+caps the list and adds a "+n more" line.
+
+The **month** grid draws up to three dots per day in the calendars' colours, a
+third dot becoming a "+" when there are more. Today is tinted, a tapped day
+fills with the accent colour and lists its events below the grid. The week
+starts on whatever `hass.locale.first_weekday` says.
+
+### Where the events come from
+
+`calendar.get_events`, not the entity attributes — those carry only the next
+event, which is no use for a list. Results are cached for five minutes, shared
+between cards, and re-read when a calendar entity changes state.
+
+A calendar that cannot be reached is named in a line under the header rather
+than silently dropped: showing four of five calendars without saying so would be
+worse than saying so.
+
+### Multi-day and all-day events
+
+A multi-day event appears under **every** day it touches, with "day 2 of 3"
+where the location would be — a Tuesday showing nothing while a three-day trip
+runs would be wrong. In the month grid it puts a dot on each of its days.
+
+An all-day event shows **all day** in its calendar's colour instead of a time.
+It never carries the *now* badge: "running right now" needs a time, and under a
+heading that already says Today the badge would say nothing.
+
+### Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `entities` | — | Required. Entity ids or `{entity, name, color}` |
+| `view` | `agenda` | `agenda` or `month` |
+| `show_view_switch` | `true` | The Agenda / Month control in the header |
+| `days_ahead` | `7` | Agenda window, 1–30 |
+| `max_events` | `0` | 0 shows everything in the window |
+| `hide_past_today` | `false` | Hide today's finished events instead of fading them |
+| `show_adjacent_days` | `true` | Draw the neighbouring months' days in the grid |
+| `show_next_chip` | `false` | Header chip with the next event and how far off it is |
+| `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
+| `navigation_path` | `/calendar` | Where `navigate` goes, and the dialog's button |
 
 ## License
 

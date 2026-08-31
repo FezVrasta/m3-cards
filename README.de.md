@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **33 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **35 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
@@ -64,6 +64,8 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Status](#m3-status-card) | `m3-status-card` | Große Zahlen, Texte und Ja/Nein-Zustände, mit einer Regelliste dahinter |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Abschnitts-Überschriften zwischen den Karten: schlicht, mit Status, als Trenner oder aufklappbar |
 | [Room](#m3-room-card) | `m3-room-card` | Eine Karte je Bereich: alle gefundenen Gerätetypen, Klimawerte und Präsenz |
+| [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Zielfeuchte, Modus, Lüfterstufe und Zusatzfunktionen — auch ohne humidifier-Entität |
+| [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda und Monatsraster für beliebig viele Kalender |
 
 ### 🛠️ System & Wartung
 
@@ -2811,6 +2813,223 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `collapse_state_entity` | string | – | `input_boolean` mit dem eingeklappten Zustand |
 | `strip_area_name` | boolean | `false` | Entfernt den Raumnamen aus dem Namen eines einzelnen Geräts. Aus, weil es eine Konvention voraussetzt |
 
+
+## M3 Humidifier Card
+
+Zielfeuchte, Modus, Lüfterstufe und die Zusatzfunktionen eines Geräts in einer
+Karte. Die eingebaute humidifier-Karte von Home Assistant kann keine
+Lüftergeschwindigkeit, deshalb steht üblicherweise eine zweite Karte daneben —
+das hier ist die eine.
+
+Sie setzt außerdem nicht voraus, dass `entity` eine `humidifier`-Entität ist.
+Viele Entfeuchter erscheinen als Schalter plus `number` plus `sensor`, und die
+funktionieren hier ebenso; siehe „Geräte, die keine humidifier-Entität sind".
+
+<!-- TODO: docs/images/humidifier-card.png — Screenshot fehlt noch -->
+
+```yaml
+type: custom:m3-humidifier-card
+entity: humidifier.keller
+```
+
+Mehr braucht ein Gerät nicht, das sich ordentlich meldet: aktuelle und
+Zielfeuchte, Modi und Bereich kommen alle von der Entität.
+
+### Die vier Blöcke
+
+| Block | Was er zeichnet |
+| --- | --- |
+| `slider` | Der wellige Zielfeuchte-Regler, darüber Beschriftung und Wert |
+| `modes` | Eine Pille je Modus, dazu eine Aus-Pille — Ausschalten ist kein Modus |
+| `fan` | Eine Pille je Lüfterstufe, mit Balken-Icon, das mit der Stufe füllt |
+| `chips` | Wassertank, schaltbare Zusatzfunktionen, reine Anzeigen |
+
+`layout` bestimmt Reihenfolge **und** Sichtbarkeit. Was in der Liste fehlt, wird
+nicht gezeichnet — ein Mechanismus statt einer Liste plus `show_*`-Schaltern,
+die sich widersprechen können.
+
+```yaml
+type: custom:m3-humidifier-card
+entity: humidifier.keller
+layout: [slider, modes]     # keine Lüfterzeile, keine Chips
+```
+
+### Geräte, die keine humidifier-Entität sind
+
+Ein Tuya- oder Zigbee-Entfeuchter ist oft ein `switch` fürs Ein und Aus, ein
+`number` für das Ziel und ein `sensor` für den Messwert. Die Karte auf den
+Schalter zeigen lassen und den Rest benennen:
+
+```yaml
+type: custom:m3-humidifier-card
+entity: switch.keller_entfeuchter
+device_kind: dehumidifier
+current_entity: sensor.keller_luftfeuchte
+target_entity: number.keller_ziel
+mode_entity: select.keller_modus
+fan_entity: select.keller_luefterstufe
+tank_entity: sensor.keller_tank
+controls:
+  - entity: switch.keller_ionisator
+    name: Ionisator
+    icon: mdi:air-filter
+    color: "#8f79e0"
+sensors:
+  - entity: sensor.keller_filter
+    label: Filter ok
+    icon: mdi:air-filter
+```
+
+`humidifier`, `switch`, `fan`, `select`, `input_select`, `number` und
+`input_number` werden alle bedient; die Karte findet selbst heraus, welcher
+Dienst zu welcher Domain gehört.
+
+### Modi
+
+Die Modi kommen aus `available_modes`, aus den Optionen von `mode_entity` oder
+aus einer eigenen `modes`-Liste. Jeder Modus darf Name, Icon und Farbe tragen,
+und ein unbekannter Modus bekommt trotzdem eine Farbe aus einer Palette statt
+Grau.
+
+```yaml
+modes:
+  - mode: sleep
+    name: Nacht
+    icon: mdi:weather-night
+    color: "#8f79e0"
+  - mode: turbo
+    hidden: true
+```
+
+`mode_style` ist `icon_label`, `icon_only` oder `dropdown`; ab sechs Modi
+schaltet die Karte selbst auf Auswahlliste, und eine schmale Karte lässt die
+Beschriftungen weg.
+
+### Lüfterstufe
+
+Die Zeile liest, welche der drei Formen die Entität hat: `preset_modes` eines
+Lüfters, dessen Prozentwerte (auf Aus / Niedrig / Mittel / Hoch abgebildet) oder
+die Optionen eines `select`. `fan_steps` sticht alles:
+
+```yaml
+fan_steps:
+  - { name: Aus }
+  - { name: Leise, preset: sleep }
+  - { name: Normal, percentage: 60 }
+  - { name: Maximal, option: turbo }
+```
+
+### Optionen
+
+| Option | Vorgabe | Wirkung |
+| --- | --- | --- |
+| `entity` | — | Pflicht. Das, was die Karte ein- und ausschaltet |
+| `current_entity` | `current_humidity` der Entität | Woher der Messwert kommt |
+| `target_entity` | `humidity` der Entität | Wo der Zielwert liegt |
+| `action_entity` | `action` der Entität | Entfeuchtet / befeuchtet / bereit |
+| `device_kind` | aus `device_class` | `humidifier` oder `dehumidifier` — Wortwahl und Icon |
+| `min_humidity` / `max_humidity` | von der Entität, sonst 30 / 80 | Bereich des Reglers |
+| `humidity_step` | `1` | Schrittweite beim Ziehen und für die Pfeiltasten |
+| `mode_entity` | — | Ein `select`, das den Modus hält |
+| `modes` | von der Entität | Eigene Liste mit Name, Icon, Farbe, `hidden` |
+| `mode_style` | `icon_label` | `icon_label`, `icon_only`, `dropdown` |
+| `fan_entity` | — | Ein `fan` oder `select`. Ohne Angabe entfällt die Zeile |
+| `fan_steps` | abgeleitet | Eigene Stufen |
+| `tank_entity` | — | Füllstandssensor oder `binary_sensor` |
+| `tank_warn` / `tank_full` | `70` / `95` | Ab wann der Chip orange, dann rot wird |
+| `tank_style` | `chip` | `chip` oder `bar` (ausgeblendet) |
+| `controls` | — | Chips, die schalten: switch, button, select |
+| `sensors` | — | Reine Anzeige-Chips |
+| `layout` | alle vier | Welche Blöcke, in welcher Reihenfolge |
+
+### Wenn Angaben fehlen
+
+`action` ist im humidifier-Vertrag optional und wird von vielen Integrationen
+weggelassen. Fehlt es, leitet die Karte Ent- oder Befeuchten aus der Richtung
+zwischen Ist und Ziel ab, statt nichts zu zeigen. Ein Gerät ohne Modi bekommt
+keine Modus-Zeile. Ein Tank, der nur ein `binary_sensor` ist, bekommt nur dann
+einen Chip, wenn er voll ist — „nicht voll" ist keine Nachricht.
+
+## M3 Calendar Card
+
+Agenda und Monatsraster für beliebig viele Kalender, in der Designsprache dieser
+Suite.
+
+<!-- TODO: docs/images/calendar-card.png — Screenshot fehlt noch -->
+
+```yaml
+type: custom:m3-calendar-card
+entities:
+  - calendar.familie
+  - calendar.arbeit
+```
+
+Eine bloße Entity-ID wird neben der ausführlichen Form akzeptiert, weil man das
+zuerst schreibt:
+
+```yaml
+entities:
+  - entity: calendar.familie
+    name: Familie
+    color: "#85b7eb"
+  - calendar.arbeit
+```
+
+Ohne Farbe bekommt jeder Kalender eine aus der Palette, der Reihe nach.
+
+### Die zwei Ansichten
+
+`view` ist `agenda` oder `month`; der Umschalter in der Kopfzeile wechselt,
+`show_view_switch: false` legt die Ansicht fest.
+
+Die **Agenda** gruppiert nach Tagen, mit „Heute" in der Akzentfarbe, dann
+„Morgen", dann Wochentagsnamen. Jede Zeile trägt die Startzeit über der Endzeit,
+einen Balken in der Farbe ihres Kalenders, den Titel und den Ort. Ein laufender
+Termin ist getönt und trägt ein **Jetzt**-Abzeichen, ein beendeter verblasst.
+`max_events` begrenzt die Liste und ergänzt eine Zeile „+n weitere".
+
+Das **Monatsraster** zeichnet bis zu drei Punkte je Tag in den Kalenderfarben,
+wobei der dritte zum „+" wird, wenn es mehr sind. Heute ist getönt, ein
+angetippter Tag füllt sich mit der Akzentfarbe und listet seine Termine unter
+dem Raster. Die Woche beginnt, wo `hass.locale.first_weekday` es sagt.
+
+### Woher die Termine kommen
+
+Aus `calendar.get_events`, nicht aus den Attributen der Entität — die tragen nur
+den nächsten Termin und taugen für eine Liste nicht. Ergebnisse werden fünf
+Minuten zwischengespeichert, von allen Karten gemeinsam genutzt und neu gelesen,
+sobald eine Kalender-Entität ihren Zustand ändert.
+
+Ein Kalender, der nicht erreichbar ist, wird in einer Zeile unter der Kopfzeile
+benannt statt stillschweigend weggelassen: vier von fünf Kalendern zu zeigen,
+ohne es zu sagen, wäre schlimmer.
+
+### Mehrtägige und ganztägige Termine
+
+Ein mehrtägiger Termin erscheint an **jedem** Tag, den er berührt, mit „Tag 2
+von 3" dort, wo sonst der Ort steht — ein Dienstag, der nichts zeigt, während
+eine dreitägige Reise läuft, wäre falsch. Im Monatsraster setzt er an jedem
+seiner Tage einen Punkt.
+
+Ein ganztägiger Termin zeigt **GANZTÄGIG** in der Farbe seines Kalenders statt
+einer Uhrzeit. Er trägt nie das *Jetzt*-Abzeichen: „läuft gerade" braucht eine
+Uhrzeit, und unter einer Überschrift, die schon „Heute" sagt, wäre das Abzeichen
+ohne Aussage.
+
+### Optionen
+
+| Option | Vorgabe | Wirkung |
+| --- | --- | --- |
+| `entities` | — | Pflicht. Entity-IDs oder `{entity, name, color}` |
+| `view` | `agenda` | `agenda` oder `month` |
+| `show_view_switch` | `true` | Der Agenda/Monat-Umschalter in der Kopfzeile |
+| `days_ahead` | `7` | Zeitraum der Agenda, 1–30 |
+| `max_events` | `0` | 0 zeigt alles im Zeitraum |
+| `hide_past_today` | `false` | Vergangene Termine von heute ausblenden statt blass |
+| `show_adjacent_days` | `true` | Tage der Nachbarmonate im Raster zeichnen |
+| `show_next_chip` | `false` | Chip in der Kopfzeile mit dem nächsten Termin |
+| `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
+| `navigation_path` | `/calendar` | Ziel von `navigate` und des Knopfs im Detailfenster |
 
 ## Lizenz
 

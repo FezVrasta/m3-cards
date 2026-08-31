@@ -8,6 +8,41 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **M3 Humidifier Card** (`m3-humidifier-card`) — target humidity, mode, fan
+  speed and a device's extras in one card. Home Assistant's own humidifier card
+  cannot set a fan speed, so the usual answer is a second card beside it; this
+  is the one card. Asked for by the community.
+
+  It does not insist that `entity` is a `humidifier`. Plenty of dehumidifiers
+  are exposed as a switch plus a number plus a sensor, so `current_entity`,
+  `target_entity` and `action_entity` say where the readings come from when the
+  main entity does not carry them. Modes come from `available_modes`, from a
+  `select`, or from an explicit list with a name, icon and colour each. The fan
+  row reads a fan's `preset_modes`, a fan's percentage, or a `select`'s options.
+  `layout` sets the order of the four blocks and hides the ones left out — one
+  mechanism rather than an array plus show_* flags that can disagree with it.
+
+  `action` is optional in the humidifier contract and many integrations omit
+  it; without it the card infers drying or humidifying from the direction
+  between current and target rather than showing nothing.
+
+- **M3 Calendar Card** (`m3-calendar-card`) — an agenda and a month grid for
+  any number of calendars, replacing Home Assistant's built-in calendar card in
+  this suite's design language. Asked for in the repo's feedback.
+
+  Events come from `calendar.get_events`, not from the entity attributes, which
+  carry only the next event. Multi-day events appear under every day they touch
+  with "day 2 of 3", a running event is tinted and badged, past ones fade, and a
+  calendar that cannot be reached is named rather than silently dropped —
+  showing four of five calendars without saying so would be worse.
+
+- **`src/shared/ha-calendar.ts`** — the fetching, with one cache for the page so
+  a month view and an agenda view of the same calendars make one request between
+  them rather than two.
+- **`src/shared/drag-throttle.ts`** — the drag throttle the light card's three
+  sliders used, moved out when the humidifier card's target slider became the
+  second user rather than copied.
+
 - **M3 Leak Card — `max_visible`.** The same "show N more" toggle the power
   list, battery, NAS, updates and occupancy cards already had; the leak card
   only had the all-or-nothing `collapse_ok`. The limit steps aside during an
@@ -176,6 +211,44 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 **Deutsche Fassung**
 
 ### Neu
+
+- **M3 Humidifier Card** (`m3-humidifier-card`) — Zielfeuchte, Modus,
+  Lüfterstufe und die Zusatzfunktionen eines Geräts in einer Karte. Die
+  eingebaute humidifier-Karte von Home Assistant kann keine Lüftergeschwindigkeit,
+  deshalb steht üblicherweise eine zweite Karte daneben; das hier ist die eine.
+  Aus der Community gewünscht.
+
+  Sie setzt nicht voraus, dass `entity` eine `humidifier`-Entität ist. Viele
+  Entfeuchter erscheinen als Schalter plus `number` plus `sensor`, deshalb sagen
+  `current_entity`, `target_entity` und `action_entity`, woher die Werte kommen,
+  wenn die Hauptentität sie nicht trägt. Modi kommen aus `available_modes`, aus
+  einem `select` oder aus einer eigenen Liste mit Name, Icon und Farbe je Modus.
+  Die Lüfterzeile liest `preset_modes` eines Lüfters, dessen Prozentwerte oder
+  die Optionen eines `select`. `layout` bestimmt die Reihenfolge der vier Blöcke
+  und blendet die weggelassenen aus — ein Mechanismus statt einer Liste plus
+  `show_*`-Schaltern, die sich widersprechen können.
+
+  `action` ist im humidifier-Vertrag optional und wird von vielen Integrationen
+  weggelassen; fehlt es, leitet die Karte Ent- oder Befeuchten aus der Richtung
+  zwischen Ist und Ziel ab, statt nichts zu zeigen.
+
+- **M3 Calendar Card** (`m3-calendar-card`) — Agenda und Monatsraster für
+  beliebig viele Kalender, als Ersatz für die eingebaute Kalenderkarte in der
+  Designsprache dieser Suite. Aus dem Repo-Feedback gewünscht.
+
+  Die Termine kommen über `calendar.get_events`, nicht aus den Attributen der
+  Entität — die tragen nur den nächsten Termin. Mehrtägige Termine erscheinen an
+  jedem betroffenen Tag mit „Tag 2 von 3", ein laufender Termin ist getönt und
+  mit Abzeichen versehen, vergangene verblassen, und ein nicht erreichbarer
+  Kalender wird benannt statt stillschweigend weggelassen — vier von fünf
+  Kalendern zu zeigen, ohne es zu sagen, wäre schlimmer.
+
+- **`src/shared/ha-calendar.ts`** — der Datenabruf, mit einem Zwischenspeicher
+  je Seite: Eine Monats- und eine Agenda-Ansicht derselben Kalender machen
+  zusammen eine Anfrage statt zwei.
+- **`src/shared/drag-throttle.ts`** — die Ziehdrosselung der drei Regler der
+  Light Card, herausgelöst statt kopiert, als der Feuchte-Regler der zweite
+  Nutzer wurde.
 
 - **M3 Leak Card — `max_visible`.** Derselbe „N weitere anzeigen"-Umschalter,
   den Power-List, Batterie, NAS, Updates und Belegung längst haben; die

@@ -54,7 +54,7 @@ Beide Fehler ließen die Seite besser aussehen, als sie war.
 - Ein Handy oder ein per DevTools emuliertes Touch-Gerät für alle Drag-Interaktionen
   (Wave-Slider, Wischen) — Maus-Events allein decken `touch-action`-Konflikte nicht ab.
 
-## Cross-Cutting-Checkliste (für jede der 33 Karten)
+## Cross-Cutting-Checkliste (für jede der 35 Karten)
 
 Diese Punkte gelten kartenübergreifend, weil sie über gemeinsame `shared/*`-Module
 implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichzeitig.
@@ -574,6 +574,57 @@ gefunden.
 - [ ] Besonders dort prüfen, wo ein antippbares Element bis an eine gerundete
       Kartenkante reicht — dort trat es zuerst auf (Kopfzeile der Raumkarte)
 
+## M3 Humidifier Card
+
+Der Prüfaufbau steht auf `m3-neu` und läuft absichtlich **ohne** humidifier-Entität:
+`input_boolean.m3_entfeuchter`, `input_number.m3_ziel`, `input_select.m3_modus`,
+`input_select.m3_luefter`, `input_number.m3_tank`, `input_boolean.m3_ionisator`.
+Genau das ist der Fall, für den die Karte offen gebaut ist.
+
+- [ ] Regler ziehen: der Zielwert folgt sofort, `input_number.m3_ziel` zieht
+      gedrosselt nach (~200 ms), der Endwert kommt beim Loslassen an
+- [ ] Pfeiltasten auf dem fokussierten Regler: ±1 %, mit Shift ±5 %
+- [ ] Welle animiert nur, solange das Gerät läuft; bei „Aus" flacht sie ab
+- [ ] Modus-Pillen: Tap schaltet `input_select.m3_modus` wirklich um, die
+      aktive Pille morpht auf Radius 15 und volle Modusfarbe
+- [ ] „Aus"-Pille schaltet das Gerät aus, ohne einen Modus zu setzen
+- [ ] Lüfterstufen: Balken-Icon füllt sich mit der Stufe, Tap schaltet
+      `input_select.m3_luefter`
+- [ ] Chips: Ionisator schaltet und morpht, Tank wird ab 70 % orange und ab
+      95 % rot mit Text „Tank voll"
+- [ ] Bei vollem Tank erscheint die Hinweiszeile „Tank leeren – Gerät pausiert"
+- [ ] `layout: [slider, modes]` lässt Lüfterzeile und Chips wirklich weg
+- [ ] Karte schmaler als 320 px: Modus-Pillen fallen auf reine Icons zurück
+- [ ] Hauptentität auf `unavailable`: alles gedimmt, nichts bedienbar
+- [ ] Mit einer echten `humidifier`-Entität (falls vorhanden): Modi kommen aus
+      `available_modes`, Bereich aus `min_humidity`/`max_humidity`
+
+## M3 Calendar Card
+
+Prüfaufbau auf `m3-neu` mit `calendar.m3_testkalender` (angelegt für den Test),
+`calendar.workday_sensor_kalender` und einem absichtlich **nicht erreichbaren**
+dritten Kalender.
+
+- [ ] Agenda: Gruppierung nach Tagen, „Heute" in Akzentfarbe, dann „Morgen",
+      dann Wochentagsnamen
+- [ ] Ein laufender Termin ist getönt und trägt das **Jetzt**-Abzeichen
+- [ ] Ein ganztägiger Termin zeigt „GANZTÄGIG" und trägt **nie** das Abzeichen
+- [ ] Vergangene Termine sind blass; mit `hide_past_today: true` verschwinden
+      die von heute ganz
+- [ ] Mehrtägiger Termin erscheint an jedem Tag mit „Tag 2 von 3"
+- [ ] Zeitspalte bricht nicht um — besonders im 12-Stunden-Format („10:30 AM")
+- [ ] Nicht erreichbarer Kalender: Hinweiszeile erscheint, die anderen liefern
+      trotzdem
+- [ ] `max_events`: Liste wird gekürzt, „+n weitere" steht am Ende
+- [ ] Leerer Zeitraum: „Keine Termine in den nächsten n Tagen"
+- [ ] Monatsraster: Wochenstart folgt `hass.locale.first_weekday`
+- [ ] Bis zu drei Punkte je Tag, der dritte wird zum „+" bei mehr Terminen
+- [ ] Heute getönt; ein angetippter Tag füllt sich und listet darunter
+- [ ] Monatswechsel lädt nach; Tap auf den Monatsnamen springt zurück auf heute
+- [ ] Tap auf einen Termin öffnet das Detailfenster; X und Hintergrund schließen
+- [ ] Umschalter Agenda/Monat morpht; `show_view_switch: false` blendet ihn aus
+- [ ] Beim Verlassen des Sichtbereichs hört der Minutentakt auf (VisibleTicker)
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und
@@ -593,6 +644,6 @@ kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.
 1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
    durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
    eine mit Animation wie Progress/Light).
-2. Jede der 33 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+2. Jede der 35 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.

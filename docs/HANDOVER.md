@@ -3,10 +3,10 @@
 Written at the end of the session that built the 2.2 cards. Read this first;
 it is meant to replace re-reading the diff.
 
-**State in one line:** 2.2.0 is fully prepared on `main` — four new cards,
-several shared modules, additions to existing cards, screenshots, changelog and
-release notes — deployed to the author's Home Assistant and verified there.
-Nothing is pushed, tagged or released. The last released tag is `v2.1.0`.
+**State in one line:** 2.2.0 is prepared on `main` — six new cards, five shared
+modules, additions to existing cards, changelog and release notes — deployed to
+the author's Home Assistant and verified there. Nothing is pushed, tagged or
+released. The last released tag is `v2.1.0`. The suite registers 35 cards.
 
 ---
 
@@ -178,9 +178,23 @@ status card's toggle. It can be deleted.
 
 ## 5. Open, in rough priority order
 
-1. **The author tests the four cards by hand.** That was the plan for the day
-   after this session was written.
-2. ~~**Screenshots for all four new cards.**~~ Done 2026-08-31. All eight TODO
+1. **The author tests the new cards by hand.** Four of the six were built the
+   day before and are largely done; the humidifier and calendar cards were built
+   the day after and have been exercised only by the author of this file.
+
+   Their test rigs live on the `m3-neu` view of the main dashboard. The
+   humidifier rig deliberately uses **no humidifier entity** — an
+   `input_boolean`, two `input_select`s, two `input_number`s and one faked
+   sensor — because that is the case the card was made open for, and clicking a
+   mode pill really does move the helper. The calendar rig uses
+   `calendar.m3_testkalender`, **created for this test and to be deleted
+   afterwards**, plus a deliberately unreachable third calendar so the warning
+   line has something to report.
+
+2. **Screenshots for the humidifier and calendar cards.** Both READMEs carry
+   `<!-- TODO: docs/images/... -->` markers. Cut a capture at a *card's edge*,
+   never mid-background — see the note under the older screenshots below.
+3. ~~**Screenshots for the first four new cards.**~~ Done 2026-08-31. All eight TODO
    markers in the two READMEs are replaced. The images were shot off a
    dedicated `m3-alle` view holding only the new cards, each column one card in
    its variants, with the frontend switched to English and the entity states
