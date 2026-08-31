@@ -3,9 +3,10 @@
 Written at the end of the session that built the 2.2 cards. Read this first;
 it is meant to replace re-reading the diff.
 
-**State in one line:** 2.1.0 is released; four new cards, several shared
-modules and a handful of additions to existing cards sit unreleased on `main`,
-deployed to the author's Home Assistant and tested there, not pushed.
+**State in one line:** 2.2.0 is fully prepared on `main` — four new cards,
+several shared modules, additions to existing cards, screenshots, changelog and
+release notes — deployed to the author's Home Assistant and verified there.
+Nothing is pushed, tagged or released. The last released tag is `v2.1.0`.
 
 ---
 
@@ -43,10 +44,12 @@ already in memory in a modern frontend, so area discovery costs no websocket
 round-trip and can run in the render path. It is memoised against the registry
 object, the same trick `stateCount` uses.
 
-**The version is still 2.1.0** in `package.json` and `src/const.ts`
-(`CARD_VERSION`). That is deliberate — it gets bumped at release. The card
-count, which is a plain fact rather than a release step, has been corrected to
-33 in both READMEs and `docs/TESTING.md`.
+**The version is 2.2.0** in `package.json` and `src/const.ts` (`CARD_VERSION`),
+the changelog's section is stamped `[2.2.0]`, and `docs/release-notes-2.2.0.md`
+is written. The card counts in both READMEs and `docs/TESTING.md` say 33.
+Publishing is a GitHub *release* — `.github/workflows/release.yml` triggers on
+that event and attaches the built bundle — so the remaining steps are push, tag
+`v2.2.0`, and create the release with the notes.
 
 ---
 
