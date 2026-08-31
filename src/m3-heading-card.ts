@@ -29,12 +29,13 @@ import {
   HEADING_ICON_GLYPH,
   HEADING_ICON_RADIUS,
   HEADING_ICON_TINT,
-  HEADING_LABEL_SIZE,
   HEADING_NARROW_PX,
   HEADING_RULE_HEIGHT,
   HEADING_RULE_STUB,
   HEADING_RULE_TINT,
   HEADING_TITLE_SIZE,
+  HEADING_TITLE_SIZE_MAX,
+  HEADING_TITLE_SIZE_MIN,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
@@ -345,12 +346,25 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  /**
+   * One size for every piece of heading text. The divider's label used to be a
+   * fixed 10px while the titles sat at 15, which read as a different kind of
+   * element rather than as the same heading in another variant — reported as
+   * "it looks noticeably smaller". Deriving both from here means `title_size`
+   * moves them together and they cannot drift apart again.
+   */
+  private get _titleSize(): number {
+    return Math.max(
+      HEADING_TITLE_SIZE_MIN,
+      Math.min(HEADING_TITLE_SIZE_MAX, this._config?.title_size ?? HEADING_TITLE_SIZE),
+    );
+  }
+
   private _renderTitle(): TemplateResult {
     const cfg = this._config!;
-    const size = Math.max(12, Math.min(22, cfg.title_size ?? HEADING_TITLE_SIZE));
     const text = cfg.title ?? this._t("heading_default_title");
     return html`
-      <span class="title" style=${`font-size: ${size}px;`} title=${text}>${text}</span>
+      <span class="title" style=${`font-size: ${this._titleSize}px;`} title=${text}>${text}</span>
     `;
   }
 
@@ -428,8 +442,18 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
     if (!cfg) return nothing;
 
     const style = this._style;
+    // `color` used to reach the icon, badge, action and arrow but never the
+    // divider, so setting it on a divider silently did nothing. It now drives
+    // both parts. Without one the divider stays neutral, which is what a
+    // divider should be by default; with one, the label takes the colour at
+    // full strength, because someone who names a colour means that colour and
+    // not a muted version of it.
+    const tinted = cfg.color ? this._color : "var(--primary-text-color)";
     const cssVars = buildCssVars({
-      "m3h-rule": tintOn(this, "var(--primary-text-color)", undefined, HEADING_RULE_TINT),
+      "m3h-rule": tintOn(this, tinted, undefined, HEADING_RULE_TINT),
+      "m3h-label": cfg.color ? this._color : "var(--primary-text-color)",
+      "m3h-label-opacity": cfg.color ? "1" : "0.65",
+      "m3h-label-size": `${this._titleSize}px`,
     });
 
     if (style === "divider") {
@@ -608,19 +632,21 @@ export class M3HeadingCard extends LitElement implements LovelaceCard {
 
     .rule-label {
       flex-shrink: 0;
-      font-size: ${HEADING_LABEL_SIZE}px;
+      font-size: var(--m3h-label-size, ${HEADING_TITLE_SIZE}px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.2px;
-      /* Higher than the 0.6 the rest of the suite uses for a muted label, and
-         deliberately so. At ${HEADING_LABEL_SIZE}px the WCAG target is 4.5:1 even
-         though the text is bold — "large" starts at 14px — and 0.6 reaches only
-         4.35:1 against a light card. The light theme is the binding case here,
-         as it usually is. This label also has no card of its own behind it: the
-         heading card draws no surface, so whatever the dashboard uses as a
-         background is what it has to read against. */
-      opacity: 0.65;
-      color: var(--primary-text-color);
+      /* The default 0.65 is higher than the 0.6 the rest of the suite uses for
+         a muted label, and deliberately so. title_size reaches down to
+         ${HEADING_TITLE_SIZE_MIN}px, and below 14px bold no longer counts as
+         large text, so the target there is 4.5:1 rather than 3:1 — and 0.6
+         reaches only 4.35:1 against a light card. The light theme is the binding
+         case, as it usually is. This label also has no card of its own behind
+         it: the heading card draws no surface, so whatever the dashboard uses as
+         a background is what it has to read against. An explicitly configured
+         colour drops the muting entirely. */
+      opacity: var(--m3h-label-opacity, 0.65);
+      color: var(--m3h-label, var(--primary-text-color));
     }
 
     .no-animations .action,

@@ -110,14 +110,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
-- **M3 Heading Card — the divider's label was below the contrast target.** Its
-  10px small caps sat at `opacity: 0.42`, which reaches 4.02:1 against a dark
-  card and 2.58:1 against a light one; the target is 4.5:1, because bold only
-  counts as large text from 14px up. Now 0.65. The house value for a muted
-  label is 0.6, and that still misses in a light theme at 4.35:1 — so this one
-  sits above it on purpose. Found while photographing the card for the README:
-  over a dashboard wallpaper the label was barely readable, and the card draws
-  no surface of its own to guarantee anything better.
+- **M3 Heading Card — the divider was barely visible, in four separate ways.**
+  Found while photographing the card for the README, and each one had to be
+  measured rather than eyeballed:
+
+  - Its **rules** were a tint of 18, which is 1.78:1 against a dark card and
+    1.43:1 against a light one — invisible. Every other tint in the suite (6–22)
+    sits *behind an icon*, where the icon carries the contrast and the fill only
+    hints; a rule has nothing on top of it and has to reach 3:1 by itself. Now
+    52, giving 5.47:1 and 3.30:1.
+  - Its **label** sat at `opacity: 0.42`: 4.02:1 dark, 2.58:1 light, against a
+    target of 4.5:1. Now 0.65. The house value for a muted label is 0.6, which
+    still misses a light card at 4.35:1, so this sits above it on purpose.
+  - **`color` never reached the divider at all.** It drove the icon, badge,
+    action and arrow, but the rules were hardcoded to `--primary-text-color`, so
+    setting a colour on a divider silently did nothing. It now drives both parts,
+    and the label takes the colour at full strength — someone who names a colour
+    means that colour, not a muted version of it.
+  - Its **label was 10px while the titles were 15**, which read as a different
+    kind of element rather than as the same heading in another variant. Both now
+    come from one place, so `title_size` moves them together.
 
 - **M3 Light Card showed the brightness twice.** The percentage stood under the
   lamp's name and again above the slider handle. The subtitle is the live one —
@@ -244,15 +256,29 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Behoben
 
-- **M3 Heading Card — die Beschriftung der Trennlinie lag unter dem
-  Kontrastziel.** Ihre 10px-Kapitälchen standen auf `opacity: 0.42`, das sind
-  4,02:1 auf dunkler und 2,58:1 auf heller Karte; das Ziel ist 4,5:1, denn fett
-  gilt erst ab 14px als große Schrift. Jetzt 0,65. Der Hauswert für gedämpfte
-  Beschriftungen ist 0,6, und der verfehlt das Ziel im hellen Theme mit 4,35:1
-  noch — dieser Wert liegt also mit Absicht darüber. Aufgefallen beim
-  Fotografieren der Karte fürs README: über einer Dashboard-Tapete war die
-  Beschriftung kaum zu lesen, und die Karte zeichnet keine eigene Fläche, die
-  etwas Besseres garantieren könnte.
+- **M3 Heading Card — die Trennlinie war auf vier verschiedene Weisen kaum zu
+  sehen.** Aufgefallen beim Fotografieren der Karte fürs README, und jeder Punkt
+  musste gemessen werden statt geschätzt:
+
+  - Ihre **Linien** hatten eine Tönung von 18, das sind 1,78:1 auf dunkler und
+    1,43:1 auf heller Karte — unsichtbar. Alle übrigen Tönungswerte der Suite
+    (6–22) liegen *hinter einem Icon*, wo das Icon den Kontrast trägt und die
+    Fläche nur andeutet; eine Linie hat nichts über sich und muss die 3:1 selbst
+    erreichen. Jetzt 52, also 5,47:1 und 3,30:1.
+  - Ihre **Beschriftung** stand auf `opacity: 0.42`: 4,02:1 dunkel, 2,58:1 hell,
+    bei einem Ziel von 4,5:1. Jetzt 0,65. Der Hauswert für gedämpfte
+    Beschriftungen ist 0,6, der eine helle Karte mit 4,35:1 noch verfehlt —
+    dieser Wert liegt also mit Absicht darüber.
+  - **`color` erreichte die Trennlinie überhaupt nicht.** Die Option steuerte
+    Icon, Zähler, Aktionsknopf und Pfeil, aber die Linien standen fest auf
+    `--primary-text-color`; eine Farbe auf einer Trennlinie tat also stillschweigend
+    nichts. Sie steuert jetzt beide Teile, und die Beschriftung übernimmt die
+    Farbe in voller Stärke — wer eine Farbe nennt, meint diese Farbe und nicht
+    eine gedämpfte Fassung davon.
+  - Ihre **Beschriftung war 10px groß, die Titel 15px**, was sie als andere Art
+    von Element erscheinen ließ statt als dieselbe Überschrift in einer anderen
+    Variante. Beide kommen jetzt aus einer Quelle, `title_size` bewegt sie
+    zusammen.
 
 - **M3 Light Card zeigte die Helligkeit doppelt.** Die Prozentangabe stand
   unter dem Namen der Lampe und noch einmal über dem Reglergriff. Die

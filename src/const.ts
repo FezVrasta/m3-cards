@@ -1307,8 +1307,15 @@ export const HEADING_RULE_STUB = 14;
 export const HEADING_RULE_HEIGHT = 2;
 /** Mixed from the text colour, not from white: 18% white is invisible on a
  *  light theme, and the rule would vanish exactly where it is most needed. */
-export const HEADING_RULE_TINT = 18;
-export const HEADING_LABEL_SIZE = 10;
+/**
+ * Deliberately off the tint scale the rest of the suite uses (6–22). Those are
+ * all *backgrounds behind an icon*, where the icon carries the contrast and the
+ * fill only has to hint. A divider rule has nothing on top of it: it is the
+ * graphic, so it has to reach the 3:1 non-text target on its own. 18 gave
+ * 1.78:1 on a dark card and 1.43:1 on a light one — invisible, as reported.
+ * 52 gives 5.47:1 and 3.30:1, landing on mid grey in both themes.
+ */
+export const HEADING_RULE_TINT = 52;
 
 /** Below this the action button drops its label and keeps only the icon. */
 export const HEADING_NARROW_PX = 260;
