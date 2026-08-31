@@ -696,6 +696,11 @@ export interface M3WeatherCardConfig {
   chips?: WeatherChipType[];
   show_sun?: boolean;
   show_days_toggle?: boolean;
+  show_hour_labels?: boolean;
+  group_hourly_conditions?: boolean;
+  show_hourly_icons?: boolean;
+  show_hourly_temperatures?: boolean;
+  show_temp_axis?: boolean;
   accent_color?: string;
   accent_opacity?: number;
   precipitation_color?: string;

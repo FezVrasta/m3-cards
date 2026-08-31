@@ -757,6 +757,13 @@ const translations = {
     editor_weather_days_helper:
       "0 = Tagesvorhersage ausblenden. Wie viele Tage tatsächlich angezeigt werden, hängt von der Wetter-Integration ab (Met.no liefert z.B. maximal 6 Tage) — ab 4 Tagen ist die Liste standardmäßig aufklappbar.",
     editor_weather_show_days_toggle: "Aufklapp-Button für weitere Tage anzeigen",
+    editor_weather_show_hour_labels: "Achsenbeschriftung (Uhrzeiten) anzeigen",
+    editor_weather_group_hourly_conditions: "Piktogramm-Leiste an Platz anpassen",
+    editor_weather_group_hourly_conditions_helper:
+      "Zeigt Icon/Temperatur nur an so vielen Stunden, wie auf der Karte tatsächlich Platz haben, in regelmäßigem Abstand (z.B. jede 3. Stunde) statt an allen.",
+    editor_weather_show_hourly_icons: "Wettersymbole anzeigen",
+    editor_weather_show_hourly_temperatures: "Temperaturen anzeigen",
+    editor_weather_show_temp_axis: "Temperaturachse anzeigen",
     editor_weather_no_entity_hint:
       "Keine Wetter-Entität gefunden. Ohne eigene Wetterstation reicht die kostenlose, in Home Assistant eingebaute Met.no-Integration (kein API-Key nötig): Einstellungen → Geräte & Dienste → Integration hinzufügen → „Met.no“ suchen. Sie nutzt automatisch die Koordinaten deiner Home-Zone.",
     editor_weather_chip_no_data: "keine Daten",
@@ -2487,6 +2494,13 @@ const translations = {
     editor_weather_days_helper:
       "0 = hide the daily forecast. How many days actually show up depends on the weather integration (Met.no delivers 6 days max) — from 4 days on, the list is collapsible by default.",
     editor_weather_show_days_toggle: "Show expand button for additional days",
+    editor_weather_show_hour_labels: "Show axis labels (hours)",
+    editor_weather_group_hourly_conditions: "Fit icon/temperature bar to available space",
+    editor_weather_group_hourly_conditions_helper:
+      "Only shows icon/temperature for as many hours as actually fit on the card, at a regular interval (e.g. every 3rd hour) instead of every hour.",
+    editor_weather_show_hourly_icons: "Show weather icons",
+    editor_weather_show_hourly_temperatures: "Show temperatures",
+    editor_weather_show_temp_axis: "Show temperature axis",
     editor_weather_no_entity_hint:
       "No weather entity found. If you don't have your own weather station, Home Assistant's built-in, free Met.no integration works without an API key: Settings → Devices & Services → Add Integration → search for \"Met.no\". It automatically uses your Home zone's coordinates.",
     editor_weather_chip_no_data: "no data",

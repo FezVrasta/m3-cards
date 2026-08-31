@@ -67,6 +67,11 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
     return [
       { name: "name", selector: { text: {} } },
       { name: "hours", selector: { number: { min: 0, max: 24, step: 1, mode: "box" } } },
+      { name: "show_hour_labels", selector: { boolean: {} } },
+      { name: "group_hourly_conditions", selector: { boolean: {} } },
+      { name: "show_hourly_icons", selector: { boolean: {} } },
+      { name: "show_hourly_temperatures", selector: { boolean: {} } },
+      { name: "show_temp_axis", selector: { boolean: {} } },
       { name: "days", selector: { number: { min: 0, max: 14, step: 1, mode: "box" } } },
       { name: "show_days_toggle", selector: { boolean: {} } },
       {
@@ -113,6 +118,11 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
       entity: "editor_entity",
       name: "editor_name",
       hours: "editor_weather_hours",
+      show_hour_labels: "editor_weather_show_hour_labels",
+      group_hourly_conditions: "editor_weather_group_hourly_conditions",
+      show_hourly_icons: "editor_weather_show_hourly_icons",
+      show_hourly_temperatures: "editor_weather_show_hourly_temperatures",
+      show_temp_axis: "editor_weather_show_temp_axis",
       days: "editor_weather_days",
       show_days_toggle: "editor_weather_show_days_toggle",
       chips: "editor_weather_chips",
@@ -205,6 +215,11 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
     const contentData = {
       name: this._config.name,
       hours: this._config.hours,
+      show_hour_labels: this._config.show_hour_labels ?? false,
+      group_hourly_conditions: this._config.group_hourly_conditions ?? false,
+      show_hourly_icons: this._config.show_hourly_icons ?? true,
+      show_hourly_temperatures: this._config.show_hourly_temperatures ?? true,
+      show_temp_axis: this._config.show_temp_axis ?? false,
       days: this._config.days,
       show_days_toggle: this._config.show_days_toggle ?? true,
       chips: this._config.chips ?? [],
@@ -238,6 +253,7 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_weather_group_hourly_conditions_helper")}</div>
             <div class="hint">${this._t("editor_weather_days_helper")}</div>
             <div class="hint">${this._t("editor_weather_chips_helper")}</div>
           </div>
