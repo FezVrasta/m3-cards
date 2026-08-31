@@ -118,6 +118,20 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
     const st = entity ? this.hass?.states[entity] : undefined;
     if (!cfg || !entity || !st) return { error: "editor_cost_notify_no_entity" };
 
+    const stateClass = String(st.attributes.state_class ?? "");
+    // The automation can only read `states()`, and for a total_increasing
+    // sensor that is the meter reading, not the period's consumption. The card
+    // itself reads long-term statistics and so gets the right number — which is
+    // exactly how this went unnoticed: the card said 112.66 € while its own
+    // notification said 26,844.38 €, the reading times the price.
+    //
+    // Templates have no access to statistics and no way to read history, so
+    // there is nothing to compute here. The entity has to be one whose *state*
+    // is already the period's value.
+    if (st.attributes.device_class !== "monetary" && stateClass === "total_increasing") {
+      return { error: "editor_cost_notify_cumulative" };
+    }
+
     const stateExpr = `(states('${entity}') | float(0))`;
     let expr: string;
     if (st.attributes.device_class === "monetary") {
@@ -166,10 +180,20 @@ export class M3CostCardEditor extends LitElement implements LovelaceCardEditor {
     const entity = this._config?.notify_cost_entity;
     if (!entity) return undefined;
     const cycle = meterCycle(this.hass, entity);
-    // "other" covers both a non-monthly cycle and one that can't be derived
-    // (e.g. a meter that hasn't rolled over yet) — not worth warning about.
-    if (cycle === "monthly" || cycle === "other") return undefined;
-    return this._t("editor_cost_notify_period_warn").replace("{period}", cycle);
+    if (cycle !== "monthly" && cycle !== "other") {
+      return this._t("editor_cost_notify_period_warn").replace("{period}", cycle);
+    }
+    // A `total` sensor whose cycle cannot be derived is either a meter that has
+    // not rolled over yet — fine — or a running total that never resets, which
+    // would report the reading rather than the month. The card cannot tell them
+    // apart, so it says so rather than guessing either way. `total_increasing`
+    // is not covered here: that one is certainly a running total and is
+    // refused outright in _costExpression.
+    const stateClass = String(this.hass?.states[entity]?.attributes?.state_class ?? "");
+    if (cycle === "other" && stateClass === "total") {
+      return this._t("editor_cost_notify_reset_unknown");
+    }
+    return undefined;
   }
 
   private _currencySymbol(): string {

@@ -110,6 +110,24 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **M3 Cost Card sent a wildly wrong number to your phone.** Its notification
+  automation multiplied `states(entity)` by the price. For a
+  `total_increasing` sensor that state is the *meter reading*, not the month's
+  consumption — so on the author's install the card said **112.66 €** for
+  August while its own notification said **26,844.38 €**: 72,926.89 kWh times
+  36.81 ct. The card was right; it reads long-term statistics, which is
+  precisely why nobody noticed the notification disagreeing with it.
+
+  A template can reach neither statistics nor history, so there is nothing to
+  compute in the automation: the entity has to be one whose *state* is already
+  the period's value. Such an entity is now refused with an explanation, and a
+  `total` sensor whose reset cycle cannot be derived gets a warning rather than
+  a refusal — a utility_meter that has not rolled over yet looks exactly like a
+  running total and it would be wrong to block it.
+
+  **An automation created before this fix keeps its old template.** Open the
+  card's notification settings and save again, or check the automation by hand.
+
 - **M3 Heading Card — the divider was barely visible, in four separate ways.**
   Found while photographing the card for the README, and each one had to be
   measured rather than eyeballed:
@@ -255,6 +273,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   für die Uhr.
 
 ### Behoben
+
+- **M3 Cost Card schickte eine völlig falsche Zahl aufs Handy.** Ihre
+  Benachrichtigungs-Automation multiplizierte `states(entity)` mit dem Preis.
+  Bei einem `total_increasing`-Sensor ist dieser Zustand aber der
+  *Zählerstand*, nicht der Verbrauch des Monats — auf der Testinstallation
+  meldete die Karte für August **112,66 €**, ihre eigene Benachrichtigung
+  dagegen **26 844,38 €**: 72 926,89 kWh mal 36,81 ct. Die Karte lag richtig,
+  sie liest die Langzeitstatistik; genau deshalb fiel der Widerspruch nie auf.
+
+  Ein Template erreicht weder Statistiken noch Verlauf, in der Automation ist
+  also nichts zu rechnen: Die Entität muss eine sein, deren *Zustand* bereits
+  der Wert der Periode ist. Eine solche wird jetzt mit Begründung abgelehnt,
+  und ein `total`-Sensor, dessen Zyklus sich nicht ableiten lässt, bekommt eine
+  Warnung statt einer Ablehnung — ein utility_meter, der noch nie umgesprungen
+  ist, sieht genauso aus wie ein fortlaufender Zähler, und ihn zu blockieren
+  wäre falsch.
+
+  **Eine vor dieser Behebung angelegte Automation behält ihr altes Template.**
+  Die Benachrichtigungs-Einstellungen der Karte erneut speichern oder die
+  Automation von Hand prüfen.
 
 - **M3 Heading Card — die Trennlinie war auf vier verschiedene Weisen kaum zu
   sehen.** Aufgefallen beim Fotografieren der Karte fürs README, und jeder Punkt

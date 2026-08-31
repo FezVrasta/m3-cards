@@ -1630,6 +1630,8 @@ const translations = {
     editor_calendar_tap_navigate: "Seite öffnen",
     editor_calendar_tap_none: "Nichts",
     editor_calendar_path: "Zielseite",
+    editor_cost_notify_cumulative: "Dieser Sensor zählt fortlaufend (state_class total_increasing) — sein Zustand ist der Zählerstand, nicht der Verbrauch des Monats. Die Meldung würde den Zählerstand mal Preis melden. Nimm einen utility_meter mit Monatszyklus oder einen Sensor mit device_class monetary.",
+    editor_cost_notify_reset_unknown: "Ob dieser Sensor monatlich zurückgesetzt wird, lässt sich nicht erkennen. Wenn er fortlaufend zählt, meldet die Benachrichtigung den Zählerstand statt den Monat.",
   },
   en: {
     off: "Off",
@@ -3258,6 +3260,8 @@ const translations = {
     editor_calendar_tap_navigate: "Open a page",
     editor_calendar_tap_none: "Nothing",
     editor_calendar_path: "Target page",
+    editor_cost_notify_cumulative: "This sensor counts up forever (state_class total_increasing) — its state is the meter reading, not the month's consumption. The notification would report the reading times the price. Use a utility_meter on a monthly cycle, or a sensor with device_class monetary.",
+    editor_cost_notify_reset_unknown: "Whether this sensor resets monthly cannot be determined. If it counts up forever, the notification will report the meter reading rather than the month.",
   },
 } as const;
 
