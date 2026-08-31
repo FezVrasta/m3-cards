@@ -424,7 +424,7 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   wurde. Bis jetzt folgenlos, weil ein heller Akzent auf seiner eigenen dunklen
   Tönung zufällig gut kontrastiert.
 
-## [Unreleased]
+## [2.3.0]
 
 ### Added
 
@@ -452,6 +452,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   behaviour), thermostats with a sensor fallback ("Thermostats incl.
   temperature"), and thermostats only. Manual `rooms` gain an optional
   `climate_entity` so a tap opens the thermostat instead of the sensor.
+
+### Changed
+
+- **M3 Climate Overview Card — `tile_tap_action` and `tap_action` now
+  coexist.** `tile_tap_action: thermostat` still opens the sliding thermostat
+  sheet on a plain tap, as before; it only sets the *default* tap behaviour,
+  so an explicitly configured `tap_action` (the newer, more general
+  mechanism) takes over instead once one is set.
 
 ## [2.1.0]
 
