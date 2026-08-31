@@ -261,6 +261,11 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
     ];
   }
 
+  /** The explanation belongs on the field, not in a paragraph under the
+   *  form: what people miss is that the rest stays reachable. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "max_visible" ? this._t("editor_max_visible_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       auto_discover: "editor_power_list_auto_discover",
@@ -410,6 +415,7 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               .data=${entitiesData}
               .schema=${this._entitiesSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_power_list_entities_helper")}</div>
@@ -424,6 +430,7 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               .data=${contentData}
               .schema=${this._contentSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
           </div>
@@ -438,6 +445,7 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               .data=${notifyData}
               .schema=${this._notifySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_power_list_notify_exclude_hint")}</div>
@@ -514,6 +522,7 @@ export class M3PowerListCardEditor extends LitElement implements LovelaceCardEdi
               .data=${animationData}
               .schema=${this._animationSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_progress_animation_reduced_motion_hint")}</div>

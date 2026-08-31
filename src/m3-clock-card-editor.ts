@@ -345,7 +345,7 @@ export class M3ClockCardEditor extends LitElement implements LovelaceCardEditor 
       progress_range: "editor_clock_progress_range",
       progress_start: "editor_clock_progress_start",
       progress_end: "editor_clock_progress_end",
-      animation: "editor_animations",
+      animation: "editor_progress_animation",
       layout: "editor_clock_style",
     };
     const key = map[schema.name];
@@ -539,7 +539,7 @@ export class M3ClockCardEditor extends LitElement implements LovelaceCardEditor 
           onCornerValueChanged: this._cornerValueChanged.bind(this),
         })}
         ${panel(
-          "editor_animations",
+          "editor_progress_animation",
           "mdi:animation-outline",
           { animation: cfg.animation ?? "auto" },
           this._animationSchema(),

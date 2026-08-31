@@ -796,6 +796,12 @@ export interface M3ClimateOverviewCardConfig extends NotifyConfigBase {
   icon?: string;
   sort?: ClimateOverviewSort;
   /**
+   * Show only this many rooms, the rest behind a toggle. 0 or unset shows all.
+   * The outlier chip and the comparison scale keep reading every room — a
+   * summary of the first three would be a different, wronger statement.
+   */
+  max_visible?: number;
+  /**
    * What a tap on a room does. `history` opens the sensor's own dialog, which
    * is the graph; `thermostat` opens that room's thermostat instead, which is
    * what people reach for when they tap a temperature.

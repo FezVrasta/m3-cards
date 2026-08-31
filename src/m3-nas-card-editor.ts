@@ -329,6 +329,11 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
     ];
   }
 
+  /** The explanation belongs on the field, not in a paragraph under the
+   *  form: what people miss is that the rest stays reachable. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "max_visible" ? this._t("editor_max_visible_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const map: Record<string, TranslationKey> = {
       auto_discover: "editor_nas_auto_discover",
@@ -482,6 +487,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${sourceData}
               .schema=${this._sourceSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_nas_auto_discover_helper")}</div>
@@ -497,6 +503,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${thresholdData}
               .schema=${this._thresholdSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_nas_thresholds_helper")}</div>
@@ -511,6 +518,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${contentData}
               .schema=${this._contentSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_nas_sync_helper")}</div>
@@ -526,6 +534,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${notifyData}
               .schema=${this._notifySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_nas_notify_paused_hint")}</div>
@@ -568,6 +577,7 @@ export class M3NasCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${animationData}
               .schema=${this._animationSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
           </div>

@@ -352,6 +352,11 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
     ];
   }
 
+  /** The explanation belongs on the field, not in a paragraph under the
+   *  form: what people miss is that the rest stays reachable. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "max_visible" ? this._t("editor_max_visible_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       auto_discover: "editor_battery_auto_discover",
@@ -540,6 +545,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               .data=${entitiesData}
               .schema=${this._entitiesSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${autoDiscover
@@ -567,6 +573,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
                     .data=${{ entity: o.entity, name: o.name ?? "", icon: o.icon ?? "" }}
                     .schema=${this._overrideSchema()}
                     .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
                     @value-changed=${(ev: CustomEvent) => this._overrideChanged(i, ev)}
                   ></ha-form>
                   <button class="remove-btn" @click=${() => this._removeOverride(i)}>
@@ -591,6 +598,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               .data=${thresholdsData}
               .schema=${this._thresholdsSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._thresholdsChanged}
             ></ha-form>
           </div>
@@ -605,6 +613,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               .data=${notifyData}
               .schema=${this._notifySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_battery_notify_exclude_hint")}</div>
@@ -635,6 +644,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               .data=${contentData}
               .schema=${this._contentSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${listRow(
@@ -668,6 +678,7 @@ export class M3BatteryCardEditor extends LitElement implements LovelaceCardEdito
               .data=${animationData}
               .schema=${this._animationSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_progress_animation_reduced_motion_hint")}</div>

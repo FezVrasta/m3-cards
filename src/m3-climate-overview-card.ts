@@ -88,6 +88,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
   /** The climate entity whose thermostat sheet is open, if any. */
   @state() private _thermostat?: string;
   @state() private _thermostatClosing = false;
+  @state() private _showAllRooms = false;
   private _thermostatName?: string;
   private _thermostatTimer?: number;
   private _miniCard?: HTMLElement;
@@ -683,6 +684,15 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
     const outlier = this._config.show_outlier_chip !== false ? this._outlierTile(tiles) : undefined;
 
+    // Only the grid is shortened. The outlier chip above and the comparison
+    // scale below keep reading `tiles` — the whole set — because a "warmest
+    // room" drawn from the first three would be a different claim, and a
+    // quietly wrong one.
+    const maxVisible = this._config.max_visible ?? 0;
+    const visibleTiles =
+      maxVisible > 0 && !this._showAllRooms ? tiles.slice(0, maxVisible) : tiles;
+    const hiddenRooms = maxVisible > 0 ? Math.max(0, tiles.length - maxVisible) : 0;
+
     const accentColor = this._config.accent_color
       ? resolveThemeColor(this._config.accent_color)
       : "var(--primary-text-color)";
@@ -727,7 +737,28 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
 
           ${tiles.length === 0
             ? html`<div class="empty-state">${this._t("climate_overview_empty")}</div>`
-            : html`<div class="room-grid">${tiles.map((t) => this._renderTile(t))}</div>`}
+            : html`
+                <div class="room-grid">${visibleTiles.map((t) => this._renderTile(t))}</div>
+                ${hiddenRooms > 0
+                  ? html`<button
+                      class="rooms-toggle"
+                      @click=${() => (this._showAllRooms = !this._showAllRooms)}
+                    >
+                      <span
+                        >${this._showAllRooms
+                          ? this._t("climate_overview_show_less")
+                          : this._t("climate_overview_show_more").replace(
+                              "{n}",
+                              String(hiddenRooms),
+                            )}</span
+                      >
+                      <ha-icon
+                        class="chevron ${this._showAllRooms ? "open" : ""}"
+                        icon="mdi:chevron-down"
+                      ></ha-icon>
+                    </button>`
+                  : nothing}
+              `}
 
           ${this._config.show_scale !== false ? this._renderCompareScale(tiles) : nothing}
           ${this._renderThermostatSheet()}
@@ -998,6 +1029,36 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         margin-top: 2px;
       }
     
+
+      .rooms-toggle {
+        width: 100%;
+        height: 44px;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        background: color-mix(in srgb, var(--primary-text-color) 6%, var(--ha-card-background, var(--card-background-color)));
+        color: var(--m3p-secondary-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 13px;
+        font-family: inherit;
+      }
+
+      .rooms-toggle .chevron {
+        --mdc-icon-size: 18px;
+        transition: transform 200ms ${EASING};
+      }
+
+      .rooms-toggle .chevron.open {
+        transform: rotate(180deg);
+      }
+
+      .no-animations .rooms-toggle .chevron {
+        transition: none;
+      }
+
       /* ---- thermostat sheet ---- */
 
       .card-inner {

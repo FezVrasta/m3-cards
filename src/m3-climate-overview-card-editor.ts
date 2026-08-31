@@ -268,6 +268,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
           },
         },
       },
+      { name: "max_visible", selector: { number: { min: 0, max: 60, mode: "box" } } },
       { name: "show_scale", selector: { boolean: {} } },
       { name: "show_scale_labels", selector: { boolean: {} } },
       { name: "show_outlier_chip", selector: { boolean: {} } },
@@ -333,6 +334,9 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     ];
   }
 
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "max_visible" ? this._t("editor_climate_max_visible_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       auto_discover: "editor_climate_overview_auto_discover",
@@ -344,6 +348,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       humidity_entity: "editor_climate_overview_room_humidity_entity",
       climate_entity: "editor_climate_room_climate",
       tile_tap_action: "editor_climate_tile_tap",
+      max_visible: "editor_climate_max_visible",
       sort: "editor_climate_overview_sort",
       show_scale: "editor_climate_overview_show_scale",
       show_scale_labels: "editor_climate_overview_show_scale_labels",
@@ -527,6 +532,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       icon: this._config.icon,
       sort: this._config.sort ?? "area",
       tile_tap_action: this._config.tile_tap_action ?? "history",
+      max_visible: this._config.max_visible ?? 0,
       show_scale: this._config.show_scale ?? true,
       show_scale_labels: this._config.show_scale_labels ?? true,
       show_outlier_chip: this._config.show_outlier_chip ?? true,
@@ -562,6 +568,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${roomsMetaData}
               .schema=${this._roomsMetaSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_climate_overview_rooms_helper")}</div>
@@ -579,6 +586,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
                       }}
                       .schema=${this._roomSchema()}
                       .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
                       @value-changed=${(ev: CustomEvent) => this._roomChanged(i, ev)}
                     ></ha-form>
                     ${colorRow(this._t("editor_climate_overview_room_color"), r.color, (v) => this._roomColorChanged(i, v))}
@@ -604,6 +612,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${displayData}
               .schema=${this._displaySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${listRow(
@@ -623,6 +632,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${thresholdsData}
               .schema=${this._thresholdsSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._thresholdsChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_climate_overview_humidity_range_helper")}</div>
@@ -631,6 +641,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${humidityRangeData}
               .schema=${this._humidityRangeSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._humidityRangeChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_climate_overview_scale_range_helper")}</div>
@@ -639,6 +650,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${scaleRangeData}
               .schema=${this._scaleRangeSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._scaleRangeChanged}
             ></ha-form>
           </div>
@@ -658,6 +670,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${notifyData}
               .schema=${this._notifySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_climate_overview_notify_rooms_hint")}</div>
@@ -716,6 +729,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
               .data=${animationData}
               .schema=${this._animationSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_progress_animation_reduced_motion_hint")}</div>

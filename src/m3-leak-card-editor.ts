@@ -209,6 +209,11 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
     }
   }
 
+  /** The explanation belongs on the field, not in a paragraph under the
+   *  form: what people miss is that the rest stays reachable. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "max_visible" ? this._t("editor_leak_max_visible_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const map: Record<string, TranslationKey> = {
       notify_service: "editor_notify_service",
@@ -339,6 +344,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${sensorsData}
               .schema=${this._sensorsSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${(this._config.auto_discover ?? true)
@@ -358,6 +364,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
                           }}
                           .schema=${this._sensorSchema()}
                           .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
                           @value-changed=${(ev: CustomEvent) => this._sensorChanged(index, ev)}
                         ></ha-form>
                         <button class="remove-btn" @click=${() => this._removeSensor(index)}>
@@ -387,6 +394,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${shutoffData}
               .schema=${this._shutoffSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
           </div>
@@ -400,6 +408,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${monitorData}
               .schema=${this._monitorSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
           </div>
@@ -413,6 +422,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${displayData}
               .schema=${this._displaySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
           </div>
@@ -431,6 +441,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
               }}
               .schema=${this._notifySchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${notifyTokenHint(this._language, ["ort"])}</div>
@@ -482,6 +493,7 @@ export class M3LeakCardEditor extends LitElement implements LovelaceCardEditor {
                 },
               ]}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             <div class="hint">${this._t("editor_progress_animation_reduced_motion_hint")}</div>
