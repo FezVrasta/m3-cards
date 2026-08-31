@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [2.3.1]
+
+### Added
+
+- **M3 Weather Card — `show_current` / `show_chart`.** The header
+  (icon/temperature/condition) and the chart (temperature curve +
+  precipitation bars) can now be toggled independently, so the same card can
+  be trimmed to a compact header-only or chart-only layout. Both default to
+  `true`, so existing configs are unaffected.
+- **M3 Weather Card — configurable hourly icon strip and temperature axis.**
+  At higher `hours` counts the icon/temperature strip above the curve used
+  to pack every hour into an unreadable string. `group_hourly_conditions`
+  fits it to the card's actual width instead, sampling icons and
+  temperatures at the same regular interval. `show_hourly_icons` and
+  `show_hourly_temperatures` toggle each row independently, `show_hour_labels`
+  adds hour-axis labels, and `show_temp_axis` adds an overlay temperature
+  y-axis.
+
 ## [2.3.0]
 
 ### Added

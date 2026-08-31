@@ -1350,7 +1350,12 @@ from the card — useful for sensors permanently reporting 1 %.
 
 A weather card with a header (icon/temperature/condition/chips), a smoothed
 temperature curve with gradient fill, hourly precipitation bars, sunrise/
-sunset markers on the curve, and an optional daily overview.
+sunset markers on the curve, and an optional daily overview. The header and
+chart can be toggled independently (`show_current` / `show_chart`), so the
+same card can be trimmed down for a compact mobile layout. At higher `hours`
+counts, the icon/temperature strip above the curve can be set to fit the
+card's actual width (`group_hourly_conditions`) instead of packing in every
+hour.
 
 <details>
 <summary>Configuration, examples & options</summary>
@@ -1393,11 +1398,18 @@ daily list collapses by default and expands via a button.
 |---|---|---|---|
 | `entity` | string | – (required) | `weather` entity |
 | `name` | string | entity's friendly name | Header title |
+| `show_current` | boolean | `true` | Icon/temperature/condition header |
 | `hours` | number | `12` | Number of hours in the curve |
+| `show_chart` | boolean | `true` | Temperature curve + precipitation bars |
 | `days` | number | `0` | Number of days in the daily overview (`0` = hidden) |
 | `show_days_toggle` | boolean | `true` | Collapsible from 4 days on with a "Show N more" button; `false` = always show all configured days directly |
 | `chips` | list (`apparent_temperature`\|`wind_speed`\|`humidity`\|`pressure`\|`uv_index`\|`visibility`) | apparent temp, wind, humidity | Header chips shown |
 | `show_sun` | boolean | `true` | Sunrise/sunset markers on the curve (from `sun.sun`) |
+| `show_hour_labels` | boolean | `false` | Hour-axis labels above the curve |
+| `group_hourly_conditions` | boolean | `false` | Fit the icon/temperature strip to the card's actual width instead of packing in every hour, sampling icons and temperatures at the same regular interval (e.g. every 3rd hour) |
+| `show_hourly_icons` | boolean | `true` | Weather icons in the hourly strip |
+| `show_hourly_temperatures` | boolean | `true` | Temperatures in the hourly strip |
+| `show_temp_axis` | boolean | `false` | Overlay temperature y-axis on the curve |
 | `accent_color` | string | solar yellow | Curve color |
 | `precipitation_color` | string | `#6ba7dc` | Precipitation bar color |
 | `gradient_color` | string | same as `accent_color` | Gradient fill under the curve |
