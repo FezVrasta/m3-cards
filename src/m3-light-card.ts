@@ -705,7 +705,6 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         @mousemove=${stopSwipe}
         @keydown=${this._handleKeydown}
       >
-        <span class="wave-value">${pct} %</span>
         <svg
           class="wave-svg"
           viewBox="0 0 ${width} ${height}"
@@ -1017,16 +1016,6 @@ export class M3LightCard extends LitElement implements LovelaceCard {
         transition: none;
       }
 
-      .wave-value {
-        position: absolute;
-        top: 0;
-        right: 0;
-        font-size: 11px;
-        font-weight: 700;
-        opacity: 0.5;
-        color: var(--m3p-text);
-        pointer-events: none;
-      }
 
       /* ---- Color temperature ---- */
 
