@@ -30,6 +30,41 @@ export interface DiscoverPowerOptions {
   excludeEntities?: string[];
 }
 
+export interface RegistrySnapshot {
+  entities: Map<string, EntityRegistryEntry>;
+  devices: Map<string, DeviceRegistryEntry>;
+  areas: Map<string, AreaRegistryEntry>;
+}
+
+// Home Assistant 2024.4+ (this package's minimum supported version, see
+// hacs.json) keeps registry snapshots directly on `hass`
+// (`hass.entities`/`hass.devices`/`hass.areas`), already loaded in memory by
+// the frontend for its own use — reading those is synchronous and needs no
+// websocket round-trip. Every discover* function below used to fire its own
+// independent `callWS` for the same three registries; with N discovery cards
+// on a dashboard that was N redundant round-trips fetching identical data.
+// The `callWS` branch stays only so this doesn't hard-crash on an older
+// frontend that lacks the snapshots — it is not otherwise optimized.
+async function getRegistries(hass: HomeAssistant): Promise<RegistrySnapshot> {
+  if (hass.entities && hass.devices && hass.areas) {
+    return {
+      entities: new Map(Object.entries(hass.entities)) as Map<string, EntityRegistryEntry>,
+      devices: new Map(Object.entries(hass.devices)) as Map<string, DeviceRegistryEntry>,
+      areas: new Map(Object.entries(hass.areas)) as Map<string, AreaRegistryEntry>,
+    };
+  }
+  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
+    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
+    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
+    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
+  ]);
+  return {
+    entities: new Map(entityEntries.map((e) => [e.entity_id, e])),
+    devices: new Map(deviceEntries.map((d) => [d.id, d])),
+    areas: new Map(areaEntries.map((a) => [a.area_id, a])),
+  };
+}
+
 // Looks up the integration (domain) that owns an entity, e.g. "utility_meter"
 // — used to gate editor-only actions (like calibration) to entities backed
 // by that specific platform, rather than showing them for arbitrary sensors.
@@ -75,15 +110,7 @@ async function discoverByDeviceClass(
   const needsLabel = !!opts.includeLabels?.length;
   if (!needsArea && !needsLabel) return candidates;
 
-  const [entityEntries, deviceEntries] = await Promise.all([
-    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
-    needsArea
-      ? hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" })
-      : Promise.resolve([] as DeviceRegistryEntry[]),
-  ]);
-
-  const deviceAreaById = new Map(deviceEntries.map((d) => [d.id, d.area_id ?? undefined]));
-  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
+  const { entities: entryByEntityId, devices: deviceById } = await getRegistries(hass);
 
   const includeAreas = new Set(opts.includeAreas ?? []);
   const includeLabels = new Set(opts.includeLabels ?? []);
@@ -93,7 +120,7 @@ async function discoverByDeviceClass(
     if (!entry) return !needsArea && !needsLabel;
 
     if (needsArea) {
-      const area = entry.area_id ?? (entry.device_id ? deviceAreaById.get(entry.device_id) : undefined);
+      const area = entry.area_id ?? (entry.device_id ? deviceById.get(entry.device_id)?.area_id ?? undefined : undefined);
       if (!area || !includeAreas.has(area)) return false;
     }
     if (needsLabel) {
@@ -134,14 +161,7 @@ export async function discoverPersonEntities(
   const needsLabel = !!opts.includeLabels?.length;
   if (!needsArea && !needsLabel) return candidates;
 
-  const [entityEntries, deviceEntries] = await Promise.all([
-    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
-    needsArea
-      ? hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" })
-      : Promise.resolve([] as DeviceRegistryEntry[]),
-  ]);
-  const deviceAreaById = new Map(deviceEntries.map((d) => [d.id, d.area_id ?? undefined]));
-  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
+  const { entities: entryByEntityId, devices: deviceById } = await getRegistries(hass);
   const includeAreas = new Set(opts.includeAreas ?? []);
   const includeLabels = new Set(opts.includeLabels ?? []);
 
@@ -149,7 +169,7 @@ export async function discoverPersonEntities(
     const entry = entryByEntityId.get(entityId);
     if (!entry) return !needsArea && !needsLabel;
     if (needsArea) {
-      const area = entry.area_id ?? (entry.device_id ? deviceAreaById.get(entry.device_id) : undefined);
+      const area = entry.area_id ?? (entry.device_id ? deviceById.get(entry.device_id)?.area_id ?? undefined : undefined);
       if (!area || !includeAreas.has(area)) return false;
     }
     if (needsLabel) {
@@ -288,14 +308,7 @@ export async function discoverClimateRooms(
   const climateIds = Object.keys(hass.states).filter((id) => id.startsWith("climate."));
   if (tempIds.length === 0 && climateIds.length === 0) return [];
 
-  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
-    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
-    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
-    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
-  ]);
-  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
-  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
-  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+  const { entities: entryByEntityId, devices: deviceById, areas: areaById } = await getRegistries(hass);
 
   function resolve(entityId: string): { areaId?: string; deviceId?: string; labels: string[]; tier: ClimateTier } {
     const entry = entryByEntityId.get(entityId);
@@ -414,20 +427,13 @@ export async function discoverOccupancyRooms(
   });
   if (candidates.length === 0) return [];
 
-  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
-    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
-    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
-    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
-  ]);
-  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
-  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
-  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+  const { entities: entryByEntityId, devices: deviceById, areas: areaById } = await getRegistries(hass);
 
   // entity id -> device id, for every entity, so siblings resolve in one pass.
   const byDevice = new Map<string, string[]>();
-  for (const entry of entityEntries) {
+  for (const [entityId, entry] of entryByEntityId) {
     if (!entry.device_id) continue;
-    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entry.entity_id]);
+    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entityId]);
   }
 
   const includeAreas = opts.includeAreas?.length ? new Set(opts.includeAreas) : undefined;
@@ -516,18 +522,11 @@ export async function discoverLeakSensors(
   });
   if (!candidates.length) return [];
 
-  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
-    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
-    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
-    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
-  ]);
-  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
-  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
-  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+  const { entities: entryByEntityId, devices: deviceById, areas: areaById } = await getRegistries(hass);
   const byDevice = new Map<string, string[]>();
-  for (const entry of entityEntries) {
+  for (const [entityId, entry] of entryByEntityId) {
     if (!entry.device_id) continue;
-    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entry.entity_id]);
+    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entityId]);
   }
   const includeAreas = opts.includeAreas?.length ? new Set(opts.includeAreas) : undefined;
 
@@ -770,14 +769,7 @@ export async function discoverLightRooms(
     return true;
   };
 
-  const [entityEntries, deviceEntries, areaEntries] = await Promise.all([
-    hass.callWS<EntityRegistryEntry[]>({ type: "config/entity_registry/list" }),
-    hass.callWS<DeviceRegistryEntry[]>({ type: "config/device_registry/list" }),
-    hass.callWS<AreaRegistryEntry[]>({ type: "config/area_registry/list" }),
-  ]);
-  const entryByEntityId = new Map(entityEntries.map((e) => [e.entity_id, e]));
-  const deviceById = new Map(deviceEntries.map((d) => [d.id, d]));
-  const areaById = new Map(areaEntries.map((a) => [a.area_id, a]));
+  const { entities: entryByEntityId, devices: deviceById, areas: areaById } = await getRegistries(hass);
 
   const buckets = new Map<string, { shown: string[]; switchable: string[] }>();
 
