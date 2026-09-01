@@ -422,6 +422,7 @@ export class M3LightsOverviewCard extends LitElement implements LovelaceCard {
       show_header: popup.show_header ?? true,
       name: popup.title || tile.name,
       // A popup inside a popup would be a trap with no way out.
+      tap_action: { action: "toggle" },
       hold_action: { action: "more-info" },
       double_tap_action: undefined,
       popup: undefined,
