@@ -115,6 +115,11 @@ export const THEME_COLOR_TOKENS: Record<string, string> = {
 export const DEFAULT_BUTTON_COLOR = "primary";
 export const DEFAULT_BUTTON_RADIUS = RADIUS.card;
 
+// ---- Chip-buttons card / shared chip row -----------------------------------
+export const DEFAULT_CHIP_BUTTONS_RADIUS = RADIUS.card;
+export const CHIP_BUTTON_HEIGHT = 34;
+export const CHIP_BUTTON_ICON_SIZE = 18;
+
 export const CLIMATE_RADIUS_PRESETS: Record<string, number> = {
   eckig: 12,
   leicht_rund: 20,

@@ -34,3 +34,4 @@ export * from "./m3-heading-card";
 export * from "./m3-room-card";
 export * from "./m3-humidifier-card";
 export * from "./m3-calendar-card";
+export * from "./m3-chip-buttons-card";

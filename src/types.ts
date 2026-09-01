@@ -1372,7 +1372,8 @@ export type M3CardConfig =
   | M3ClockCardConfig
   | M3StatusCardConfig
   | M3HeadingCardConfig
-  | M3RoomCardConfig;
+  | M3RoomCardConfig
+  | M3ChipButtonsCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */
@@ -1714,6 +1715,46 @@ export interface M3RoomCardConfig {
   animation?: "auto" | "on" | "off";
   radius?: number;
   corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+// ---- m3-chip-buttons-card ---------------------------------------------------
+
+export interface ChipButtonConfig {
+  entity?: string;
+  name?: string;
+  icon?: string;
+  /** Active-state color (theme token, hex, or any CSS color). */
+  color?: string;
+  inactive_color?: string;
+  show_state?: boolean;
+  /** Always render as "active", regardless of the entity's own state. */
+  static_color?: boolean;
+  /** Pull the color from the entity's own HA state color instead of `color`/`inactive_color`. */
+  use_entity_color?: boolean;
+  /** false = read-only chip (no tap/hold handlers, not a button role). */
+  interactive?: boolean;
+  tap_action?: HaActionConfig;
+  hold_action?: HaActionConfig;
+  double_tap_action?: HaActionConfig;
+}
+
+export interface ChipButtonsRowConfig {
+  buttons: ChipButtonConfig[];
+  /** Default wraps to a new line; unset scrolls horizontally instead. */
+  wrap?: boolean;
+  justify?: "start" | "center" | "end" | "space-between";
+  /** Chips grow to equally fill the row's width instead of sizing to content. */
+  stretch?: boolean;
+}
+
+export interface M3ChipButtonsCardConfig extends ChipButtonsRowConfig {
+  type: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_background?: string;
   card_version?: string;
 }
 
