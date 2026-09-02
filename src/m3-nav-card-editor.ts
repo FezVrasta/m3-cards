@@ -591,6 +591,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
       },
       {
+        name: "label_size",
+        selector: { number: { min: 9, max: 24, step: 1, mode: "slider" } },
+      },
+      {
         name: "edge_distance",
         selector: { number: { min: 0, max: 60, step: 1, mode: "slider" } },
       },
@@ -909,6 +913,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       width_px: "editor_nav_max_width_px",
       size: "editor_nav_size",
       icon_size: "editor_nav_icon_size",
+      label_size: "editor_nav_label_size",
       edge_distance: "editor_nav_edge_distance",
       close_icon: "editor_nav_close_icon",
       container_style: "editor_nav_container",
@@ -1335,6 +1340,11 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   .hass=${this.hass}
                   .data=${{
                     icon_size: cfg.icon_size ?? 22,
+                    label_size:
+                      cfg.label_size ??
+                      (cfg.label_position === "right" || cfg.label_position === "left"
+                        ? 14
+                        : 11),
                     edge_distance: cfg.edge_distance ?? 8,
                     container_opacity: cfg.container_opacity ?? 100,
                     blur: cfg.blur ?? 20,

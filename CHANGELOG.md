@@ -8,6 +8,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Nav card: `label_size`**, and a bigger default for a label beside the icon.
+  11px is what Material gives a label stacked under an icon, where it is the
+  secondary half of the pair; set next to a 22px glyph it read as a caption
+  rather than the entry's name. Beside the icon the default is 14px now, and
+  `label_size` overrides either.
+
 - **Nav card: `label_position`** — whether an entry's text sits below, above,
   right or left of its icon. The two horizontal placements also move the active
   pill so it wraps icon and text together, because a pill around the icon alone
@@ -132,6 +138,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Nav-Karte: `label_size`**, und ein größerer Standard für Text neben dem Icon.
+  11px ist die Größe, die Material einem Text *unter* einem Icon gibt, wo er die
+  zweite Hälfte des Paars ist; neben einer 22px-Glyphe wirkte er wie eine
+  Bildunterschrift statt wie der Name des Eintrags. Neben dem Icon sind es jetzt
+  standardmäßig 14px, und `label_size` überschreibt beides.
 
 - **Nav-Karte: `label_position`** — ob der Text eines Eintrags unter, über,
   rechts oder links neben seinem Icon steht. Die beiden waagerechten Varianten

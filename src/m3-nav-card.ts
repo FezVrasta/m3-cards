@@ -38,6 +38,7 @@ import {
   NAV_ITEM_HEIGHT,
   NAV_ITEM_INACTIVE_OPACITY,
   NAV_ITEM_LABEL_SIZE,
+  NAV_ITEM_LABEL_SIZE_BESIDE,
   NAV_ITEM_MIN_WIDTH,
   NAV_INDICATOR_HEIGHT,
   NAV_INDICATOR_RADIUS,
@@ -1883,6 +1884,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-radius": `${cfg.radius ?? NAV_FLOAT_RADIUS}px`,
       "nav-max-width": width.css,
       "nav-glyph": cfg.icon_size !== undefined ? `${cfg.icon_size}px` : undefined,
+      "nav-label": cfg.label_size !== undefined ? `${cfg.label_size}px` : undefined,
       "nav-blur": cfg.blur !== undefined ? `${cfg.blur}px` : undefined,
       "nav-opacity": cfg.container_opacity !== undefined ? String(cfg.container_opacity / 100) : undefined,
       "nav-z": String(NAV_Z_INDEX),
@@ -2333,7 +2335,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     }
 
     .label {
-      font-size: calc(${NAV_ITEM_LABEL_SIZE}px * var(--nav-scale, 1));
+      font-size: var(
+        --nav-label,
+        calc(${NAV_ITEM_LABEL_SIZE}px * var(--nav-scale, 1))
+      );
       line-height: 1.2;
       max-width: 100%;
       overflow: hidden;
@@ -3066,6 +3071,16 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       max-width: none;
       width: 100%;
       justify-content: safe center;
+    }
+
+    /* A label beside the icon is the entry's name, not a caption under a
+       picture, and takes the larger of the two Material label sizes. */
+    :host([labels="right"]) .label,
+    :host([labels="left"]) .label {
+      font-size: var(
+        --nav-label,
+        calc(${NAV_ITEM_LABEL_SIZE_BESIDE}px * var(--nav-scale, 1))
+      );
     }
 
     /* An entry that is nothing but an icon gets a round marker rather than a

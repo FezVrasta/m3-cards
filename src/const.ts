@@ -1586,6 +1586,15 @@ export const NAV_ITEM_RADIUS = 17;
 export const NAV_ITEM_RADIUS_ACTIVE = 11;
 export const NAV_ITEM_GLYPH = 22;
 export const NAV_ITEM_LABEL_SIZE = 11;
+/**
+ * The same label when it sits beside the icon rather than under it.
+ *
+ * 11px is the size Material gives a label stacked under an icon, where it is
+ * the secondary half of the pair. Set next to the icon it is the tab's name and
+ * carries the entry, and at 11px against a 22px glyph it reads as a caption
+ * somebody forgot to finish.
+ */
+export const NAV_ITEM_LABEL_SIZE_BESIDE = 14;
 export const NAV_ITEM_TINT = 16;
 /**
  * The active pill hugs the glyph rather than filling the whole entry — a bar
