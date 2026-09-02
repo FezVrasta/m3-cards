@@ -48,14 +48,23 @@ export const glassCardStyles = css`
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 12px;
-    border: 1px solid rgba(100, 100, 100, 0.25);
+    /* --m3-group-padding/-border/-background/-backdrop-filter are set by
+       m3-group-card on the container it holds its children in. They cross
+       into this shadow root the same way HA's own theme variables do (custom
+       properties inherit through shadow boundaries), so a card nested in a
+       group loses its own frame without any change to the card itself —
+       every card outside a group keeps the fallback below unchanged. Padding
+       goes to 0 in a group: the group's own gap setting is then the only
+       thing controlling space between rows, so gap: 0 means rows truly
+       touch instead of still carrying each card's own standalone padding. */
+    padding: var(--m3-group-padding, 12px);
+    border: var(--m3-group-border, 1px solid rgba(100, 100, 100, 0.25));
   }
 
   .card-inner.glass {
-    background: ${glassBackground};
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--m3-group-background, ${glassBackground});
+    backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
+    -webkit-backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
     /* Forces its own compositor layer. Without this, Chromium sometimes
        renders a visible seam where two adjacent backdrop-filter elements'
        GPU tiles meet (flickers/disappears on scroll-triggered repaint) —
@@ -65,7 +74,7 @@ export const glassCardStyles = css`
   }
 
   .card-inner.solid {
-    background: var(--ha-card-background, var(--card-background-color));
+    background: var(--m3-group-background, var(--ha-card-background, var(--card-background-color)));
   }
 
   .missing-entity {

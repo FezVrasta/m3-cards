@@ -1582,3 +1582,7 @@ export const CALENDAR_SELECTED_RADIUS = 10;
 export const CALENDAR_ADJACENT_OPACITY = 0.3;
 export const CALENDAR_DAY_ROW_HEIGHT = 40;
 export const CALENDAR_DAY_ROW_RADIUS = 14;
+
+// ---- m3-group-card ----------------------------------------------------------
+export const DEFAULT_GROUP_RADIUS = RADIUS.card;
+export const DEFAULT_GROUP_GAP = 8;

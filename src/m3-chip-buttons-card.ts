@@ -103,7 +103,7 @@ export class M3ChipButtonsCard extends LitElement implements LovelaceCard {
     chipButtonsStyles,
     css`
       .card-inner {
-        padding: 10px 12px;
+        padding: var(--m3-group-padding, 10px 12px);
       }
 
       .card-inner.no-animations .m3-chip-button {

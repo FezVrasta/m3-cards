@@ -731,9 +731,13 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       overflow: hidden;
       box-sizing: border-box;
       height: 100%;
-      padding: min(12px, 9cqh) min(16px, 11cqh) min(12px, 9cqh)
-        var(--m3-icon-offset, min(16px, 11cqh));
-      border: 1px solid rgba(100, 100, 100, 0.25);
+      padding: var(
+        --m3-group-padding,
+        min(12px, 9cqh) min(16px, 11cqh) min(12px, 9cqh) var(--m3-icon-offset, min(16px, 11cqh))
+      );
+      /* See glass-card.ts: --m3-group-* is set by m3-group-card on nested
+         children's containers, and inherits through the shadow boundary. */
+      border: var(--m3-group-border, 1px solid rgba(100, 100, 100, 0.25));
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -783,13 +787,13 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     .card-inner.glass {
       /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: ${glassBackground};
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: var(--m3-group-background, ${glassBackground});
+      backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
+      -webkit-backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
     }
 
     .card-inner.solid {
-      background: var(--ha-card-background, var(--card-background-color));
+      background: var(--m3-group-background, var(--ha-card-background, var(--card-background-color)));
     }
 
     ha-card.unavailable .card-inner {

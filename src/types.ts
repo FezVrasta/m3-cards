@@ -1339,6 +1339,26 @@ export interface M3ClockCardConfig {
   card_version?: string;
 }
 
+// ---- m3-group-card ---------------------------------------------------
+
+/** An arbitrary Lovelace card config — the group's own cards, but also any
+ * other custom or built-in card a user nests inside it. */
+export interface LovelaceCardConfig {
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface M3GroupCardConfig {
+  type: string;
+  cards: LovelaceCardConfig[];
+  gap?: number;
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_background?: string;
+  card_version?: string;
+}
+
 export type M3CardConfig =
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
@@ -1373,7 +1393,8 @@ export type M3CardConfig =
   | M3StatusCardConfig
   | M3HeadingCardConfig
   | M3RoomCardConfig
-  | M3ChipButtonsCardConfig;
+  | M3ChipButtonsCardConfig
+  | M3GroupCardConfig;
 
 export interface SupplyItemConfig {
   /** A `counter.*` or `input_number.*` helper holding the remaining count. */

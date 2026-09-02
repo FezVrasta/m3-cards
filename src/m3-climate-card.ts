@@ -567,20 +567,22 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      padding: 12px;
+      padding: var(--m3-group-padding, 12px);
       border-radius: 32px;
-      border: 1px solid rgba(100, 100, 100, 0.25);
+      /* See glass-card.ts: --m3-group-* is set by m3-group-card on nested
+         children's containers, and inherits through the shadow boundary. */
+      border: var(--m3-group-border, 1px solid rgba(100, 100, 100, 0.25));
     }
 
     .card-inner.glass {
       /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: ${glassBackground};
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: var(--m3-group-background, ${glassBackground});
+      backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
+      -webkit-backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
     }
 
     .card-inner.solid {
-      background: var(--ha-card-background, var(--card-background-color));
+      background: var(--m3-group-background, var(--ha-card-background, var(--card-background-color)));
     }
 
     ha-card.unavailable .mode-row,

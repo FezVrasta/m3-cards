@@ -723,7 +723,7 @@ export class M3NasCard extends LitElement implements LovelaceCard {
       }
 
       .card-inner {
-        padding: 12px;
+        padding: var(--m3-group-padding, 12px);
         display: flex;
         flex-direction: column;
         gap: 10px;
