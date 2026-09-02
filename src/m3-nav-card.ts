@@ -78,7 +78,9 @@ import { activateOnKey } from "./shared/a11y";
 import { handleAction, isActionable } from "./shared/actions";
 import {
   buildCssVars,
+  fillColor,
   foregroundOn,
+  inkOn,
   resolveCommonColors,
   resolveThemeColor,
   tintOn,
@@ -1168,6 +1170,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _runActionButton = (e: Event): void => {
+    e.stopPropagation();
+    const action = this._config?.action_button?.tap_action;
+    if (!action || !isActionable(action)) return;
+    if (this._config?.haptics !== false) fireHaptic(this, "light");
+    handleAction(this, this.hass, action);
+  };
+
   private _runSheetAction = (e: Event): void => {
     e.stopPropagation();
     const action = this._config?.sheet_action?.tap_action;
@@ -1452,14 +1462,22 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       !!item.name && (labels === "always" || (labels === "active_only" && item.active));
     const handler = this._tapHoldFor(item);
     const pressed = this._pressed === item.index;
-    const tint = tintOn(this, item.color, this._config?.accent_opacity, NAV_ITEM_TINT);
+    // A solid fill is the reference look; the ink on it is chosen between the
+    // house dark and white rather than nudged, because shifting a colour the
+    // author picked is the wrong move on a fill they can see.
+    const solid = (this._config?.active_style ?? "tint") === "solid";
+    const fill = solid
+      ? fillColor(this, item.color)
+      : tintOn(this, item.color, this._config?.accent_opacity, NAV_ITEM_TINT);
     const ink = item.active
-      ? foregroundOn(item.color, tint, 4.5, this)
+      ? solid
+        ? inkOn(fill, this)
+        : foregroundOn(item.color, fill, 4.5, this)
       : "var(--nav-ink)";
     // The pill goes round the glyph in the stacked variants and round the whole
     // entry in the horizontal ones, so the inline colours are set on whichever
     // element is carrying it.
-    const indicator = item.active ? `background: ${tint}; color: ${ink};` : "";
+    const indicator = item.active ? `background: ${fill}; color: ${ink};` : "";
 
     return html`
       <div
@@ -1542,6 +1560,27 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       .join(" ");
 
     const animated = shouldAnimate(cfg.animation);
+    const bubble = cfg.action_button?.icon
+      ? (() => {
+          const color = resolveThemeColor(
+            cfg.action_button?.color ?? cfg.accent_color ?? DEFAULT_NAV_COLOR,
+          );
+          const tint = tintOn(this, color, cfg.accent_opacity, NAV_ITEM_TINT);
+          return html`
+            <div
+              class="bubble ${container}"
+              role="button"
+              tabindex="0"
+              aria-label=${this._t("editor_nav_action_button")}
+              style=${`color: ${foregroundOn(color, tint, 3, this)};`}
+              @click=${this._runActionButton}
+              @keydown=${activateOnKey(this._runActionButton)}
+            >
+              <ha-icon icon=${cfg.action_button!.icon}></ha-icon>
+            </div>
+          `;
+        })()
+      : nothing;
     const widthClass = `${width.css ? "capped" : ""} ${width.fit ? "fit" : ""}`;
     const bar = html`
       <nav
@@ -1555,6 +1594,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       </nav>
     `;
 
+    const barRow =
+      bubble === nothing
+        ? bar
+        : html`<div class="bar-row">${bar}${bubble}</div>`;
+
     const body =
       this._variant === "sheet" && this._sheetHasContent
         ? html`
@@ -1565,7 +1609,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
               ${this._renderSheetPanel()} ${bar}
             </div>
           `
-        : bar;
+        : barRow;
 
     if (!this._editing) return html`${body}${this._renderSubmenu()}`;
 
@@ -1911,6 +1955,53 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       height: ${NAV_BADGE_DOT}px;
       padding: 0;
       border-radius: 50%;
+    }
+
+    /* A round button set beside the bar rather than inside it — the reference
+       designs put search there, detached, so it reads as its own thing rather
+       than as another destination. */
+    .bar-row {
+      pointer-events: auto;
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    :host([variant="floating"]) .bar-row,
+    :host([variant="sheet"]) .bar-row {
+      margin: ${NAV_FLOAT_INSET}px;
+      margin-bottom: calc(${NAV_FLOAT_INSET}px + env(safe-area-inset-bottom, 0px));
+    }
+
+    :host([variant="floating"]) .bar-row .bar,
+    :host([variant="sheet"]) .bar-row .bar {
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .bubble {
+      flex-shrink: 0;
+      align-self: center;
+      width: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));
+      height: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      --mdc-icon-size: var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1)));
+    }
+
+    :host([variant="segmented"]) .bubble,
+    :host([variant="header"]) .bubble {
+      width: calc(${NAV_SEGMENT_HEIGHT}px * var(--nav-scale, 1));
+      height: calc(${NAV_SEGMENT_HEIGHT}px * var(--nav-scale, 1));
+    }
+
+    .bubble:focus-visible {
+      outline: 2px solid var(--nav-ink, var(--primary-text-color));
+      outline-offset: 2px;
     }
 
     /* ---- sheet ---- */

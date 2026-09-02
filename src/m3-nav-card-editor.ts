@@ -483,6 +483,18 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       },
       { name: "show_icons", selector: { boolean: {} } },
       {
+        name: "active_style",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "tint", label: this._t("editor_nav_active_style_tint") },
+              { value: "solid", label: this._t("editor_nav_active_style_solid") },
+            ],
+          },
+        },
+      },
+      {
         name: "container_style",
         selector: {
           select: {
@@ -806,6 +818,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
       show_icons: "editor_nav_show_icons",
+      active_style: "editor_nav_active_style",
       split: "editor_nav_different_widths",
       width_fit: "editor_nav_width_fit",
       width_px: "editor_nav_max_width_px",
@@ -1214,6 +1227,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 label_visibility: cfg.label_visibility ?? "always",
                 size: cfg.size ?? 1,
                 show_icons: cfg.show_icons !== false,
+                active_style: cfg.active_style ?? "tint",
                 container_style: cfg.container_style ?? "glass",
               }}
               .schema=${this._appearanceSchema()}
@@ -1254,13 +1268,35 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 haptics: cfg.haptics ?? true,
                 auto_hide_on_scroll: cfg.auto_hide_on_scroll ?? false,
                 submenu_trigger: cfg.submenu_trigger ?? "tap",
-                preload_views: cfg.preload_views ?? false,
               }}
               .schema=${this._behaviorSchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._rootChanged}
             ></ha-form>
-            <div class="hint">${this._t("editor_nav_preload_hint")}</div>
+            <div class="block">
+              <div class="block-title">${this._t("editor_nav_action_button")}</div>
+              <ha-form
+                .hass=${this.hass}
+                .data=${cfg.action_button ?? {}}
+                .schema=${[
+                  { name: "icon", selector: { icon: {} } },
+                  { name: "tap_action", selector: { ui_action: {} } },
+                ]}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${(ev: CustomEvent) => {
+                  const patch = ev.detail.value as Record<string, unknown>;
+                  const button = this._clean({ ...cfg.action_button, ...patch });
+                  const next = { ...cfg };
+                  if (Object.keys(button).length) {
+                    next.action_button = button as M3NavCardConfig["action_button"];
+                  } else {
+                    delete next.action_button;
+                  }
+                  this._emit(next);
+                }}
+              ></ha-form>
+              <div class="hint">${this._t("editor_nav_action_button_hint")}</div>
+            </div>
           </div>
         </ha-expansion-panel>
 

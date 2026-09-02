@@ -1874,6 +1874,21 @@ export interface NavLayoutConfig {
   breakpoint?: number;
 }
 
+/**
+ * How the current entry is marked. `tint` is a wash of its colour, which sits
+ * quietly in a busy dashboard; `solid` fills the pill with the colour outright
+ * and puts dark ink on it, which is what Material's own navigation does and
+ * what the reference designs show.
+ */
+export type NavActiveStyle = "tint" | "solid";
+
+/** A detached round button beside the bar — a search or an add, typically. */
+export interface NavActionButton {
+  icon?: string;
+  color?: string;
+  tap_action?: HaActionConfig;
+}
+
 export interface NavSheetAction {
   icon?: string;
   tap_action?: HaActionConfig;
@@ -1954,6 +1969,9 @@ export interface M3NavCardConfig {
 
   // ---- appearance
   label_visibility?: NavLabelVisibility;
+  active_style?: NavActiveStyle;
+  /** A round button set beside the bar, outside its surface. */
+  action_button?: NavActionButton;
   /**
    * Draw the icons at all. Off gives a bar of pure labels, which is what a
    * segmented control usually is — and the one shape `label_visibility` cannot

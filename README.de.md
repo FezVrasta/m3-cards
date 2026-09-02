@@ -3304,6 +3304,8 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `breakpoint` | `768` | Kartenbreite, unter der `mobile` gilt |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
 | `show_icons` | `true` | Aus ergibt eine Leiste aus reinen Beschriftungen — eine Segmentleiste |
+| `active_style` | `tint` | `tint` (zarte Tönung in der Farbe des Eintrags) oder `solid` (voll gefüllt, dunkle Schrift darauf) |
+| `action_button` | — | `{icon, tap_action, color}` — ein runder Knopf neben der Leiste, außerhalb ihrer Fläche |
 | `max_width` | — | Breitenbegrenzung, mittig. Zahl = px, Text = CSS-Länge, `fit` = so breit wie die Einträge |
 | `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
