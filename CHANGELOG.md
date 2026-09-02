@@ -15,6 +15,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   argue for, so it defaults to `primary` now, like the button card.
   `accent_color` and per-entry `color` are unchanged.
 
+- **Nav card: `page_transition`** — cross-fades the whole page when a navigation
+  starts from the bar. The card cannot animate Home Assistant's view swap from
+  the outside, but it is what starts the swap, and a view transition wraps
+  whatever the DOM does inside its callback. Only navigations get it, and a
+  browser without view transitions changes page exactly as before.
+
+- **Nav card: `marker_motion`** — `slide` moves a single shape between entries
+  instead of fading one out and another in. Arriving on a page never slides:
+  the marker is simply already where it belongs.
+
 - **Nav card: `pill_size`** — scales the marker around the active entry on its
   own. The variants mark different boxes, so the same number works on both: the
   shape around the icon in the stacked variants, the whole entry where the label
@@ -187,6 +197,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Navigation ist der Rahmen um alles andere und hat keinen eigenen Farbton zu
   vertreten; der Standard ist jetzt `primary`, wie bei der Button-Karte.
   `accent_color` und die Farbe je Eintrag bleiben unverändert.
+
+- **Nav-Karte: `page_transition`** — blendet die ganze Seite über, wenn die
+  Navigation von der Leiste ausgeht. Die Karte kann den Ansichtswechsel von Home
+  Assistant nicht von außen animieren, sie stößt ihn aber an, und eine
+  View-Transition umschließt alles, was innerhalb ihres Rückrufs im DOM passiert.
+  Nur Navigationen bekommen sie; ein Browser ohne View-Transitions wechselt
+  genau wie bisher.
+
+- **Nav-Karte: `marker_motion`** — `slide` bewegt eine einzelne Fläche zwischen
+  den Einträgen, statt eine aus- und eine einzublenden. Beim Ankommen auf einer
+  Seite gleitet nichts: die Markierung steht schlicht schon richtig.
 
 - **Nav-Karte: `pill_size`** — skaliert allein die Markierung um den aktiven
   Eintrag. Die Varianten markieren unterschiedliche Kästen, dieselbe Zahl wirkt

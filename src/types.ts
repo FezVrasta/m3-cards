@@ -1894,6 +1894,10 @@ export interface NavLayoutConfig {
  */
 export type NavActiveStyle = "tint" | "solid";
 
+export type NavMarkerMotion = "none" | "slide";
+
+export type NavPageTransition = "none" | "fade";
+
 /** A detached round button beside the bar — a search or an add, typically. */
 /**
  * One entry of the action button's speed dial: a labelled pill that rises out
@@ -2039,6 +2043,16 @@ export interface M3NavCardConfig {
    * anything else. 1 is the Material size; `size` scales the whole bar instead.
    */
   pill_size?: number;
+  /**
+   * How the marker gets from one entry to the next. `none` simply appears on
+   * the new entry; `slide` moves one shape across the bar.
+   */
+  marker_motion?: NavMarkerMotion;
+  /**
+   * Whether navigating from this card cross-fades the whole page. Uses the
+   * browser's view-transition support and falls back to a plain navigation.
+   */
+  page_transition?: NavPageTransition;
   /**
    * Distance in px between the bar and the edge of the screen it docks to.
    * Added on top of the device's own safe area, never instead of it — the

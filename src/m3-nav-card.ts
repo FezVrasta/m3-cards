@@ -11,6 +11,8 @@ import type {
   NavBadgeStyle,
   NavItemConfig,
   NavLabelPosition,
+  NavMarkerMotion,
+  NavPageTransition,
   NavActionMenuEntry,
   NavLabelVisibility,
   NavLayoutConfig,
@@ -52,6 +54,7 @@ import {
   NAV_ITEM_RADIUS_ACTIVE,
   NAV_ITEM_TINT,
   NAV_PRESS_MS,
+  NAV_MARKER_SLIDE_MS,
   NAV_SEGMENT_HEIGHT,
   NAV_SEGMENT_ITEM_RADIUS,
   NAV_SEGMENT_PADDING,
@@ -357,6 +360,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       this.removeEventListener(type, stopSwipe);
     }
     window.removeEventListener("resize", this._measureDock);
+    this._markerSettled = false;
     this._resizeObserver?.disconnect();
     // Cleared, not just disconnected: a disconnected observer that is still
     // held would make _startObserving think the work was already done when the
@@ -448,6 +452,61 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   };
 
   private _barRestored = false;
+
+  /**
+   * Puts the travelling marker over the active entry.
+   *
+   * Measured rather than described in CSS because the box it has to cover is
+   * not the same box in every variant — the icon in the stacked ones, the whole
+   * entry where the label sits beside it — and because an entry changes width
+   * when it gains or loses its icon.
+   */
+  /**
+   * Second pass pending. An entry is not its final width the moment it renders
+   * — an icon that only the active entry carries lays out a frame later, and a
+   * marker measured before that came out exactly one icon too narrow.
+   *
+   * Deliberately a single extra pass rather than a ResizeObserver on the entry.
+   * The observer worked, and then wedged the renderer: the marker's own size
+   * feeds the bar's scrollable width, so writing it from inside a resize
+   * callback is a loop with no bottom to it.
+   */
+  private _markerSettled = false;
+
+  private _placeMarker(again = false): void {
+    if (!this._sliding) return;
+    const bar = this.renderRoot.querySelector<HTMLElement>(".bar");
+    const marker = bar?.querySelector<HTMLElement>(".marker");
+    if (!bar || !marker) return;
+    const active = bar.querySelector<HTMLElement>(".item.active");
+    if (!active) {
+      marker.style.opacity = "0";
+      return;
+    }
+    const box = this._stacked
+      ? (active.querySelector<HTMLElement>(".glyph") ?? active)
+      : active;
+
+    const barRect = bar.getBoundingClientRect();
+    const rect = box.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    marker.style.opacity = "1";
+    // Offsets are taken against the scrolled content, not the viewport, so the
+    // marker stays put when the bar is scrolled sideways.
+    marker.style.width = `${rect.width}px`;
+    marker.style.height = `${rect.height}px`;
+    // Offsets run from the padding box, which is where an absolutely positioned
+    // child of the bar starts, not from the border box a rect reports.
+    marker.style.transform = `translate(${
+      rect.left - barRect.left - bar.clientLeft + bar.scrollLeft
+    }px, ${rect.top - barRect.top - bar.clientTop + bar.scrollTop}px)`;
+    marker.style.borderRadius = getComputedStyle(box).borderRadius;
+
+    if (!again && !this._markerSettled) {
+      this._markerSettled = true;
+      requestAnimationFrame(() => this._placeMarker(true));
+    }
+  }
 
   private _keepActiveInView(): void {
     const bar = this.renderRoot.querySelector<HTMLElement>(".bar");
@@ -561,6 +620,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   }
 
   protected willUpdate(changed: PropertyValues): void {
+    // A render can change what the marker has to cover, so each one is allowed
+    // one follow-up measurement.
+    this._markerSettled = false;
     // Before the render, not after it. A navigation that reaches the card by
     // a route this does not listen on used to be corrected in updated(), which
     // meant the wrong entry was painted first and put right on the next frame
@@ -616,6 +678,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       window.setTimeout(done, NAV_PRESS_MS);
     }
     this._keepActiveInView();
+    this._placeMarker();
     // The first measurement can land before the view has laid itself out, and
     // the observer only fires on a later change — which for a slot that never
     // resizes again never comes. Re-reading it per render is two rect reads.
@@ -713,6 +776,64 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   /** Whether any entry at all draws an icon, which decides the layout. */
   private get _showIcons(): boolean {
     return this._iconVisibility !== "never";
+  }
+
+  private get _pageTransition(): NavPageTransition {
+    return this._config?.page_transition ?? "none";
+  }
+
+  /**
+   * Runs an action, cross-fading the whole page when it is a navigation.
+   *
+   * The card cannot animate Home Assistant's view swap from the outside, but it
+   * is the thing that starts it — and a view transition wraps whatever the DOM
+   * does inside the callback, which is exactly the swap. Anything the browser
+   * does not support falls through to a plain navigation, and so does every
+   * action that is not a navigation: cross-fading the page because a light was
+   * toggled would be nonsense.
+   */
+  private _dispatch(action: HaActionConfig | undefined, entityId?: string): void {
+    const run = (): void => handleAction(this, this.hass, action, entityId);
+    const start = (
+      document as Document & {
+        startViewTransition?: (cb: () => unknown) => unknown;
+      }
+    ).startViewTransition;
+    if (
+      this._pageTransition !== "fade" ||
+      action?.action !== "navigate" ||
+      !start ||
+      !shouldAnimate(this._config?.animation)
+    ) {
+      run();
+      return;
+    }
+    start.call(document, async () => {
+      run();
+      // The router puts the new view in place a frame or two later, and the
+      // transition photographs the DOM when this resolves. The timeout is the
+      // floor: an animation frame never arrives in a backgrounded app, and a
+      // transition that never resolves would leave the page frozen mid-fade.
+      await new Promise<void>((resolve) => {
+        let done = false;
+        const finish = (): void => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        requestAnimationFrame(() => requestAnimationFrame(finish));
+        window.setTimeout(finish, NAV_PRESS_MS);
+      });
+    });
+  }
+
+  private get _markerMotion(): NavMarkerMotion {
+    return this._config?.marker_motion ?? "none";
+  }
+
+  /** Whether one shape travels between entries rather than two fading. */
+  private get _sliding(): boolean {
+    return this._markerMotion === "slide" && shouldAnimate(this._config?.animation);
   }
 
   private get _labelPosition(): NavLabelPosition {
@@ -1087,7 +1208,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         : undefined);
     if (!action || !isActionable(action)) return;
     if (this._config?.haptics !== false) fireHaptic(this, "light");
-    handleAction(this, this.hass, action);
+    this._dispatch(action);
   }
 
   /** The action an entry runs when nothing is configured: go where it points. */
@@ -1113,7 +1234,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       fireHaptic(this, kind === "hold" ? "medium" : "light");
     }
     this._flashPress(index);
-    handleAction(this, this.hass, action);
+    this._dispatch(action);
   }
 
   /**
@@ -1432,7 +1553,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const action = this._config?.action_button?.tap_action;
     if (!action || !isActionable(action)) return;
     if (this._config?.haptics !== false) fireHaptic(this, "light");
-    handleAction(this, this.hass, action);
+    this._dispatch(action);
   };
 
   private _toggleActionMenu(): void {
@@ -1458,7 +1579,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         : undefined);
     if (!action || !isActionable(action)) return;
     if (this._config?.haptics !== false) fireHaptic(this, "light");
-    handleAction(this, this.hass, action);
+    this._dispatch(action);
   }
 
   private _runSheetAction = (e: Event): void => {
@@ -1466,7 +1587,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const action = this._config?.sheet_action?.tap_action;
     if (!action || !isActionable(action)) return;
     if (this._config?.haptics !== false) fireHaptic(this, "light");
-    handleAction(this, this.hass, action);
+    this._dispatch(action);
   };
 
   private _runSheetItem(index: number): void {
@@ -1479,7 +1600,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         : undefined);
     if (!action || !isActionable(action)) return;
     if (this._config?.haptics !== false) fireHaptic(this, "light");
-    handleAction(this, this.hass, action);
+    this._dispatch(action);
     if (this._config?.collapse_on_navigate !== false) this._setSheetOpen(false);
   }
 
@@ -1816,7 +1937,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // The pill goes round the glyph in the stacked variants and round the whole
     // entry in the horizontal ones, so the inline colours are set on whichever
     // element is carrying it.
-    const indicator = item.active ? `background: ${fill}; color: ${ink};` : "";
+    // While a single shape travels between entries, the entries themselves must
+    // not paint one: two markers would be on screen at once, and the moving one
+    // would appear to leave a copy behind.
+    const indicator = item.active
+      ? this._sliding
+        ? `color: ${ink};`
+        : `background: ${fill}; color: ${ink};`
+      : "";
 
     return html`
       <div
@@ -1949,6 +2077,20 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         })()
       : nothing;
     const widthClass = `${width.css ? "capped" : ""} ${width.fit ? "fit" : ""}`;
+    const marker = this._sliding
+      ? html`<div
+          class="marker ${this._settling ? "settling" : ""}"
+          style=${(() => {
+            const accent = resolveThemeColor(cfg.accent_color ?? DEFAULT_NAV_COLOR);
+            return `background: ${
+              (cfg.active_style ?? "tint") === "solid"
+                ? fillColor(this, accent)
+                : tintOn(this, accent, cfg.accent_opacity, NAV_ITEM_TINT)
+            };`;
+          })()}
+        ></div>`
+      : nothing;
+
     const bar = html`
       <nav
         class="bar ${container} ${widthClass} ${this._autoHidden
@@ -1959,7 +2101,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         style=${`${cssVars} ${freeStyles}`}
         aria-label=${cfg.name || this._t("nav_label")}
       >
-        ${items.map((item) => this._renderItem(item))}
+        ${marker}${items.map((item) => this._renderItem(item))}
       </nav>
     `;
 
@@ -2062,6 +2204,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
        stays transparent to them so the view behind it stays usable where the
        bar does not actually cover it. */
     .bar {
+      position: relative;
       pointer-events: auto;
       box-sizing: border-box;
       display: flex;
@@ -3032,6 +3175,34 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .no-animations,
     .no-animations .item {
       transition: none;
+    }
+
+    /* One shape that travels between entries instead of two that fade. It is
+       placed from measurements rather than laid out, so it sits outside the
+       flow and under the entries — the icon and the label have to stay on top
+       of it. */
+    .marker {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 0;
+      transition:
+        transform ${unsafeCSS(NAV_MARKER_SLIDE_MS)}ms ${EASING},
+        width ${unsafeCSS(NAV_MARKER_SLIDE_MS)}ms ${EASING},
+        height ${unsafeCSS(NAV_MARKER_SLIDE_MS)}ms ${EASING},
+        opacity 120ms linear;
+    }
+
+    /* Arriving on a page is not travelling to it: the marker is simply where it
+       belongs, without sliding in from wherever the last bar left it. */
+    .marker.settling {
+      transition: none;
+    }
+
+    .bar .item {
+      z-index: 1;
     }
 
     /* The first paint after coming back on screen. Only the marker is frozen —

@@ -1647,6 +1647,9 @@ export const NAV_ICON_SIDE_PADDING = 12;
 export const NAV_ITEM_INACTIVE_OPACITY = 0.6;
 export const NAV_PRESS_MS = 200;
 
+/** How long the marker takes to travel from one entry to the next. */
+export const NAV_MARKER_SLIDE_MS = 280;
+
 /** `segmented` is one pill holding the entries, so its own frame is tighter. */
 export const NAV_SEGMENT_HEIGHT = 44;
 export const NAV_SEGMENT_RADIUS = 22;

@@ -1723,6 +1723,16 @@ const translations = {
     editor_nav_width_px_hint: "Diese Konfiguration hat eine feste Breite hinterlegt. Der Schalter oben überschreibt sie, solange er an ist.",
     editor_nav_size: "Gesamtgröße der Leiste",
     editor_nav_icon_size: "Icon-Größe (px)",
+    editor_nav_page_transition: "Übergang beim Seitenwechsel",
+    editor_nav_page_transition_none: "Ohne — die neue Seite ist sofort da",
+    editor_nav_page_transition_fade: "Überblenden — die Seiten gehen ineinander über",
+    editor_nav_page_transition_helper:
+      "Blendet beim Antippen eines Eintrags die ganze Seite weich in die neue über, statt hart umzuschalten. Gilt nur für Wechsel, die über diese Leiste ausgelöst werden. Browser, die das nicht können, wechseln wie bisher.",
+    editor_nav_marker_motion: "Bewegung der Markierung",
+    editor_nav_marker_motion_none: "Ohne — erscheint direkt am neuen Eintrag",
+    editor_nav_marker_motion_slide: "Gleiten — wandert zum neuen Eintrag",
+    editor_nav_marker_motion_helper:
+      "Beim Gleiten wandert eine einzelne Fläche sichtbar von einem Eintrag zum nächsten, statt am alten zu verschwinden und am neuen aufzutauchen. Beim Ankommen auf einer Seite gleitet nichts — die Markierung steht dann sofort richtig.",
     editor_nav_pill_size: "Größe der Markierung",
     editor_nav_pill_size_helper:
       "Wie groß die farbige Fläche um den Eintrag der aktuellen Seite ist. 1 ist die Standardgröße, kleinere Werte machen sie zierlicher, größere kräftiger. Icon und Text bleiben dabei gleich groß — dafür gibt es eigene Einstellungen.",
@@ -3501,6 +3511,16 @@ const translations = {
     editor_nav_width_px_hint: "This configuration carries a fixed width. The switch above overrides it while it is on.",
     editor_nav_size: "Overall size of the bar",
     editor_nav_icon_size: "Icon size (px)",
+    editor_nav_page_transition: "Page change transition",
+    editor_nav_page_transition_none: "None — the new page is simply there",
+    editor_nav_page_transition_fade: "Cross-fade — the pages blend into each other",
+    editor_nav_page_transition_helper:
+      "Softly fades the whole page into the new one when an entry is tapped, instead of switching hard. Applies only to navigation started from this bar. Browsers without support change page as before.",
+    editor_nav_marker_motion: "Marker movement",
+    editor_nav_marker_motion_none: "None — appears on the new entry",
+    editor_nav_marker_motion_slide: "Slide — travels to the new entry",
+    editor_nav_marker_motion_helper:
+      "Sliding moves a single shape visibly from one entry to the next instead of fading out on one and in on the other. Arriving on a page never slides: the marker is simply already in the right place.",
     editor_nav_pill_size: "Marker size",
     editor_nav_pill_size_helper:
       "How large the coloured shape around the current page's entry is. 1 is the standard size, smaller values make it slimmer, larger ones bolder. The icon and the text keep their own sizes, which have settings of their own.",

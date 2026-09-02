@@ -3235,6 +3235,8 @@ without a breaking config change.
 | `action_button` | — | `{icon, tap_action, color}` — a round button set beside the bar, outside its surface |
 | `max_width` | — | Width cap, centred. A number is px, a string any CSS length, `fit` hugs the entries |
 | `size` | `1` | Scales every measurement, 0.7–1.5 |
+| `marker_motion` | `none` | `none` or `slide` — whether one shape travels between entries instead of two fading |
+| `page_transition` | `none` | `none` or `fade` — cross-fades the whole page when navigating from the bar, where the browser supports view transitions |
 | `pill_size` | `1` | Scales the marker around the active entry on its own, without touching the icon or the text |
 | `label_size` | `11`, or `14` beside the icon | Label size in px. The default depends on `label_position`: a label under an icon is a caption, one next to it is the entry's name |
 | `label_position` | `below` | Where an entry's text sits relative to its icon: `below`, `above`, `right`, `left`. The horizontal ones also make the active pill wrap icon and text together |

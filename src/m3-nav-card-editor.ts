@@ -616,6 +616,30 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
       },
       {
+        name: "page_transition",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "none", label: this._t("editor_nav_page_transition_none") },
+              { value: "fade", label: this._t("editor_nav_page_transition_fade") },
+            ],
+          },
+        },
+      },
+      {
+        name: "marker_motion",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "none", label: this._t("editor_nav_marker_motion_none") },
+              { value: "slide", label: this._t("editor_nav_marker_motion_slide") },
+            ],
+          },
+        },
+      },
+      {
         name: "pill_size",
         selector: { number: { min: 0.7, max: 1.6, step: 0.05, mode: "slider" } },
       },
@@ -911,6 +935,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
   private _computeHelper = (schema: SchemaEntry): string | undefined => {
     if (schema.name === "edge_distance") return this._t("editor_nav_edge_distance_helper");
     if (schema.name === "pill_size") return this._t("editor_nav_pill_size_helper");
+    if (schema.name === "marker_motion") return this._t("editor_nav_marker_motion_helper");
+    if (schema.name === "page_transition") return this._t("editor_nav_page_transition_helper");
     return undefined;
   };
 
@@ -945,6 +971,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       icon_size: "editor_nav_icon_size",
       label_size: "editor_nav_label_size",
       pill_size: "editor_nav_pill_size",
+      marker_motion: "editor_nav_marker_motion",
+      page_transition: "editor_nav_page_transition",
       edge_distance: "editor_nav_edge_distance",
       close_icon: "editor_nav_close_icon",
       action_button_on: "editor_nav_action_button_on",
@@ -1455,6 +1483,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   .hass=${this.hass}
                   .data=${{
                     icon_size: cfg.icon_size ?? 22,
+                    page_transition: cfg.page_transition ?? "none",
+                    marker_motion: cfg.marker_motion ?? "none",
                     pill_size: cfg.pill_size ?? 1,
                     label_size:
                       cfg.label_size ??
