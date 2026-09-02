@@ -3083,18 +3083,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       );
     }
 
-    /* An entry that is nothing but an icon gets a round marker rather than a
-       rounded rectangle: the rectangle is the shape of a pill sitting above a
-       label, and with no label under it there is nothing for that shape to
-       line up with. */
+    /* An entry that is nothing but an icon keeps the marker's proportions and
+       only rounds its ends fully, so it is the same capsule the entries with
+       labels wear. It was briefly a circle, which is a different shape and a
+       heavier one — the marker should read as the same family across variants,
+       whether or not the entry has words under it. */
     :host([variant]) .item.icons-only .glyph {
-      width: calc(
-        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) * 1.9
-      );
-      height: calc(
-        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) * 1.9
-      );
-      border-radius: 50%;
+      border-radius: 999px;
     }
 
     :host([variant]) .bar .item.icons-only {

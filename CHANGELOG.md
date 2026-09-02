@@ -38,6 +38,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: the marker on an icon-only bar was a circle.** It should be the
+  same capsule the bars with labels wear, only without words under it. A circle
+  is a different shape and a heavier one, and it made a compact dock look
+  unrelated to the other variants.
+
 - **Nav card: `max_width: fit` never actually capped the bar.** The cap was
   written as `min(var(--nav-max-width), 100%)`, and that variable holds the
   keyword `fit-content` — a keyword inside `min()` is invalid at computed-value
@@ -169,6 +174,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: Die Markierung auf einer reinen Icon-Leiste war ein Kreis.** Sie
+  soll dieselbe liegende Kapsel sein, die die Leisten mit Text tragen, nur eben
+  ohne Wörter darunter. Ein Kreis ist eine andere und schwerere Form und ließ ein
+  kompaktes Dock aussehen, als gehöre es nicht zu den übrigen Varianten.
 
 - **Nav-Karte: `max_width: fit` hat die Leiste nie begrenzt.** Die Begrenzung
   stand als `min(var(--nav-max-width), 100%)` da, und diese Variable enthält das

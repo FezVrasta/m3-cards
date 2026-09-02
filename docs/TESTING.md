@@ -669,6 +669,7 @@ Fallen woanders als bei den übrigen Karten.
 | Angedockt trotz `fit` | `header`/`footer` mit `max_width: fit` | Die Glasfläche geht über die volle Breite, nur die Einträge rücken zusammen — keine sichtbare Kante links und rechts der Einträge |
 | Angedockt bis an den Rand | `header` bzw. `footer` auf dem Handy | Die Leiste reicht links und rechts bis an den Bildschirmrand. Am Desktop mit ausgeklappter Seitenleiste beginnt sie weiterhin neben dieser, nicht darunter |
 | Form der aktiven Pille | `label_position: right`, aktiven Eintrag ansehen | Die Pille ist eine Kapsel — die Enden sind vollständig rund, nicht abgeflacht. Das Icon sitzt ohne eigenen Kasten direkt darauf, links und rechts gleich viel Luft |
+| Markierung ohne Text | Eine Leiste nur mit Icons (`label_visibility: never`) | Die Markierung ist eine liegende Kapsel wie bei den Leisten mit Text — **kein** Kreis um das Icon |
 | Textgröße neben dem Icon | `label_position: right` und einmal ohne, einmal mit `label_size` | Neben dem Icon steht der Text auf 14px statt 11px; `label_size` überschreibt beides. Unter dem Icon bleibt es bei 11px |
 | Textposition | `label_position` auf `below`, `above`, `right`, `left` | Text sitzt unter, über, rechts bzw. links vom Icon. Bei `right`/`left` umschließt die aktive Pille **Icon und Text** zusammen, nicht nur das Icon |
 | Umgekehrte Sichtbarkeit | `icon_visibility: inactive_only` mit `label_visibility: active_only` | Die aktive Seite zeigt nur Text, alle anderen nur ihr Icon |
