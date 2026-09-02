@@ -166,6 +166,44 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     `;
   }
 
+  /** Two arrows, disabled at the ends. Shared by the entries and the tiles. */
+  private _renderReorder(
+    index: number,
+    length: number,
+    move: (from: number, to: number) => void,
+  ) {
+    const step = (delta: number) => (e: Event) => {
+      // Without this the click reaches the expansion panel underneath and
+      // folds it shut on every press.
+      e.stopPropagation();
+      e.preventDefault();
+      move(index, index + delta);
+    };
+    return html`
+      <ha-icon-button
+        .label=${this._t("editor_nav_move_up")}
+        .disabled=${index === 0}
+        @click=${step(-1)}
+      >
+        <ha-icon icon="mdi:arrow-up"></ha-icon>
+      </ha-icon-button>
+      <ha-icon-button
+        .label=${this._t("editor_nav_move_down")}
+        .disabled=${index === length - 1}
+        @click=${step(1)}
+      >
+        <ha-icon icon="mdi:arrow-down"></ha-icon>
+      </ha-icon-button>
+    `;
+  }
+
+  private _moveSheetItem(from: number, to: number): void {
+    if (to < 0 || to >= this._sheetItems.length) return;
+    const items = [...this._sheetItems];
+    [items[from], items[to]] = [items[to], items[from]];
+    this._setSheetItems(items);
+  }
+
   private _itemLabel(item: NavItemConfig, index: number): string {
     return item.name || item.path || `#${index + 1}`;
   }
@@ -215,8 +253,36 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
 
   // ---- schemas -------------------------------------------------------------
 
+  /** `segmented` sits in the card flow, so it has no edge to dock to. */
+  private get _hasEdge(): boolean {
+    return (this._config?.style ?? "footer") !== "segmented";
+  }
+
+  private get _usesSplitLayouts(): boolean {
+    return !!(this._config?.desktop || this._config?.mobile);
+  }
+
+  private _splitToggleSchema(): SchemaEntry[] {
+    return [{ name: "split", selector: { boolean: {} } }];
+  }
+
+  private _splitToggled(on: boolean): void {
+    if (!this._config) return;
+    const next = { ...this._config };
+    if (on) {
+      // Seeded with what the card already does, so switching it on changes
+      // nothing until something below it is actually changed.
+      next.desktop = { ...(next.desktop ?? {}) };
+      next.mobile = { ...(next.mobile ?? {}) };
+    } else {
+      delete next.desktop;
+      delete next.mobile;
+    }
+    this._emit(next);
+  }
+
   private _layoutSchema(): SchemaEntry[] {
-    return [
+    const schema: SchemaEntry[] = [
       {
         name: "style",
         selector: {
@@ -232,7 +298,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
-      {
+    ];
+    if (this._hasEdge) {
+      schema.push({
         name: "position",
         selector: {
           select: {
@@ -243,12 +311,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             ],
           },
         },
-      },
-      {
-        name: "breakpoint",
-        selector: { number: { min: 320, max: 1600, step: 8, mode: "box" } },
-      },
-    ];
+      });
+    }
+    return schema;
   }
 
   private _perWidthSchema(withBreakpoint: boolean): SchemaEntry[] {
@@ -280,11 +345,18 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     return schema;
   }
 
+  /** What someone needs to fill in for an entry to work at all. */
   private _itemSchema(): SchemaEntry[] {
     return [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "path", selector: { text: {} } },
+    ];
+  }
+
+  /** Regex and Jinja: real capabilities, wrong things to meet first. */
+  private _itemAdvancedSchema(): SchemaEntry[] {
+    return [
       { name: "match", selector: { text: {} } },
       { name: "hidden", selector: { text: {} } },
       { name: "disabled", selector: { text: {} } },
@@ -299,13 +371,64 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     ];
   }
 
-  private _badgeSchema(): SchemaEntry[] {
+  /**
+   * A badge has three possible sources and they are mutually exclusive, so the
+   * editor asks which one first and then shows that one field. Offering all
+   * four at once asked the reader to work out the exclusivity themselves.
+   */
+  private _badgeSource(item: NavItemConfig): "none" | "entity" | "count" | "template" {
+    const badge = item.badge;
+    if (!badge) return "none";
+    if (badge.template) return "template";
+    if (badge.count_entities?.length) return "count";
+    if (badge.entity) return "entity";
+    return "none";
+  }
+
+  private _badgeSourceSchema(): SchemaEntry[] {
     return [
-      { name: "template", selector: { text: {} } },
-      { name: "entity", selector: { entity: {} } },
-      { name: "count_entities", selector: { entity: { multiple: true } } },
-      { name: "show_if", selector: { text: {} } },
+      {
+        name: "badge_source",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "none", label: this._t("editor_nav_badge_source_none") },
+              { value: "entity", label: this._t("editor_nav_badge_source_entity") },
+              { value: "count", label: this._t("editor_nav_badge_source_count") },
+              { value: "template", label: this._t("editor_nav_badge_source_template") },
+            ],
+          },
+        },
+      },
     ];
+  }
+
+  private _badgeFieldSchema(source: string): SchemaEntry[] {
+    if (source === "entity") return [{ name: "entity", selector: { entity: {} } }];
+    if (source === "count") {
+      return [{ name: "count_entities", selector: { entity: { multiple: true } } }];
+    }
+    if (source === "template") return [{ name: "template", selector: { text: {} } }];
+    return [];
+  }
+
+  private _badgeSourceChanged(index: number, source: string): void {
+    // Switching source drops the other two, or the card would go on reading a
+    // field the editor no longer shows.
+    if (source === "none") {
+      this._patchItem(index, { badge: undefined, badge_style: undefined });
+      return;
+    }
+    const previous = this._items[index]?.badge ?? {};
+    const badge: Record<string, unknown> = {};
+    if (previous.color) badge.color = previous.color;
+    if (previous.show_if) badge.show_if = previous.show_if;
+    this._patchItem(index, { badge: badge as NavItemConfig["badge"] });
+  }
+
+  private _badgeAdvancedSchema(): SchemaEntry[] {
+    return [{ name: "show_if", selector: { text: {} } }];
   }
 
   private _badgeStyleSchema(): SchemaEntry[] {
@@ -346,10 +469,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: NAV_SIZE_MIN, max: NAV_SIZE_MAX, step: 0.05, mode: "slider" } },
       },
       {
-        name: "icon_size",
-        selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
-      },
-      {
         name: "container_style",
         selector: {
           select: {
@@ -362,6 +481,16 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
+    ];
+  }
+
+  /** Fine-tuning: real options, but not the ones to meet first. */
+  private _appearanceAdvancedSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "icon_size",
+        selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
+      },
       {
         name: "container_opacity",
         selector: { number: { min: 10, max: 100, step: 1, mode: "slider" } },
@@ -372,10 +501,15 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   private _behaviorSchema(): SchemaEntry[] {
-    return [
+    const schema: SchemaEntry[] = [
       { name: "haptics", selector: { boolean: {} } },
       { name: "auto_hide_on_scroll", selector: { boolean: {} } },
-      {
+    ];
+    // Only worth asking about once something has a submenu to open, and
+    // `preload_views` is deliberately absent: it does nothing today, and a
+    // switch that does nothing is worse than no switch.
+    if (this._items.some((i) => (i.submenu ?? []).length)) {
+      schema.push({
         name: "submenu_trigger",
         selector: {
           select: {
@@ -386,9 +520,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             ],
           },
         },
-      },
-      { name: "preload_views", selector: { boolean: {} } },
-    ];
+      });
+    }
+    return schema;
   }
 
   private _visibilitySchema(): SchemaEntry[] {
@@ -679,58 +813,73 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
   // ---- render --------------------------------------------------------------
 
   private _renderItem(item: NavItemConfig, index: number) {
+    const source = this._badgeSource(item);
+    const hasSubmenu = (item.submenu ?? []).length > 0;
     return html`
       <ha-expansion-panel outlined .header=${this._itemLabel(item, index)}>
+        <!-- In the header, not in the body: reordering four entries should not
+             mean opening four panels, scrolling to the bottom of each and
+             closing it again. Clicks are stopped so an arrow does not also
+             fold the panel it sits on. -->
+        <div slot="icons" class="reorder">
+          ${this._renderReorder(
+            index,
+            this._items.length,
+            (from, to) => this._moveItem(from, to - from),
+          )}
+        </div>
         <div class="panel-content">
           <ha-form
             .hass=${this.hass}
             .data=${item}
             .schema=${this._itemSchema()}
-            .computeLabel=${this._itemHiddenLabel}
+            .computeLabel=${this._computeLabel}
             @value-changed=${(ev: CustomEvent) =>
               this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
           ></ha-form>
-          <div class="hint">${this._t("editor_nav_template_hint")}</div>
-          <div class="hint">${this._t("editor_nav_item_match_hint")}</div>
+          <div class="hint">${this._t("editor_nav_item_path_hint")}</div>
           ${colorRow(this._t("editor_mode_color"), item.color, (v) =>
             this._colorChanged(index, v),
           )}
 
           <div class="block">
-            <div class="hint">${this._t("editor_nav_badge")}</div>
+            <div class="block-title">${this._t("editor_nav_badge")}</div>
             <ha-form
               .hass=${this.hass}
-              .data=${item.badge ?? {}}
-              .schema=${this._badgeSchema()}
-              .computeLabel=${this._computeLabel}
-              @value-changed=${(ev: CustomEvent) => this._badgeChanged(index, ev)}
-            ></ha-form>
-            <ha-form
-              .hass=${this.hass}
-              .data=${{ badge_style: item.badge_style ?? "count" }}
-              .schema=${this._badgeStyleSchema()}
+              .data=${{ badge_source: source }}
+              .schema=${this._badgeSourceSchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${(ev: CustomEvent) =>
-                this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
+                this._badgeSourceChanged(
+                  index,
+                  (ev.detail.value as { badge_source: string }).badge_source,
+                )}
             ></ha-form>
-            <div class="hint">${this._t("editor_nav_badge_hint")}</div>
+            ${source !== "none"
+              ? html`
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${item.badge ?? {}}
+                    .schema=${this._badgeFieldSchema(source)}
+                    .computeLabel=${this._computeLabel}
+                    @value-changed=${(ev: CustomEvent) => this._badgeChanged(index, ev)}
+                  ></ha-form>
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${{ badge_style: item.badge_style ?? "count" }}
+                    .schema=${this._badgeStyleSchema()}
+                    .computeLabel=${this._computeLabel}
+                    @value-changed=${(ev: CustomEvent) =>
+                      this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
+                  ></ha-form>
+                  <div class="hint">${this._t("editor_nav_badge_hint")}</div>
+                `
+              : nothing}
           </div>
 
           <div class="block">
-            <div class="hint">${this._t("editor_nav_actions")}</div>
-            <ha-form
-              .hass=${this.hass}
-              .data=${item}
-              .schema=${this._itemActionSchema()}
-              .computeLabel=${this._computeLabel}
-              @value-changed=${(ev: CustomEvent) =>
-                this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
-            ></ha-form>
-            <div class="hint">${this._t("editor_nav_action_hint")}</div>
-          </div>
-
-          <div class="block">
-            <div class="hint">${this._t("editor_nav_submenu")}</div>
+            <div class="block-title">${this._t("editor_nav_submenu")}</div>
+            <div class="hint">${this._t("editor_nav_submenu_hint")}</div>
             ${(item.submenu ?? []).map(
               (entry, entryIndex) => html`
                 <div class="block">
@@ -755,25 +904,48 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             >
           </div>
 
-          <div class="row-buttons">
-            <ha-icon-button
-              .label=${this._t("editor_nav_move_up")}
-              .disabled=${index === 0}
-              @click=${() => this._moveItem(index, -1)}
-            >
-              <ha-icon icon="mdi:arrow-up"></ha-icon>
-            </ha-icon-button>
-            <ha-icon-button
-              .label=${this._t("editor_nav_move_down")}
-              .disabled=${index === this._items.length - 1}
-              @click=${() => this._moveItem(index, 1)}
-            >
-              <ha-icon icon="mdi:arrow-down"></ha-icon>
-            </ha-icon-button>
-            <ha-button class="remove" @click=${() => this._removeItem(index)}
-              >${this._t("editor_nav_remove_item")}</ha-button
-            >
-          </div>
+          <ha-expansion-panel outlined .header=${this._t("editor_nav_advanced")}>
+            <div class="panel-content">
+              <div class="hint">${this._t("editor_nav_actions")}</div>
+              <ha-form
+                .hass=${this.hass}
+                .data=${item}
+                .schema=${this._itemActionSchema()}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${(ev: CustomEvent) =>
+                  this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
+              ></ha-form>
+              <div class="hint">
+                ${hasSubmenu
+                  ? this._t("editor_nav_action_hint_submenu")
+                  : this._t("editor_nav_action_hint")}
+              </div>
+              <ha-form
+                .hass=${this.hass}
+                .data=${item}
+                .schema=${this._itemAdvancedSchema()}
+                .computeLabel=${this._itemHiddenLabel}
+                @value-changed=${(ev: CustomEvent) =>
+                  this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
+              ></ha-form>
+              <div class="hint">${this._t("editor_nav_template_hint")}</div>
+              ${source !== "none"
+                ? html`
+                    <ha-form
+                      .hass=${this.hass}
+                      .data=${item.badge ?? {}}
+                      .schema=${this._badgeAdvancedSchema()}
+                      .computeLabel=${this._computeLabel}
+                      @value-changed=${(ev: CustomEvent) => this._badgeChanged(index, ev)}
+                    ></ha-form>
+                  `
+                : nothing}
+            </div>
+          </ha-expansion-panel>
+
+          <ha-button class="remove" @click=${() => this._removeItem(index)}
+            >${this._t("editor_nav_remove_item")}</ha-button
+          >
         </div>
       </ha-expansion-panel>
     `;
@@ -785,6 +957,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
 
     return html`
       <div class="editor">
+        <div class="hint intro">${this._t("editor_nav_intro")}</div>
         <ha-expansion-panel outlined .header=${this._t("editor_nav_layout")} expanded>
           <ha-icon slot="leading-icon" icon="mdi:dock-bottom"></ha-icon>
           <div class="panel-content">
@@ -799,47 +972,85 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._rootChanged}
             ></ha-form>
-            <div class="hint">${this._t("editor_nav_breakpoint_hint")}</div>
+            ${this._renderWidth(cfg.max_width, (v) => {
+              const next = { ...cfg };
+              if (v === undefined) delete next.max_width;
+              else next.max_width = v;
+              this._emit(next);
+            })}
 
-            <div class="block">
-              <div class="hint">${this._t("editor_nav_desktop")}</div>
-              <ha-form
-                .hass=${this.hass}
-                .data=${cfg.desktop ?? {}}
-                .schema=${this._perWidthSchema(true)}
-                .computeLabel=${this._layoutHiddenLabel}
-                @value-changed=${(ev: CustomEvent) => this._perWidthChanged("desktop", ev)}
-              ></ha-form>
-              ${this._renderWidth(
-                cfg.desktop?.max_width,
-                (v) => this._perWidthWidth("desktop", v),
-                false,
-              )}
-            </div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ split: this._usesSplitLayouts }}
+              .schema=${this._splitToggleSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) =>
+                this._splitToggled((ev.detail.value as { split: boolean }).split === true)}
+            ></ha-form>
+            <div class="hint">${this._t("editor_nav_different_widths_hint")}</div>
 
-            <div class="block">
-              <div class="hint">${this._t("editor_nav_mobile")}</div>
-              <ha-form
-                .hass=${this.hass}
-                .data=${cfg.mobile ?? {}}
-                .schema=${this._perWidthSchema(false)}
-                .computeLabel=${this._layoutHiddenLabel}
-                @value-changed=${(ev: CustomEvent) => this._perWidthChanged("mobile", ev)}
-              ></ha-form>
-              ${this._renderWidth(
-                cfg.mobile?.max_width,
-                (v) => this._perWidthWidth("mobile", v),
-                false,
-              )}
-            </div>
-            <div class="hint">${this._t("editor_nav_layout_hint")}</div>
+            ${this._usesSplitLayouts
+              ? html`
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${{ breakpoint: cfg.breakpoint ?? NAV_DEFAULT_BREAKPOINT }}
+                    .schema=${[
+                      {
+                        name: "breakpoint",
+                        selector: {
+                          number: { min: 320, max: 1600, step: 8, mode: "box" },
+                        },
+                      },
+                    ]}
+                    .computeLabel=${this._computeLabel}
+                    @value-changed=${this._rootChanged}
+                  ></ha-form>
+                  <div class="hint">${this._t("editor_nav_breakpoint_hint")}</div>
+
+                  <div class="block">
+                    <div class="block-title">${this._t("editor_nav_desktop")}</div>
+                    <ha-form
+                      .hass=${this.hass}
+                      .data=${cfg.desktop ?? {}}
+                      .schema=${this._perWidthSchema(false)}
+                      .computeLabel=${this._layoutHiddenLabel}
+                      @value-changed=${(ev: CustomEvent) =>
+                        this._perWidthChanged("desktop", ev)}
+                    ></ha-form>
+                    ${this._renderWidth(
+                      cfg.desktop?.max_width,
+                      (v) => this._perWidthWidth("desktop", v),
+                      false,
+                    )}
+                  </div>
+
+                  <div class="block">
+                    <div class="block-title">${this._t("editor_nav_mobile")}</div>
+                    <ha-form
+                      .hass=${this.hass}
+                      .data=${cfg.mobile ?? {}}
+                      .schema=${this._perWidthSchema(false)}
+                      .computeLabel=${this._layoutHiddenLabel}
+                      @value-changed=${(ev: CustomEvent) =>
+                        this._perWidthChanged("mobile", ev)}
+                    ></ha-form>
+                    ${this._renderWidth(
+                      cfg.mobile?.max_width,
+                      (v) => this._perWidthWidth("mobile", v),
+                      false,
+                    )}
+                  </div>
+                `
+              : nothing}
           </div>
         </ha-expansion-panel>
 
         <ha-expansion-panel outlined .header=${this._t("editor_nav_items")} expanded>
           <ha-icon slot="leading-icon" icon="mdi:format-list-bulleted"></ha-icon>
           <div class="panel-content">
-            ${this._items.map((item, index) => this._renderItem(item, index))}
+            ${this._items.length
+              ? this._items.map((item, index) => this._renderItem(item, index))
+              : html`<div class="hint">${this._t("editor_nav_items_empty")}</div>`}
             <ha-button raised @click=${this._addItem}
               >${this._t("editor_nav_add_item")}</ha-button
             >
@@ -895,6 +1106,18 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                     ${this._sheetItems.map(
                       (item, index) => html`
                         <div class="block">
+                          <div class="tile-head">
+                            <span class="tile-name"
+                              >${item.name || item.path || "#" + (index + 1)}</span
+                            >
+                            <span class="reorder">
+                              ${this._renderReorder(
+                                index,
+                                this._sheetItems.length,
+                                (from, to) => this._moveSheetItem(from, to),
+                              )}
+                            </span>
+                          </div>
                           <ha-form
                             .hass=${this.hass}
                             .data=${item}
@@ -938,27 +1161,34 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${{
                 label_visibility: cfg.label_visibility ?? "always",
                 size: cfg.size ?? 1,
-                icon_size: cfg.icon_size ?? 22,
                 container_style: cfg.container_style ?? "glass",
-                container_opacity: cfg.container_opacity ?? 100,
-                blur: cfg.blur ?? 20,
-                radius: cfg.radius ?? 30,
               }}
               .schema=${this._appearanceSchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._rootChanged}
             ></ha-form>
-            ${this._renderWidth(cfg.max_width, (v) => {
-              const next = { ...cfg };
-              if (v === undefined) delete next.max_width;
-              else next.max_width = v;
-              this._emit(next);
-            })}
             ${colorRow(this._t("editor_mode_color"), cfg.accent_color, (v) =>
               this._emit(
                 this._clean({ ...cfg, accent_color: v }) as unknown as M3NavCardConfig,
               ),
             )}
+
+            <ha-expansion-panel outlined .header=${this._t("editor_nav_advanced")}>
+              <div class="panel-content">
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{
+                    icon_size: cfg.icon_size ?? 22,
+                    container_opacity: cfg.container_opacity ?? 100,
+                    blur: cfg.blur ?? 20,
+                    radius: cfg.radius ?? 30,
+                  }}
+                  .schema=${this._appearanceAdvancedSchema()}
+                  .computeLabel=${this._computeLabel}
+                  @value-changed=${this._rootChanged}
+                ></ha-form>
+              </div>
+            </ha-expansion-panel>
           </div>
         </ha-expansion-panel>
 
@@ -1010,14 +1240,38 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 12px;
       }
 
-      .row-buttons {
-        display: flex;
-        align-items: center;
-        gap: 4px;
+      .intro {
+        margin: 0 4px 4px;
       }
 
-      .row-buttons ha-button.remove {
-        margin-left: auto;
+      .block-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        opacity: 0.85;
+      }
+
+      .reorder {
+        display: flex;
+        align-items: center;
+        --mdc-icon-button-size: 36px;
+        --mdc-icon-size: 20px;
+      }
+
+      .tile-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tile-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     `,
   ];
