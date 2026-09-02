@@ -6,6 +6,39 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Nav card: the active entry was one navigation behind.** Home Assistant
+  keeps view elements in a cache and puts the same card back when you return to
+  a view, and the card read the current path once, at construction. A card
+  coming back out of that cache still knew the path it was put away with, so it
+  highlighted the page you had just left until something forced a re-render.
+  The path is re-read on reconnect now.
+
+- **Nav card: a dashboard swipe plugin stole sideways drags.** A bar with more
+  entries than fit scrolls sideways, and `hass-swipe-navigation` read that
+  scroll as "next view" and navigated away mid-gesture. The card shields itself
+  the way the light card's sliders already do (`shared/swipe.ts`) — over the
+  whole card, because nothing it draws is ever a request to change the view by
+  swiping.
+
+### Behoben
+
+- **Nav-Karte: Der aktive Eintrag hinkte einen Schritt hinterher.** Home
+  Assistant hält Ansichten in einem Cache und hängt beim Zurückkehren dieselbe
+  Karte wieder ein; die Karte hat den aktuellen Pfad aber nur einmal gelesen,
+  bei ihrer Konstruktion. Eine Karte aus diesem Cache kannte deshalb noch den
+  Pfad, mit dem sie weggelegt wurde, und markierte die eben verlassene Seite,
+  bis irgendetwas ein neues Rendern auslöste. Der Pfad wird jetzt beim
+  Wiedereinhängen neu gelesen.
+
+- **Nav-Karte: Ein Wisch-Plugin des Dashboards hat seitliche Gesten
+  abgefangen.** Eine Leiste mit mehr Einträgen als Platz scrollt seitlich, und
+  `hass-swipe-navigation` hat dieses Scrollen als „nächste Ansicht" gelesen und
+  mitten in der Geste weggeblättert. Die Karte schirmt sich jetzt so ab, wie es
+  die Schieberegler der Light-Card längst tun (`shared/swipe.ts`) — über die
+  ganze Karte, weil nichts, was sie zeichnet, je ein Wisch-Seitenwechsel ist.
+
 ### Added
 
 - **M3 Nav Card** (`m3-nav-card`) — a navigation bar for the dashboard, in five

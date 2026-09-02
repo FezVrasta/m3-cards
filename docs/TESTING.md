@@ -635,6 +635,7 @@ Fallen woanders als bei den übrigen Karten.
 |---|---|---|
 | Vier statische Varianten | `style` nacheinander auf `header`, `footer`, `segmented`, `floating` | `header`/`footer` kleben an der jeweiligen Kante über die volle Breite; `floating` schwebt mit 8px Abstand; `segmented` bleibt eine Pille im Kartenfluss und scrollt mit |
 | Aktiver Eintrag | Zwischen den konfigurierten Seiten navigieren | Genau der Eintrag der aktuellen Seite ist eingefärbt; eine Unterseite (`/lovelace/garten/detail`) hält den Eintrag `/lovelace/garten` aktiv |
+| Aktiver Eintrag nach Rückkehr | Auf Seite A, dann B, dann über die Leiste zurück auf A — nicht neu laden | Die Markierung steht sofort auf A. Sie blieb einen Schritt zurück, solange die Karte aus dem Ansichts-Cache mit ihrem alten Pfad zurückkam |
 | Regex-Override | `match` auf einem Eintrag setzen, das nicht zur `path` passt | Aktiv-Zustand folgt dem Regex; ein kaputtes Muster macht den Eintrag nie aktiv, wirft aber nichts |
 | Template live | In zwei Browser-Tabs öffnen, in Tab A den Zustand einer im Template gelesenen Entität ändern | In Tab B ändert sich Name/Icon/Badge **ohne Reload** — das beweist das Abo statt eines einmaligen Renderns |
 | Template-Abos schließen | Karte aus der Ansicht löschen, Netzwerk-Tab beobachten | Keine weiteren `render_template`-Nachrichten für diese Karte |
@@ -655,6 +656,7 @@ Fallen woanders als bei den übrigen Karten.
 | Sheet: Schwung | Schnell nach oben bzw. unten schnippen, aus halber Position | Öffnet bzw. schließt ganz, unabhängig von der Position beim Loslassen |
 | Sheet: Rastpunkte | `snap_points: [0, 0.5, 1]`, langsam auf halbe Höhe ziehen und loslassen | Rastet auf halber Höhe ein |
 | **Sheet: Scroll-Konflikt** | Schublade mit mehr Inhalt füllen, als hineinpasst. Dann: (a) mitten im Inhalt nach unten ziehen, (b) Inhalt ganz nach oben scrollen und weiter nach unten ziehen | (a) der Inhalt scrollt, das Sheet bewegt sich **nicht**; (b) das Sheet folgt dem Finger |
+| Swipe-Navigation | Mit installiertem `hass-swipe-navigation` eine Leiste bauen, deren Einträge breiter sind als der Bildschirm, und sie seitlich scrollen | Die Leiste scrollt, die Ansicht wechselt **nicht**. Ohne die Abschirmung liest das Plugin den Wisch als Seitenwechsel |
 | Sheet: Wisch von der Leiste | Von der Navigationsleiste nach oben wischen | Schublade öffnet; ein Tipp auf einen Eintrag navigiert weiterhin normal |
 | Sheet: Zustand merken | `sheet_default: remember`, öffnen, Seite neu laden | Bleibt offen. Mit `sheet_state_entity` zusätzlich auf einem zweiten Gerät prüfen |
 | Sheet: beim Navigieren | Schublade offen lassen, Eintrag antippen | Schublade schließt (außer `collapse_on_navigate: false`) |

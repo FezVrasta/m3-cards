@@ -96,6 +96,7 @@ import {
   type TemplateSubscription,
 } from "./shared/template-sub";
 import { TapHold, fireHaptic } from "./shared/tap-hold";
+import { stopSwipe } from "./shared/swipe";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
@@ -115,6 +116,15 @@ console.info(
  * ones render inline in the card flow instead — and the editor says so, since
  * that is where someone can see and fix it.
  */
+// Touch and mouse both, because the swipe plugins listen for both: a mouse
+// drag on a desktop dashboard scrolls the bar just as a finger does.
+const SWIPE_EVENTS = [
+  "touchstart",
+  "touchmove",
+  "mousedown",
+  "mousemove",
+] as const;
+
 const connectedSheets = new Set<M3NavCard>();
 
 /** The editor frame names the variant, using the editor's own wording for it. */
@@ -257,6 +267,18 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this._path = location.pathname;
     window.addEventListener("location-changed", this._onLocationChanged);
     window.addEventListener("popstate", this._onLocationChanged);
+
+    // Dashboard-wide swipe plugins read drags off an ancestor of the card, so
+    // a sideways drag on a bar that scrolls — the entries do not all fit, that
+    // is why it scrolls — was read as "next view" and navigated away mid-
+    // scroll. The whole card is shielded rather than just the bar: nothing
+    // drawn here is ever a request to change the view by swiping, and the
+    // sheet has scrollable content of its own. Listeners on the host see the
+    // events bubble past before any ancestor does; the sheet handle keeps its
+    // own shield for the gestures it attaches outside this element.
+    for (const type of SWIPE_EVENTS) {
+      this.addEventListener(type, stopSwipe);
+    }
     this._templates = new TemplateSubManager(this.hass, () => this.requestUpdate());
     this._syncSubscriptions();
     this._attachScroll();
@@ -281,6 +303,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     window.removeEventListener("location-changed", this._onLocationChanged);
     window.removeEventListener("popstate", this._onLocationChanged);
+    for (const type of SWIPE_EVENTS) {
+      this.removeEventListener(type, stopSwipe);
+    }
     window.removeEventListener("resize", this._measureDock);
     this._resizeObserver?.disconnect();
     // Cleared, not just disconnected: a disconnected observer that is still
