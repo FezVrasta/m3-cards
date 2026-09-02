@@ -38,6 +38,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: the plate behind an unselected entry did not match the marker.**
+  With `item_background` the faint plate was always drawn on the whole entry,
+  while in the stacked variants the active marker sits on the icon — so the
+  quiet tiles were half again as wide as the selected one and carried a
+  different corner radius. Both now sit on whichever box the variant marks.
+
 - **Nav card: a docked bar spanned its own column, not the view.** The bar looks
   up the tree for the view's content area so it can dock without running under
   the sidebar, and gave up after twelve steps. Nearly every step crosses a
@@ -182,6 +188,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: Die Fläche hinter einem nicht gewählten Eintrag passte nicht zur
+  Markierung.** Mit `item_background` wurde die dezente Fläche immer auf den
+  ganzen Eintrag gezeichnet, während die aktive Markierung bei den gestapelten
+  Varianten auf dem Icon sitzt — die ruhigen Kacheln waren dadurch um die Hälfte
+  breiter als die gewählte und hatten einen anderen Eckenradius. Beide sitzen
+  jetzt auf dem Kasten, den die jeweilige Variante markiert.
 
 - **Nav-Karte: Eine angedockte Leiste war so breit wie ihre Spalte, nicht wie die
   Ansicht.** Die Leiste sucht im Baum nach dem Inhaltsbereich der Ansicht, um

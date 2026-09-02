@@ -581,6 +581,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this.setAttribute("variant", this._layout.style ?? "footer");
     this.setAttribute("edge", this._position);
     this.setAttribute("labels", this._labelPosition);
+    // Which box carries the active marker — the glyph in the stacked variants,
+    // the whole entry in the horizontal ones. The faint plate behind an
+    // inactive entry has to sit on the same box, or the two disagree on both
+    // size and corner radius and the bar looks like two designs at once.
+    this.setAttribute("marker", this._stacked ? "glyph" : "item");
     // Docking is what makes the bar cost no row of the view, and it is exactly
     // what makes it unreachable in the editor: a fixed card leaves the flow, so
     // its slot in the grid collapses to nothing and there is no longer anything
@@ -2271,6 +2276,17 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     /* Every entry on its own faint surface, not only the current one — the
        header-tabs design draws the inactive tabs as pills too. */
     .item.plated:not(.active) {
+      background: rgba(127, 127, 127, 0.14);
+    }
+
+    /* Where the marker sits on the glyph, the plate follows it: same box, same
+       radius, only a quieter fill. Left on the entry it was half again as wide
+       as the marker beside it. */
+    :host([marker="glyph"]) .item.plated:not(.active) {
+      background: none;
+    }
+
+    :host([marker="glyph"]) .item.plated:not(.active) .glyph {
       background: rgba(127, 127, 127, 0.14);
     }
 
