@@ -92,6 +92,24 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Button card editor: `icon_off` showed empty even when set.** The field was
+  in the form's schema but not in the data handed to it, so a configured off
+  icon was invisible to the editor.
+
+- **Nav card editor: the page transition sat under Appearance.** What happens
+  when the page changes is behaviour; only the marker's own movement is about
+  how the bar looks. Its length now appears only once a transition is chosen,
+  instead of asking for a number that governs nothing.
+
+- **Button card editor: the shape and fill switches sat under Content.** Both
+  decide how the tile looks — one of them decides which way round the accent
+  and the glyph are used — so they belong beside the colours.
+
+- **Nav card: the warning for a second drawer on one view was never shown.** The
+  card has always rendered the second one inline rather than docking it; the
+  text explaining why existed but nothing displayed it. It now appears in the
+  card's edit frame, where the situation actually arises.
+
 - **Button card: the tile's corners barely moved until the end.** The off state
   asked for a 999px radius, the idiom for a capsule. A browser clamps that when
   it paints — to half the height — but interpolates the number it was given, so
@@ -323,6 +341,24 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Button-Karten-Editor: `icon_off` blieb leer, obwohl gesetzt.** Das Feld
+  stand im Schema des Formulars, aber nicht in den Daten, die es bekommt — ein
+  konfiguriertes Aus-Icon war für den Editor damit unsichtbar.
+
+- **Nav-Karten-Editor: Der Seitenübergang lag unter Darstellung.** Was beim
+  Seitenwechsel passiert, ist Verhalten; nur die Bewegung der Markierung
+  betrifft das Aussehen der Leiste. Die Dauer erscheint jetzt erst, wenn ein
+  Übergang gewählt ist, statt nach einer Zahl zu fragen, die nichts steuert.
+
+- **Button-Karten-Editor: Form- und Füllungsschalter lagen unter Inhalt.** Beide
+  entscheiden über das Aussehen der Kachel — einer davon, herum welche Farbe
+  Fläche und Glyphe tragen — und gehören damit zu den Farben.
+
+- **Nav-Karte: Die Warnung bei einer zweiten Schublade auf einer Ansicht wurde
+  nie angezeigt.** Die Karte zeichnet die zweite seit jeher im Kartenfluss statt
+  angedockt; der erklärende Text existierte, nur zeigte ihn nichts an. Er steht
+  jetzt im Bearbeitungsrahmen der Karte, wo der Fall auftritt.
 
 - **Button-Karte: Die Ecken der Kachel bewegten sich erst ganz am Ende.** Der
   Aus-Zustand verlangte 999px, die übliche Schreibweise für eine Kapsel. Ein

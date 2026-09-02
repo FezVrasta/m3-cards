@@ -2201,6 +2201,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         ${this._variant === "sheet" && !this._sheetHasContent
           ? html`<div class="edit-warn">${this._t("nav_sheet_empty")}</div>`
           : nothing}
+        ${this._variant === "sheet" && !this._isPrimarySheet
+          ? html`<div class="edit-warn">
+              ${this._t("editor_nav_sheet_second_instance")}
+            </div>`
+          : nothing}
         ${this._drawerlessWidths.length
           ? html`<div class="edit-warn">
               ${this._t("nav_sheet_wrong_variant").replace(

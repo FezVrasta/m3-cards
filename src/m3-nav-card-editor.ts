@@ -616,27 +616,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
       },
       {
-        name: "page_transition",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "none", label: this._t("editor_nav_page_transition_none") },
-              { value: "fade", label: this._t("editor_nav_page_transition_fade") },
-              { value: "up", label: this._t("editor_nav_page_transition_up") },
-            ],
-          },
-        },
-      },
-      {
-        name: "page_transition_ms",
-        selector: { number: { min: 80, max: 600, step: 10, mode: "slider" } },
-      },
-      {
-        name: "page_transition_ms",
-        selector: { number: { min: 80, max: 600, step: 10, mode: "slider" } },
-      },
-      {
         name: "marker_motion",
         selector: {
           select: {
@@ -673,7 +652,29 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const schema: SchemaEntry[] = [
       { name: "haptics", selector: { boolean: {} } },
       { name: "auto_hide_on_scroll", selector: { boolean: {} } },
+      // What happens when a page changes is behaviour, not appearance: the
+      // marker's own movement lives under Appearance because it is part of how
+      // the bar looks, but this is about the navigation itself.
+      {
+        name: "page_transition",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "none", label: this._t("editor_nav_page_transition_none") },
+              { value: "fade", label: this._t("editor_nav_page_transition_fade") },
+              { value: "up", label: this._t("editor_nav_page_transition_up") },
+            ],
+          },
+        },
+      },
     ];
+    if ((this._config?.page_transition ?? "none") !== "none") {
+      schema.push({
+        name: "page_transition_ms",
+        selector: { number: { min: 80, max: 600, step: 10, mode: "slider" } },
+      });
+    }
     // Only worth asking about once something has a submenu to open, and
     // `preload_views` is deliberately absent: it does nothing today, and a
     // switch that does nothing is worse than no switch.
@@ -946,6 +947,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     if (schema.name === "pill_size") return this._t("editor_nav_pill_size_helper");
     if (schema.name === "marker_motion") return this._t("editor_nav_marker_motion_helper");
     if (schema.name === "page_transition") return this._t("editor_nav_page_transition_helper");
+    if (schema.name === "match") return this._t("editor_nav_item_match_hint");
     return undefined;
   };
 
@@ -1048,6 +1050,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             .data=${item}
             .schema=${this._itemSchema()}
             .computeLabel=${this._computeLabel}
+            .computeHelper=${this._computeHelper}
             @value-changed=${(ev: CustomEvent) =>
               this._patchItem(index, ev.detail.value as Partial<NavItemConfig>)}
           ></ha-form>
@@ -1493,8 +1496,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   .hass=${this.hass}
                   .data=${{
                     icon_size: cfg.icon_size ?? 22,
-                    page_transition: cfg.page_transition ?? "none",
-                    page_transition_ms: cfg.page_transition_ms ?? 180,
+
                     marker_motion: cfg.marker_motion ?? "none",
                     pill_size: cfg.pill_size ?? 1,
                     label_size:
@@ -1525,10 +1527,13 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${{
                 haptics: cfg.haptics ?? true,
                 auto_hide_on_scroll: cfg.auto_hide_on_scroll ?? false,
+                page_transition: cfg.page_transition ?? "none",
+                page_transition_ms: cfg.page_transition_ms ?? 180,
                 submenu_trigger: cfg.submenu_trigger ?? "tap",
               }}
               .schema=${this._behaviorSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._rootChanged}
             ></ha-form>
           </div>

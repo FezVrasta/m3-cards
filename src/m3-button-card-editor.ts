@@ -85,20 +85,7 @@ export class M3ButtonCardEditor
       },
       { name: "align_icons", selector: { boolean: {} } },
       { name: "vertical", selector: { boolean: {} } },
-      { name: "shape_by_state", selector: { boolean: {} } },
       { name: "icon_off", selector: { icon: {} } },
-      {
-        name: "icon_fill",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "tint", label: this._t("editor_icon_fill_tint") },
-              { value: "solid", label: this._t("editor_icon_fill_solid") },
-            ],
-          },
-        },
-      },
       { name: "show_slider", selector: { boolean: {} } },
     ];
   }
@@ -116,6 +103,22 @@ export class M3ButtonCardEditor
 
   private _appearanceSchema(): SchemaEntry[] {
     return [
+      // Both belong beside the colours rather than with the content: they are
+      // about how the tile looks, and one of them decides which way round the
+      // accent and the glyph are used.
+      { name: "shape_by_state", selector: { boolean: {} } },
+      {
+        name: "icon_fill",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "tint", label: this._t("editor_icon_fill_tint") },
+              { value: "solid", label: this._t("editor_icon_fill_solid") },
+            ],
+          },
+        },
+      },
       { name: "invert_colors", selector: { boolean: {} } },
       { name: "static_color", selector: { boolean: {} } },
       {
@@ -156,6 +159,12 @@ export class M3ButtonCardEditor
       },
     ];
   }
+
+  /** The two options whose effect is not obvious from the name alone. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined => {
+    if (schema.name === "shape_by_state") return this._t("editor_shape_by_state_helper");
+    return undefined;
+  };
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
@@ -336,9 +345,8 @@ export class M3ButtonCardEditor
       show_icon_background: this._config.show_icon_background ?? true,
       icon_size: this._config.icon_size,
       align_icons: this._config.align_icons ?? false,
+      icon_off: this._config.icon_off,
       vertical: this._config.vertical ?? false,
-      shape_by_state: this._config.shape_by_state ?? false,
-      icon_fill: this._config.icon_fill ?? "tint",
       show_slider: this._config.show_slider ?? false,
     };
 
@@ -353,6 +361,8 @@ export class M3ButtonCardEditor
     };
 
     const appearanceData = {
+      shape_by_state: this._config.shape_by_state ?? false,
+      icon_fill: this._config.icon_fill ?? "tint",
       invert_colors: this._config.invert_colors ?? false,
       static_color: this._config.static_color ?? false,
       unavailable_style: this._config.unavailable_style ?? "dimmed",
@@ -431,6 +441,7 @@ export class M3ButtonCardEditor
               .data=${appearanceData}
               .schema=${this._appearanceSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${renderRadiusCornerFields({
