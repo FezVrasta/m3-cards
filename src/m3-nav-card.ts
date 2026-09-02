@@ -250,6 +250,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
   public connectedCallback(): void {
     super.connectedCallback();
+    // Read where we are now, not where we were when this card was last on
+    // screen. A cached view comes back with whatever path it was put away
+    // with, so the entry it highlighted stayed one navigation behind until
+    // something else forced a re-read.
+    this._path = location.pathname;
     window.addEventListener("location-changed", this._onLocationChanged);
     window.addEventListener("popstate", this._onLocationChanged);
     this._templates = new TemplateSubManager(this.hass, () => this.requestUpdate());
@@ -410,6 +415,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
+    // Cheap belt and braces: a navigation that reaches the card by a route
+    // this does not listen on still corrects itself on the next render, and a
+    // string comparison per update costs nothing.
+    if (this._path !== location.pathname) this._path = location.pathname;
     // The first measurement can land before the view has laid itself out, and
     // the observer only fires on a later change — which for a slot that never
     // resizes again never comes. Re-reading it per render is two rect reads.
