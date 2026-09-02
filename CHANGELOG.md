@@ -16,11 +16,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 ### Fixed
 
 - **Nav card: correcting the scroll position looked like a swipe.** The bar
-  scrolls its active entry into view; it did so smoothly, which on a cached
-  view meant animating the whole way from the first entry to the last one in
-  plain sight. It now moves by the smallest amount that makes the entry fully
-  visible, instantly, while the page itself is changing — and does not move at
-  all when the entry is already in view.
+  scrolls its active entry into view, and it animated the whole way from the
+  first entry to the last one in plain sight — a cached view comes back holding
+  its old scroll position, so the correction had the full width to travel. It
+  now moves by the smallest amount that makes the entry fully visible, which
+  for two entries that are both on screen is no movement at all: the highlight
+  changes place and nothing else does. A short slide is animated, so the step
+  is legible rather than abrupt; a long one still jumps, because a bar sliding
+  its whole width reads as somebody swiping it.
 
 - **Nav card: the bar sat on the gesture bar, not above it.** The card asked
   for `env(safe-area-inset-bottom)`, which an Android WebView reports as 0 even
@@ -60,11 +63,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 ### Behoben
 
 - **Nav-Karte: Das Korrigieren der Scroll-Position sah aus wie ein Wisch.** Die
-  Leiste scrollt ihren aktiven Eintrag ins Bild; sie tat das weich, was bei
-  einer zwischengespeicherten Ansicht hieß: sichtbar den ganzen Weg vom ersten
-  bis zum letzten Eintrag animieren. Jetzt rückt sie um das kleinstmögliche Maß,
-  sofort, während die Seite ohnehin wechselt — und gar nicht, wenn der Eintrag
-  schon zu sehen ist.
+  Leiste scrollt ihren aktiven Eintrag ins Bild und animierte dabei sichtbar den
+  ganzen Weg vom ersten bis zum letzten Eintrag — eine zwischengespeicherte
+  Ansicht kommt mit ihrer alten Scroll-Position zurück, die Korrektur hatte also
+  die volle Breite vor sich. Jetzt rückt sie um das kleinstmögliche Maß, und das
+  heißt bei zwei Einträgen, die beide zu sehen sind: gar nicht. Nur die
+  Markierung wechselt den Platz. Ein kurzes Nachrücken wird weich animiert, damit
+  der Schritt nachvollziehbar statt abrupt wirkt; ein weiter Sprung springt
+  weiterhin, denn eine Leiste, die ihre ganze Breite entlanggleitet, sieht aus,
+  als hätte jemand gewischt.
 
 - **Nav-Karte: Die Leiste saß auf dem Gestenbalken statt darüber.** Die Karte
   hat `env(safe-area-inset-bottom)` gefragt, und das meldet ein Android-WebView

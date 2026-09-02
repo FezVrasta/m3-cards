@@ -1608,6 +1608,16 @@ export const NAV_SEGMENT_PADDING = 4;
 
 /** `floating`/`sheet` detach from the view and keep this gap to its edges. */
 export const NAV_FLOAT_INSET = 8;
+
+/**
+ * How far the bar may slide, as a fraction of its own visible width, before the
+ * correction stops being animated and simply jumps.
+ *
+ * A step of one or two entries is worth animating: it shows the reader that the
+ * bar moved and by how much. A slide across the whole bar is not — it reads as
+ * someone swiping the bar, which is exactly the thing the reader did not do.
+ */
+export const NAV_SCROLL_ANIMATE_MAX = 0.75;
 export const NAV_FLOAT_RADIUS = 30;
 /**
  * Below HA's dialog band (its dialogs sit far above this), above ordinary card

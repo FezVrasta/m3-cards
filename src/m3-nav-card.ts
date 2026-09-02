@@ -31,6 +31,7 @@ import {
   NAV_BAR_PADDING,
   NAV_DEFAULT_BREAKPOINT,
   NAV_FLOAT_INSET,
+  NAV_SCROLL_ANIMATE_MAX,
   NAV_FLOAT_RADIUS,
   NAV_ITEM_GLYPH,
   NAV_ITEM_HEIGHT,
@@ -350,13 +351,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * re-render: a badge template ticking over must not yank the bar back while
    * the reader is scrolling through it by hand.
    *
-   * Deliberately instant, and by the smallest amount that makes the entry
-   * fully visible. Animating this looked like the bar swiping the whole way
-   * from the first entry to the last one, because that is literally what it
-   * was doing: a cached view comes back holding the scroll position it had,
-   * and the correction then travels the full width in plain sight. Landing
-   * already correct while the page itself is changing reads as the bar having
-   * been there all along.
+   * Moves by the smallest amount that makes the entry fully visible, so a bar
+   * whose active entry is already on screen does not move at all — what the
+   * reader sees then is the highlight changing place, nothing else.
+   *
+   * When it does have to move, a short slide is gentler than a jump and shows
+   * which way the bar went. A long one is not: travelling the width of the bar
+   * reads as somebody swiping it, which is precisely what the reader did not
+   * do. So the slide is animated only while it stays short.
    */
   private _keepActiveInView(): void {
     if (this._scrolledFor === this._path) return;
@@ -383,8 +385,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     const max = bar.scrollWidth - bar.clientWidth;
     const left = Math.max(0, Math.min(max, bar.scrollLeft + delta));
-    if (Math.abs(left - bar.scrollLeft) < 1) return;
-    bar.scrollLeft = left;
+    const distance = Math.abs(left - bar.scrollLeft);
+    if (distance < 1) return;
+
+    const smooth =
+      shouldAnimate(this._config?.animation) &&
+      distance <= bar.clientWidth * NAV_SCROLL_ANIMATE_MAX;
+    bar.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
   }
 
   private _measureDock = (): void => {
