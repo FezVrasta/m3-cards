@@ -8,6 +8,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Nav card: `active_style: chip`** — the two-layer marker a bar with
+  side-by-side labels actually wears: a muted pill around icon and text
+  together, with the icon on a solid rounded tile of its own inside it.
+
 - **Nav card: `label_position`** — whether an entry's text sits below, above,
   right or left of its icon. The two horizontal placements also move the active
   pill so it wraps icon and text together, because a pill around the icon alone
@@ -31,6 +35,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   onto a phone's gesture bar.
 
 ### Fixed
+
+- **Nav card: an entry with its label beside the icon was lopsided.** The
+  stacked variants size the glyph into a 56px indicator box, which is right
+  when the label sits underneath it and wrong when it sits next to it: the icon
+  floated in a box more than twice its width and pushed the label off centre.
+  Sideways, the glyph is now the icon and nothing else, and the entry is padded
+  tight on the icon side so both ends of the pill look even.
 
 - **Nav card: the bar appeared to jump between pages.** Every view carries its
   own nav card, and a browser drops an element's scroll offset when it leaves
@@ -73,6 +84,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
+- **Nav-Karte: `active_style: chip`** — die zweischichtige Markierung, die eine
+  Leiste mit Text neben dem Icon tatsächlich trägt: eine gedämpfte Pille um Icon
+  und Text zusammen, darin das Icon auf einem eigenen gefüllten Feld.
+
 - **Nav-Karte: `label_position`** — ob der Text eines Eintrags unter, über,
   rechts oder links neben seinem Icon steht. Die beiden waagerechten Varianten
   verschieben auch die aktive Pille, sodass sie Icon und Text gemeinsam
@@ -97,6 +112,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: Ein Eintrag mit Text neben dem Icon war unsymmetrisch.** Die
+  gestapelten Varianten geben der Glyphe eine 56px breite Indikator-Box — richtig,
+  solange der Text darunter steht, falsch, sobald er daneben steht: das Icon
+  schwamm in einer Box von mehr als der doppelten Breite und schob den Text aus
+  der Mitte. Seitwärts ist die Glyphe jetzt nur noch das Icon, und der Eintrag
+  wird auf der Icon-Seite enger gepolstert, damit beide Enden der Pille gleich
+  aussehen.
 
 - **Nav-Karte: Die Leiste schien zwischen den Seiten zu springen.** Jede Ansicht
   bringt ihre eigene Nav-Karte mit, und ein Browser verwirft die Scroll-Position

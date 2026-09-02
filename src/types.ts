@@ -1892,7 +1892,13 @@ export interface NavLayoutConfig {
  * and puts dark ink on it, which is what Material's own navigation does and
  * what the reference designs show.
  */
-export type NavActiveStyle = "tint" | "solid";
+/**
+ * How the active entry is marked. `tint` and `solid` fill the whole entry;
+ * `chip` is the two-layer shape used by bars with the label beside the icon —
+ * a muted pill around icon and text together, with the icon sitting on a solid
+ * chip of its own inside it.
+ */
+export type NavActiveStyle = "tint" | "solid" | "chip";
 
 /** A detached round button beside the bar — a search or an add, typically. */
 /**

@@ -41,6 +41,9 @@ import {
   NAV_ITEM_MIN_WIDTH,
   NAV_INDICATOR_HEIGHT,
   NAV_INDICATOR_RADIUS,
+  NAV_CHIP_RADIUS,
+  NAV_CHIP_SCALE,
+  NAV_SIDE_PADDING,
   NAV_INDICATOR_RADIUS_ACTIVE,
   NAV_INDICATOR_WIDTH,
   NAV_ITEM_RADIUS,
@@ -1751,7 +1754,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // A solid fill is the reference look; the ink on it is chosen between the
     // house dark and white rather than nudged, because shifting a colour the
     // author picked is the wrong move on a fill they can see.
-    const solid = (this._config?.active_style ?? "tint") === "solid";
+    const activeStyle = this._config?.active_style ?? "tint";
+    const solid = activeStyle === "solid";
+    // The chip look wears both: a tint around the whole entry, and the solid
+    // fill pulled in to sit behind the icon alone.
+    const chip = activeStyle === "chip";
     const fill = solid
       ? fillColor(this, item.color)
       : tintOn(this, item.color, this._config?.accent_opacity, NAV_ITEM_TINT);
@@ -1760,10 +1767,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         ? inkOn(fill, this)
         : foregroundOn(item.color, fill, 4.5, this)
       : "var(--nav-ink)";
+    const chipFill = chip ? fillColor(this, item.color) : "";
     // The pill goes round the glyph in the stacked variants and round the whole
     // entry in the horizontal ones, so the inline colours are set on whichever
     // element is carrying it.
     const indicator = item.active ? `background: ${fill}; color: ${ink};` : "";
+    const chipStyle =
+      chip && item.active
+        ? `background: ${chipFill}; color: ${inkOn(chipFill, this)};`
+        : "";
 
     return html`
       <div
@@ -1795,7 +1807,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       >
         ${showIcon
           ? html`
-              <span class="glyph" style=${this._stacked ? indicator : nothing}>
+              <span
+                class="glyph ${chip && item.active ? "chip" : ""}"
+                style=${this._stacked ? indicator : chipStyle || nothing}
+              >
                 <ha-icon icon=${item.icon}></ha-icon>
                 ${this._renderBadge(item)}
               </span>
@@ -2940,6 +2955,55 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .no-animations,
     .no-animations .item {
       transition: none;
+    }
+
+    /* ---- labels beside the icon -------------------------------------------
+       Last in the sheet on purpose. These have to outrank the per-variant
+       rules above, which size the glyph into an indicator box and give the
+       entries an equal share of the bar — both right for a stacked entry and
+       both wrong for one laid out sideways. */
+
+    /* Sideways, the glyph is the icon and nothing more: the wide indicator box
+       the stacked variants give it was the asymmetry, a 56px box holding a
+       22px icon with the label pushed off to one side of it. */
+    :host([labels="right"]) .item .glyph,
+    :host([labels="left"]) .item .glyph {
+      width: auto;
+      height: auto;
+      border-radius: 0;
+    }
+
+    /* An entry with an icon is padded tight on the icon side and normally on
+       the text side, so the two ends of the pill look even. Without an icon
+       both ends are the same. */
+    :host([labels="right"][variant]) .bar .item,
+    :host([labels="left"][variant]) .bar .item {
+      padding: 0 calc(${NAV_SIDE_PADDING}px * var(--nav-scale, 1));
+      gap: calc(8px * var(--nav-scale, 1));
+    }
+
+    :host([labels="right"][variant]) .bar .item:not(.labels-only) {
+      padding-left: calc(6px * var(--nav-scale, 1));
+    }
+
+    :host([labels="left"][variant]) .bar .item:not(.labels-only) {
+      padding-right: calc(6px * var(--nav-scale, 1));
+    }
+
+    /* The chip: a solid rounded square under the icon, inside the entry's own
+       tinted pill. Two layers rather than one flat fill, which is what the
+       shape looks like everywhere it is used. */
+    :host([variant]) .glyph.chip {
+      width: calc(
+        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) *
+          ${NAV_CHIP_SCALE}
+      );
+      height: calc(
+        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) *
+          ${NAV_CHIP_SCALE}
+      );
+      border-radius: calc(${NAV_CHIP_RADIUS}px * var(--nav-scale, 1));
+      flex-shrink: 0;
     }
   `;
 }
