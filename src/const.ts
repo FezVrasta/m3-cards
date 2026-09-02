@@ -1659,6 +1659,17 @@ export const NAV_MARKER_SLIDE_MS = 280;
  */
 export const NAV_PAGE_FADE_MS = 180;
 
+/** How far the arriving page glides up in the `up` transition. */
+export const NAV_PAGE_SLIDE_PX = 18;
+
+/**
+ * Share of the transition the outgoing page gets.
+ *
+ * Material's fade-through does not cross-fade: the old page is gone before the
+ * new one starts, so the two never wash out over each other.
+ */
+export const NAV_PAGE_OUT_SHARE = 0.35;
+
 /** `segmented` is one pill holding the entries, so its own frame is tighter. */
 export const NAV_SEGMENT_HEIGHT = 44;
 export const NAV_SEGMENT_RADIUS = 22;

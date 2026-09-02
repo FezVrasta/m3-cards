@@ -623,6 +623,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             options: [
               { value: "none", label: this._t("editor_nav_page_transition_none") },
               { value: "fade", label: this._t("editor_nav_page_transition_fade") },
+              { value: "up", label: this._t("editor_nav_page_transition_up") },
             ],
           },
         },

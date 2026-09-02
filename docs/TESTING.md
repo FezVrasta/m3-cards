@@ -678,6 +678,7 @@ Fallen woanders als bei den übrigen Karten.
 | Markierung gleitet | `marker_motion: slide`, zwischen zwei Einträgen wechseln | Eine einzelne Fläche wandert sichtbar hinüber. Sie deckt den aktiven Eintrag danach exakt, auch wenn dieser durch sein Icon breiter wird |
 | Markierung beim Ankommen | Mit `slide` eine Seite direkt über die URL aufrufen | Die Markierung steht sofort richtig und gleitet **nicht** von irgendwo herein |
 | Seitenübergang | `page_transition: fade`, Eintrag antippen | Die alte Seite blendet weich in die neue über. In einem Browser ohne View-Transitions wechselt sie wie bisher, ohne Fehler |
+| Einschweben | `page_transition: up` zwischen zwei ähnlich aussehenden Seiten | Die alte Seite blendet zuerst aus, dann steigt die neue leicht von unten ein. Kein gleichzeitiges Ineinanderblenden — genau das macht den Wechsel zwischen zwei Seiten mit gleichem Hintergrund überhaupt sichtbar |
 | Dauer des Übergangs | `page_transition_ms` auf 80 und auf 500 | Sichtbar schneller bzw. träger. Ohne Angabe sind es 180 ms, nicht die 250 ms des Browsers |
 | Übergang nur beim Navigieren | Mit `fade` einen Eintrag mit `toggle`-Aktion antippen | Kein Überblenden — nur Navigationen bekommen einen Seitenwechsel |
 | Textposition | `label_position` auf `below`, `above`, `right`, `left` | Text sitzt unter, über, rechts bzw. links vom Icon. Bei `right`/`left` umschließt die aktive Pille **Icon und Text** zusammen, nicht nur das Icon |

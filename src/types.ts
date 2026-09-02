@@ -1896,7 +1896,12 @@ export type NavActiveStyle = "tint" | "solid";
 
 export type NavMarkerMotion = "none" | "slide";
 
-export type NavPageTransition = "none" | "fade";
+/**
+ * `fade` cross-fades the two pages. `up` is Material's fade-through: the old
+ * page only fades out, the new one fades in while gliding up a little, which
+ * is what makes a change between two similar-looking pages legible at all.
+ */
+export type NavPageTransition = "none" | "fade" | "up";
 
 /** A detached round button beside the bar — a search or an add, typically. */
 /**

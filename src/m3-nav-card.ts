@@ -56,6 +56,8 @@ import {
   NAV_PRESS_MS,
   NAV_MARKER_SLIDE_MS,
   NAV_PAGE_FADE_MS,
+  NAV_PAGE_SLIDE_PX,
+  NAV_PAGE_OUT_SHARE,
   NAV_SEGMENT_HEIGHT,
   NAV_SEGMENT_ITEM_RADIUS,
   NAV_SEGMENT_PADDING,
@@ -170,7 +172,7 @@ const SWIPE_EVENTS = [
  * so this is the one thing the card has to write into the page itself. One
  * element, rewritten in place, never more than one.
  */
-function setPageFadeDuration(ms: number): void {
+function setPageFadeDuration(ms: number, mode: NavPageTransition): void {
   const id = "m3-nav-page-fade";
   let style = document.getElementById(id) as HTMLStyleElement | null;
   if (!style) {
@@ -178,9 +180,31 @@ function setPageFadeDuration(ms: number): void {
     style.id = id;
     document.head.appendChild(style);
   }
-  style.textContent =
-    `::view-transition-old(root), ::view-transition-new(root) {` +
-    ` animation-duration: ${ms}ms; }`;
+  if (mode !== "up") {
+    style.textContent =
+      `::view-transition-old(root), ::view-transition-new(root) {` +
+      ` animation-duration: ${ms}ms; }`;
+    return;
+  }
+  // Material's fade-through, written out rather than left to the browser's
+  // cross-fade. Two pages that share a wallpaper and a navigation bar look the
+  // same while they dissolve into one another, so the change reads as a jump
+  // however long it takes. The glide is what makes it legible, and the old page
+  // is gone before the new one starts rather than washing out over it. The
+  // offset is small on purpose: this is a page appearing, not a page arriving
+  // from somewhere else.
+  const out = Math.round(ms * NAV_PAGE_OUT_SHARE);
+  style.textContent = `
+@keyframes m3-nav-page-out { to { opacity: 0; } }
+@keyframes m3-nav-page-in {
+  from { opacity: 0; transform: translateY(${NAV_PAGE_SLIDE_PX}px); }
+}
+::view-transition-old(root) {
+  animation: ${out}ms cubic-bezier(0.4, 0, 1, 1) both m3-nav-page-out;
+}
+::view-transition-new(root) {
+  animation: ${ms}ms cubic-bezier(0.05, 0.7, 0.1, 1) ${out}ms both m3-nav-page-in;
+}`;
 }
 
 
@@ -823,7 +847,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       }
     ).startViewTransition;
     if (
-      this._pageTransition !== "fade" ||
+      this._pageTransition === "none" ||
       action?.action !== "navigate" ||
       !start ||
       !shouldAnimate(this._config?.animation)
@@ -831,7 +855,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       run();
       return;
     }
-    setPageFadeDuration(this._config?.page_transition_ms ?? NAV_PAGE_FADE_MS);
+    setPageFadeDuration(
+      this._config?.page_transition_ms ?? NAV_PAGE_FADE_MS,
+      this._pageTransition,
+    );
     start.call(document, async () => {
       run();
       // The router puts the new view in place a frame or two later, and the

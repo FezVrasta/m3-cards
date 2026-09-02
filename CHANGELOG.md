@@ -21,6 +21,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   because the pseudo-elements a view transition animates live on the root and
   cannot be reached from a shadow root.
 
+- **Nav card: `page_transition: up`** — Material's fade-through, and the setting
+  worth having. A plain cross-fade between two pages that share a wallpaper and
+  a navigation bar is invisible: the pages look the same while they dissolve
+  into each other, so the change still reads as a jump however long it takes.
+  The old page leaves first and the new one rises a little into place, which is
+  what makes the change legible at all.
+
 - **Nav card: `page_transition`** — cross-fades the whole page when a navigation
   starts from the bar. The card cannot animate Home Assistant's view swap from
   the outside, but it is what starts the swap, and a view transition wraps
@@ -209,6 +216,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   ausgelösten Wechsel träge wirken. Als einzelnes Style-Element im Dokument
   hinterlegt, weil die Pseudo-Elemente einer View-Transition am Wurzelelement
   hängen und aus einem Shadow Root nicht erreichbar sind.
+
+- **Nav-Karte: `page_transition: up`** — Materials Fade-Through, und die
+  Einstellung, auf die es ankommt. Ein reines Überblenden zwischen zwei Seiten
+  mit gleichem Hintergrundbild und gleicher Navigationsleiste ist unsichtbar: die
+  Seiten sehen gleich aus, während sie ineinander übergehen, der Wechsel wirkt
+  also weiterhin wie ein Sprung, egal wie lange er dauert. Jetzt geht erst die
+  alte Seite, dann steigt die neue ein Stück herein — das macht den Wechsel
+  überhaupt erst sichtbar.
 
 - **Nav-Karte: `page_transition`** — blendet die ganze Seite über, wenn die
   Navigation von der Leiste ausgeht. Die Karte kann den Ansichtswechsel von Home

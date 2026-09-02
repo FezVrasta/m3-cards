@@ -3311,7 +3311,7 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
 | `page_transition_ms` | `180` | Dauer dieser Überblendung. Die Browser-Voreinstellung von 250 ms wirkt träge für einen Wechsel, den man selbst ausgelöst hat |
 | `marker_motion` | `none` | `none` oder `slide` — ob eine einzelne Fläche zwischen den Einträgen wandert statt zweier, die ein- und ausblenden |
-| `page_transition` | `none` | `none` oder `fade` — blendet beim Navigieren über die Leiste die ganze Seite über, wo der Browser View-Transitions kann |
+| `page_transition` | `none` | `none`, `fade` oder `up` — `up` ist Materials Fade-Through: erst geht die alte Seite, dann steigt die neue leicht herein |
 | `pill_size` | `1` | Skaliert allein die Markierung um den aktiven Eintrag, ohne Icon oder Text anzufassen |
 | `label_size` | `11`, neben dem Icon `14` | Textgröße in px. Der Standard hängt an `label_position`: unter dem Icon ist der Text eine Bildunterschrift, daneben der Name des Eintrags |
 | `label_position` | `below` | Wo der Text eines Eintrags relativ zum Icon sitzt: `below`, `above`, `right`, `left`. Bei den waagerechten umschließt die aktive Pille Icon und Text gemeinsam |
