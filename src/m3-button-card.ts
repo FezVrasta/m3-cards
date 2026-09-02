@@ -521,6 +521,31 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     return this._formatState(entity);
   }
 
+  /**
+   * Radius that draws a capsule at this card's actual height.
+   *
+   * Not simply a huge number. A browser clamps an over-large radius when it
+   * paints but interpolates the value it was given, so animating from 999px to
+   * 16px spends 98% of the time above the clamp: the outline sits perfectly
+   * still and squares off at the very end, while the icon well, whose two
+   * values are close together, travels the whole way. Measured, the two ends
+   * are a few pixels apart and both shapes move together.
+   */
+  private _capsuleRadius = BUTTON_SHAPE_OFF_RADIUS;
+
+  protected updated(): void {
+    if (this._config?.shape_by_state !== true) return;
+    // A corner radius does not affect height, so re-rendering for a new
+    // measurement cannot feed itself.
+    const shell = this.renderRoot?.querySelector("ha-card");
+    const height = shell?.getBoundingClientRect().height ?? 0;
+    if (height <= 0) return;
+    const capsule = Math.round(height / 2);
+    if (capsule === this._capsuleRadius) return;
+    this._capsuleRadius = capsule;
+    this.requestUpdate();
+  }
+
   protected render() {
     if (!this._config || !this.hass) return nothing;
     const hasEntity = !!this._config.entity;
@@ -608,7 +633,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       shaped
         ? active
           ? (this._config.radius ?? BUTTON_SHAPE_ON_RADIUS)
-          : BUTTON_SHAPE_OFF_RADIUS
+          : this._capsuleRadius
         : (this._config.radius ?? DEFAULT_BUTTON_RADIUS),
       this._config.corners,
     );

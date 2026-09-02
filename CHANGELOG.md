@@ -83,6 +83,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Button card: the tile's corners barely moved until the end.** The off state
+  asked for a 999px radius, the idiom for a capsule. A browser clamps that when
+  it paints — to half the height — but interpolates the number it was given, so
+  a change to 16px spent 98% of its time above the clamp: the outline sat still
+  and then squared off at the last moment, while the icon well moved the whole
+  way. The off radius is now measured from the card, half its actual height, so
+  both shapes travel a comparable distance and arrive together.
+
 - **Button card: the icon well changed shape before the tile did.** The well
   transitions everything it has over 0.25s on an ease curve; the tile's corners
   were given 0.3s on Material's. The inner shape therefore arrived first and the
@@ -297,6 +305,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Button-Karte: Die Ecken der Kachel bewegten sich erst ganz am Ende.** Der
+  Aus-Zustand verlangte 999px, die übliche Schreibweise für eine Kapsel. Ein
+  Browser kappt das beim Zeichnen auf die halbe Höhe, interpoliert aber die
+  angegebene Zahl — ein Wechsel auf 16px verbrachte also 98% seiner Zeit
+  oberhalb der Kappung: der Umriss stand still und klappte zum Schluss um,
+  während das Icon-Feld die ganze Strecke zurücklegte. Der Aus-Radius wird
+  jetzt an der Kachel gemessen, als deren halbe tatsächliche Höhe, damit beide
+  Formen eine vergleichbare Strecke laufen und gemeinsam ankommen.
 
 - **Button-Karte: Das Icon-Feld hat seine Form vor der Kachel geändert.** Das
   Feld überblendet alles, was es hat, in 0,25 s auf einer Ease-Kurve; die Ecken
