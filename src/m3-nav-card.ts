@@ -221,6 +221,17 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   /** Index of the entry whose submenu is open, if any. */
   @state() private _submenuFor?: number;
   @state() private _actionMenuOpen = false;
+  /**
+   * True for the first paint after the card is put back on screen.
+   *
+   * A card keeps rendering while it is still mounted but no longer the page
+   * you are on — it hears the navigation and moves its marker to the entry you
+   * just left for. Home Assistant then caches the view in exactly that state,
+   * so it comes back marking the wrong entry, and correcting it animates: the
+   * pill slides off a neighbour over the length of a transition. Correct it
+   * without the transition and there is nothing to see.
+   */
+  @state() private _settling = false;
   /** Sheet variant: whether the drawer is open. */
   @state() private _sheetOpen = false;
   /**
@@ -301,6 +312,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // with, so the entry it highlighted stayed one navigation behind until
     // something else forced a re-read.
     this._path = location.pathname;
+    this._settling = true;
     window.addEventListener("location-changed", this._onLocationChanged);
     window.addEventListener("popstate", this._onLocationChanged);
 
@@ -584,6 +596,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
+    if (this._settling) {
+      // One frame later, so the corrected marker has been painted with the
+      // transition still off before it is turned back on.
+      requestAnimationFrame(() => {
+        this._settling = false;
+      });
+    }
     this._keepActiveInView();
     // The first measurement can land before the view has laid itself out, and
     // the observer only fires on a later change — which for a slot that never
@@ -1920,7 +1939,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       <nav
         class="bar ${container} ${widthClass} ${this._autoHidden
           ? "auto-hidden"
-          : ""} ${animated ? "" : "no-animations"}"
+          : ""} ${animated ? "" : "no-animations"} ${
+          this._settling ? "settling" : ""
+        }"
         style=${`${cssVars} ${freeStyles}`}
         aria-label=${cfg.name || this._t("nav_label")}
       >
@@ -2976,6 +2997,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     .no-animations,
     .no-animations .item {
+      transition: none;
+    }
+
+    /* The first paint after coming back on screen. Only the marker is frozen —
+       whatever the card is animating on its own account is none of this. */
+    .settling .item,
+    .settling .glyph {
       transition: none;
     }
 

@@ -47,6 +47,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   end, mid-screen. A docked bar is now always the full width of what it docks
   to; the cap decides how far the entries spread inside it.
 
+- **Nav card: returning to a page slid the marker off the wrong entry.** A card
+  goes on rendering while it is still mounted but no longer the page you are on:
+  it hears the navigation and moves its marker to the entry you just left for.
+  Home Assistant caches the view in exactly that state, so it comes back marking
+  the wrong entry — and the correction was animated, sliding the pill off a
+  neighbour over the length of a transition. That is the flash: not the wrong
+  page being marked, but the right one arriving late. The first paint after a
+  card comes back on screen no longer animates its marker.
+
 - **Nav card: tapping an entry could flash the page next to it.** The shield
   that keeps a dashboard swipe plugin out of the bar covered the start of a
   gesture but not its end. hass-swipe-navigation decides on `touchend`, and that
@@ -164,6 +173,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   und ließ an beiden Enden mitten im Bild eine sichtbare Kante stehen. Eine
   angedockte Leiste ist jetzt immer so breit wie das, woran sie andockt; die
   Begrenzung entscheidet nur, wie weit die Einträge darin auseinanderrücken.
+
+- **Nav-Karte: Beim Zurückkehren auf eine Seite glitt die Markierung vom
+  falschen Eintrag weg.** Eine Karte rendert weiter, solange sie noch eingehängt
+  ist, aber nicht mehr die Seite zeigt, auf der man ist: sie hört den
+  Seitenwechsel und schiebt ihre Markierung auf den Eintrag, zu dem man gerade
+  weggegangen ist. Home Assistant speichert die Ansicht genau in diesem Zustand
+  zwischen — sie kommt also mit der falschen Markierung zurück, und die Korrektur
+  wurde animiert: die Pille glitt über die Dauer eines Übergangs von einem
+  Nachbarn weg. Das war das Aufblitzen — nicht die falsche Seite markiert,
+  sondern die richtige zu spät. Der erste Bildaufbau nach der Rückkehr animiert
+  die Markierung nicht mehr.
 
 - **Nav-Karte: Ein Tipp auf einen Eintrag konnte kurz die Nachbarseite
   aufblitzen lassen.** Die Abschirmung, die ein Wisch-Plugin des Dashboards von
