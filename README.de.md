@@ -63,6 +63,7 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Clock](#m3-clock-card) | `m3-clock-card` | Uhr in fünf Stilen, von runden Kacheln bis zum organischen Zifferblatt |
 | [Status](#m3-status-card) | `m3-status-card` | Große Zahlen, Texte und Ja/Nein-Zustände, mit einer Regelliste dahinter |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Abschnitts-Überschriften zwischen den Karten: schlicht, mit Status, als Trenner oder aufklappbar |
+| [Nav](#m3-nav-card) | `m3-nav-card` | Eine Navigationsleiste fürs Dashboard, in fünf Varianten, mit ausziehbarer Schublade |
 | [Room](#m3-room-card) | `m3-room-card` | Eine Karte je Bereich: alle gefundenen Gerätetypen, Klimawerte und Präsenz |
 | [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Zielfeuchte, Modus, Lüfterstufe und Zusatzfunktionen — auch ohne humidifier-Entität |
 | [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda und Monatsraster für beliebig viele Kalender |

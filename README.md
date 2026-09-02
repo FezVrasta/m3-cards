@@ -63,6 +63,7 @@ card links to its full documentation further down.
 | [Clock](#m3-clock-card) | `m3-clock-card` | A clock in five styles, from rounded tiles to an organic analogue dial |
 | [Status](#m3-status-card) | `m3-status-card` | Big numbers, text and yes/no states, with a rule list behind them |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Section headings between the cards: simple, with status, a divider, or collapsible |
+| [Nav](#m3-nav-card) | `m3-nav-card` | A navigation bar for the dashboard, in five variants, with a pull-up drawer |
 | [Room](#m3-room-card) | `m3-room-card` | One card per area: every device type it finds, climate readings and presence |
 | [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Target humidity, mode, fan speed and extras — and it need not be a humidifier entity |
 | [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda and month grid for any number of calendars |
