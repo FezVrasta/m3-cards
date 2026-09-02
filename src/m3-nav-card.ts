@@ -1189,38 +1189,77 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * the same entries, laid out as tiles you can actually see at a glance rather
    * than a list you have to open first.
    */
+  /**
+   * The second line of a list row: an entity's state if it names one, a
+   * template's value if it is one, and otherwise the text as written.
+   */
+  private _secondaryText(value: string | undefined): string {
+    const resolved = this._resolve(value);
+    if (!resolved) return "";
+    const stateObj = this.hass?.states[resolved];
+    if (!stateObj) return resolved;
+    return this.hass?.formatEntityState?.(stateObj) ?? stateObj.state;
+  }
+
+  /**
+   * The shortcuts in the drawer.
+   *
+   * This is what a "more" submenu turns into once there is somewhere to put it:
+   * the same entries, laid out where you can see them at a glance rather than
+   * a list you have to open first. Two layouts, because they answer different
+   * questions — a grid of icons fits the most destinations in the least space,
+   * a list gives each one a line to say something about itself.
+   */
   private _renderSheetItems(): TemplateResult | typeof nothing {
     const items = this._config?.sheet_items ?? [];
     if (!items.length) return nothing;
     const accent = resolveThemeColor(this._config?.accent_color ?? DEFAULT_NAV_COLOR);
+    const list = (this._config?.sheet_item_style ?? "grid") === "list";
     const columns = this._config?.sheet_columns;
-    const style = columns
-      ? `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`
-      : "";
+    const style =
+      !list && columns
+        ? `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`
+        : "";
 
     return html`
-      <div class="sheet-grid" style=${style}>
+      <div class="${list ? "sheet-list" : "sheet-grid"}" style=${style}>
         ${items.map((item, index) => {
           const color = resolveThemeColor(this._resolve(item.color) || accent);
           const tint = tintOn(this, color, this._config?.accent_opacity, NAV_ITEM_TINT);
+          const glyph = html`
+            <span
+              class="sheet-tile-glyph"
+              style=${`background: ${tint}; color: ${foregroundOn(color, tint, 3, this)};`}
+            >
+              <ha-icon icon=${this._resolve(item.icon) || DEFAULT_NAV_ICON}></ha-icon>
+            </span>
+          `;
+          const name = this._resolve(item.name);
+          const secondary = list ? this._secondaryText(item.secondary) : "";
+
           return html`
             <div
-              class="sheet-tile"
+              class=${list ? "sheet-row" : "sheet-tile"}
               role="button"
               tabindex="0"
-              aria-label=${item.name || item.path || ""}
+              aria-label=${name || item.path || ""}
               @click=${() => this._runSheetItem(index)}
               @keydown=${activateOnKey(() => this._runSheetItem(index))}
             >
-              <span
-                class="sheet-tile-glyph"
-                style=${`background: ${tint}; color: ${foregroundOn(color, tint, 3, this)};`}
-              >
-                <ha-icon icon=${this._resolve(item.icon) || DEFAULT_NAV_ICON}></ha-icon>
-              </span>
-              ${item.name
-                ? html`<span class="sheet-tile-label">${this._resolve(item.name)}</span>`
-                : nothing}
+              ${glyph}
+              ${list
+                ? html`
+                    <span class="sheet-row-text">
+                      <span class="sheet-row-name">${name ?? ""}</span>
+                      ${secondary
+                        ? html`<span class="sheet-row-secondary">${secondary}</span>`
+                        : nothing}
+                    </span>
+                    <ha-icon class="sheet-row-chevron" icon="mdi:chevron-right"></ha-icon>
+                  `
+                : name
+                  ? html`<span class="sheet-tile-label">${name}</span>`
+                  : nothing}
             </div>
           `;
         })}
@@ -2015,6 +2054,65 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       align-items: center;
       justify-content: center;
       --mdc-icon-size: 22px;
+    }
+
+    .sheet-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sheet-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: ${NAV_ITEM_RADIUS}px;
+      cursor: pointer;
+      /* The row is a surface of its own, the way the reference design draws it:
+         a tinted well for the icon on a slightly lifted plate. */
+      background: rgba(127, 127, 127, 0.1);
+      transition: border-radius ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
+    }
+
+    .sheet-row:active {
+      border-radius: ${NAV_ITEM_RADIUS_ACTIVE}px;
+    }
+
+    .sheet-row:hover,
+    .sheet-row:focus-visible {
+      background: rgba(127, 127, 127, 0.16);
+      outline: none;
+    }
+
+    .sheet-row-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .sheet-row-name {
+      font-size: 14px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sheet-row-secondary {
+      font-size: 12px;
+      opacity: 0.6;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sheet-row-chevron {
+      flex-shrink: 0;
+      opacity: 0.45;
+      --mdc-icon-size: 20px;
     }
 
     .sheet-tile-label {

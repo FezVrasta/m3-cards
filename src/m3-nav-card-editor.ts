@@ -626,12 +626,33 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     this._emit(next);
   }
 
-  private _sheetItemSchema(): SchemaEntry[] {
-    return [
+  private _sheetItemSchema(list: boolean): SchemaEntry[] {
+    const schema: SchemaEntry[] = [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "path", selector: { text: {} } },
-      { name: "tap_action", selector: { ui_action: {} } },
+    ];
+    // The second line only exists in the list layout, so it is only asked for
+    // there — a field that visibly does nothing is worse than a missing one.
+    if (list) schema.push({ name: "secondary", selector: { text: {} } });
+    schema.push({ name: "tap_action", selector: { ui_action: {} } });
+    return schema;
+  }
+
+  private _sheetStyleSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "sheet_item_style",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "grid", label: this._t("editor_nav_sheet_style_grid") },
+              { value: "list", label: this._t("editor_nav_sheet_style_list") },
+            ],
+          },
+        },
+      },
     ];
   }
 
@@ -802,6 +823,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       sheet_state_entity: "editor_nav_sheet_state_entity",
       collapse_on_navigate: "editor_nav_collapse_on_navigate",
       sheet_columns: "editor_nav_sheet_columns",
+      sheet_item_style: "editor_nav_sheet_style",
+      secondary: "editor_nav_sheet_secondary",
       snap_half: "editor_nav_sheet_snap_half",
     };
     const key = labelMap[schema.name];
@@ -1119,7 +1142,15 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   </div>
 
                   <div class="block">
-                    <div class="hint">${this._t("editor_nav_sheet_items")}</div>
+                    <div class="block-title">${this._t("editor_nav_sheet_items")}</div>
+                    <ha-form
+                      .hass=${this.hass}
+                      .data=${{ sheet_item_style: cfg.sheet_item_style ?? "grid" }}
+                      .schema=${this._sheetStyleSchema()}
+                      .computeLabel=${this._computeLabel}
+                      @value-changed=${this._rootChanged}
+                    ></ha-form>
+                    <div class="hint">${this._t("editor_nav_sheet_style_hint")}</div>
                     ${this._sheetItems.map(
                       (item, index) => html`
                         <div class="block">
@@ -1138,7 +1169,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                           <ha-form
                             .hass=${this.hass}
                             .data=${item}
-                            .schema=${this._sheetItemSchema()}
+                            .schema=${this._sheetItemSchema(
+                              (cfg.sheet_item_style ?? "grid") === "list",
+                            )}
                             .computeLabel=${this._computeLabel}
                             @value-changed=${(ev: CustomEvent) =>
                               this._sheetItemChanged(index, ev)}

@@ -3122,7 +3122,12 @@ items: [...]
 
 The drawer holds two things. `sheet_items` are shortcut tiles — the same
 entries people usually hide behind a "more" submenu, laid out where you can see
-them at a glance instead of having to open a menu first. The editor has a
+them at a glance instead of having to open a menu first. They draw two ways:
+`grid` fits the most destinations in the least space, an icon with a label
+under it; `list` gives each one a full-width row with an icon, a name, a second
+line and a chevron. The second line (`secondary`) takes free text, a template,
+or an entity id whose state it shows — which is what makes a row worth its
+extra space. The editor has a
 button that copies an item's submenu straight in. Below them, `sheet_cards`
 takes any Lovelace cards at all, every M3 card included:
 
@@ -3236,7 +3241,8 @@ without a breaking config change.
 | `hidden` | — | Jinja2 boolean; hides the whole card |
 | `styles` | — | Free CSS applied to the bar. Advanced |
 | `sheet_items` | — | Shortcut tiles in the drawer: `name`, `icon`, `path`, `color`, `tap_action` |
-| `sheet_columns` | auto | Tiles per row; unset fits as many as the width allows |
+| `sheet_item_style` | `grid` | `grid` (icons with labels under them) or `list` (full-width rows) |
+| `sheet_columns` | auto | Grid only: tiles per row; unset fits as many as the width allows |
 | `sheet_cards` | — | Cards rendered in the drawer, below the tiles |
 | `sheet_title` | — | Title row above the drawer's content |
 | `sheet_action` | — | `{icon, tap_action}` button on the right of that row |

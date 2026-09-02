@@ -1893,8 +1893,21 @@ export interface NavSheetItem {
   /** Shorthand for `tap_action: { action: navigate, navigation_path: … }`. */
   path?: string;
   color?: string;
+  /**
+   * The second line in `list` style: free text, an entity id whose state is
+   * shown, or a template. Ignored by the grid, which has no room for it.
+   */
+  secondary?: string;
   tap_action?: HaActionConfig;
 }
+
+/**
+ * How the drawer draws its shortcuts. `grid` is a wall of icon tiles — most
+ * destinations in the least space. `list` gives each one a full-width row with
+ * an icon, a name, a second line and a chevron, which is worth the space when
+ * the second line actually says something.
+ */
+export type NavSheetItemStyle = "grid" | "list";
 
 export interface M3NavCardConfig {
   type: string;
@@ -1911,8 +1924,9 @@ export interface M3NavCardConfig {
   // ---- sheet (style: sheet only)
   /** Shortcut tiles in the drawer, drawn as a grid above the cards. */
   sheet_items?: NavSheetItem[];
-  /** Tiles per row. Unset fits as many as the width allows. */
+  /** Tiles per row in `grid` style. Unset fits as many as the width allows. */
   sheet_columns?: number;
+  sheet_item_style?: NavSheetItemStyle;
   /** Any Lovelace cards, rendered in the drawer below the shortcuts. */
   sheet_cards?: Record<string, unknown>[];
   sheet_title?: string;

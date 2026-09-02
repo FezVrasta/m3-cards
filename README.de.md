@@ -3195,7 +3195,12 @@ items: [...]
 
 Die Schublade nimmt zweierlei auf. `sheet_items` sind Kurzbefehl-Kacheln — genau
 die Einträge, die sonst hinter einem „Mehr"-Untermenü verschwinden, hier aber
-auf einen Blick sichtbar statt erst nach dem Öffnen eines Menüs. Der Editor hat
+auf einen Blick sichtbar statt erst nach dem Öffnen eines Menüs. Sie lassen
+sich auf zwei Arten zeichnen: `grid` bringt die meisten Ziele auf den
+wenigsten Platz, Symbol mit Beschriftung darunter; `list` gibt jedem eine volle
+Zeile mit Symbol, Namen, zweiter Zeile und Pfeil. Die zweite Zeile
+(`secondary`) nimmt freien Text, ein Template oder eine Entity-ID, deren
+Zustand sie zeigt — und genau das macht eine Zeile ihren Mehrplatz wert. Der Editor hat
 einen Knopf, der ein bestehendes Untermenü direkt übernimmt. Darunter nimmt
 `sheet_cards` beliebige Lovelace-Karten auf, jede M3-Karte eingeschlossen:
 
@@ -3310,7 +3315,8 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `hidden` | — | Jinja2-Boolean; blendet die ganze Karte aus |
 | `styles` | — | Freies CSS für die Leiste. Für Fortgeschrittene |
 | `sheet_items` | — | Kacheln in der Schublade: `name`, `icon`, `path`, `color`, `tap_action` |
-| `sheet_columns` | automatisch | Kacheln pro Zeile; leer füllt so viele, wie die Breite hergibt |
+| `sheet_item_style` | `grid` | `grid` (Symbole mit Beschriftung darunter) oder `list` (volle Zeilen) |
+| `sheet_columns` | automatisch | Nur im Raster: Kacheln pro Zeile; leer füllt so viele, wie die Breite hergibt |
 | `sheet_cards` | — | Karten in der Schublade, unter den Kacheln |
 | `sheet_title` | — | Titelzeile über dem Inhalt der Schublade |
 | `sheet_action` | — | `{icon, tap_action}`-Knopf rechts in dieser Zeile |
