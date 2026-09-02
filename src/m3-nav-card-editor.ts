@@ -271,10 +271,20 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const next = { ...this._config };
     if (on) {
       // Seeded with what the card already does, so switching it on changes
-      // nothing until something below it is actually changed.
+      // nothing until something below it is actually changed. The width moves
+      // down with it: leaving a copy at the top would mean a setting that
+      // still applies while nothing on screen shows it.
+      const width = next.max_width;
       next.desktop = { ...(next.desktop ?? {}) };
       next.mobile = { ...(next.mobile ?? {}) };
+      if (width !== undefined) {
+        if (next.desktop.max_width === undefined) next.desktop.max_width = width;
+        if (next.mobile.max_width === undefined) next.mobile.max_width = width;
+        delete next.max_width;
+      }
     } else {
+      const width = next.desktop?.max_width ?? next.mobile?.max_width;
+      if (width !== undefined && next.max_width === undefined) next.max_width = width;
       delete next.desktop;
       delete next.mobile;
     }
@@ -324,6 +334,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
           select: {
             mode: "dropdown",
             options: [
+              // An empty select reads as "not loaded yet" rather than as "the
+              // one above applies", so the fallback is spelled out.
+              { value: "", label: this._t("editor_nav_style_inherit") },
               { value: "header", label: this._t("editor_nav_style_header") },
               { value: "footer", label: this._t("editor_nav_style_footer") },
               { value: "segmented", label: this._t("editor_nav_style_segmented") },
@@ -770,6 +783,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
+      split: "editor_nav_different_widths",
       width_fit: "editor_nav_width_fit",
       width_px: "editor_nav_max_width_px",
       size: "editor_nav_size",
@@ -972,12 +986,15 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._rootChanged}
             ></ha-form>
-            ${this._renderWidth(cfg.max_width, (v) => {
-              const next = { ...cfg };
-              if (v === undefined) delete next.max_width;
-              else next.max_width = v;
-              this._emit(next);
-            })}
+            <div class="hint">${this._t("editor_nav_style_hint")}</div>
+            ${this._usesSplitLayouts
+              ? nothing
+              : this._renderWidth(cfg.max_width, (v) => {
+                  const next = { ...cfg };
+                  if (v === undefined) delete next.max_width;
+                  else next.max_width = v;
+                  this._emit(next);
+                })}
 
             <ha-form
               .hass=${this.hass}
