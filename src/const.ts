@@ -1598,6 +1598,17 @@ export const NAV_INDICATOR_HEIGHT = 32;
 export const NAV_INDICATOR_RADIUS = 16;
 export const NAV_INDICATOR_RADIUS_ACTIVE = 10;
 
+/**
+ * Smallest inset a docked bar treats as chrome rather than padding.
+ *
+ * A docked bar keeps clear of the sidebar by matching the width of the content
+ * area. But a view is also padded away from the screen edges, and that padding
+ * is part of the same measurement — below this many pixels an inset is read as
+ * the view's own padding, and the bar goes to the edge instead. The sidebar is
+ * 56px collapsed, so nothing real falls in the gap.
+ */
+export const NAV_DOCK_MIN_INSET = 40;
+
 /** Side padding of an entry whose label sits beside its icon. */
 export const NAV_SIDE_PADDING = 16;
 export const NAV_ITEM_INACTIVE_OPACITY = 0.6;

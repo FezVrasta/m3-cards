@@ -42,6 +42,7 @@ import {
   NAV_INDICATOR_HEIGHT,
   NAV_INDICATOR_RADIUS,
   NAV_SIDE_PADDING,
+  NAV_DOCK_MIN_INSET,
   NAV_INDICATOR_RADIUS_ACTIVE,
   NAV_INDICATOR_WIDTH,
   NAV_ITEM_RADIUS,
@@ -456,8 +457,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   private _measureDock = (): void => {
     const rect = this._contentRect();
     if (!rect) return;
-    const left = Math.max(0, Math.round(rect.left));
-    const right = Math.max(0, Math.round(window.innerWidth - rect.right));
+    // An inset small enough to be the view's own padding is not something to
+    // dock against: a full-width bar that stops short of both screen edges
+    // reads as a mistake, which on a phone — no sidebar, only padding — is all
+    // this measurement was ever picking up.
+    const edge = (px: number): number =>
+      px < NAV_DOCK_MIN_INSET ? 0 : Math.round(px);
+    const left = edge(Math.max(0, rect.left));
+    const right = edge(Math.max(0, window.innerWidth - rect.right));
     this.style.setProperty("--nav-dock-left", `${left}px`);
     this.style.setProperty("--nav-dock-right", `${right}px`);
   };

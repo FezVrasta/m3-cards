@@ -32,6 +32,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: a docked bar stopped short of both screen edges.** `header` and
+  `footer` match the width of the content area so they do not run under the
+  sidebar — but a view is also padded away from the screen edges, and that
+  padding went into the same measurement. On a phone, where there is no sidebar,
+  padding was all it ever found, so the bar sat inside a gap on both sides. An
+  inset smaller than the collapsed sidebar is now read as padding and ignored.
+
 - **Nav card: the pill around a sideways entry was not a capsule.** The corner
   radius is shared with entries the width of an icon, where it reads as a
   rounded square; stretched around an icon and a label it left the ends
@@ -110,6 +117,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: Eine angedockte Leiste schloss links und rechts nicht ab.**
+  `header` und `footer` richten sich nach der Breite des Inhaltsbereichs, damit
+  sie nicht unter der Seitenleiste verschwinden — aber eine Ansicht hat auch
+  eigenen Abstand zum Bildschirmrand, und der floss in dieselbe Messung ein. Auf
+  dem Handy, wo es keine Seitenleiste gibt, war dieser Abstand alles, was die
+  Messung je gefunden hat; die Leiste saß also beidseitig in einer Lücke. Ein
+  Abstand, der kleiner ist als die eingeklappte Seitenleiste, gilt jetzt als
+  Innenabstand und wird ignoriert.
 
 - **Nav-Karte: Die Pille um einen seitwärts gesetzten Eintrag war keine Kapsel.**
   Der Eckenradius wird mit Einträgen von Icon-Breite geteilt, wo er als
