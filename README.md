@@ -3235,6 +3235,7 @@ without a breaking config change.
 | `action_button` | — | `{icon, tap_action, color}` — a round button set beside the bar, outside its surface |
 | `max_width` | — | Width cap, centred. A number is px, a string any CSS length, `fit` hugs the entries |
 | `size` | `1` | Scales every measurement, 0.7–1.5 |
+| `edge_distance` | `8` (`6` docked) | Distance in px between the bar and the screen edge it docks to. Added on top of the device's safe area, never instead of it, so the bar cannot end up on a phone's gesture bar |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
 | `container_opacity` | `100` | Opacity of the bar, in percent |
 | `blur` | `20` | Backdrop blur in px |

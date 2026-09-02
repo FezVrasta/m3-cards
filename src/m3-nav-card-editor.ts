@@ -531,6 +531,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
       },
       {
+        name: "edge_distance",
+        selector: { number: { min: 0, max: 60, step: 1, mode: "slider" } },
+      },
+      {
         name: "container_opacity",
         selector: { number: { min: 10, max: 100, step: 1, mode: "slider" } },
       },
@@ -810,6 +814,12 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     this._setSubmenu(index, entries);
   }
 
+  /** The one number whose effect is not obvious from its name alone. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "edge_distance"
+      ? this._t("editor_nav_edge_distance_helper")
+      : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       style: "editor_nav_style",
@@ -838,6 +848,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       width_px: "editor_nav_max_width_px",
       size: "editor_nav_size",
       icon_size: "editor_nav_icon_size",
+      edge_distance: "editor_nav_edge_distance",
       container_style: "editor_nav_container",
       container_opacity: "editor_nav_opacity",
       blur: "editor_nav_blur",
@@ -1262,12 +1273,14 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   .hass=${this.hass}
                   .data=${{
                     icon_size: cfg.icon_size ?? 22,
+                    edge_distance: cfg.edge_distance ?? 8,
                     container_opacity: cfg.container_opacity ?? 100,
                     blur: cfg.blur ?? 20,
                     radius: cfg.radius ?? 30,
                   }}
                   .schema=${this._appearanceAdvancedSchema()}
                   .computeLabel=${this._computeLabel}
+                  .computeHelper=${this._computeHelper}
                   @value-changed=${this._rootChanged}
                 ></ha-form>
               </div>

@@ -6,7 +6,21 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Added
+
+- **Nav card: `edge_distance`** — how far the bar keeps from the screen edge it
+  docks to, in px, with a slider in the editor. It is added on top of the
+  device's safe area rather than replacing it, so no value can push the bar
+  onto a phone's gesture bar.
+
 ### Fixed
+
+- **Nav card: correcting the scroll position looked like a swipe.** The bar
+  scrolls its active entry into view; it did so smoothly, which on a cached
+  view meant animating the whole way from the first entry to the last one in
+  plain sight. It now moves by the smallest amount that makes the entry fully
+  visible, instantly, while the page itself is changing — and does not move at
+  all when the entry is already in view.
 
 - **Nav card: the bar sat on the gesture bar, not above it.** The card asked
   for `env(safe-area-inset-bottom)`, which an Android WebView reports as 0 even
@@ -36,7 +50,21 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   whole card, because nothing it draws is ever a request to change the view by
   swiping.
 
+### Hinzugefügt
+
+- **Nav-Karte: `edge_distance`** — wie weit die Leiste vom Bildschirmrand
+  wegrückt, an dem sie klebt, in px, mit Schieberegler im Editor. Der Wert kommt
+  zusätzlich zur Safe Area des Geräts, nicht statt ihr; kein Wert kann die
+  Leiste also auf die Gestenleiste des Handys schieben.
+
 ### Behoben
+
+- **Nav-Karte: Das Korrigieren der Scroll-Position sah aus wie ein Wisch.** Die
+  Leiste scrollt ihren aktiven Eintrag ins Bild; sie tat das weich, was bei
+  einer zwischengespeicherten Ansicht hieß: sichtbar den ganzen Weg vom ersten
+  bis zum letzten Eintrag animieren. Jetzt rückt sie um das kleinstmögliche Maß,
+  sofort, während die Seite ohnehin wechselt — und gar nicht, wenn der Eintrag
+  schon zu sehen ist.
 
 - **Nav-Karte: Die Leiste saß auf dem Gestenbalken statt darüber.** Die Karte
   hat `env(safe-area-inset-bottom)` gefragt, und das meldet ein Android-WebView

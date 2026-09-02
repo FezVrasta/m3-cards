@@ -3309,6 +3309,7 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `action_button` | — | `{icon, tap_action, color}` — ein runder Knopf neben der Leiste, außerhalb ihrer Fläche |
 | `max_width` | — | Breitenbegrenzung, mittig. Zahl = px, Text = CSS-Länge, `fit` = so breit wie die Einträge |
 | `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
+| `edge_distance` | `8` (angedockt `6`) | Abstand in px zwischen Leiste und dem Bildschirmrand, an dem sie klebt. Kommt **zusätzlich** zur Safe Area des Geräts, nicht statt ihr — die Leiste kann also nicht auf der Gestenleiste landen |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
 | `container_opacity` | `100` | Deckkraft der Leiste in Prozent |
 | `blur` | `20` | Weichzeichnen des Hintergrunds in px |

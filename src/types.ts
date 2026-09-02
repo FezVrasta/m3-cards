@@ -1998,6 +1998,12 @@ export interface M3NavCardConfig {
   size?: number;
   /** Icon size in px, when only the glyphs should grow and not the whole bar. */
   icon_size?: number;
+  /**
+   * Distance in px between the bar and the edge of the screen it docks to.
+   * Added on top of the device's own safe area, never instead of it — the
+   * gesture bar has to be cleared whatever this says.
+   */
+  edge_distance?: number;
   container_style?: NavContainerStyle;
   container_opacity?: number;
   blur?: number;

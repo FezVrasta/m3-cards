@@ -182,7 +182,6 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   @state() private _path = location.pathname;
   /** Path the bar last scrolled its active entry into view for. */
   private _scrolledFor?: string;
-  private _hasScrolledOnce = false;
   @state() private _pressed?: number;
   /** Set by auto_hide_on_scroll while the page is being scrolled down. */
   @state() private _autoHidden = false;
@@ -350,6 +349,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * Only ever runs when the active path changed, never on an unrelated
    * re-render: a badge template ticking over must not yank the bar back while
    * the reader is scrolling through it by hand.
+   *
+   * Deliberately instant, and by the smallest amount that makes the entry
+   * fully visible. Animating this looked like the bar swiping the whole way
+   * from the first entry to the last one, because that is literally what it
+   * was doing: a cached view comes back holding the scroll position it had,
+   * and the correction then travels the full width in plain sight. Landing
+   * already correct while the page itself is changing reads as the bar having
+   * been there all along.
    */
   private _keepActiveInView(): void {
     if (this._scrolledFor === this._path) return;
@@ -363,20 +370,21 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     const barBox = bar.getBoundingClientRect();
     const itemBox = active.getBoundingClientRect();
-    const target =
-      bar.scrollLeft +
-      (itemBox.left - barBox.left) -
-      (barBox.width - itemBox.width) / 2;
-    const max = bar.scrollWidth - bar.clientWidth;
-    const left = Math.max(0, Math.min(max, target));
-    if (Math.abs(left - bar.scrollLeft) < 1) return;
+    // A little air, so the entry does not end up flush against the edge
+    // looking like it was cut off.
+    const margin = NAV_BAR_GAP * 2;
+    const overLeft = barBox.left - itemBox.left + margin;
+    const overRight = itemBox.right - barBox.right + margin;
 
-    // The first paint jumps: an entry sliding into place while the page is
-    // still appearing reads as a glitch, not as motion.
-    const smooth =
-      this._hasScrolledOnce && shouldAnimate(this._config?.animation);
-    this._hasScrolledOnce = true;
-    bar.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
+    let delta = 0;
+    if (overLeft > 0) delta = -overLeft;
+    else if (overRight > 0) delta = overRight;
+    else return; // already fully in view: leave the bar exactly where it is
+
+    const max = bar.scrollWidth - bar.clientWidth;
+    const left = Math.max(0, Math.min(max, bar.scrollLeft + delta));
+    if (Math.abs(left - bar.scrollLeft) < 1) return;
+    bar.scrollLeft = left;
   }
 
   private _measureDock = (): void => {
@@ -1643,6 +1651,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-blur": cfg.blur !== undefined ? `${cfg.blur}px` : undefined,
       "nav-opacity": cfg.container_opacity !== undefined ? String(cfg.container_opacity / 100) : undefined,
       "nav-z": String(NAV_Z_INDEX),
+      // How far the bar keeps from the screen edge. Each variant has its own
+      // sensible default in the stylesheet, so this is only set when it was
+      // actually configured — a floating bar and a docked one do not want the
+      // same number.
+      "nav-edge": cfg.edge_distance !== undefined ? `${cfg.edge_distance}px` : undefined,
     });
     // The documented advanced escape hatch, applied last so it can override
     // anything the card computed. Deliberately not sanitised beyond being a
@@ -1883,24 +1896,29 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       border-right: none;
       opacity: var(--nav-opacity, 1);
       padding-bottom: calc(
-        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+        var(--nav-edge, calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1))) +
+        var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
       );
     }
 
     :host([variant="header"]) .bar {
       padding-bottom: calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1));
       padding-top: calc(
-        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+        var(--nav-edge, calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1))) +
+        var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
       );
     }
 
     :host([variant="floating"]) .bar,
     :host([variant="sheet"]) .bar {
-      margin: ${NAV_FLOAT_INSET}px;
+      margin: var(--nav-edge, ${NAV_FLOAT_INSET}px);
       /* The home bar on an iPhone sits exactly where a bottom-docked bar wants
          to be, so the inset is added to the margin rather than to the padding —
          the bar moves up instead of growing a dead strip. */
-      margin-bottom: calc(${NAV_FLOAT_INSET}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+      margin-bottom: calc(
+        var(--nav-edge, ${NAV_FLOAT_INSET}px) +
+        var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+      );
       border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
       opacity: var(--nav-opacity, 1);
     }
@@ -2096,8 +2114,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     :host([variant="floating"]) .bar-row,
     :host([variant="sheet"]) .bar-row {
-      margin: ${NAV_FLOAT_INSET}px;
-      margin-bottom: calc(${NAV_FLOAT_INSET}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+      margin: var(--nav-edge, ${NAV_FLOAT_INSET}px);
+      margin-bottom: calc(
+        var(--nav-edge, ${NAV_FLOAT_INSET}px) +
+        var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+      );
     }
 
     :host([variant="floating"]) .bar-row .bar,
@@ -2141,8 +2162,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      margin: ${NAV_FLOAT_INSET}px;
-      margin-bottom: calc(${NAV_FLOAT_INSET}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+      margin: var(--nav-edge, ${NAV_FLOAT_INSET}px);
+      margin-bottom: calc(
+        var(--nav-edge, ${NAV_FLOAT_INSET}px) +
+        var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+      );
       border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
       opacity: var(--nav-opacity, 1);
       color: var(--nav-ink, var(--primary-text-color));

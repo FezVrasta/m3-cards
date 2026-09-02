@@ -1723,6 +1723,9 @@ const translations = {
     editor_nav_width_px_hint: "Diese Konfiguration hat eine feste Breite hinterlegt. Der Schalter oben überschreibt sie, solange er an ist.",
     editor_nav_size: "Gesamtgröße der Leiste",
     editor_nav_icon_size: "Icon-Größe (px)",
+    editor_nav_edge_distance: "Abstand zum Bildschirmrand (px)",
+    editor_nav_edge_distance_helper:
+      "Wie weit die Leiste vom unteren bzw. oberen Bildschirmrand wegrückt. Größere Werte lassen sie höher schweben. Der Platz für die Gestenleiste des Handys kommt immer zusätzlich dazu, die Leiste kann also nicht darauf rutschen.",
     editor_nav_container: "Hintergrund der Leiste",
     editor_nav_container_glass: "Glas",
     editor_nav_container_solid: "Deckend",
@@ -3482,6 +3485,9 @@ const translations = {
     editor_nav_width_px_hint: "This configuration carries a fixed width. The switch above overrides it while it is on.",
     editor_nav_size: "Overall size of the bar",
     editor_nav_icon_size: "Icon size (px)",
+    editor_nav_edge_distance: "Distance from the screen edge (px)",
+    editor_nav_edge_distance_helper:
+      "How far the bar sits from the bottom or top edge of the screen. Larger values float it higher. Room for the phone's gesture bar is always added on top, so the bar can never end up sitting on it.",
     editor_nav_container: "Background of the bar",
     editor_nav_container_glass: "Glass",
     editor_nav_container_solid: "Solid",
