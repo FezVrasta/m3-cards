@@ -22,7 +22,7 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { glassBackground } from "./shared/glass-card";
+import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
@@ -323,9 +323,7 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
-          class="card-inner ${this._config.glass_background === false
-            ? "solid"
-            : "glass"} ${animClass}"
+          class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius}; ${heightStyle}`}
         >
           <div
@@ -546,43 +544,18 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
   }
 
   static styles = css`
-    :host {
-      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
-      -webkit-tap-highlight-color: transparent;
-      display: block;
-      height: 100%;
-    }
+    ${glassCardStyles}
 
     ha-card {
-      height: 100%;
       border-radius: 32px;
-      overflow: hidden;
-      box-shadow: none;
-      background: transparent;
     }
 
+    /* .card-inner's glass/solid background and border come from
+       glassCardStyles. Only the two things this card differs on are set
+       here. */
     .card-inner {
-      box-sizing: border-box;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
       gap: 10px;
-      padding: var(--m3-group-padding, 12px);
       border-radius: 32px;
-      /* See glass-card.ts: --m3-group-* is set by m3-group-card on nested
-         children's containers, and inherits through the shadow boundary. */
-      border: var(--m3-group-border, 1px solid rgba(100, 100, 100, 0.25));
-    }
-
-    .card-inner.glass {
-      /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: var(--m3-group-background, ${glassBackground});
-      backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
-      -webkit-backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
-    }
-
-    .card-inner.solid {
-      background: var(--m3-group-background, var(--ha-card-background, var(--card-background-color)));
     }
 
     ha-card.unavailable .mode-row,
@@ -591,12 +564,6 @@ export class M3ClimateCard extends LitElement implements LovelaceCard {
     ha-card.unavailable .stepper-row {
       opacity: 0.4;
       pointer-events: none;
-    }
-
-    .missing-entity {
-      padding: 16px;
-      color: var(--error-color, red);
-      font-size: 14px;
     }
 
     /* Header */

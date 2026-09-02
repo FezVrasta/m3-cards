@@ -19,7 +19,7 @@ import {
   resolveCornerRadius,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { glassBackground } from "./shared/glass-card";
+import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
@@ -618,9 +618,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
-          class="card-inner ${this._config.glass_background === false
-            ? "solid"
-            : "glass"} ${sliderInfo ? "sliderable" : ""} ${shouldAnimate(this._config.animation) ? "" : "no-animations"}"
+          class="card-inner ${glassCardClass(this._config.glass_background)} ${sliderInfo ? "sliderable" : ""} ${shouldAnimate(this._config.animation) ? "" : "no-animations"}"
           style=${`border-radius: ${radius};`}
           role="button"
           tabindex="0"
@@ -698,6 +696,8 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
   }
 
   static styles = css`
+    ${glassCardStyles}
+
     /* Grid rather than block, and the card stretches into the grid area
        instead of taking height: 100%.
 
@@ -712,35 +712,24 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
        card fills it and cqh resolves. min-height below is what gives the host
        that height when nothing else does. */
     :host {
-      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
-      -webkit-tap-highlight-color: transparent;
       display: grid;
-      height: 100%;
       min-height: 56px;
     }
 
     ha-card {
-      overflow: hidden;
-      box-shadow: none;
-      background: transparent;
       container-type: size;
     }
 
+    /* .card-inner's glass/solid background and border come from
+       glassCardStyles. Only the layout this card differs on is set here. */
     .card-inner {
       position: relative;
       overflow: hidden;
-      box-sizing: border-box;
-      height: 100%;
       padding: var(
         --m3-group-padding,
         min(12px, 9cqh) min(16px, 11cqh) min(12px, 9cqh) var(--m3-icon-offset, min(16px, 11cqh))
       );
-      /* See glass-card.ts: --m3-group-* is set by m3-group-card on nested
-         children's containers, and inherits through the shadow boundary. */
-      border: var(--m3-group-border, 1px solid rgba(100, 100, 100, 0.25));
       cursor: pointer;
-      display: flex;
-      flex-direction: column;
       justify-content: center;
       gap: 10px;
       transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -785,25 +774,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       transition: none;
     }
 
-    .card-inner.glass {
-      /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: var(--m3-group-background, ${glassBackground});
-      backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
-      -webkit-backdrop-filter: var(--m3-group-backdrop-filter, blur(20px));
-    }
-
-    .card-inner.solid {
-      background: var(--m3-group-background, var(--ha-card-background, var(--card-background-color)));
-    }
-
     ha-card.unavailable .card-inner {
       opacity: 0.4;
       pointer-events: none;
-    }
-
-    .missing-entity {
-      color: var(--error-color, red);
-      font-size: 14px;
     }
 
     .content {
