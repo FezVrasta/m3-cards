@@ -1911,6 +1911,13 @@ export interface M3NavCardConfig {
 
   // ---- appearance
   label_visibility?: NavLabelVisibility;
+  /**
+   * How wide the bar is allowed to get, centred in the space it docks to.
+   * A number is px, a string is any CSS length, and `"fit"` makes it exactly
+   * as wide as its entries need. Unset spans the whole width — which is right
+   * for a phone and usually far too much for a desktop.
+   */
+  max_width?: number | string;
   /** Proportional scale for every measurement of the chosen variant, 0.7–1.5. */
   size?: number;
   container_style?: NavContainerStyle;

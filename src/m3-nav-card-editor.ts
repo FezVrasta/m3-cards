@@ -275,6 +275,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         },
       },
       {
+        name: "max_width",
+        selector: { text: {} },
+      },
+      {
         name: "size",
         selector: { number: { min: NAV_SIZE_MIN, max: NAV_SIZE_MAX, step: 0.05, mode: "slider" } },
       },
@@ -489,6 +493,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
+      max_width: "editor_nav_max_width",
       size: "editor_nav_size",
       container_style: "editor_nav_container",
       container_opacity: "editor_nav_opacity",
@@ -741,6 +746,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .hass=${this.hass}
               .data=${{
                 label_visibility: cfg.label_visibility ?? "always",
+                max_width: cfg.max_width ?? "",
                 size: cfg.size ?? 1,
                 container_style: cfg.container_style ?? "glass",
                 container_opacity: cfg.container_opacity ?? 100,
@@ -751,6 +757,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._rootChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_nav_max_width_hint")}</div>
             ${colorRow(this._t("editor_mode_color"), cfg.accent_color, (v) =>
               this._emit(
                 this._clean({ ...cfg, accent_color: v }) as unknown as M3NavCardConfig,

@@ -3073,6 +3073,24 @@ items:
 Bildschirm; ihr Platz im Raster fällt zusammen, sie kosten also keine Zeile der
 Ansicht. `segmented` ist eine ganz normale Karte und steht, wo sie steht.
 
+Im Bearbeiten-Modus — und in der Vorschau des Karten-Wählers — wird jede
+Variante stattdessen im Kartenfluss gezeichnet. Eine angedockte Leiste hat
+keinen anklickbaren Platz mehr; ohne das ließe sich die Karte zwar anlegen,
+aber nie wieder öffnen.
+
+Standardmäßig nimmt eine angedockte Leiste die volle Inhaltsbreite ein. Am
+Handy ist das richtig, am Desktop meistens deutlich zu viel — die Einträge
+stehen dann weit auseinander. `max_width` begrenzt sie und setzt sie mittig:
+eine Zahl in px, jede CSS-Länge, oder `fit` für genau so breit wie die Einträge
+es brauchen.
+
+```yaml
+type: custom:m3-nav-card
+style: footer
+max_width: fit        # oder 600, oder "40rem"
+items: [...]
+```
+
 ### Desktop und Handy
 
 Die übliche Paarung ist Kopfzeile am großen Bildschirm, Fußzeile oder Sheet am
@@ -3244,6 +3262,7 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `desktop` / `mobile` | — | Überschreibungen je Breite: `style`, `position`, `show_labels`, `hidden` |
 | `breakpoint` | `768` | Kartenbreite, unter der `mobile` gilt |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
+| `max_width` | — | Breitenbegrenzung, mittig. Zahl = px, Text = CSS-Länge, `fit` = so breit wie die Einträge |
 | `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
 | `container_opacity` | `100` | Deckkraft der Leiste in Prozent |

@@ -3004,6 +3004,22 @@ items:
 screen, so their slot in the grid collapses and they do not take a row of the
 view. `segmented` is an ordinary card and sits wherever it is placed.
 
+While the dashboard is being edited — and in the card picker's preview — every
+variant renders in the flow instead. A docked bar has no slot to click on, so
+without this the card could be added but never opened again.
+
+By default a docked bar spans the whole content area, which is right on a phone
+and usually far too much on a desktop, where the entries end up nowhere near
+each other. `max_width` caps it and centres it: a number in px, any CSS length,
+or `fit` to make it exactly as wide as its entries need.
+
+```yaml
+type: custom:m3-nav-card
+style: footer
+max_width: fit        # or 600, or "40rem"
+items: [...]
+```
+
 ### Desktop and mobile
 
 The usual pairing is a header on a wide screen and a footer or sheet on a
@@ -3172,6 +3188,7 @@ without a breaking config change.
 | `desktop` / `mobile` | — | Per-width overrides: `style`, `position`, `show_labels`, `hidden` |
 | `breakpoint` | `768` | Card width below which `mobile` applies |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
+| `max_width` | — | Width cap, centred. A number is px, a string any CSS length, `fit` hugs the entries |
 | `size` | `1` | Scales every measurement, 0.7–1.5 |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
 | `container_opacity` | `100` | Opacity of the bar, in percent |

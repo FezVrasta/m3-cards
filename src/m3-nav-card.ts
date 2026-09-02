@@ -115,6 +115,15 @@ console.info(
  */
 const connectedSheets = new Set<M3NavCard>();
 
+/** The editor frame names the variant, using the editor's own wording for it. */
+const VARIANT_LABEL_KEYS: Record<NavVariant, TranslationKey> = {
+  header: "editor_nav_style_header",
+  footer: "editor_nav_style_footer",
+  segmented: "editor_nav_style_segmented",
+  floating: "editor_nav_style_floating",
+  sheet: "editor_nav_style_sheet",
+};
+
 /** An entry after its templates have been rendered and its state resolved. */
 interface ResolvedItem {
   index: number;
@@ -355,9 +364,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // through an attribute selector rather than an inline style.
     this.setAttribute("variant", this._layout.style ?? "footer");
     this.setAttribute("edge", this._position);
-    // A sheet that is not the primary one, or is being edited, stays in the
-    // card flow — the attribute is what the CSS keys the difference off.
-    if (this._variant === "sheet" && !this._sheetDocked) {
+    // Docking is what makes the bar cost no row of the view, and it is exactly
+    // what makes it unreachable in the editor: a fixed card leaves the flow, so
+    // its slot in the grid collapses to nothing and there is no longer anything
+    // to click. The card therefore renders in the flow whenever it is being
+    // edited or previewed — and a second sheet on the same view does the same,
+    // since only the first one gets to dock.
+    const inline =
+      this._editing || (this._variant === "sheet" && !this._isPrimarySheet);
+    if (inline) {
       this.setAttribute("inline", "");
     } else {
       this.removeAttribute("inline");
@@ -451,6 +466,19 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   private get _stacked(): boolean {
     const variant = this._variant;
     return variant === "footer" || variant === "floating" || variant === "sheet";
+  }
+
+  /**
+   * The configured width cap as a CSS length, plus whether the bar should hug
+   * its entries. `fit` is its own case because it also changes how the entries
+   * are sized, not just how much room the bar is allowed.
+   */
+  private get _maxWidth(): { css?: string; fit: boolean } {
+    const value = this._config?.max_width;
+    if (value === undefined || value === "") return { fit: false };
+    if (value === "fit") return { css: "fit-content", fit: true };
+    if (typeof value === "number") return { css: `${value}px`, fit: false };
+    return { css: value, fit: false };
   }
 
   private get _labelVisibility(): NavLabelVisibility {
@@ -815,11 +843,6 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     return true;
   }
 
-  /** A sheet only floats when it is the first one and the view is not in edit mode. */
-  private get _sheetDocked(): boolean {
-    return this._variant === "sheet" && !this._editing && this._isPrimarySheet;
-  }
-
   private get _sheetTarget(): CollapseTarget {
     // Cards carry no id, so the key is what identifies this sheet to a reader:
     // the page it is on and its own title.
@@ -1030,8 +1053,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // container — visible immediately on the first real render.
     const measured = this._sheetTravel > 0;
     // Always a definite pixel value, never `auto`: a height transition with an
-    // `auto` on either end does not run, it just stays where it was.
-    const positioned = `height: ${this._handleHeight + fraction * this._sheetTravel}px;`;
+    // `auto` on either end does not run, it just stays where it was. The one
+    // exception is the editor, where the drawer is pinned open and there is
+    // nothing to animate — and where a measurement may not have happened yet,
+    // which would otherwise pin it open at zero height.
+    const positioned = this._editing
+      ? "height: auto;"
+      : `height: ${this._handleHeight + fraction * this._sheetTravel}px;`;
     return html`
       <div
         class="sheet-panel ${open ? "open" : ""} ${measured ? "measured" : ""} ${this
@@ -1249,6 +1277,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     const common = resolveCommonColors(cfg);
     const scale = this._size;
+    const width = this._maxWidth;
     const container = cfg.container_style ?? (cfg.glass_background === false ? "solid" : "glass");
     const cssVars = buildCssVars({
       "nav-ink": common.textColorCss,
@@ -1256,6 +1285,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-bg": cfg.card_background ? resolveThemeColor(cfg.card_background) : undefined,
       "nav-scale": String(scale),
       "nav-radius": `${cfg.radius ?? NAV_FLOAT_RADIUS}px`,
+      "nav-max-width": width.css,
       "nav-blur": cfg.blur !== undefined ? `${cfg.blur}px` : undefined,
       "nav-opacity": cfg.container_opacity !== undefined ? String(cfg.container_opacity / 100) : undefined,
       "nav-z": String(NAV_Z_INDEX),
@@ -1269,11 +1299,12 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       .join(" ");
 
     const animated = shouldAnimate(cfg.animation);
+    const widthClass = `${width.css ? "capped" : ""} ${width.fit ? "fit" : ""}`;
     const bar = html`
       <nav
-        class="bar ${container} ${this._autoHidden ? "auto-hidden" : ""} ${animated
-          ? ""
-          : "no-animations"}"
+        class="bar ${container} ${widthClass} ${this._autoHidden
+          ? "auto-hidden"
+          : ""} ${animated ? "" : "no-animations"}"
         style=${`${cssVars} ${freeStyles}`}
         aria-label=${cfg.name || this._t("nav_label")}
       >
@@ -1281,16 +1312,35 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       </nav>
     `;
 
-    if (this._variant !== "sheet") {
-      return html`${bar}${this._renderSubmenu()}`;
-    }
+    const body =
+      this._variant === "sheet"
+        ? html`
+            <div
+              class="sheet ${container} ${widthClass} ${animated ? "" : "no-animations"}"
+              style=${`${cssVars} ${freeStyles}`}
+            >
+              ${this._renderSheetPanel()} ${bar}
+            </div>
+          `
+        : bar;
 
+    if (!this._editing) return html`${body}${this._renderSubmenu()}`;
+
+    // In the editor the bar is drawn in the flow, and a bar in the flow is a
+    // thin strip with a lot of empty space in it — which reads as an empty
+    // card, not as a navigation bar someone can click to configure. The frame
+    // says what it is and gives the slot a shape worth aiming at.
     return html`
-      <div
-        class="sheet ${container} ${animated ? "" : "no-animations"}"
-        style=${`${cssVars} ${freeStyles}`}
-      >
-        ${this._renderSheetPanel()} ${bar}
+      <div class="edit-frame">
+        <div class="edit-label">
+          <ha-icon icon="mdi:dock-bottom"></ha-icon>
+          <span>${this._t("nav_edit_label")}</span>
+          <span class="edit-meta">
+            ${this._t(VARIANT_LABEL_KEYS[this._variant])} ·
+            ${this._t("nav_edit_entries").replace("{n}", String(items.length))}
+          </span>
+        </div>
+        ${body}
       </div>
       ${this._renderSubmenu()}
     `;
@@ -1380,6 +1430,23 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .sheet.transparent {
       background: none;
       border: none;
+    }
+
+    /* A capped bar is centred in whatever it docks to. Full width is right on a
+       phone and usually far too much on a desktop, where a bar stretched across
+       2000px puts its entries nowhere near each other. */
+    .bar.capped,
+    .sheet.capped {
+      max-width: var(--nav-max-width, none);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Exactly as wide as the entries need: they stop sharing the row out
+       between them and take only their own content. */
+    .bar.fit .item,
+    .sheet.fit .item {
+      flex: 0 0 auto;
     }
 
     :host([variant="footer"]) .bar,
@@ -1687,14 +1754,31 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       gap: 8px;
     }
 
-    /* Not the primary sheet, or the dashboard is being edited: the card goes
-       back into the flow so it can be seen and configured. */
-    :host([variant="sheet"][inline]) {
-      position: static;
+    /* Being edited or previewed, or a second sheet on the same view: the card
+       goes back into the flow so it can be seen, measured by the grid, and
+       configured. */
+    :host([inline]) {
+      position: static !important;
+      pointer-events: auto;
     }
 
-    :host([variant="sheet"][inline]) .sheet {
+    :host([inline]) .sheet,
+    :host([inline]) .bar {
       margin: 0;
+    }
+
+    /* Without the fixed frame there is nothing to line the bar up against, so
+       the docking offsets have to stop applying too. */
+    :host([inline]) .bar {
+      border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
+    }
+
+    :host([variant="header"][inline]) .bar,
+    :host([variant="footer"][inline]) .bar {
+      border-left: 1px solid rgba(100, 100, 100, 0.25);
+      border-right: 1px solid rgba(100, 100, 100, 0.25);
+      padding-bottom: calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1));
+      padding-top: calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1));
     }
 
     /* ---- submenu ---- */
@@ -1772,6 +1856,35 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    /* ---- editor frame ---- */
+
+    .edit-frame {
+      pointer-events: auto;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      border: 1px dashed rgba(127, 127, 127, 0.5);
+      border-radius: 16px;
+    }
+
+    .edit-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--nav-ink, var(--primary-text-color));
+      opacity: 0.75;
+      --mdc-icon-size: 16px;
+    }
+
+    .edit-meta {
+      font-weight: 400;
+      opacity: 0.8;
     }
 
     .empty {
