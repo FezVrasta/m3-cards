@@ -442,6 +442,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     return {
       style: block.style ?? cfg.style ?? "footer",
       position: block.position ?? cfg.position,
+      // Left out of this object once, which meant a per-width width cap was
+      // accepted by the editor, stored in the config, and then silently never
+      // applied to anything.
+      max_width: block.max_width,
       show_labels: block.show_labels,
       hidden: block.hidden,
     };
@@ -492,9 +496,17 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const value =
       this._layout.max_width ?? this._config?.max_width ?? this._defaultMaxWidth;
     if (value === undefined || value === "") return { fit: false };
-    if (value === "fit") return { css: "fit-content", fit: true };
+    if (value === "fit" || value === "fit-content") return { css: "fit-content", fit: true };
     if (typeof value === "number") return { css: `${value}px`, fit: false };
-    return { css: value, fit: false };
+    // A bare number as a string is what a text field hands back.
+    if (/^\d+(\.\d+)?$/.test(value)) return { css: `${value}px`, fit: false };
+    // Anything else has to look like a CSS length, or the browser drops the
+    // declaration and the bar silently spans the full width — which is what
+    // "fixed" did, typed in place of "fit".
+    if (/^-?[\d.]+(px|rem|em|%|vw|vh|ch)$|^(min|max|clamp|calc)\(/.test(value)) {
+      return { css: value, fit: false };
+    }
+    return { fit: false };
   }
 
   private get _labelVisibility(): NavLabelVisibility {

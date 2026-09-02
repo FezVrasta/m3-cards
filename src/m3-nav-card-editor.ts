@@ -100,6 +100,86 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     this._setItems(items);
   }
 
+  /**
+   * The width cap is two controls rather than one text field: a mode, and a
+   * number that only matters in one of the modes. A free-text field invited
+   * values that look plausible and are not — "fixed" was typed in place of
+   * "fit", stored happily, and produced a declaration the browser dropped, so
+   * the bar spanned the full width with nothing to show why.
+   */
+  private _widthMode(value: number | string | undefined): "full" | "fit" | "custom" {
+    if (value === undefined || value === "") return "full";
+    if (value === "fit" || value === "fit-content") return "fit";
+    return "custom";
+  }
+
+  private _widthPixels(value: number | string | undefined): number {
+    if (typeof value === "number") return value;
+    const parsed = Number.parseFloat(String(value ?? ""));
+    return Number.isFinite(parsed) ? parsed : 600;
+  }
+
+  private _widthSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "width_mode",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "full", label: this._t("editor_nav_width_full") },
+              { value: "fit", label: this._t("editor_nav_width_fit") },
+              { value: "custom", label: this._t("editor_nav_width_custom") },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  private _widthPixelSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "width_px",
+        selector: { number: { min: 200, max: 1600, step: 10, mode: "slider" } },
+      },
+    ];
+  }
+
+  /** Renders the mode select plus, in custom mode, the pixel slider. */
+  private _renderWidth(
+    value: number | string | undefined,
+    apply: (next: number | string | undefined) => void,
+  ) {
+    const mode = this._widthMode(value);
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${{ width_mode: mode }}
+        .schema=${this._widthSchema()}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${(ev: CustomEvent) => {
+          const next = (ev.detail.value as { width_mode: string }).width_mode;
+          if (next === "full") apply(undefined);
+          else if (next === "fit") apply("fit");
+          else apply(this._widthPixels(value));
+        }}
+      ></ha-form>
+      ${mode === "custom"
+        ? html`
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ width_px: this._widthPixels(value) }}
+              .schema=${this._widthPixelSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) =>
+                apply((ev.detail.value as { width_px: number }).width_px)}
+            ></ha-form>
+          `
+        : nothing}
+    `;
+  }
+
   private _itemLabel(item: NavItemConfig, index: number): string {
     return item.name || item.path || `#${index + 1}`;
   }
@@ -202,7 +282,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
-      { name: "max_width", selector: { text: {} } },
       { name: "show_labels", selector: { boolean: {} } },
       { name: "hidden", selector: { boolean: {} } },
     ];
@@ -275,10 +354,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             ],
           },
         },
-      },
-      {
-        name: "max_width",
-        selector: { text: {} },
       },
       {
         name: "size",
@@ -496,6 +571,17 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     this._emit(next);
   }
 
+  private _perWidthWidth(which: "desktop" | "mobile", value: number | string | undefined): void {
+    if (!this._config) return;
+    const block: Record<string, unknown> = { ...this._config[which] };
+    if (value === undefined) delete block.max_width;
+    else block.max_width = value;
+    const next = { ...this._config };
+    if (Object.keys(block).length) next[which] = block as NavLayoutConfig;
+    else delete next[which];
+    this._emit(next);
+  }
+
   private _badgeChanged(index: number, ev: CustomEvent): void {
     const patch = ev.detail.value as Record<string, unknown>;
     const badge = this._clean({ ...this._items[index]?.badge, ...patch });
@@ -564,7 +650,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
-      max_width: "editor_nav_max_width",
+      width_mode: "editor_nav_max_width",
+      width_px: "editor_nav_max_width_px",
       size: "editor_nav_size",
       icon_size: "editor_nav_icon_size",
       container_style: "editor_nav_container",
@@ -737,6 +824,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 .computeLabel=${this._layoutHiddenLabel}
                 @value-changed=${(ev: CustomEvent) => this._perWidthChanged("desktop", ev)}
               ></ha-form>
+              ${this._renderWidth(cfg.desktop?.max_width, (v) =>
+                this._perWidthWidth("desktop", v),
+              )}
             </div>
 
             <div class="block">
@@ -748,6 +838,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 .computeLabel=${this._layoutHiddenLabel}
                 @value-changed=${(ev: CustomEvent) => this._perWidthChanged("mobile", ev)}
               ></ha-form>
+              ${this._renderWidth(cfg.mobile?.max_width, (v) =>
+                this._perWidthWidth("mobile", v),
+              )}
             </div>
             <div class="hint">${this._t("editor_nav_layout_hint")}</div>
           </div>
@@ -854,7 +947,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .hass=${this.hass}
               .data=${{
                 label_visibility: cfg.label_visibility ?? "always",
-                max_width: cfg.max_width ?? "",
                 size: cfg.size ?? 1,
                 icon_size: cfg.icon_size ?? 22,
                 container_style: cfg.container_style ?? "glass",
@@ -866,6 +958,12 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._rootChanged}
             ></ha-form>
+            ${this._renderWidth(cfg.max_width, (v) => {
+              const next = { ...cfg };
+              if (v === undefined) delete next.max_width;
+              else next.max_width = v;
+              this._emit(next);
+            })}
             <div class="hint">${this._t("editor_nav_max_width_hint")}</div>
             ${colorRow(this._t("editor_mode_color"), cfg.accent_color, (v) =>
               this._emit(
