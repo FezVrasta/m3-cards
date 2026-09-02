@@ -815,6 +815,8 @@ windowWithCards.customCards.push({
   name: "M3 Occupancy Card",
   description:
     "Raumbelegung aus Präsenz- und Bewegungssensoren: Zustand, Dauer und Aktivitätsverlauf je Raum.",
-  preview: true,
+  // false: auto_discover would otherwise run full-house discovery in HA's
+  // card picker preview — see m3-battery-card.ts for the full rationale.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

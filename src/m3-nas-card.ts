@@ -941,6 +941,9 @@ windowWithCards.customCards.push({
   name: "M3 NAS Card",
   description:
     "Speicherbelegung, CPU, RAM und Temperatur eines NAS über die Glances-Integration.",
-  preview: true,
+  // false: setConfig() fetches the full entity registry over the websocket
+  // to find Glances entities — HA's card picker preview otherwise pays that
+  // round-trip too. See m3-battery-card.ts for the broader rationale.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

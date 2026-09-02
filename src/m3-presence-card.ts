@@ -562,6 +562,8 @@ windowWithCards.customCards.push({
   type: "m3-presence-card",
   name: "M3 Presence Card",
   description: "Anwesenheitsübersicht für person- und device_tracker-Entities mit Avataren und Statusringen.",
-  preview: true,
+  // false: auto_discover would otherwise run full-house discovery in HA's
+  // card picker preview — see m3-battery-card.ts for the full rationale.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });
