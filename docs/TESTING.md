@@ -625,6 +625,7 @@ dritten Kalender.
 - [ ] Umschalter Agenda/Monat morpht; `show_view_switch: false` blendet ihn aus
 - [ ] Beim Verlassen des Sichtbereichs hört der Minutentakt auf (VisibleTicker)
 
+| Füllung hinter dem Icon | `icon_fill: solid` an einer eingeschalteten Entität | Die Fläche trägt die Akzentfarbe, die Glyphe wird dunkel. Mit `tint` (Standard) umgekehrt: zarte Fläche, farbige Glyphe |
 | Icon je Zustand | `icon: mdi:power-plug` mit `icon_off: mdi:power-plug-off`, dann schalten | Aus zeigt das durchgestrichene Symbol, An das normale. Ohne `icon_off` bleibt es in beiden Zuständen dasselbe |
 | Formwechsel legt den ganzen Weg zurück | Beim Schalten den Umriss beobachten | Die Ecken wandern gleichmäßig über die volle Dauer. Sie dürfen nicht fast stillstehen und am Ende umklappen — das passierte, solange der Aus-Radius eine große Zahl statt der tatsächlichen halben Kachelhöhe war |
 | Beide Formen im Gleichschritt | Beim Schalten genau hinsehen | Icon-Feld und Kachelumriss verändern sich gemeinsam; die innere Form darf nicht früher fertig sein als die äußere |

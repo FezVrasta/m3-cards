@@ -87,6 +87,18 @@ export class M3ButtonCardEditor
       { name: "vertical", selector: { boolean: {} } },
       { name: "shape_by_state", selector: { boolean: {} } },
       { name: "icon_off", selector: { icon: {} } },
+      {
+        name: "icon_fill",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "tint", label: this._t("editor_icon_fill_tint") },
+              { value: "solid", label: this._t("editor_icon_fill_solid") },
+            ],
+          },
+        },
+      },
       { name: "show_slider", selector: { boolean: {} } },
     ];
   }
@@ -159,6 +171,7 @@ export class M3ButtonCardEditor
       vertical: "editor_vertical",
       shape_by_state: "editor_shape_by_state",
       icon_off: "editor_icon_off",
+      icon_fill: "editor_icon_fill",
       tap_action: "editor_tap_action",
       icon_tap_action: "editor_icon_tap_action",
       hold_action: "editor_hold_action",
@@ -325,6 +338,7 @@ export class M3ButtonCardEditor
       align_icons: this._config.align_icons ?? false,
       vertical: this._config.vertical ?? false,
       shape_by_state: this._config.shape_by_state ?? false,
+      icon_fill: this._config.icon_fill ?? "tint",
       show_slider: this._config.show_slider ?? false,
     };
 

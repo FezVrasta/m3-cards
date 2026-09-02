@@ -8,6 +8,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Button card: `icon_fill: solid`** — turns the active pairing inside out. The
+  well takes the accent and the glyph is darkened against it, rather than a pale
+  wash of the accent carrying an accent-coloured glyph. The bolder of the two,
+  and the one that reads first from across a room.
+
 - **Button card: `icon_off`** — a second icon for while the entity is off. Many
   symbols have a struck-through twin, and that reads as "not on" before any
   colour does. Falls back to `icon` when unset, which is most cards.
@@ -231,6 +236,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Button-Karte: `icon_fill: solid`** — dreht das aktive Paar um. Die Fläche
+  bekommt die Akzentfarbe, die Glyphe wird dagegen abgedunkelt, statt einer
+  zarten Akzentfläche mit akzentfarbener Glyphe. Die kräftigere der beiden
+  Varianten, und die, die man aus einigen Metern zuerst liest.
 
 - **Button-Karte: `icon_off`** — ein zweites Icon für den Aus-Zustand. Viele
   Symbole haben ein durchgestrichenes Gegenstück, und das liest sich schneller

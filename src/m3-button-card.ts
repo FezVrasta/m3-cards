@@ -28,7 +28,13 @@ import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
-import { tintOn, foregroundOn, foregroundColor } from "./shared/color-config";
+import {
+  tintOn,
+  foregroundOn,
+  foregroundColor,
+  fillColor,
+  inkOn,
+} from "./shared/color-config";
 
 const HOLD_DURATION_MS = 500;
 const DOUBLE_TAP_WINDOW_MS = 250;
@@ -585,16 +591,27 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       : rawInactiveColor;
     const sliderFillBg = tintOn(this, color, this._config.color_opacity, 45);
     const iconBgInactive = tintOn(this, inactiveColor, this._config.inactive_opacity, 8);
-    const iconBgActive = tintOn(this, color, this._config.color_opacity, 20);
+    // Solid turns the pair inside out: the accent goes on the well and the
+    // glyph is darkened against it, rather than a wash of accent carrying an
+    // accent-coloured glyph. Louder, and the shape that reads first from a
+    // distance — which is the point of an active state.
+    const solidIcon = this._config.icon_fill === "solid";
+    const iconBgActive = solidIcon
+      ? fillColor(this, color)
+      : tintOn(this, color, this._config.color_opacity, 20);
     // In slider mode the fill runs behind the icon chip; a translucent chip
     // would double-tint over it into a muddy blob. This opaque variant (the
     // same tint mixed into the card surface instead of transparency) covers
     // the fill so the chip reads as its own surface.
-    const iconBgActiveSolid = tintOn(this, color, this._config.color_opacity, 20);
+    const iconBgActiveSolid = solidIcon
+      ? fillColor(this, color)
+      : tintOn(this, color, this._config.color_opacity, 20);
     // The glyph sits in the well, so it is measured against the well rather
     // than against the card — otherwise an active button shows an accent icon
     // on an accent-tinted ground and the glyph disappears.
-    const iconInkActive = foregroundOn(color, iconBgActive);
+    const iconInkActive = solidIcon
+      ? inkOn(iconBgActive, this)
+      : foregroundOn(color, iconBgActive);
     const iconInkInactive = foregroundOn(inactiveColor, iconBgInactive);
     const name =
       this._config.name ||

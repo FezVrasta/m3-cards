@@ -190,6 +190,13 @@ export interface M3ButtonCardConfig {
   show_state?: boolean;
   state_content?: "state" | "last_changed" | "last_updated";
   show_icon_background?: boolean;
+  /**
+   * How the well behind the icon is filled while the entity is on. `tint` is a
+   * wash of the accent with the accent-coloured glyph on it; `solid` fills the
+   * well with the accent and darkens the glyph, which is the louder of the two
+   * and what a phone's quick settings use.
+   */
+  icon_fill?: "tint" | "solid";
   icon_size?: number;
   align_icons?: boolean;
   static_color?: boolean;

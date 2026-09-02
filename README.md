@@ -363,6 +363,7 @@ hold_action:
 | `vertical` | boolean | `false` | Icon above the text instead of next to it |
 | `shape_by_state` | `false` | Lets the outline follow the entity: a capsule while off, the configured corner radius while on, with the icon well going from circle to rounded square. Animated |
 | `icon_off` | – | Icon while the entity is off, for symbols that have a struck-through twin (`mdi:power-plug` / `mdi:power-plug-off`). Falls back to `icon` |
+| `icon_fill` | `tint` | `tint` is a pale wash carrying a coloured glyph; `solid` fills the well with the accent and darkens the glyph, the louder pairing a phone's quick settings use |
 | `radius` | number (px) | `28` | Card corner radius. In the editor as a preset ("Square" 8px / "Slightly rounded" 16px / "Round" 28px) or freely chosen |
 | `corners` | object | – | Optional per-corner override: `top_left`, `top_right`, `bottom_right`, `bottom_left` (px) — for asymmetric Material 3 Expressive shapes, e.g. a button with only one rounded side |
 | `glass_background` | boolean | `true` | Frosted glass background |

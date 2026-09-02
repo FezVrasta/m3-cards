@@ -259,6 +259,9 @@ const translations = {
     editor_vertical: "Vertikales Layout (Icon oben)",
     editor_shape_by_state: "Form folgt dem Zustand",
     editor_icon_off: "Icon im Aus-Zustand",
+    editor_icon_fill: "Füllung hinter dem Icon",
+    editor_icon_fill_tint: "Zart — helle Fläche, farbiges Icon",
+    editor_icon_fill_solid: "Kräftig — farbige Fläche, dunkles Icon",
     editor_shape_by_state_helper:
       "Eingeschaltet ist die Kachel eckiger und das Icon sitzt auf einem abgerundeten Quadrat; ausgeschaltet wird sie zur Kapsel und das Icon rund. Der Wechsel wird weich animiert. So sieht man am Umriss, ob etwas an ist — nicht nur an der Farbe.",
     editor_tap_action: "Tap-Aktion",
@@ -2055,6 +2058,9 @@ const translations = {
     editor_vertical: "Vertical layout (icon on top)",
     editor_shape_by_state: "Shape follows the state",
     editor_icon_off: "Icon while off",
+    editor_icon_fill: "Fill behind the icon",
+    editor_icon_fill_tint: "Soft — pale well, coloured glyph",
+    editor_icon_fill_solid: "Bold — coloured well, dark glyph",
     editor_shape_by_state_helper:
       "Switched on, the tile is squarer and the icon sits on a rounded square; switched off it becomes a capsule and the icon a circle. The change is animated. The outline then says whether something is on, not only the colour.",
     editor_tap_action: "Tap action",

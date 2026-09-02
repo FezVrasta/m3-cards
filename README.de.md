@@ -359,6 +359,7 @@ hold_action:
 | `vertical` | boolean | `false` | Icon über statt neben dem Text |
 | `shape_by_state` | `false` | Lässt den Umriss dem Zustand folgen: Kapsel im Aus, konfigurierter Eckenradius im An, das Icon-Feld vom Kreis zum abgerundeten Quadrat. Animiert |
 | `icon_off` | – | Icon im Aus-Zustand, für Symbole mit durchgestrichenem Gegenstück (`mdi:power-plug` / `mdi:power-plug-off`). Ohne Angabe gilt `icon` |
+| `icon_fill` | `tint` | `tint` ist eine zarte Fläche mit farbiger Glyphe; `solid` füllt die Fläche mit der Akzentfarbe und dunkelt die Glyphe ab — die lautere Kombination, die Handy-Schnelleinstellungen verwenden |
 | `radius` | number (px) | `28` | Eckenradius der Karte. Im Editor als Voreinstellung („Eckig“ 8px / „Leicht rund“ 16px / „Rund“ 28px) oder frei wählbar |
 | `corners` | object | – | Optionaler Override je Ecke: `top_left`, `top_right`, `bottom_right`, `bottom_left` (px) — für asymmetrische Material-3-Expressive-Formen wie z.B. ein Button mit nur einer runden Seite |
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
