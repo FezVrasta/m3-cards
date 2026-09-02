@@ -51,6 +51,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   card, tapping a light inside its own popup re-triggered "popup" instead of
   toggling the light, opening another nested popup on top — repeatedly.
 
+### Misc
+
+- **M3 Climate Overview Card — README brought back in line with what the
+  card actually does.** The docs had drifted from the upstream fork's
+  original, much narrower card; documented the full filter set
+  (`exclude_area`, `include_entities`, `include_labels`/`exclude_labels`,
+  `include_state`/`exclude_state`), per-room `color` overrides, `show_header`,
+  `show_scale_labels`, `tile_tint_opacity`/`accent_opacity`, and the
+  editor-only mold-risk notification automation (`notify_*`), none of which
+  were mentioned before.
+
 ## [2.3.1]
 
 ### Added
