@@ -50,6 +50,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card editor: the round button was filed under Behaviour.** It is a
+  visible part of the bar, and someone looking for a button to add or remove
+  goes to Appearance. Moved there, above the advanced panel, so it is in view
+  without opening anything.
+
 - **Nav card editor: the round button had no on/off switch.** It exists only
   when it has an icon, so adding one meant knowing to fill an icon field and
   removing it meant clearing that field again — neither of which the editor
@@ -218,6 +223,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karten-Editor: Der runde Knopf lag unter Verhalten.** Er ist ein
+  sichtbarer Teil der Leiste, und wer einen Knopf hinzufügen oder entfernen will,
+  sucht unter Darstellung. Dorthin verschoben, über den erweiterten Bereich,
+  damit er ohne Aufklappen zu sehen ist.
 
 - **Nav-Karten-Editor: Für den runden Knopf gab es keinen Schalter.** Er
   existiert nur, wenn er ein Icon hat — ihn hinzuzufügen hieß also zu wissen,

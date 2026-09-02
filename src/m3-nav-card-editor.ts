@@ -1366,47 +1366,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               ),
             )}
 
-            <ha-expansion-panel outlined .header=${this._t("editor_nav_advanced")}>
-              <div class="panel-content">
-                <ha-form
-                  .hass=${this.hass}
-                  .data=${{
-                    icon_size: cfg.icon_size ?? 22,
-                    pill_size: cfg.pill_size ?? 1,
-                    label_size:
-                      cfg.label_size ??
-                      (cfg.label_position === "right" || cfg.label_position === "left"
-                        ? 14
-                        : 11),
-                    edge_distance: cfg.edge_distance ?? 8,
-                    container_opacity: cfg.container_opacity ?? 100,
-                    blur: cfg.blur ?? 20,
-                    radius: cfg.radius ?? 30,
-                  }}
-                  .schema=${this._appearanceAdvancedSchema()}
-                  .computeLabel=${this._computeLabel}
-                  .computeHelper=${this._computeHelper}
-                  @value-changed=${this._rootChanged}
-                ></ha-form>
-              </div>
-            </ha-expansion-panel>
-          </div>
-        </ha-expansion-panel>
-
-        <ha-expansion-panel outlined .header=${this._t("editor_nav_behavior")}>
-          <ha-icon slot="leading-icon" icon="mdi:gesture-tap"></ha-icon>
-          <div class="panel-content">
-            <ha-form
-              .hass=${this.hass}
-              .data=${{
-                haptics: cfg.haptics ?? true,
-                auto_hide_on_scroll: cfg.auto_hide_on_scroll ?? false,
-                submenu_trigger: cfg.submenu_trigger ?? "tap",
-              }}
-              .schema=${this._behaviorSchema()}
-              .computeLabel=${this._computeLabel}
-              @value-changed=${this._rootChanged}
-            ></ha-form>
             <div class="block">
               <div class="block-title">${this._t("editor_nav_action_button")}</div>
               <ha-form
@@ -1489,6 +1448,48 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               </div>`
                 : nothing}
             </div>
+
+            <ha-expansion-panel outlined .header=${this._t("editor_nav_advanced")}>
+              <div class="panel-content">
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{
+                    icon_size: cfg.icon_size ?? 22,
+                    pill_size: cfg.pill_size ?? 1,
+                    label_size:
+                      cfg.label_size ??
+                      (cfg.label_position === "right" || cfg.label_position === "left"
+                        ? 14
+                        : 11),
+                    edge_distance: cfg.edge_distance ?? 8,
+                    container_opacity: cfg.container_opacity ?? 100,
+                    blur: cfg.blur ?? 20,
+                    radius: cfg.radius ?? 30,
+                  }}
+                  .schema=${this._appearanceAdvancedSchema()}
+                  .computeLabel=${this._computeLabel}
+                  .computeHelper=${this._computeHelper}
+                  @value-changed=${this._rootChanged}
+                ></ha-form>
+              </div>
+            </ha-expansion-panel>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_nav_behavior")}>
+          <ha-icon slot="leading-icon" icon="mdi:gesture-tap"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${{
+                haptics: cfg.haptics ?? true,
+                auto_hide_on_scroll: cfg.auto_hide_on_scroll ?? false,
+                submenu_trigger: cfg.submenu_trigger ?? "tap",
+              }}
+              .schema=${this._behaviorSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._rootChanged}
+            ></ha-form>
           </div>
         </ha-expansion-panel>
 
