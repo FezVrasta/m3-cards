@@ -604,7 +604,12 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     // With an entity, <ha-state-icon> resolves config icon > entity's own
     // icon > HA's computed domain/device-class default (matching the native
     // tile card) — so no local fallback guess is needed in that case.
-    const icon = this._config.icon || "mdi:gesture-tap-button";
+    // An entity that is off may want to say so with its shape as well: the
+    // struck-through variant of a symbol reads as "not connected" before any
+    // colour does. Falls back to the one icon when no second one is given.
+    const stateIcon =
+      !active && this._config.icon_off ? this._config.icon_off : this._config.icon;
+    const icon = stateIcon || "mdi:gesture-tap-button";
     const stateText = !entity
       ? ""
       : unavailable
@@ -700,7 +705,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
                     ${entity
                       ? html`<ha-state-icon
                           .hass=${this.hass}
-                          .icon=${this._config.icon}
+                          .icon=${stateIcon}
                           .stateObj=${entity}
                         ></ha-state-icon>`
                       : html`<ha-icon icon=${icon}></ha-icon>`}
@@ -718,7 +723,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
                     ${entity
                       ? html`<ha-state-icon
                           .hass=${this.hass}
-                          .icon=${this._config.icon}
+                          .icon=${stateIcon}
                           .stateObj=${entity}
                         ></ha-state-icon>`
                       : html`<ha-icon icon=${icon}></ha-icon>`}

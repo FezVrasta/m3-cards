@@ -175,6 +175,12 @@ export interface M3ButtonCardConfig {
   entity?: string;
   name?: string;
   icon?: string;
+  /**
+   * Icon shown while the entity is off. Without one the same icon is used for
+   * both states, which is the usual case — a struck-through or hollow variant
+   * only exists for some symbols.
+   */
+  icon_off?: string;
   color?: string;
   color_opacity?: number;
   inactive_color?: string;

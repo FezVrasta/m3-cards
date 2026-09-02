@@ -8,6 +8,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Button card: `icon_off`** — a second icon for while the entity is off. Many
+  symbols have a struck-through twin, and that reads as "not on" before any
+  colour does. Falls back to `icon` when unset, which is most cards.
+
 - **Button card: `shape_by_state`** — the outline follows the entity, the way a
   phone's quick settings do it: a capsule while it is off, the configured corner
   radius while it is on, and the icon well going from a circle to a rounded
@@ -227,6 +231,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Button-Karte: `icon_off`** — ein zweites Icon für den Aus-Zustand. Viele
+  Symbole haben ein durchgestrichenes Gegenstück, und das liest sich schneller
+  als „nicht an" als jede Farbe. Ohne Angabe gilt weiterhin `icon`.
 
 - **Button-Karte: `shape_by_state`** — der Umriss folgt der Entität, so wie es
   die Schnelleinstellungen eines Handys machen: Kapsel im Aus, der konfigurierte
