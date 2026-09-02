@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [2.3.2]
+
+### Added
+
+- **M3 Group Card** (`m3-group-card`) — wraps other cards, M3 or otherwise, in
+  one shared frame, so a stack of several small cards (e.g. two or three
+  chip-button rows) reads as a single card instead of a pile of separately
+  bordered boxes. The group draws the outer border/background/padding
+  itself; every nested card that shares this suite's frame styling
+  (`shared/glass-card.ts`) automatically drops its own border, background
+  and padding while inside a group — via a `--m3-group-*` CSS custom
+  property set on the group's children container, which inherits through
+  each nested card's shadow root — so no configuration is needed on the
+  nested card itself, and cards outside a group are completely unaffected.
+  `gap` alone controls the space between rows; `gap: 0` makes them touch
+  edge to edge. The editor's nested-cards list uses the same visual pickers
+  Home Assistant's own `vertical-stack` editor does (`hui-card-picker` /
+  `hui-card-element-editor`), including search, favorites and
+  paste-from-clipboard when adding a card.
+
 ## [2.3.1]
 
 ### Added

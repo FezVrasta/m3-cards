@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **37 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **38 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
@@ -83,6 +83,12 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | Karte | Typ | Wozu |
 | --- | --- | --- |
 | [Aquarium](#m3-aquarium-card) | `m3-aquarium-card` | Aquarien-Geräte, Lichtbogen, Kamera und Wartung |
+
+### 🧱 Layout
+
+| Karte | Typ | Wozu |
+| --- | --- | --- |
+| [Group](#m3-group-card) | `m3-group-card` | Fasst andere Karten in einem gemeinsamen Rahmen zusammen, sodass sie wie eine einzige Karte wirken |
 
 *Alle Karten auf einen Blick:*
 
@@ -3406,6 +3412,59 @@ ohne Aussage.
 | `show_next_chip` | `false` | Chip in der Kopfzeile mit dem nächsten Termin |
 | `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
 | `navigation_path` | `/calendar` | Ziel von `navigate` und des Knopfs im Detailfenster |
+
+</details>
+
+## M3 Group Card
+
+Fasst andere Karten — M3 oder nicht — in einem gemeinsamen Rahmen zusammen,
+sodass ein Stapel mehrerer kleiner Karten (z.B. zwei oder drei Chip-Button-
+Reihen) wie eine einzige Karte wirkt statt wie ein Haufen separat umrandeter
+Kästen. Die Gruppe zeichnet selbst den äußeren Rahmen/Hintergrund; jede
+verschachtelte Karte, die den Rahmen-Stil dieser Suite teilt, verliert
+automatisch ihren eigenen Rahmen, Hintergrund und ihr Padding, sobald sie in
+einer Gruppe steckt — ganz ohne Konfiguration an der verschachtelten Karte
+selbst. `gap` allein steuert den Abstand zwischen den Reihen, `gap: 0` lässt
+sie sich berühren.
+
+Karten werden über dieselben visuellen Picker hinzugefügt, bearbeitet und
+sortiert, die auch Home Assistants eigener `vertical-stack`-Editor nutzt —
+inklusive Suche, Favoriten und Einfügen aus der Zwischenablage beim
+Hinzufügen einer Karte.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
+<img src="docs/images/group-card.png" alt="Group Card" width="500">
+
+```yaml
+type: custom:m3-group-card
+gap: 4
+cards:
+  - type: custom:m3-chip-buttons-card
+    buttons:
+      - entity: lock.haustuer
+        name: Haustür
+      - entity: binary_sensor.haustuer
+        name: Haustür
+  - type: custom:m3-chip-buttons-card
+    buttons:
+      - entity: lock.hintertuer
+        name: Hintertür
+      - entity: binary_sensor.hintertuer
+        name: Hintertür
+```
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `cards` | Liste | `[]` | Die verschachtelten Karten, in Anzeigereihenfolge. Beliebige Lovelace-Karte — M3 oder nicht |
+| `gap` | number (px) | `8` | Abstand zwischen den Reihen. `0` lässt sie sich berühren |
+| `radius` | number (px) | `16` | Eckenradius der Karte |
+| `corners` | object | – | Optionaler Override je Ecke, wie bei jeder anderen Karte |
+| `glass_background` | boolean | `true` | Milchiger Glashintergrund |
+| `card_background` | string | – | Hintergrundfarbe überschreiben |
 
 </details>
 
