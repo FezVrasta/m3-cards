@@ -255,6 +255,19 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this._attachScroll();
     connectedSheets.add(this);
     void this._syncSheetCards();
+
+    // Everything torn down on disconnect has to be built again here, not in
+    // updated(). Home Assistant keeps view elements in a cache and re-inserts
+    // the same card when you navigate back to a view, and a reconnect on its
+    // own changes no property — so updated() may never run again, and the
+    // card would sit there with no observers and no gesture handlers. That is
+    // the "it works the first time I open the view and never again" bug.
+    void this.updateComplete.then(() => {
+      if (!this.isConnected) return;
+      this._startObserving();
+      this._measureDock();
+      if (this._variant === "sheet" && !this._editing) this._attachGesture();
+    });
   }
 
   public disconnectedCallback(): void {
@@ -263,6 +276,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     window.removeEventListener("popstate", this._onLocationChanged);
     window.removeEventListener("resize", this._measureDock);
     this._resizeObserver?.disconnect();
+    // Cleared, not just disconnected: a disconnected observer that is still
+    // held would make _startObserving think the work was already done when the
+    // card comes back.
+    this._resizeObserver = undefined;
     this._detachScroll();
     this._closeSubmenu();
     this._detachGesture();
@@ -331,6 +348,16 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   protected firstUpdated(changed: PropertyValues): void {
     super.firstUpdated(changed);
     this._measureDock();
+    this._startObserving();
+  }
+
+  /**
+   * (Re)builds the size observers. Idempotent, because it runs on the first
+   * render and again on every reconnect — see connectedCallback for why the
+   * second one is not optional.
+   */
+  private _startObserving(): void {
+    if (this._resizeObserver) return;
     window.addEventListener("resize", this._measureDock);
     // Deliberately not matchMedia: the card can sit in a narrow column on a
     // wide screen, and "does the bar fit" is a question about the box it is in,
