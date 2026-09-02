@@ -1724,6 +1724,11 @@ const translations = {
     editor_nav_size: "Gesamtgröße der Leiste",
     editor_nav_icon_size: "Icon-Größe (px)",
     editor_nav_edge_distance: "Abstand zum Bildschirmrand (px)",
+    editor_nav_close_icon: "Icon zum Schließen",
+    editor_nav_action_menu: "Menü des runden Knopfes",
+    editor_nav_action_menu_hint:
+      "Ohne Einträge führt der Knopf einfach seine Aktion aus. Sobald hier Einträge stehen, klappt beim Antippen stattdessen ein Menü über dem Knopf auf, und der Knopf wird zum Schließen-Knopf. Jeder Eintrag kann eigenen Text, ein eigenes Icon und eine eigene Farbe haben.",
+    editor_nav_add_action_menu_entry: "Menüeintrag hinzufügen",
     editor_nav_edge_distance_helper:
       "Wie weit die Leiste vom unteren bzw. oberen Bildschirmrand wegrückt. Größere Werte lassen sie höher schweben. Der Platz für die Gestenleiste des Handys kommt immer zusätzlich dazu, die Leiste kann also nicht darauf rutschen.",
     editor_nav_container: "Hintergrund der Leiste",
@@ -3486,6 +3491,11 @@ const translations = {
     editor_nav_size: "Overall size of the bar",
     editor_nav_icon_size: "Icon size (px)",
     editor_nav_edge_distance: "Distance from the screen edge (px)",
+    editor_nav_close_icon: "Close icon",
+    editor_nav_action_menu: "Round button's menu",
+    editor_nav_action_menu_hint:
+      "With no entries the button simply runs its action. Add entries and tapping it opens a menu above it instead, turning the button into the one that closes it again. Each entry can carry its own text, icon and colour.",
+    editor_nav_add_action_menu_entry: "Add menu entry",
     editor_nav_edge_distance_helper:
       "How far the bar sits from the bottom or top edge of the screen. Larger values float it higher. Room for the phone's gesture bar is always added on top, so the bar can never end up sitting on it.",
     editor_nav_container: "Background of the bar",

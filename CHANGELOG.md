@@ -8,6 +8,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Nav card: the action button can open a menu.** Give `action_button` a
+  `menu` and tapping it raises a stack of labelled pills out of the button —
+  each with its own text, icon, colour and action — while the button itself
+  morphs from a circle into a rounded square showing `close_icon`. Without a
+  `menu` it stays the plain shortcut it was. The entries are always in the DOM
+  and shown by a class, so they fold back into the button on the way out
+  instead of blinking away.
+
 - **Nav card: `edge_distance`** — how far the bar keeps from the screen edge it
   docks to, in px, with a slider in the editor. It is added on top of the
   device's safe area rather than replacing it, so no value can push the bar
@@ -15,15 +23,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
-- **Nav card: correcting the scroll position looked like a swipe.** The bar
-  scrolls its active entry into view, and it animated the whole way from the
-  first entry to the last one in plain sight — a cached view comes back holding
-  its old scroll position, so the correction had the full width to travel. It
-  now moves by the smallest amount that makes the entry fully visible, which
-  for two entries that are both on screen is no movement at all: the highlight
-  changes place and nothing else does. A short slide is animated, so the step
-  is legible rather than abrupt; a long one still jumps, because a bar sliding
-  its whole width reads as somebody swiping it.
+- **Nav card: the bar appeared to jump between pages.** Every view carries its
+  own nav card, and a browser drops an element's scroll offset when it leaves
+  the document — which Home Assistant does to cache a view. So each bar arrived
+  scrolled hard left and then corrected itself, in whichever direction the
+  active entry happened to lie. Bars showing the same entries now share the
+  last offset, so the row picks up where the previous page left it, and the
+  correction on top of that moves the smallest distance that brings the active
+  entry fully into view. Neither is animated: animating a correction that
+  starts from a position the reader never saw is what made it look like a
+  swipe.
 
 - **Nav card: the bar sat on the gesture bar, not above it.** The card asked
   for `env(safe-area-inset-bottom)`, which an Android WebView reports as 0 even
@@ -55,6 +64,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
+- **Nav-Karte: Der Aktionsknopf kann ein Menü öffnen.** Bekommt `action_button`
+  ein `menu`, steigen beim Antippen beschriftete Pillen aus dem Knopf auf — jede
+  mit eigenem Text, Icon, eigener Farbe und Aktion — während der Knopf selbst
+  vom Kreis zum abgerundeten Quadrat wird und `close_icon` zeigt. Ohne `menu`
+  bleibt er die schlichte Abkürzung, die er war. Die Einträge stehen immer im
+  DOM und werden nur über eine Klasse gezeigt, damit sie beim Schließen in den
+  Knopf zurückklappen statt zu verschwinden.
+
 - **Nav-Karte: `edge_distance`** — wie weit die Leiste vom Bildschirmrand
   wegrückt, an dem sie klebt, in px, mit Schieberegler im Editor. Der Wert kommt
   zusätzlich zur Safe Area des Geräts, nicht statt ihr; kein Wert kann die
@@ -62,16 +79,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Behoben
 
-- **Nav-Karte: Das Korrigieren der Scroll-Position sah aus wie ein Wisch.** Die
-  Leiste scrollt ihren aktiven Eintrag ins Bild und animierte dabei sichtbar den
-  ganzen Weg vom ersten bis zum letzten Eintrag — eine zwischengespeicherte
-  Ansicht kommt mit ihrer alten Scroll-Position zurück, die Korrektur hatte also
-  die volle Breite vor sich. Jetzt rückt sie um das kleinstmögliche Maß, und das
-  heißt bei zwei Einträgen, die beide zu sehen sind: gar nicht. Nur die
-  Markierung wechselt den Platz. Ein kurzes Nachrücken wird weich animiert, damit
-  der Schritt nachvollziehbar statt abrupt wirkt; ein weiter Sprung springt
-  weiterhin, denn eine Leiste, die ihre ganze Breite entlanggleitet, sieht aus,
-  als hätte jemand gewischt.
+- **Nav-Karte: Die Leiste schien zwischen den Seiten zu springen.** Jede Ansicht
+  bringt ihre eigene Nav-Karte mit, und ein Browser verwirft die Scroll-Position
+  eines Elements, sobald es das Dokument verlässt — genau das tut Home Assistant,
+  um eine Ansicht zwischenzuspeichern. Jede Leiste kam also ganz links an und
+  korrigierte sich dann, in welche Richtung der aktive Eintrag gerade lag.
+  Leisten mit denselben Einträgen teilen sich jetzt die zuletzt bekannte
+  Position, die Reihe macht also dort weiter, wo die vorige Seite sie gelassen
+  hat, und die Korrektur darüber rückt nur um das kleinstmögliche Maß. Beides
+  ohne Animation: eine Korrektur zu animieren, die an einer nie gesehenen
+  Position beginnt, war der Grund, warum es wie ein Wisch aussah.
 
 - **Nav-Karte: Die Leiste saß auf dem Gestenbalken statt darüber.** Die Karte
   hat `env(safe-area-inset-bottom)` gefragt, und das meldet ein Android-WebView

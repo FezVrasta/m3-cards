@@ -1883,10 +1883,30 @@ export interface NavLayoutConfig {
 export type NavActiveStyle = "tint" | "solid";
 
 /** A detached round button beside the bar — a search or an add, typically. */
+/**
+ * One entry of the action button's speed dial: a labelled pill that rises out
+ * of the button when it is tapped.
+ */
+export interface NavActionMenuEntry {
+  name?: string;
+  icon?: string;
+  /** Overrides the button's colour for this entry alone. */
+  color?: string;
+  path?: string;
+  tap_action?: HaActionConfig;
+}
+
 export interface NavActionButton {
   icon?: string;
   color?: string;
+  /** Shown in place of `icon` while the menu is open. Defaults to a cross. */
+  close_icon?: string;
   tap_action?: HaActionConfig;
+  /**
+   * Entries of the speed dial. With entries the button opens the menu and
+   * `tap_action` is ignored; without them it just runs `tap_action`.
+   */
+  menu?: NavActionMenuEntry[];
 }
 
 export interface NavSheetAction {

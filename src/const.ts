@@ -1609,15 +1609,6 @@ export const NAV_SEGMENT_PADDING = 4;
 /** `floating`/`sheet` detach from the view and keep this gap to its edges. */
 export const NAV_FLOAT_INSET = 8;
 
-/**
- * How far the bar may slide, as a fraction of its own visible width, before the
- * correction stops being animated and simply jumps.
- *
- * A step of one or two entries is worth animating: it shows the reader that the
- * bar moved and by how much. A slide across the whole bar is not — it reads as
- * someone swiping the bar, which is exactly the thing the reader did not do.
- */
-export const NAV_SCROLL_ANIMATE_MAX = 0.75;
 export const NAV_FLOAT_RADIUS = 30;
 /**
  * Below HA's dialog band (its dialogs sit far above this), above ordinary card
@@ -1644,6 +1635,31 @@ export const NAV_SUBMENU_PADDING = 6;
 export const NAV_SUBMENU_MIN_WIDTH = 180;
 export const NAV_SUBMENU_MS = 300;
 export const NAV_SUBMENU_TINT = 10;
+
+// ---- action button speed dial ----------------------------------------------
+/** Gap between the trigger and the first entry, and between entries. */
+export const NAV_MENU_GAP = 10;
+/** Height of one labelled entry. */
+export const NAV_MENU_ROW_HEIGHT = 48;
+export const NAV_MENU_ROW_RADIUS = 24;
+/** Diameter of the tinted circle carrying an entry's icon. */
+export const NAV_MENU_GLYPH = 34;
+/** Background tint of an entry, in percent. */
+export const NAV_MENU_TINT = 22;
+/** The stronger tint of the icon circle sitting on that entry. */
+export const NAV_MENU_GLYPH_TINT = 34;
+/** Delay between one entry appearing and the next, in ms. */
+export const NAV_MENU_STAGGER_MS = 45;
+/**
+ * Corner radius the round trigger morphs to while the menu is open — a circle
+ * turning into a rounded square is the Material shape change that says the
+ * button now closes rather than opens.
+ */
+export const NAV_MENU_OPEN_RADIUS = 18;
+/** How far the entries rise as they appear. */
+export const NAV_MENU_RISE = 12;
+export const NAV_MENU_SCRIM_OPACITY = 0.45;
+export const NAV_MENU_MAX_WIDTH = 320;
 
 // Sheet.
 export const NAV_SHEET_HANDLE_WIDTH = 42;

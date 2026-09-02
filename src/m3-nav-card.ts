@@ -10,6 +10,7 @@ import type {
   M3NavCardConfig,
   NavBadgeStyle,
   NavItemConfig,
+  NavActionMenuEntry,
   NavLabelVisibility,
   NavLayoutConfig,
   NavPosition,
@@ -31,7 +32,6 @@ import {
   NAV_BAR_PADDING,
   NAV_DEFAULT_BREAKPOINT,
   NAV_FLOAT_INSET,
-  NAV_SCROLL_ANIMATE_MAX,
   NAV_FLOAT_RADIUS,
   NAV_ITEM_GLYPH,
   NAV_ITEM_HEIGHT,
@@ -71,6 +71,17 @@ import {
   NAV_SUBMENU_ROW_HEIGHT,
   NAV_SUBMENU_ROW_RADIUS,
   NAV_SUBMENU_TINT,
+  NAV_MENU_GAP,
+  NAV_MENU_ROW_HEIGHT,
+  NAV_MENU_ROW_RADIUS,
+  NAV_MENU_GLYPH,
+  NAV_MENU_TINT,
+  NAV_MENU_GLYPH_TINT,
+  NAV_MENU_STAGGER_MS,
+  NAV_MENU_OPEN_RADIUS,
+  NAV_MENU_RISE,
+  NAV_MENU_SCRIM_OPACITY,
+  NAV_MENU_MAX_WIDTH,
   NAV_Z_INDEX,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
@@ -125,6 +136,13 @@ const SWIPE_EVENTS = [
   "mousedown",
   "mousemove",
 ] as const;
+
+/**
+ * Last scroll offset of a bar, per set of entries. Module scope on purpose:
+ * the point is that the bar on the next page picks up where the one on this
+ * page left off, and they are different elements in different views.
+ */
+const barScrollMemory = new Map<string, number>();
 
 const connectedSheets = new Set<M3NavCard>();
 
@@ -188,6 +206,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   @state() private _autoHidden = false;
   /** Index of the entry whose submenu is open, if any. */
   @state() private _submenuFor?: number;
+  @state() private _actionMenuOpen = false;
   /** Sheet variant: whether the drawer is open. */
   @state() private _sheetOpen = false;
   /**
@@ -316,7 +335,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // card comes back.
     this._resizeObserver = undefined;
     this._detachScroll();
+    this.renderRoot
+      ?.querySelector<HTMLElement>(".bar")
+      ?.removeEventListener("scroll", this._onBarScroll);
+    this._barRestored = false;
+    // The offset is gone the moment the element leaves the document, so the
+    // correction has to run again on the way back in.
+    this._scrolledFor = undefined;
     this._closeSubmenu();
+    this._closeActionMenu();
     this._detachGesture();
     connectedSheets.delete(this);
     window.clearTimeout(this._pressTimer);
@@ -355,16 +382,51 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * whose active entry is already on screen does not move at all — what the
    * reader sees then is the highlight changing place, nothing else.
    *
-   * When it does have to move, a short slide is gentler than a jump and shows
-   * which way the bar went. A long one is not: travelling the width of the bar
-   * reads as somebody swiping it, which is precisely what the reader did not
-   * do. So the slide is animated only while it stays short.
+   * Never animated. A browser drops an element's scroll offset when it leaves
+   * the document, and Home Assistant detaches a view to cache it — so every
+   * bar starts at zero on arrival, whatever it showed before. Animating from
+   * there is animating from a position that was never real: it looked like the
+   * bar sliding from the first entry to wherever the active one is, in the
+   * wrong direction as often as not. The remembered offset below is what makes
+   * the bar look like it never moved; the correction on top of it has to be
+   * instant to keep that illusion intact.
    */
+  /**
+   * Puts the bar back where the last one stood.
+   *
+   * Every view carries its own nav card, and a scroll offset does not survive
+   * the element leaving the document — so without this each bar arrives
+   * scrolled hard left and the entries appear to jump around between pages,
+   * even though nothing about them changed. Bars that show the same entries
+   * share one remembered offset, which is what makes the row of entries look
+   * like one continuous thing rather than one per page.
+   */
+  private _restoreBarScroll(bar: HTMLElement): void {
+    if (this._barRestored) return;
+    this._barRestored = true;
+    const remembered = barScrollMemory.get(this._barKey());
+    if (remembered) bar.scrollLeft = remembered;
+    bar.addEventListener("scroll", this._onBarScroll, { passive: true });
+  }
+
+  /** Bars showing the same entries in the same shape share a memory slot. */
+  private _barKey(): string {
+    const items = this._config?.items ?? [];
+    return `${this._variant}|${items.map((i) => i.path ?? i.name ?? "").join("\u0001")}`;
+  }
+
+  private _onBarScroll = (e: Event): void => {
+    barScrollMemory.set(this._barKey(), (e.target as HTMLElement).scrollLeft);
+  };
+
+  private _barRestored = false;
+
   private _keepActiveInView(): void {
-    if (this._scrolledFor === this._path) return;
     const bar = this.renderRoot.querySelector<HTMLElement>(".bar");
     const active = bar?.querySelector<HTMLElement>(".item.active");
     if (!bar || !active) return;
+    this._restoreBarScroll(bar);
+    if (this._scrolledFor === this._path) return;
     // Nothing to scroll, so nothing to correct — and claiming this path as
     // done would be wrong if the bar is still being laid out.
     if (bar.scrollWidth - bar.clientWidth <= 1) return;
@@ -385,13 +447,8 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     const max = bar.scrollWidth - bar.clientWidth;
     const left = Math.max(0, Math.min(max, bar.scrollLeft + delta));
-    const distance = Math.abs(left - bar.scrollLeft);
-    if (distance < 1) return;
-
-    const smooth =
-      shouldAnimate(this._config?.animation) &&
-      distance <= bar.clientWidth * NAV_SCROLL_ANIMATE_MAX;
-    bar.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
+    if (Math.abs(left - bar.scrollLeft) < 1) return;
+    bar.scrollLeft = left;
   }
 
   private _measureDock = (): void => {
@@ -741,6 +798,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // A menu left standing over the page someone just navigated to is in the
     // way of the thing they navigated for.
     this._closeSubmenu();
+    this._closeActionMenu();
     if (this._config?.collapse_on_navigate !== false && this._sheetOpen) {
       this._setSheetOpen(false);
     }
@@ -904,31 +962,53 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this._submenuAnchor = anchor?.getBoundingClientRect();
     this._submenuFor = index;
     if (this._config?.haptics !== false) fireHaptic(this, "selection");
-    // Scoped to the time the menu is open: a permanent document listener per
-    // nav card would fire on every click on the dashboard for nothing.
-    document.addEventListener("click", this._onDocumentClick, true);
-    document.addEventListener("keydown", this._onDocumentKey);
+    this._syncPopupListeners();
   }
 
   private _closeSubmenu(): void {
     if (this._submenuFor === undefined) return;
     this._submenuFor = undefined;
     this._submenuAnchor = undefined;
-    document.removeEventListener("click", this._onDocumentClick, true);
-    document.removeEventListener("keydown", this._onDocumentKey);
+    this._syncPopupListeners();
   }
+
+  /**
+   * Holds the document-level listeners for exactly as long as something is
+   * open. Scoped rather than permanent: a nav card sits on every view, and a
+   * listener per card firing on every click on the dashboard buys nothing.
+   *
+   * Two things can be open — a submenu and the action button's menu — so the
+   * listeners are counted by whether either is, not added and removed by each
+   * in turn, which would have let one close cancel the other's listeners.
+   */
+  private _syncPopupListeners(): void {
+    const wanted = this._submenuFor !== undefined || this._actionMenuOpen;
+    if (wanted === this._popupListening) return;
+    this._popupListening = wanted;
+    if (wanted) {
+      document.addEventListener("click", this._onDocumentClick, true);
+      document.addEventListener("keydown", this._onDocumentKey);
+    } else {
+      document.removeEventListener("click", this._onDocumentClick, true);
+      document.removeEventListener("keydown", this._onDocumentKey);
+    }
+  }
+
+  private _popupListening = false;
 
   private _onDocumentClick = (e: Event): void => {
     // composedPath crosses the shadow boundary, which a plain `contains` check
     // does not — without it every click inside the menu would close it.
     if (e.composedPath().includes(this)) return;
     this._closeSubmenu();
+    this._closeActionMenu();
   };
 
   private _onDocumentKey = (e: KeyboardEvent): void => {
     if (e.key === "Escape") {
       e.stopPropagation();
       this._closeSubmenu();
+      this._closeActionMenu();
     }
   };
 
@@ -1273,13 +1353,49 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private get _actionMenu(): NavActionMenuEntry[] {
+    return this._config?.action_button?.menu ?? [];
+  }
+
   private _runActionButton = (e: Event): void => {
     e.stopPropagation();
+    // Entries turn the button into the thing that opens them; without entries
+    // it stays the plain shortcut it has always been.
+    if (this._actionMenu.length) {
+      this._toggleActionMenu();
+      return;
+    }
     const action = this._config?.action_button?.tap_action;
     if (!action || !isActionable(action)) return;
     if (this._config?.haptics !== false) fireHaptic(this, "light");
     handleAction(this, this.hass, action);
   };
+
+  private _toggleActionMenu(): void {
+    this._actionMenuOpen = !this._actionMenuOpen;
+    if (this._config?.haptics !== false) fireHaptic(this, "selection");
+    this._syncPopupListeners();
+  }
+
+  private _closeActionMenu(): void {
+    if (!this._actionMenuOpen) return;
+    this._actionMenuOpen = false;
+    this._syncPopupListeners();
+  }
+
+  private _runActionMenuEntry(index: number): void {
+    const entry = this._actionMenu[index];
+    if (!entry) return;
+    this._closeActionMenu();
+    const action =
+      entry.tap_action ??
+      (entry.path
+        ? ({ action: "navigate", navigation_path: entry.path } as HaActionConfig)
+        : undefined);
+    if (!action || !isActionable(action)) return;
+    if (this._config?.haptics !== false) fireHaptic(this, "light");
+    handleAction(this, this.hass, action);
+  }
 
   private _runSheetAction = (e: Event): void => {
     e.stopPropagation();
@@ -1496,6 +1612,59 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * a menu inside it would be positioned against the bar instead of against
    * the viewport, and clipped by it.
    */
+  /**
+   * The action button's speed dial: labelled pills rising out of the button.
+   *
+   * Always rendered once entries are configured, and only shown by a class.
+   * Mounting them on open would give the entries an entrance and no exit — a
+   * transition needs both ends to exist, and the way out of a menu deserves the
+   * same care as the way in.
+   */
+  private _renderActionMenu(
+    entries: NavActionMenuEntry[],
+    fallback: string,
+    open: boolean,
+  ): TemplateResult {
+    const animated = shouldAnimate(this._config?.animation);
+    return html`
+      <div
+        class="action-menu ${open ? "open" : ""} ${animated ? "" : "no-animations"}"
+        role="menu"
+        aria-hidden=${String(!open)}
+      >
+        ${entries.map((entry, index) => {
+          const color = resolveThemeColor(this._resolve(entry.color) || fallback);
+          const tint = tintOn(this, color, undefined, NAV_MENU_TINT);
+          const glyph = tintOn(this, color, undefined, NAV_MENU_GLYPH_TINT);
+          const ink = foregroundOn(color, tint, 3, this);
+          // The entries appear from the button outwards, so the one nearest it
+          // moves first; on the way out that order reverses, which reads as the
+          // stack folding back into the button rather than blinking away.
+          const step = open
+            ? (entries.length - 1 - index) * NAV_MENU_STAGGER_MS
+            : index * (NAV_MENU_STAGGER_MS / 2);
+          return html`
+            <div
+              class="menu-row"
+              role="menuitem"
+              tabindex=${open ? 0 : -1}
+              style=${`background: ${tint}; color: ${ink}; transition-delay: ${step}ms;`}
+              @click=${() => this._runActionMenuEntry(index)}
+              @keydown=${activateOnKey(() => this._runActionMenuEntry(index))}
+            >
+              ${entry.icon
+                ? html`<span class="menu-glyph" style=${`background: ${glyph};`}>
+                    <ha-icon icon=${entry.icon}></ha-icon>
+                  </span>`
+                : nothing}
+              <span class="menu-label">${this._resolve(entry.name) || ""}</span>
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
   private _renderSubmenu(): TemplateResult | typeof nothing {
     const index = this._submenuFor;
     if (index === undefined) return nothing;
@@ -1679,17 +1848,34 @@ export class M3NavCard extends LitElement implements LovelaceCard {
             cfg.action_button?.color ?? cfg.accent_color ?? DEFAULT_NAV_COLOR,
           );
           const tint = tintOn(this, color, cfg.accent_opacity, NAV_ITEM_TINT);
+          const entries = this._actionMenu;
+          const open = this._actionMenuOpen && entries.length > 0;
+          // Open, the button is the one solid thing on the screen: it is what
+          // the reader has to find again to get back out.
+          const fill = fillColor(this, color);
+          const closeIcon = cfg.action_button?.close_icon ?? "mdi:close";
           return html`
-            <div
-              class="bubble ${container}"
-              role="button"
-              tabindex="0"
-              aria-label=${this._t("editor_nav_action_button")}
-              style=${`color: ${foregroundOn(color, tint, 3, this)};`}
-              @click=${this._runActionButton}
-              @keydown=${activateOnKey(this._runActionButton)}
-            >
-              <ha-icon icon=${cfg.action_button!.icon}></ha-icon>
+            <div class="bubble-wrap">
+              ${entries.length
+                ? this._renderActionMenu(entries, color, open)
+                : nothing}
+              <div
+                class="bubble ${container} ${open ? "open" : ""} ${animated
+                  ? ""
+                  : "no-animations"}"
+                role="button"
+                tabindex="0"
+                aria-label=${this._t("editor_nav_action_button")}
+                aria-expanded=${entries.length ? String(open) : nothing}
+                style=${`color: ${foregroundOn(color, tint, 3, this)};${
+                  open ? ` background: ${fill}; color: ${inkOn(fill, this)};` : ""
+                }`}
+                @click=${this._runActionButton}
+                @keydown=${activateOnKey(this._runActionButton)}
+              >
+                <ha-icon class="bubble-glyph" icon=${cfg.action_button!.icon}></ha-icon>
+                <ha-icon class="bubble-glyph close" icon=${closeIcon}></ha-icon>
+              </div>
             </div>
           `;
         })()
@@ -1724,7 +1910,16 @@ export class M3NavCard extends LitElement implements LovelaceCard {
           `
         : barRow;
 
-    if (!this._editing) return html`${body}${this._renderSubmenu()}`;
+    const scrim = this._actionMenu.length
+      ? html`<div
+          class="scrim ${this._actionMenuOpen ? "open" : ""} ${animated
+            ? ""
+            : "no-animations"}"
+          @click=${() => this._closeActionMenu()}
+        ></div>`
+      : nothing;
+
+    if (!this._editing) return html`${scrim}${body}${this._renderSubmenu()}`;
 
     // In the editor the bar is drawn in the flow, and a bar in the flow is a
     // thin strip with a lot of empty space in it — which reads as an empty
@@ -2090,6 +2285,46 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       pointer-events: none;
     }
 
+    .bubble.open {
+      /* A circle turning into a rounded square is the Material way of saying
+         this button now closes what it opened. */
+      border-radius: ${NAV_MENU_OPEN_RADIUS}px;
+    }
+
+    .bubble:not(.no-animations) {
+      transition:
+        border-radius 220ms cubic-bezier(0.2, 0, 0, 1),
+        background-color 200ms ease;
+    }
+
+    /* Both glyphs are drawn on top of each other and swapped by opacity: an
+       icon element cannot animate its own change of icon. */
+    .bubble-glyph {
+      position: absolute;
+      display: flex;
+    }
+
+    .bubble:not(.no-animations) .bubble-glyph {
+      transition:
+        opacity 160ms ease,
+        transform 220ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .bubble-glyph.close {
+      opacity: 0;
+      transform: rotate(-90deg) scale(0.7);
+    }
+
+    .bubble.open .bubble-glyph:not(.close) {
+      opacity: 0;
+      transform: rotate(90deg) scale(0.7);
+    }
+
+    .bubble.open .bubble-glyph.close {
+      opacity: 1;
+      transform: none;
+    }
+
     .badge.dot {
       top: -2px;
       right: -2px;
@@ -2135,7 +2370,115 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       min-width: 0;
     }
 
+    /* The trigger and its menu share a box so the menu can hang off the
+       button rather than off the bar, which scrolls. */
+    .bubble-wrap {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .action-menu {
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + ${NAV_MENU_GAP}px);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: ${NAV_MENU_GAP}px;
+      /* Hidden rather than unmounted, so both directions can be animated. */
+      visibility: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    :host([edge="top"]) .action-menu {
+      bottom: auto;
+      top: calc(100% + ${NAV_MENU_GAP}px);
+      flex-direction: column-reverse;
+    }
+
+    .action-menu.open {
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .menu-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: ${NAV_MENU_ROW_HEIGHT}px;
+      padding: 0 18px 0 7px;
+      border-radius: ${NAV_MENU_ROW_RADIUS}px;
+      max-width: min(${NAV_MENU_MAX_WIDTH}px, 70vw);
+      cursor: pointer;
+      white-space: nowrap;
+      backdrop-filter: blur(var(--nav-blur, 20px));
+      -webkit-backdrop-filter: blur(var(--nav-blur, 20px));
+      opacity: 0;
+      transform: translateY(${NAV_MENU_RISE}px) scale(0.92);
+      transition:
+        opacity 180ms ease,
+        transform 220ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    :host([edge="top"]) .menu-row {
+      transform: translateY(-${NAV_MENU_RISE}px) scale(0.92);
+    }
+
+    .action-menu.open .menu-row {
+      opacity: 1;
+      transform: none;
+    }
+
+    .menu-row:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+    }
+
+    .menu-glyph {
+      flex-shrink: 0;
+      width: ${NAV_MENU_GLYPH}px;
+      height: ${NAV_MENU_GLYPH}px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      --mdc-icon-size: 20px;
+    }
+
+    .menu-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* Dims the page behind an open menu and catches the tap that closes it. */
+    .scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, ${NAV_MENU_SCRIM_OPACITY});
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 200ms ease,
+        visibility 200ms;
+    }
+
+    .scrim.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .scrim.no-animations,
+    .action-menu.no-animations .menu-row {
+      transition: none;
+    }
+
     .bubble {
+      position: relative;
       flex-shrink: 0;
       align-self: center;
       width: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));

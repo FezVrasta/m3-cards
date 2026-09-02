@@ -7,6 +7,7 @@ import type {
   NavItemConfig,
   NavLayoutConfig,
   NavSheetItem,
+  NavActionMenuEntry,
   NavSubmenuEntry,
 } from "./types";
 import {
@@ -202,6 +203,49 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const items = [...this._sheetItems];
     [items[from], items[to]] = [items[to], items[from]];
     this._setSheetItems(items);
+  }
+
+  // ---- action button menu ---------------------------------------------------
+
+  private get _actionMenu(): NavActionMenuEntry[] {
+    return this._config?.action_button?.menu ?? [];
+  }
+
+  private _setActionMenu(entries: NavActionMenuEntry[]): void {
+    if (!this._config) return;
+    const button = { ...(this._config.action_button ?? {}) };
+    if (entries.length) button.menu = entries;
+    else delete button.menu;
+    const next = { ...this._config };
+    if (Object.keys(button).length) next.action_button = button;
+    else delete next.action_button;
+    this._emit(next);
+  }
+
+  private _actionMenuChanged(index: number, ev: CustomEvent): void {
+    const entries = [...this._actionMenu];
+    entries[index] = this._clean({
+      ...entries[index],
+      ...(ev.detail.value as Record<string, unknown>),
+    }) as NavActionMenuEntry;
+    this._setActionMenu(entries);
+  }
+
+  private _moveActionMenuEntry(from: number, to: number): void {
+    if (to < 0 || to >= this._actionMenu.length) return;
+    const entries = [...this._actionMenu];
+    [entries[from], entries[to]] = [entries[to], entries[from]];
+    this._setActionMenu(entries);
+  }
+
+  private _actionMenuSchema(): SchemaEntry[] {
+    return [
+      { name: "name", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+      { name: "color", selector: { text: {} } },
+      { name: "path", selector: { text: {} } },
+      { name: "tap_action", selector: { ui_action: {} } },
+    ];
   }
 
   private _itemLabel(item: NavItemConfig, index: number): string {
@@ -849,6 +893,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       size: "editor_nav_size",
       icon_size: "editor_nav_icon_size",
       edge_distance: "editor_nav_edge_distance",
+      close_icon: "editor_nav_close_icon",
       container_style: "editor_nav_container",
       container_opacity: "editor_nav_opacity",
       blur: "editor_nav_blur",
@@ -1309,7 +1354,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 .data=${cfg.action_button ?? {}}
                 .schema=${[
                   { name: "icon", selector: { icon: {} } },
-                  { name: "tap_action", selector: { ui_action: {} } },
+                  { name: "color", selector: { text: {} } },
+                  ...(this._actionMenu.length
+                    ? [{ name: "close_icon", selector: { icon: {} } }]
+                    : [{ name: "tap_action", selector: { ui_action: {} } }]),
                 ]}
                 .computeLabel=${this._computeLabel}
                 @value-changed=${(ev: CustomEvent) => {
@@ -1325,6 +1373,46 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 }}
               ></ha-form>
               <div class="hint">${this._t("editor_nav_action_button_hint")}</div>
+
+              <div class="block">
+                <div class="block-title">${this._t("editor_nav_action_menu")}</div>
+                <div class="hint">${this._t("editor_nav_action_menu_hint")}</div>
+                ${this._actionMenu.map(
+                  (entry, index) => html`
+                    <div class="block">
+                      <div class="tile-head">
+                        <span class="tile-name"
+                          >${entry.name || entry.path || "#" + (index + 1)}</span
+                        >
+                        <span class="reorder">
+                          ${this._renderReorder(index, this._actionMenu.length, (from, to) =>
+                            this._moveActionMenuEntry(from, to),
+                          )}
+                        </span>
+                      </div>
+                      <ha-form
+                        .hass=${this.hass}
+                        .data=${entry}
+                        .schema=${this._actionMenuSchema()}
+                        .computeLabel=${this._computeLabel}
+                        @value-changed=${(ev: CustomEvent) =>
+                          this._actionMenuChanged(index, ev)}
+                      ></ha-form>
+                      <ha-button
+                        class="remove"
+                        @click=${() =>
+                          this._setActionMenu(
+                            this._actionMenu.filter((_, i) => i !== index),
+                          )}
+                        >${this._t("editor_nav_remove_item")}</ha-button
+                      >
+                    </div>
+                  `,
+                )}
+                <ha-button @click=${() => this._setActionMenu([...this._actionMenu, {}])}
+                  >${this._t("editor_nav_add_action_menu_entry")}</ha-button
+                >
+              </div>
             </div>
           </div>
         </ha-expansion-panel>
