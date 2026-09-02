@@ -47,6 +47,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   end, mid-screen. A docked bar is now always the full width of what it docks
   to; the cap decides how far the entries spread inside it.
 
+- **Nav card: tapping an entry could flash the page next to it.** The shield
+  that keeps a dashboard swipe plugin out of the bar covered the start of a
+  gesture but not its end. hass-swipe-navigation decides on `touchend`, and that
+  handler reads no event at all — only the start and movement it recorded
+  earlier. Swallowing the start and letting the end through left it deciding a
+  tap on the bar from coordinates of some earlier touch elsewhere on the page,
+  and navigating one view sideways on the strength of it. That is the box that
+  appeared for an instant on the entry beside the one that was tapped, always a
+  neighbour, never the same one twice. The shield now covers the whole gesture.
+
 - **Nav card: the wrong entry could flash for a frame when navigating.** The
   card corrected a stale path in `updated()` — after the render. So a render
   that started with the old path painted the old entry and put it right on the
@@ -154,6 +164,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   und ließ an beiden Enden mitten im Bild eine sichtbare Kante stehen. Eine
   angedockte Leiste ist jetzt immer so breit wie das, woran sie andockt; die
   Begrenzung entscheidet nur, wie weit die Einträge darin auseinanderrücken.
+
+- **Nav-Karte: Ein Tipp auf einen Eintrag konnte kurz die Nachbarseite
+  aufblitzen lassen.** Die Abschirmung, die ein Wisch-Plugin des Dashboards von
+  der Leiste fernhält, deckte den Anfang einer Geste ab, aber nicht ihr Ende.
+  `hass-swipe-navigation` entscheidet auf `touchend`, und dieser Handler liest
+  überhaupt kein Event — nur den zuvor gemerkten Anfang und die Bewegung. Wer den
+  Anfang verschluckt und das Ende durchlässt, lässt das Plugin einen Tipp auf die
+  Leiste anhand der Koordinaten einer früheren Berührung irgendwo sonst auf der
+  Seite bewerten — und daraufhin eine Ansicht zur Seite blättern. Das war die
+  Box, die für einen Moment neben dem angetippten Eintrag auftauchte: immer ein
+  Nachbar, nie zweimal derselbe. Die Abschirmung deckt jetzt die ganze Geste ab.
 
 - **Nav-Karte: Beim Wechseln konnte für einen Frame der falsche Eintrag
   aufblitzen.** Die Karte hat einen veralteten Pfad in `updated()` korrigiert —

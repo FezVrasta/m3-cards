@@ -134,11 +134,21 @@ console.info(
  */
 // Touch and mouse both, because the swipe plugins listen for both: a mouse
 // drag on a desktop dashboard scrolls the bar just as a finger does.
+//
+// The end of a gesture is in the list for a subtler reason. hass-swipe-navigation
+// decides on touchend, and its handler takes no event — it reads only the start
+// and movement it recorded earlier. Shielding the start but not the end left it
+// deciding a gesture on the bar using coordinates from some earlier touch
+// elsewhere on the page, and navigating one view sideways on the strength of it:
+// the box that flashed on the entry next to the one that was tapped.
 const SWIPE_EVENTS = [
   "touchstart",
   "touchmove",
+  "touchend",
+  "touchcancel",
   "mousedown",
   "mousemove",
+  "mouseup",
 ] as const;
 
 /**
