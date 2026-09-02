@@ -8,10 +8,6 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
-- **Nav card: `active_style: chip`** — the two-layer marker a bar with
-  side-by-side labels actually wears: a muted pill around icon and text
-  together, with the icon on a solid rounded tile of its own inside it.
-
 - **Nav card: `label_position`** — whether an entry's text sits below, above,
   right or left of its icon. The two horizontal placements also move the active
   pill so it wraps icon and text together, because a pill around the icon alone
@@ -35,6 +31,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   onto a phone's gesture bar.
 
 ### Fixed
+
+- **Nav card: the pill around a sideways entry was not a capsule.** The corner
+  radius is shared with entries the width of an icon, where it reads as a
+  rounded square; stretched around an icon and a label it left the ends
+  visibly flattened. A pill that wraps both is now rounded by half its own
+  height, as a pill is.
 
 - **Nav card: an entry with its label beside the icon was lopsided.** The
   stacked variants size the glyph into a 56px indicator box, which is right
@@ -84,10 +86,6 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
-- **Nav-Karte: `active_style: chip`** — die zweischichtige Markierung, die eine
-  Leiste mit Text neben dem Icon tatsächlich trägt: eine gedämpfte Pille um Icon
-  und Text zusammen, darin das Icon auf einem eigenen gefüllten Feld.
-
 - **Nav-Karte: `label_position`** — ob der Text eines Eintrags unter, über,
   rechts oder links neben seinem Icon steht. Die beiden waagerechten Varianten
   verschieben auch die aktive Pille, sodass sie Icon und Text gemeinsam
@@ -112,6 +110,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: Die Pille um einen seitwärts gesetzten Eintrag war keine Kapsel.**
+  Der Eckenradius wird mit Einträgen von Icon-Breite geteilt, wo er als
+  abgerundetes Quadrat wirkt; um Icon und Text gezogen ließ derselbe Wert die
+  Enden sichtbar abgeflacht. Eine Pille, die beides umschließt, ist jetzt um die
+  Hälfte ihrer eigenen Höhe gerundet — eben eine Kapsel.
 
 - **Nav-Karte: Ein Eintrag mit Text neben dem Icon war unsymmetrisch.** Die
   gestapelten Varianten geben der Glyphe eine 56px breite Indikator-Box — richtig,

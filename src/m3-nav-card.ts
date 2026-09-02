@@ -41,8 +41,6 @@ import {
   NAV_ITEM_MIN_WIDTH,
   NAV_INDICATOR_HEIGHT,
   NAV_INDICATOR_RADIUS,
-  NAV_CHIP_RADIUS,
-  NAV_CHIP_SCALE,
   NAV_SIDE_PADDING,
   NAV_INDICATOR_RADIUS_ACTIVE,
   NAV_INDICATOR_WIDTH,
@@ -1754,11 +1752,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // A solid fill is the reference look; the ink on it is chosen between the
     // house dark and white rather than nudged, because shifting a colour the
     // author picked is the wrong move on a fill they can see.
-    const activeStyle = this._config?.active_style ?? "tint";
-    const solid = activeStyle === "solid";
-    // The chip look wears both: a tint around the whole entry, and the solid
-    // fill pulled in to sit behind the icon alone.
-    const chip = activeStyle === "chip";
+    const solid = (this._config?.active_style ?? "tint") === "solid";
     const fill = solid
       ? fillColor(this, item.color)
       : tintOn(this, item.color, this._config?.accent_opacity, NAV_ITEM_TINT);
@@ -1767,15 +1761,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         ? inkOn(fill, this)
         : foregroundOn(item.color, fill, 4.5, this)
       : "var(--nav-ink)";
-    const chipFill = chip ? fillColor(this, item.color) : "";
     // The pill goes round the glyph in the stacked variants and round the whole
     // entry in the horizontal ones, so the inline colours are set on whichever
     // element is carrying it.
     const indicator = item.active ? `background: ${fill}; color: ${ink};` : "";
-    const chipStyle =
-      chip && item.active
-        ? `background: ${chipFill}; color: ${inkOn(chipFill, this)};`
-        : "";
 
     return html`
       <div
@@ -1807,10 +1796,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       >
         ${showIcon
           ? html`
-              <span
-                class="glyph ${chip && item.active ? "chip" : ""}"
-                style=${this._stacked ? indicator : chipStyle || nothing}
-              >
+              <span class="glyph" style=${this._stacked ? indicator : nothing}>
                 <ha-icon icon=${item.icon}></ha-icon>
                 ${this._renderBadge(item)}
               </span>
@@ -2990,20 +2976,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       padding-right: calc(6px * var(--nav-scale, 1));
     }
 
-    /* The chip: a solid rounded square under the icon, inside the entry's own
-       tinted pill. Two layers rather than one flat fill, which is what the
-       shape looks like everywhere it is used. */
-    :host([variant]) .glyph.chip {
-      width: calc(
-        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) *
-          ${NAV_CHIP_SCALE}
-      );
-      height: calc(
-        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) *
-          ${NAV_CHIP_SCALE}
-      );
-      border-radius: calc(${NAV_CHIP_RADIUS}px * var(--nav-scale, 1));
-      flex-shrink: 0;
+    /* A pill around icon and text is a capsule: its ends are half its own
+       height round. The shared radius is tuned for an entry the width of an
+       icon, where it reads as a rounded square — at this width the same number
+       leaves the ends visibly clipped instead of round. */
+    :host([labels="right"][variant]) .bar .item,
+    :host([labels="left"][variant]) .bar .item {
+      border-radius: 999px;
     }
   `;
 }

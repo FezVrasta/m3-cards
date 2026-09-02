@@ -1598,10 +1598,6 @@ export const NAV_INDICATOR_HEIGHT = 32;
 export const NAV_INDICATOR_RADIUS = 16;
 export const NAV_INDICATOR_RADIUS_ACTIVE = 10;
 
-/** Corner radius of the solid chip the icon sits on in the `chip` active style. */
-export const NAV_CHIP_RADIUS = 12;
-/** Chip size as a multiple of the icon it holds. */
-export const NAV_CHIP_SCALE = 1.7;
 /** Side padding of an entry whose label sits beside its icon. */
 export const NAV_SIDE_PADDING = 16;
 export const NAV_ITEM_INACTIVE_OPACITY = 0.6;

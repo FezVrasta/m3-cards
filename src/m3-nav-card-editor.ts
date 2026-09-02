@@ -562,7 +562,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             mode: "dropdown",
             options: [
               { value: "tint", label: this._t("editor_nav_active_style_tint") },
-              { value: "chip", label: this._t("editor_nav_active_style_chip") },
               { value: "solid", label: this._t("editor_nav_active_style_solid") },
             ],
           },
