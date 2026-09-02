@@ -190,6 +190,12 @@ export interface M3ButtonCardConfig {
   unavailable_style?: "dimmed" | "normal" | "hidden";
   show_slider?: boolean;
   vertical?: boolean;
+  /**
+   * Lets the shape follow the entity: a capsule while it is off, the configured
+   * corner radius while it is on, with the icon well going from a circle to a
+   * rounded square alongside it.
+   */
+  shape_by_state?: boolean;
   radius?: number;
   corners?: CornerRadiusConfig;
   glass_background?: boolean;

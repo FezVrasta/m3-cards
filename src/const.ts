@@ -115,6 +115,20 @@ export const THEME_COLOR_TOKENS: Record<string, string> = {
 export const DEFAULT_BUTTON_COLOR = "primary";
 export const DEFAULT_BUTTON_RADIUS = RADIUS.card;
 
+/**
+ * Corner radius a button takes while it is off, when its shape follows the
+ * entity's state. Large enough to round out into a capsule at any card height.
+ */
+export const BUTTON_SHAPE_OFF_RADIUS = 999;
+/**
+ * Corner radius of the icon well while the entity is on, as a share of its own
+ * size. A circle when off, a rounded square when on — the same pair of shapes
+ * a phone's quick settings use, where the shape says as much as the colour.
+ */
+export const BUTTON_SHAPE_ON_ICON_RADIUS = "28%";
+/** How long a button takes to change between the two shapes. */
+export const BUTTON_SHAPE_MS = 300;
+
 export const CLIMATE_RADIUS_PRESETS: Record<string, number> = {
   eckig: 12,
   leicht_rund: 20,

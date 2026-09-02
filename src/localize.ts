@@ -257,6 +257,9 @@ const translations = {
     editor_align_icons: "Icons an fester Position ausrichten",
     editor_align_icons_helper: "Standardmäßig rückt der Abstand vom linken Rand zum Icon bei kleineren Kacheln etwas näher zusammen. Aktivieren, damit alle Icons unabhängig von der Kartenhöhe am gleichen Abstand vom linken Rand sitzen (z.B. für saubere Ausrichtung übereinander liegender Karten unterschiedlicher Höhe). Die vertikale Zentrierung bleibt davon unberührt.",
     editor_vertical: "Vertikales Layout (Icon oben)",
+    editor_shape_by_state: "Form folgt dem Zustand",
+    editor_shape_by_state_helper:
+      "Eingeschaltet ist die Kachel eckiger und das Icon sitzt auf einem abgerundeten Quadrat; ausgeschaltet wird sie zur Kapsel und das Icon rund. Der Wechsel wird weich animiert. So sieht man am Umriss, ob etwas an ist — nicht nur an der Farbe.",
     editor_tap_action: "Tap-Aktion",
     editor_icon_tap_action: "Tap-Aktion (Icon)",
     editor_hold_action: "Halten-Aktion",
@@ -2049,6 +2052,9 @@ const translations = {
     editor_align_icons: "Align icons at a fixed position",
     editor_align_icons_helper: "By default the gap between the left edge and the icon shrinks slightly on smaller tiles. Enable this so all icons sit at the same distance from the left edge regardless of tile height (e.g. for clean alignment between stacked tiles of different heights). Vertical centering is unaffected.",
     editor_vertical: "Vertical layout (icon on top)",
+    editor_shape_by_state: "Shape follows the state",
+    editor_shape_by_state_helper:
+      "Switched on, the tile is squarer and the icon sits on a rounded square; switched off it becomes a capsule and the icon a circle. The change is animated. The outline then says whether something is on, not only the colour.",
     editor_tap_action: "Tap action",
     editor_icon_tap_action: "Tap action (icon)",
     editor_hold_action: "Hold action",

@@ -8,6 +8,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Button card: `shape_by_state`** — the outline follows the entity, the way a
+  phone's quick settings do it: a capsule while it is off, the configured corner
+  radius while it is on, and the icon well going from a circle to a rounded
+  square alongside. Animated, and off by default. It puts the state in a second
+  channel, so a glance from across the room reads the shape before the colour.
+
 - **Nav card: the default colour follows the theme.** It was a fixed blue from
   the suite's palette, which under a Material You theme made the bar the one
   thing on the dashboard not wearing the colour generated from the wallpaper.
@@ -203,6 +209,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Button-Karte: `shape_by_state`** — der Umriss folgt der Entität, so wie es
+  die Schnelleinstellungen eines Handys machen: Kapsel im Aus, der konfigurierte
+  Eckenradius im An, und das Icon-Feld wandert dabei vom Kreis zum abgerundeten
+  Quadrat. Animiert, standardmäßig aus. Der Zustand steht damit in einem zweiten
+  Kanal: aus einiger Entfernung liest man die Form vor der Farbe.
 
 - **Nav-Karte: Die Standardfarbe folgt dem Theme.** Sie war ein festes Blau aus
   der Palette der Sammlung — unter einem Material-You-Theme also das einzige auf

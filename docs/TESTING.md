@@ -625,6 +625,10 @@ dritten Kalender.
 - [ ] Umschalter Agenda/Monat morpht; `show_view_switch: false` blendet ihn aus
 - [ ] Beim Verlassen des Sichtbereichs hört der Minutentakt auf (VisibleTicker)
 
+| Form folgt dem Zustand | `shape_by_state: true` an einer Steckdose, dann schalten | An: Kachel eckig (Standardradius), Icon auf abgerundetem Quadrat. Aus: Kachel als Kapsel, Icon rund. Der Wechsel wird weich animiert |
+| Form ohne Animation | Dasselbe mit `animation: off` | Die beiden Formen stimmen weiterhin, der Wechsel springt aber ohne Übergang |
+| Form abgeschaltet | Ohne `shape_by_state` | Der Eckenradius bleibt in beiden Zuständen der konfigurierte, das Icon bleibt rund |
+
 ## M3 Nav Card
 
 Die Karte ist Navigations-Chrome statt Datenkachel: sie positioniert sich gegen

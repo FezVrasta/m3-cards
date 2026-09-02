@@ -85,6 +85,7 @@ export class M3ButtonCardEditor
       },
       { name: "align_icons", selector: { boolean: {} } },
       { name: "vertical", selector: { boolean: {} } },
+      { name: "shape_by_state", selector: { boolean: {} } },
       { name: "show_slider", selector: { boolean: {} } },
     ];
   }
@@ -155,6 +156,7 @@ export class M3ButtonCardEditor
       align_icons: "editor_align_icons",
       show_slider: "editor_show_slider",
       vertical: "editor_vertical",
+      shape_by_state: "editor_shape_by_state",
       tap_action: "editor_tap_action",
       icon_tap_action: "editor_icon_tap_action",
       hold_action: "editor_hold_action",
@@ -320,6 +322,7 @@ export class M3ButtonCardEditor
       icon_size: this._config.icon_size,
       align_icons: this._config.align_icons ?? false,
       vertical: this._config.vertical ?? false,
+      shape_by_state: this._config.shape_by_state ?? false,
       show_slider: this._config.show_slider ?? false,
     };
 

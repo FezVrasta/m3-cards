@@ -361,6 +361,7 @@ hold_action:
 | `align_icons` | boolean | `false` | Align icons at the same distance from the left edge regardless of card height — useful together with `icon_size` so stacked cards of different heights line up visually. Vertical centering is unaffected |
 | `show_slider` | boolean | `false` | Show a slider under the icon/text — only effective for `light` (brightness), `cover` (position), `fan` (speed), `input_number`/`number` (value) |
 | `vertical` | boolean | `false` | Icon above the text instead of next to it |
+| `shape_by_state` | `false` | Lets the outline follow the entity: a capsule while off, the configured corner radius while on, with the icon well going from circle to rounded square. Animated |
 | `radius` | number (px) | `28` | Card corner radius. In the editor as a preset ("Square" 8px / "Slightly rounded" 16px / "Round" 28px) or freely chosen |
 | `corners` | object | – | Optional per-corner override: `top_left`, `top_right`, `bottom_right`, `bottom_left` (px) — for asymmetric Material 3 Expressive shapes, e.g. a button with only one rounded side |
 | `glass_background` | boolean | `true` | Frosted glass background |

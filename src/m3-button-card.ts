@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, type PropertyValues } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -12,6 +12,9 @@ import type {
 import {
   DEFAULT_BUTTON_COLOR,
   DEFAULT_BUTTON_RADIUS,
+  BUTTON_SHAPE_OFF_RADIUS,
+  BUTTON_SHAPE_ON_ICON_RADIUS,
+  BUTTON_SHAPE_MS,
   THEME_COLOR_TOKENS,
   STATELESS_DOMAINS,
   ACTIVE_STATES,
@@ -21,7 +24,7 @@ import {
 import { localize, type TranslationKey } from "./localize";
 import { glassBackground } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
-import { shouldAnimate } from "./shared/animation";
+import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { tintOn, foregroundOn, foregroundColor } from "./shared/color-config";
@@ -596,8 +599,14 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const iconOffsetCss = this._config.align_icons
       ? "6.16px"
       : "min(16px, 11cqh)";
+    // A shape that follows the state says what the colour says, in a second
+    // channel — which is the point on a phone's quick settings, where a glance
+    // from across the room reads the outline before it reads the tint.
+    const shaped = this._config.shape_by_state === true;
     const radius = resolveCornerRadius(
-      this._config.radius ?? DEFAULT_BUTTON_RADIUS,
+      shaped && !active
+        ? BUTTON_SHAPE_OFF_RADIUS
+        : (this._config.radius ?? DEFAULT_BUTTON_RADIUS),
       this._config.corners,
     );
     const sliderInfo = entity && !unavailable ? this._sliderInfo() : undefined;
@@ -614,8 +623,10 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card
+        class=${`${dimUnavailable ? "unavailable" : ""} ${
+          shouldAnimate(this._config.animation) ? "" : "no-animations"
+        }`}
         style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-btn-icon-bg-active-solid: ${iconBgActiveSolid}; --m3-btn-icon-ink-active: ${iconInkActive}; --m3-btn-icon-ink-inactive: ${iconInkInactive}; --m3-btn-color-fg: ${foregroundColor(this, color)}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
-        class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
           class="card-inner ${this._config.glass_background === false
@@ -649,7 +660,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
             ${this._config.show_icon_background !== false
               ? html`
                   <div
-                    class="icon-container ${active ? "active" : ""}"
+                    class="icon-container ${active ? "active" : ""} ${
+                      shaped ? "shaped" : ""
+                    }"
                     @click=${this._onIconClick}
                     @pointerdown=${this._onIconPointerDown}
                     @pointerup=${this._onIconPointerUp}
@@ -724,6 +737,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       box-shadow: none;
       background: transparent;
       container-type: size;
+      transition: border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
     }
 
     .card-inner {
@@ -739,7 +753,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       flex-direction: column;
       justify-content: center;
       gap: 10px;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition:
+        transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+        border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
     }
 
     .card-inner:active {
@@ -749,6 +765,13 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     .card-inner:focus-visible {
       outline: 2px solid var(--m3-btn-color);
       outline-offset: 2px;
+    }
+
+    /* The shell clips to its own corners, so it has to stop animating them
+       too when animations are off — not only the surface inside it. */
+    ha-card.no-animations,
+    .card-inner.no-animations {
+      transition: none;
     }
 
     .card-inner.no-animations {
@@ -842,6 +865,12 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     .icon-container.active {
       background: var(--m3-btn-icon-bg-active);
       color: var(--m3-btn-icon-ink-active, var(--m3-btn-color));
+    }
+
+    /* The well is a circle while the entity is off and a rounded square while
+       it is on. It already transitions everything, so the change carries. */
+    .icon-container.shaped.active {
+      border-radius: ${unsafeCSS(BUTTON_SHAPE_ON_ICON_RADIUS)};
     }
 
     /* Slider mode: opaque chip so the fill behind it doesn't double-tint. */
