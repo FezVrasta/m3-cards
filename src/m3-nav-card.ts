@@ -37,6 +37,10 @@ import {
   NAV_ITEM_INACTIVE_OPACITY,
   NAV_ITEM_LABEL_SIZE,
   NAV_ITEM_MIN_WIDTH,
+  NAV_INDICATOR_HEIGHT,
+  NAV_INDICATOR_RADIUS,
+  NAV_INDICATOR_RADIUS_ACTIVE,
+  NAV_INDICATOR_WIDTH,
   NAV_ITEM_RADIUS,
   NAV_ITEM_RADIUS_ACTIVE,
   NAV_ITEM_TINT,
@@ -125,7 +129,30 @@ interface ResolvedItem {
 
 @customElement("m3-nav-card")
 export class M3NavCard extends LitElement implements LovelaceCard {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  private _hass?: HomeAssistant;
+
+  /**
+   * Written as an accessor rather than a plain property because two things
+   * have to happen on every assignment, not on every render.
+   *
+   * `shouldUpdate` filters most ticks away — that is the whole point of it —
+   * and everything downstream of a filtered tick never runs. The cards inside
+   * the drawer take their data from a `hass` set on them from outside, so
+   * pushing it from the render path starved them: they rendered once, empty,
+   * and stayed that way. Same for the template manager's connection.
+   */
+  @property({ attribute: false })
+  public get hass(): HomeAssistant | undefined {
+    return this._hass;
+  }
+
+  public set hass(value: HomeAssistant | undefined) {
+    const previous = this._hass;
+    this._hass = value;
+    this._templates?.updateHass(value);
+    updateCardsHass(this._sheetCards, value);
+    this.requestUpdate("hass", previous);
+  }
 
   @state() private _config?: M3NavCardConfig;
   /** True while the card's own box is narrower than the breakpoint. */
@@ -225,6 +252,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     super.disconnectedCallback();
     window.removeEventListener("location-changed", this._onLocationChanged);
     window.removeEventListener("popstate", this._onLocationChanged);
+    window.removeEventListener("resize", this._measureDock);
     this._resizeObserver?.disconnect();
     this._detachScroll();
     this._closeSubmenu();
@@ -240,28 +268,81 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this._templates = undefined;
   }
 
+  /**
+   * Lines a docked bar up with the content area rather than with the window.
+   *
+   * The host is `position: fixed`, which is measured against the viewport and
+   * therefore runs underneath the sidebar. Its parent is still in normal flow —
+   * only the host left it — so the parent's box is exactly the slot the card
+   * was given, sidebar and column width already accounted for. Falling back to
+   * the full width if anything is unexpected keeps the bar visible either way.
+   */
+  private _measureDock = (): void => {
+    const rect = this._contentRect();
+    if (!rect) return;
+    const left = Math.max(0, Math.round(rect.left));
+    const right = Math.max(0, Math.round(window.innerWidth - rect.right));
+    this.style.setProperty("--nav-dock-left", `${left}px`);
+    this.style.setProperty("--nav-dock-right", `${right}px`);
+  };
+
+  /**
+   * The view's content area — everything Home Assistant leaves to the
+   * dashboard, which is the window minus the sidebar.
+   *
+   * Not the card's own slot: the slot is one column of one section, and a bar
+   * docked to a 500px column in the middle of a wide screen is not a bar. Not
+   * the window either, which is what `position: fixed` would give and which
+   * runs underneath the sidebar.
+   *
+   * Found by walking up until the ancestors stop getting narrower than the
+   * window: the content area is the widest thing that is still inset, and the
+   * next one up spans the whole window. The walk crosses shadow boundaries,
+   * gives up after a fixed depth, and falls back to the full width — a bar too
+   * wide is a cosmetic problem, a bar that fails to render is not.
+   */
+  private _contentRect(): DOMRect | undefined {
+    let node: Element | null = this;
+    let best: DOMRect | undefined;
+    for (let depth = 0; depth < 12 && node; depth++) {
+      const parent: Element | null =
+        node.parentElement ??
+        ((node.parentNode as ShadowRoot | null)?.host as Element | undefined) ??
+        null;
+      if (!parent) break;
+      const rect = parent.getBoundingClientRect();
+      if (rect.width > 0 && rect.width < window.innerWidth) {
+        if (!best || rect.width > best.width) best = rect;
+      }
+      node = parent;
+    }
+    return best;
+  }
+
   protected firstUpdated(changed: PropertyValues): void {
     super.firstUpdated(changed);
+    this._measureDock();
+    window.addEventListener("resize", this._measureDock);
     // Deliberately not matchMedia: the card can sit in a narrow column on a
     // wide screen, and "does the bar fit" is a question about the box it is in,
     // not about the window.
-    this._resizeObserver = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width ?? 0;
+    this._resizeObserver = new ResizeObserver(() => {
+      // A docked host is as wide as the slot it was measured into, so the
+      // parent is the honest answer to "how much room does this card have"
+      // for both the breakpoint and the docking offsets.
+      this._measureDock();
+      const width =
+        (this.parentElement ?? this).getBoundingClientRect().width ||
+        this.getBoundingClientRect().width;
       if (width <= 0) return;
       const narrow = width < this._breakpoint;
       if (narrow !== this._narrow) this._narrow = narrow;
     });
     this._resizeObserver.observe(this);
+    if (this.parentElement) this._resizeObserver.observe(this.parentElement);
   }
 
   protected willUpdate(changed: PropertyValues): void {
-    if (changed.has("hass")) {
-      this._templates?.updateHass(this.hass);
-      // Every nested card takes its data from a `hass` property set from
-      // outside; one that never gets a fresh one shows the state it was born
-      // with, forever.
-      updateCardsHass(this._sheetCards, this.hass);
-    }
     if (changed.has("_config")) {
       this._syncSubscriptions();
       void this._syncSheetCards();
@@ -285,6 +366,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
+    // The first measurement can land before the view has laid itself out, and
+    // the observer only fires on a later change — which for a slot that never
+    // resizes again never comes. Re-reading it per render is two rect reads.
+    this._measureDock();
     // An entity-backed sheet state can change from anywhere — another device,
     // an automation — so it is re-read on every tick rather than only on a tap.
     if (this._config?.sheet_state_entity) {
@@ -298,6 +383,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // the handlers are wired here rather than in firstUpdated.
     if (this._variant === "sheet" && !this._editing) {
       this._attachGesture();
+      // Re-measured on every render as well as from the observer. The cards in
+      // the drawer mount asynchronously and Lit may hand the panel a new body
+      // node, either of which leaves an observer watching the wrong thing or
+      // watching nothing — and a stale travel means the drawer opens to the
+      // wrong height. An offsetHeight read behind a one-pixel guard is cheap
+      // enough to do unconditionally.
+      this._measurePanel();
     } else if (this._gesture) {
       this._detachGesture();
     }
@@ -350,6 +442,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const explicit = this._layout.position;
     if (explicit) return explicit;
     return this._variant === "header" ? "top" : "bottom";
+  }
+
+  /**
+   * Whether entries stack their label under the icon (and share the row width
+   * evenly) or sit as icon-and-label pills sized to their own content.
+   */
+  private get _stacked(): boolean {
+    const variant = this._variant;
+    return variant === "footer" || variant === "floating" || variant === "sheet";
   }
 
   private get _labelVisibility(): NavLabelVisibility {
@@ -776,11 +877,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // cards inside it can be configured.
     if (this._editing) return;
 
-    const panel = this.renderRoot?.querySelector<HTMLElement>(".sheet-panel");
+    const body = this.renderRoot?.querySelector<HTMLElement>(".sheet-body");
     const handle = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
     const content = this.renderRoot?.querySelector<HTMLElement>(".sheet-content");
     const bar = this.renderRoot?.querySelector<HTMLElement>(".bar");
-    if (!panel || !handle) return;
+    if (!body || !handle) return;
 
     this._gesture = new SheetGesture({
       geometry: () => ({ travel: this._sheetTravel, snapPoints: this._snapPoints }),
@@ -811,7 +912,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // when one of them does. Measuring it is what turns a percentage transform
     // into a draggable pixel range.
     this._panelObserver = new ResizeObserver(() => this._measurePanel());
-    this._panelObserver.observe(panel);
+    this._panelObserver.observe(body);
     this._measurePanel();
   }
 
@@ -824,13 +925,25 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this._panelObserver = undefined;
   }
 
+  /** Height of the grip strip, which is what stays visible when shut. */
+  private get _handleHeight(): number {
+    return (
+      this.renderRoot?.querySelector<HTMLElement>(".handle-zone")?.offsetHeight ??
+      NAV_SHEET_HANDLE_HEIGHT + 2 * NAV_SHEET_HANDLE_PADDING
+    );
+  }
+
+  /**
+   * The drawer's natural height, which is how far it travels.
+   *
+   * Measured on the body rather than on the panel: the panel's height is what
+   * this drives, so measuring it would be circular. The body keeps its natural
+   * height at every position and is clipped by the panel instead.
+   */
   private _measurePanel(): void {
-    const panel = this.renderRoot?.querySelector<HTMLElement>(".sheet-panel");
-    const handle = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
-    if (!panel || !handle) return;
-    // Collapsed leaves exactly the grip showing, so the travel is everything
-    // below it.
-    const travel = Math.max(0, panel.offsetHeight - handle.offsetHeight);
+    const body = this.renderRoot?.querySelector<HTMLElement>(".sheet-body");
+    if (!body) return;
+    const travel = Math.max(0, body.offsetHeight);
     if (Math.abs(travel - this._sheetTravel) < 1) return;
     this._sheetTravel = travel;
     this.requestUpdate();
@@ -862,6 +975,8 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     if (key === this._sheetCardsKey) return;
     this._sheetCardsKey = key;
     this._sheetCards = await createCards(configs, this.hass);
+    // The build is async, so `hass` may well have arrived while it ran.
+    updateCardsHass(this._sheetCards, this.hass);
     this.requestUpdate();
   }
 
@@ -909,13 +1024,20 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // Until the panel has been measured, the CSS percentage fallback does the
     // positioning — the drawer is usable from the first frame either way, it
     // just cannot be dragged to a fraction yet.
-    const positioned =
-      this._sheetTravel > 0
-        ? `transform: translateY(${(1 - fraction) * this._sheetTravel}px);`
-        : "";
+    // Driven by height rather than by a transform. A transform moves the
+    // drawer without moving its layout box, so the sheet's own frame stayed
+    // full height and the bar ended up floating at the bottom of an empty
+    // container — visible immediately on the first real render.
+    const measured = this._sheetTravel > 0;
+    // Always a definite pixel value, never `auto`: a height transition with an
+    // `auto` on either end does not run, it just stays where it was.
+    const positioned = `height: ${this._handleHeight + fraction * this._sheetTravel}px;`;
     return html`
       <div
-        class="sheet-panel ${open ? "open" : ""} ${this._sheetDragging ? "dragging" : ""}"
+        class="sheet-panel ${open ? "open" : ""} ${measured ? "measured" : ""} ${this
+          ._sheetDragging
+          ? "dragging"
+          : ""}"
         style=${positioned}
       >
         <div
@@ -929,9 +1051,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         >
           <span class="handle"></span>
         </div>
-        ${this._renderSheetHead()}
-        <div class="sheet-content" style=${`max-height: ${this._sheetMaxHeight};`}>
-          ${this._sheetCards}
+        <div class="sheet-body">
+          ${this._renderSheetHead()}
+          <div class="sheet-content" style=${`max-height: ${this._sheetMaxHeight};`}>
+            ${this._sheetCards}
+          </div>
         </div>
       </div>
     `;
@@ -1069,6 +1193,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const ink = item.active
       ? foregroundOn(item.color, tint, 4.5, this)
       : "var(--nav-ink)";
+    // The pill goes round the glyph in the stacked variants and round the whole
+    // entry in the horizontal ones, so the inline colours are set on whichever
+    // element is carrying it.
+    const indicator = item.active ? `background: ${tint}; color: ${ink};` : "";
 
     return html`
       <div
@@ -1076,7 +1204,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
           ? "disabled"
           : ""}"
         data-index=${item.index}
-        style=${item.active ? `background: ${tint}; color: ${ink};` : nothing}
+        style=${this._stacked ? nothing : indicator}
         role="button"
         aria-haspopup=${item.config.submenu?.length ? "menu" : nothing}
         aria-expanded=${item.config.submenu?.length
@@ -1096,7 +1224,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         @click=${item.disabled ? nothing : handler.click}
         @keydown=${item.disabled ? nothing : activateOnKey(handler.click)}
       >
-        <span class="glyph">
+        <span class="glyph" style=${this._stacked ? indicator : nothing}>
           <ha-icon icon=${item.icon}></ha-icon>
           ${this._renderBadge(item)}
         </span>
@@ -1182,8 +1310,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     :host([variant="floating"]),
     :host([variant="sheet"]) {
       position: fixed;
-      left: 0;
-      right: 0;
+      /* Measured from the slot the card was given, so the bar lines up with the
+         content instead of running underneath Home Assistant's sidebar. Fixed
+         positioning is against the viewport, which knows nothing about either. */
+      left: var(--nav-dock-left, 0px);
+      right: var(--nav-dock-right, 0px);
       z-index: var(--nav-z, ${NAV_Z_INDEX});
       pointer-events: none;
     }
@@ -1217,7 +1348,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       transition: transform ${unsafeCSS(NAV_AUTOHIDE_MS)}ms ${EASING};
     }
 
-    .bar.glass {
+    /* The surface sits on whichever element is the outer frame: the bar on its
+       own for four of the variants, the sheet for the fifth — where the bar is
+       one part of a larger box and draws nothing itself. */
+    .bar.glass,
+    .sheet.glass {
       background: var(
         --nav-bg,
         color-mix(
@@ -1235,12 +1370,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       border: 1px solid rgba(100, 100, 100, 0.25);
     }
 
-    .bar.solid {
+    .bar.solid,
+    .sheet.solid {
       background: var(--nav-bg, var(--ha-card-background, var(--card-background-color)));
       border: 1px solid rgba(100, 100, 100, 0.25);
     }
 
-    .bar.transparent {
+    .bar.transparent,
+    .sheet.transparent {
       background: none;
       border: none;
     }
@@ -1309,13 +1446,25 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         opacity ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
     }
 
-    :host([variant="segmented"]) .item {
+    /* The horizontal variants read as tabs: each entry is as wide as its own
+       label, and the pill goes round the whole thing. Stretching them across a
+       wide screen would light up a third of it for one page. */
+    :host([variant="segmented"]) .item,
+    :host([variant="header"]) .item {
+      flex: 0 1 auto;
       flex-direction: row;
       gap: 8px;
+      padding: 0 14px;
+      min-width: 0;
       min-height: calc(
         (${NAV_SEGMENT_HEIGHT}px - 2 * ${NAV_SEGMENT_PADDING}px) * var(--nav-scale, 1)
       );
       border-radius: calc(${NAV_SEGMENT_ITEM_RADIUS}px * var(--nav-scale, 1));
+    }
+
+    :host([variant="segmented"]) .bar,
+    :host([variant="header"]) .bar {
+      justify-content: center;
     }
 
     .item.active {
@@ -1325,6 +1474,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     .item.pressed {
       border-radius: calc(${NAV_ITEM_RADIUS_ACTIVE}px * var(--nav-scale, 1));
+    }
+
+    .item.pressed .glyph {
+      border-radius: calc(${NAV_INDICATOR_RADIUS_ACTIVE}px * var(--nav-scale, 1));
     }
 
     .item.disabled {
@@ -1343,6 +1496,19 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       align-items: center;
       justify-content: center;
       --mdc-icon-size: calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1));
+      transition:
+        border-radius ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING},
+        background ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
+    }
+
+    /* Stacked variants: the pill is this box, sized to the icon, with the label
+       underneath it rather than inside. */
+    :host([variant="footer"]) .glyph,
+    :host([variant="floating"]) .glyph,
+    :host([variant="sheet"]) .glyph {
+      width: calc(${NAV_INDICATOR_WIDTH}px * var(--nav-scale, 1));
+      height: calc(${NAV_INDICATOR_HEIGHT}px * var(--nav-scale, 1));
+      border-radius: calc(${NAV_INDICATOR_RADIUS}px * var(--nav-scale, 1));
     }
 
     .label {
@@ -1400,37 +1566,46 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     }
 
     .sheet .bar {
-      background: none;
-      border: none;
+      background: none !important;
+      border: none !important;
       border-radius: 0;
       margin: 0;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
       /* Above the panel, so a collapsed drawer slides away behind it and only
          the handle strip stays out. */
       position: relative;
       z-index: 1;
     }
 
-    /* Collapsed, the panel drops by its own height less the handle strip, which
-       leaves exactly the grip visible above the bar. A percentage rather than a
-       measured pixel value: the drawer's height depends on its cards, and a
-       measurement would have to be re-taken every time one of them changed. */
+    /* The drawer's height is what opens and shuts it, so its layout box shrinks
+       with it and the bar stays where it belongs. Before the body has been
+       measured, these two classes do the same job in percentages. */
     .sheet-panel {
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      height: ${NAV_SHEET_HANDLE_HEIGHT + 2 * NAV_SHEET_HANDLE_PADDING}px;
+    }
+
+    /* The transition is added only once the drawer has been measured, and the
+       height is a definite pixel value at every position from then on. A
+       transition with "auto" on either end does not run at all — it silently
+       stays put, which is exactly what an earlier version of this did. */
+    .sheet-panel.measured {
+      transition: height ${unsafeCSS(NAV_SHEET_SETTLE_MS)}ms ${EASING};
+    }
+
+    /* The body keeps its natural height at every position — the panel clips it
+       rather than squashing it, so the content does not reflow while dragging. */
+    .sheet-body {
+      flex: none;
+      display: flex;
+      flex-direction: column;
       min-height: 0;
-      transform: translateY(
-        calc(100% - ${NAV_SHEET_HANDLE_HEIGHT + 2 * NAV_SHEET_HANDLE_PADDING}px)
-      );
-      transition: transform ${unsafeCSS(NAV_SHEET_SETTLE_MS)}ms ${EASING};
     }
 
-    .sheet-panel.open {
-      transform: translateY(0);
-    }
-
-    /* While a finger is down the transform is written on every frame, so a
+    /* While a finger is down the height is written on every frame, so a
        transition would make the drawer lag behind the finger by its whole
        duration. It comes back for the settle. */
     .sheet-panel.dragging {

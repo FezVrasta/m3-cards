@@ -1587,6 +1587,16 @@ export const NAV_ITEM_RADIUS_ACTIVE = 11;
 export const NAV_ITEM_GLYPH = 22;
 export const NAV_ITEM_LABEL_SIZE = 11;
 export const NAV_ITEM_TINT = 16;
+/**
+ * The active pill hugs the glyph rather than filling the whole entry — a bar
+ * across a wide screen otherwise lights up a third of it. Material's own
+ * bottom navigation sizes the indicator to the icon and leaves the label
+ * outside it, which is what the reference designs show too.
+ */
+export const NAV_INDICATOR_WIDTH = 56;
+export const NAV_INDICATOR_HEIGHT = 32;
+export const NAV_INDICATOR_RADIUS = 16;
+export const NAV_INDICATOR_RADIUS_ACTIVE = 10;
 export const NAV_ITEM_INACTIVE_OPACITY = 0.6;
 export const NAV_PRESS_MS = 200;
 
