@@ -1660,10 +1660,13 @@ auto_discover: true
   werden nach Gerät gruppiert; der Rest wird zu einer eigenen Kachel,
   benannt nach dem (bereinigten) Entity-Namen. Räume ohne
   Temperatursensor werden übersprungen — Feuchte allein ergibt keinen
-  Raum. Filterbar über `include_area` / `exclude_entities`.
+  Raum. Filterbar über `include_area` / `exclude_area` / `include_entities`
+  / `exclude_entities` / `include_labels` / `exclude_labels` /
+  `include_state` / `exclude_state`.
 - **`rooms`**: eine manuelle Liste (`name`, `icon`, `temperature_entity`,
-  `humidity_entity`) statt Auto-Discovery — damit lässt sich die Übersicht
-  von Hand aufbauen.
+  `humidity_entity`, `climate_entity`, `color`) statt Auto-Discovery — damit
+  lässt sich die Übersicht von Hand aufbauen. `color` überschreibt die
+  errechnete Temperatur-Farbstufe dieser Kachel.
 - **`mode`**: welche Entities Auto-Discovery meldet und womit jeder Raum
   dargestellt wird. `temperature` (Standard) sind ausschließlich dedizierte
   Temperatursensoren — ein Raum ohne wird übersprungen. `thermostat` meldet
@@ -1692,16 +1695,42 @@ Grenzen → fünf Stufen: kalt/kühl/angenehm/warm/heiß); die Feuchte wechselt
 außerhalb von `humidity_range` in die Warnfarbe. Die Vergleichsskala
 (`show_scale`) trägt die Temperatur jedes Raums als Punkt auf demselben
 Farbverlauf ein, mit alternierend ober-/unterhalb platzierten
-Raumnamen (ab 9 Räumen nur noch Punkte mit Tooltip); bei weniger als 2
-Räumen blendet sie sich aus. Der Hinweis-Chip (`show_outlier_chip`) hebt
-den einen Raum hervor, der am weitesten außerhalb des Komfortbereichs
-liegt — kältester bei Unterschreitung, wärmster bei Überschreitung — und
-verschwindet, sobald alle Räume im Komfortbereich liegen.
+Raumnamen (ab 9 Räumen nur noch Punkte mit Tooltip, oder immer mit
+`show_scale_labels: false`); bei weniger als 2 Räumen blendet sie sich
+aus. Der Hinweis-Chip (`show_outlier_chip`) hebt den einen Raum hervor,
+der am weitesten außerhalb des Komfortbereichs liegt — kältester bei
+Unterschreitung, wärmster bei Überschreitung — und verschwindet, sobald
+alle Räume im Komfortbereich liegen.
 
 `show_trend` zeigt einen kleinen Pfeil, wenn sich die Temperatur eines
 Raums in der letzten Stunde um mehr als 0,5 K geändert hat (über die
 History-API abgerufen, alle 15 Minuten aktualisiert). `show_mold_warning`
 zeigt ein Warnsymbol auf Kacheln über 65 % Feuchte **und** unter 18 °C.
+
+### Benachrichtigung bei Schimmelrisiko
+
+Im Editor-Bereich "Benachrichtigung bei Schimmelrisiko" lässt sich eine
+Home-Assistant-Automatisierung anlegen (bzw. aktualisieren), die eine
+Sammelnachricht mit allen Räumen über 65 % Feuchte **und** unter 18 °C
+verschickt — dieselbe Regel wie `show_mold_warning`, unabhängig davon, ob
+dieses Symbol eingeschaltet ist (es wirkt sich nur auf die Kachel aus,
+nicht auf die Benachrichtigung). Erfasst werden nur Räume mit sowohl
+Temperatur- als auch Feuchtesensor; ohne Treffer bleibt die Automatisierung
+still.
+
+`notify_enabled: true` ist der Hauptschalter. `notify_service` wählt ein
+oder mehrere `notify.*`-Ziele aus der Service-Registry. `notify_mode`
+(`daily`, Standard, oder `weekly` mit `notify_weekday`) sowie `notify_time`
+legen den Zeitplan fest. `notify_title` / `notify_message` überschreiben
+den vorgegebenen Text, mit `{anzahl}` (Raumanzahl) und `{liste}`
+(kommagetrennte Raumliste) als Platzhaltern.
+
+Eingerichtet wird das über den Editor, nicht per YAML: ein Klick auf den
+Button (bzw. das Einschalten des Schalters) schreibt die Automatisierung
+und ihre Id (`notify_automation_id`) in die Kartenkonfiguration zurück, ein
+erneuter Klick nach neuen Räumen aktualisiert dieselbe Automatisierung statt
+eine zweite anzulegen. Der Schalter pausiert die Automatisierung beim
+Ausschalten, statt sie zu löschen.
 
 ### Statt des Verlaufs das Thermostat öffnen
 
@@ -1769,26 +1798,39 @@ popup:
 |---|---|---|---|
 | `auto_discover` | boolean | `true` | Automatische Erkennung von Temperatur-/Feuchte-Sensoren |
 | `mode` | `temperature` \| `thermostat` \| `thermostat_only` | `temperature` | Welche Entities Auto-Discovery meldet |
-| `include_area` | list\<string\> | – | Filter für Auto-Discovery |
-| `exclude_entities` | list\<string\> | – | Von Auto-Discovery ausgeschlossene Entities |
-| `rooms` | Liste (`name`, `icon`, `temperature_entity`, `humidity_entity`, `climate_entity`) | – | Manuelle Raumliste statt Auto-Discovery |
+| `include_area` / `exclude_area` | list\<string\> | – | Bereichsfilter für Auto-Discovery |
+| `include_entities` / `exclude_entities` | list\<string\> | – | Entity-Filter für Auto-Discovery |
+| `include_labels` / `exclude_labels` | list\<string\> | – | Label-Filter für Auto-Discovery |
+| `include_state` / `exclude_state` | list\<string\> | – | Filter nach dem aktuellen Zustand des Sensors (z.B. `unavailable`) |
+| `rooms` | Liste (`name`, `icon`, `temperature_entity`, `humidity_entity`, `climate_entity`, `color`) | – | Manuelle Raumliste statt Auto-Discovery; `color` überschreibt die errechnete Temperatur-Farbstufe |
 | `name_strip` | list\<string\> | siehe oben | Namens-Suffixe/-Präfixe, die aus automatisch erkannten Namen entfernt werden |
 | `name` / `icon` | string | "Raumklima" / `mdi:thermometer` | Header |
+| `show_header` | boolean | `true` | Karten-Header |
 | `tile_tap_action` | `history` \| `thermostat` | `history` | Standard-Tap-Verhalten, ersetzt durch ein explizites `tap_action` |
 | `tap_action` / `hold_action` / `double_tap_action` | Action-Config | more-info / popup / none | Tap-/Hold-/Doppeltap-Actions; ergänzt eine `popup`-Action |
 | `popup` | Objekt (`mode`, `title`, `sort`, `show_header`, `card`, Filterfelder) | – | Popup der `popup`-Action — siehe oben |
 | `max_visible` | number | `0` (alle) | Gleichzeitig sichtbare Räume, Rest hinter "mehr anzeigen" |
 | `sort` | `area` \| `temp_desc` \| `temp_asc` \| `name` | `area` | Kachel-Reihenfolge |
 | `show_scale` | boolean | `true` | Vergleichsskala unter dem Kachelraster |
+| `show_scale_labels` | boolean | `true` | Raumnamen an der Vergleichsskala; aus lässt nur die Punkte übrig |
 | `show_outlier_chip` | boolean | `true` | Header-Chip für den auffälligsten Raum |
 | `show_trend` | boolean | `false` | Pfeil bei einer Änderung >0,5 K in der letzten Stunde |
 | `show_mold_warning` | boolean | `false` | Warnsymbol über 65 % Feuchte und unter 18 °C |
+| `notify_enabled` | boolean | `false` | Hauptschalter für die Schimmelrisiko-Sammelbenachrichtigung — siehe oben |
+| `notify_service` | list\<string\> | – | `notify.*`-Ziele für die Sammelnachricht |
+| `notify_mode` | `daily` \| `weekly` | `daily` | Wie oft die Sammelnachricht läuft |
+| `notify_time` | string (`HH:MM:SS`) | `09:00:00` | Uhrzeit der Sammelnachricht |
+| `notify_weekday` | string | `mon` | Wochentag bei `notify_mode: weekly` |
+| `notify_title` / `notify_message` | string | vorgegebener Text | Eigener Benachrichtigungstext, mit Platzhaltern `{anzahl}`/`{liste}` |
+| `notify_automation_id` | string | automatisch erzeugt | Id der angelegten Automatisierung; wird vom Editor verwaltet, nicht von Hand setzen |
 | `temp_thresholds` | Objekt (`cold`/`cool`/`comfortable`/`warm`) | `19`/`20.5`/`23.5`/`25` | Grenzen zwischen den fünf Farbstufen |
 | `humidity_range` | `[number, number]` | `[35, 65]` | Komfortbereich; außerhalb wird die Warnfarbe verwendet |
 | `scale_min` / `scale_max` | number | automatisch aus den Messwerten | Fester Bereich der Vergleichsskala |
 | `cold_color` / `cool_color` / `comfortable_color` / `warm_color` / `hot_color` | string | blau/türkis/grün/amber/rot | Temperatur-Farbstufen |
 | `humidity_warn_color` | string | amber | Feuchtefarbe außerhalb von `humidity_range` |
+| `tile_tint_opacity` | number | `12` | Stärke der Kachel-Hintergrundfärbung |
 | `accent_color` | string | Theme-Standard | Akzentfarbe des Header-Icons |
+| `accent_opacity` | number | `12` | Stärke der Färbung hinter dem Header-Icon |
 | `text_color` / `secondary_text_color` | string | Theme-Standard | Raumnamen/Werte bzw. Sekundärtext |
 | `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
 | `animation` | `auto` \| `on` \| `off` | `auto` | Animation der Vergleichsskala-Punkte; `auto`/`on` respektieren `prefers-reduced-motion` |
