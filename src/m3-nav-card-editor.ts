@@ -207,6 +207,31 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
 
   // ---- action button menu ---------------------------------------------------
 
+  /**
+   * Whether the round button beside the bar exists at all.
+   *
+   * The card draws it only when it has an icon, so switching it off means
+   * removing the whole block — which is not something anyone should have to
+   * work out by clearing an icon field.
+   */
+  private get _hasActionButton(): boolean {
+    return !!this._config?.action_button?.icon;
+  }
+
+  private _actionButtonToggled(on: boolean): void {
+    if (!this._config) return;
+    const next = { ...this._config };
+    if (on) {
+      // Seeded with an icon, because without one the card draws nothing and
+      // the switch would look broken the moment it was turned on.
+      next.action_button = { icon: "mdi:magnify", ...(next.action_button ?? {}) };
+      if (!next.action_button.icon) next.action_button.icon = "mdi:magnify";
+    } else {
+      delete next.action_button;
+    }
+    this._emit(next);
+  }
+
   private get _actionMenu(): NavActionMenuEntry[] {
     return this._config?.action_button?.menu ?? [];
   }
@@ -922,6 +947,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       pill_size: "editor_nav_pill_size",
       edge_distance: "editor_nav_edge_distance",
       close_icon: "editor_nav_close_icon",
+      action_button_on: "editor_nav_action_button_on",
       container_style: "editor_nav_container",
       container_opacity: "editor_nav_opacity",
       blur: "editor_nav_blur",
@@ -1385,6 +1411,18 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               <div class="block-title">${this._t("editor_nav_action_button")}</div>
               <ha-form
                 .hass=${this.hass}
+                .data=${{ action_button_on: this._hasActionButton }}
+                .schema=${[{ name: "action_button_on", selector: { boolean: {} } }]}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${(ev: CustomEvent) =>
+                  this._actionButtonToggled(
+                    (ev.detail.value as { action_button_on: boolean })
+                      .action_button_on === true,
+                  )}
+              ></ha-form>
+              ${this._hasActionButton
+                ? html`<ha-form
+                .hass=${this.hass}
                 .data=${cfg.action_button ?? {}}
                 .schema=${[
                   { name: "icon", selector: { icon: {} } },
@@ -1405,10 +1443,12 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   }
                   this._emit(next);
                 }}
-              ></ha-form>
+                    ></ha-form>`
+                : nothing}
               <div class="hint">${this._t("editor_nav_action_button_hint")}</div>
 
-              <div class="block">
+              ${this._hasActionButton
+                ? html`<div class="block">
                 <div class="block-title">${this._t("editor_nav_action_menu")}</div>
                 <div class="hint">${this._t("editor_nav_action_menu_hint")}</div>
                 ${this._actionMenu.map(
@@ -1446,7 +1486,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 <ha-button @click=${() => this._setActionMenu([...this._actionMenu, {}])}
                   >${this._t("editor_nav_add_action_menu_entry")}</ha-button
                 >
-              </div>
+              </div>`
+                : nothing}
             </div>
           </div>
         </ha-expansion-panel>

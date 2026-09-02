@@ -50,6 +50,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card editor: the round button had no on/off switch.** It exists only
+  when it has an icon, so adding one meant knowing to fill an icon field and
+  removing it meant clearing that field again — neither of which the editor
+  said anywhere. There is a switch for it now, and the button's own fields and
+  its menu appear only while it is on.
+
 - **Nav card: the plate behind an unselected entry did not match the marker.**
   With `item_background` the faint plate was always drawn on the whole entry,
   while in the stacked variants the active marker sits on the icon — so the
@@ -212,6 +218,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karten-Editor: Für den runden Knopf gab es keinen Schalter.** Er
+  existiert nur, wenn er ein Icon hat — ihn hinzuzufügen hieß also zu wissen,
+  dass man ein Icon-Feld ausfüllen muss, und ihn zu entfernen, dieses Feld wieder
+  zu leeren. Beides stand nirgends. Jetzt gibt es einen Schalter dafür, und die
+  Felder des Knopfes samt seinem Menü erscheinen nur, solange er an ist.
 
 - **Nav-Karte: Die Fläche hinter einem nicht gewählten Eintrag passte nicht zur
   Markierung.** Mit `item_background` wurde die dezente Fläche immer auf den
