@@ -667,8 +667,10 @@ Fallen woanders als bei den übrigen Karten.
 | `fit` begrenzt wirklich | `max_width: fit` auf einem breiten Fenster | Die Leiste ist so breit wie ihre Einträge und mittig, **nicht** über die volle Breite mit auseinandergezogenen Einträgen |
 | `fit` neben dem runden Knopf | Dasselbe mit `action_button` | Leiste und Knopf stehen zusammen in der Mitte; die Leiste dehnt sich nicht bis zum Knopf |
 | Angedockt trotz `fit` | `header`/`footer` mit `max_width: fit` | Die Glasfläche geht über die volle Breite, nur die Einträge rücken zusammen — keine sichtbare Kante links und rechts der Einträge |
+| Angedockt über die volle Breite | `header`/`footer` am Desktop, Karte in einer schmalen Spalte einer Sections-Ansicht | Die Glasfläche geht über den ganzen Inhaltsbereich, nicht nur über die Spalte, in der die Karte steckt |
 | Angedockt bis an den Rand | `header` bzw. `footer` auf dem Handy | Die Leiste reicht links und rechts bis an den Bildschirmrand. Am Desktop mit ausgeklappter Seitenleiste beginnt sie weiterhin neben dieser, nicht darunter |
 | Form der aktiven Pille | `label_position: right`, aktiven Eintrag ansehen | Die Pille ist eine Kapsel — die Enden sind vollständig rund, nicht abgeflacht. Das Icon sitzt ohne eigenen Kasten direkt darauf, links und rechts gleich viel Luft |
+| Kachelform ohne Text | `item_background: true` und nur Icons | Die Kacheln behalten ihre abgerundete Rechteckform; nur die Markierung darin ist eine Kapsel |
 | Markierung ohne Text | Eine Leiste nur mit Icons (`label_visibility: never`) | Die Markierung ist eine liegende Kapsel wie bei den Leisten mit Text — **kein** Kreis um das Icon |
 | Textgröße neben dem Icon | `label_position: right` und einmal ohne, einmal mit `label_size` | Neben dem Icon steht der Text auf 14px statt 11px; `label_size` überschreibt beides. Unter dem Icon bleibt es bei 11px |
 | Textposition | `label_position` auf `below`, `above`, `right`, `left` | Text sitzt unter, über, rechts bzw. links vom Icon. Bei `right`/`left` umschließt die aktive Pille **Icon und Text** zusammen, nicht nur das Icon |

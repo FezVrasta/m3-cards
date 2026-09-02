@@ -38,6 +38,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: a docked bar spanned its own column, not the view.** The bar looks
+  up the tree for the view's content area so it can dock without running under
+  the sidebar, and gave up after twelve steps. Nearly every step crosses a
+  shadow boundary — card wrapper, section, sections view, view container — so on
+  a desktop the walk ran out inside the card's own grid column and took that for
+  the content area: a glass panel a few hundred pixels wide, floating in the
+  middle of the screen with an edge at each end.
+
 - **Nav card: the marker on an icon-only bar was a circle.** It should be the
   same capsule the bars with labels wear, only without words under it. A circle
   is a different shape and a heavier one, and it made a compact dock look
@@ -174,6 +182,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: Eine angedockte Leiste war so breit wie ihre Spalte, nicht wie die
+  Ansicht.** Die Leiste sucht im Baum nach dem Inhaltsbereich der Ansicht, um
+  andocken zu können, ohne unter der Seitenleiste zu verschwinden — und gab nach
+  zwölf Schritten auf. Fast jeder Schritt überquert eine Shadow-Grenze
+  (Kartenhülle, Sektion, Sections-Ansicht, Ansichtscontainer), am Desktop endete
+  die Suche also in der Rasterspalte der Karte und hielt diese für den
+  Inhaltsbereich: eine Glasfläche von ein paar hundert Pixeln, mitten im Bild,
+  mit einer Kante an jedem Ende.
 
 - **Nav-Karte: Die Markierung auf einer reinen Icon-Leiste war ein Kreis.** Sie
   soll dieselbe liegende Kapsel sein, die die Leisten mit Text tragen, nur eben

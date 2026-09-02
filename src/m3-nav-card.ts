@@ -45,6 +45,7 @@ import {
   NAV_SIDE_PADDING,
   NAV_ICON_SIDE_PADDING,
   NAV_DOCK_MIN_INSET,
+  NAV_DOCK_MAX_DEPTH,
   NAV_INDICATOR_RADIUS_ACTIVE,
   NAV_INDICATOR_WIDTH,
   NAV_ITEM_RADIUS,
@@ -511,7 +512,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   private _contentRect(): DOMRect | undefined {
     let node: Element | null = this;
     let best: DOMRect | undefined;
-    for (let depth = 0; depth < 12 && node; depth++) {
+    for (let depth = 0; depth < NAV_DOCK_MAX_DEPTH && node; depth++) {
       const parent: Element | null =
         node.parentElement ??
         ((node.parentNode as ShadowRoot | null)?.host as Element | undefined) ??
@@ -3089,10 +3090,6 @@ export class M3NavCard extends LitElement implements LovelaceCard {
        heavier one — the marker should read as the same family across variants,
        whether or not the entry has words under it. */
     :host([variant]) .item.icons-only .glyph {
-      border-radius: 999px;
-    }
-
-    :host([variant]) .bar .item.icons-only {
       border-radius: 999px;
     }
 

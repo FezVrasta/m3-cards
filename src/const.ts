@@ -1618,6 +1618,17 @@ export const NAV_INDICATOR_RADIUS_ACTIVE = 10;
  */
 export const NAV_DOCK_MIN_INSET = 40;
 
+/**
+ * How far up the tree a docked bar looks for the view's content area.
+ *
+ * The walk crosses a shadow boundary at nearly every step — card wrapper,
+ * section, sections view, view container — so the content area is a dozen or
+ * so hops away from a card sitting in a grid. Stopping short leaves the widest
+ * thing found so far as the answer, and that is the card's own column: the bar
+ * then spans one column in the middle of the screen instead of the view.
+ */
+export const NAV_DOCK_MAX_DEPTH = 30;
+
 /** Side padding of an entry whose label sits beside its icon. */
 export const NAV_SIDE_PADDING = 16;
 /** The same, for an entry that carries an icon as well as its label. */
