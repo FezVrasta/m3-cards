@@ -946,6 +946,12 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     if (this._config?.haptics !== false) fireHaptic(this, "light");
   }
 
+  /**
+   * Keyboard only. Pointer taps on the grip come through the gesture handler's
+   * own tap branch — wiring a click listener here as well meant one tap
+   * toggled twice, so the drawer opened and shut again in the same gesture and
+   * looked like it was refusing to stay open.
+   */
   private _toggleSheet = (e: Event): void => {
     e.stopPropagation();
     this._setSheetOpen(!this._sheetOpen);
@@ -1203,7 +1209,6 @@ export class M3NavCard extends LitElement implements LovelaceCard {
           tabindex="0"
           aria-expanded=${open ? "true" : "false"}
           aria-label=${this._t(open ? "nav_sheet_collapse" : "nav_sheet_expand")}
-          @click=${this._toggleSheet}
           @keydown=${activateOnKey(this._toggleSheet)}
         >
           <span class="handle"></span>
