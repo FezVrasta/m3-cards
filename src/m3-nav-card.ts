@@ -598,10 +598,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     super.updated(changed);
     if (this._settling) {
       // One frame later, so the corrected marker has been painted with the
-      // transition still off before it is turned back on.
-      requestAnimationFrame(() => {
+      // transition still off before it is turned back on. The timer is the
+      // fallback: a hidden tab, or an app in the background, never runs an
+      // animation frame at all, and without it the card would come back with
+      // its marker unable to animate for the rest of its life.
+      const done = (): void => {
         this._settling = false;
-      });
+      };
+      requestAnimationFrame(done);
+      window.setTimeout(done, NAV_PRESS_MS);
     }
     this._keepActiveInView();
     // The first measurement can land before the view has laid itself out, and
