@@ -473,8 +473,24 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * its entries. `fit` is its own case because it also changes how the entries
    * are sized, not just how much room the bar is allowed.
    */
+  /**
+   * What an unconfigured bar should do, which is not the same answer for every
+   * variant.
+   *
+   * `header` and `footer` dock to an edge and reading edge-to-edge is what they
+   * are for. `floating` is a detached pill — stretched across a desktop it puts
+   * its entries a screen apart from each other, and hugging them is both what
+   * the reference designs show and the only sensible default. `sheet` keeps the
+   * full width because the drawer holds cards, and a drawer as narrow as five
+   * icons has nowhere to put them.
+   */
+  private get _defaultMaxWidth(): number | string | undefined {
+    return this._variant === "floating" ? "fit" : undefined;
+  }
+
   private get _maxWidth(): { css?: string; fit: boolean } {
-    const value = this._config?.max_width;
+    const value =
+      this._layout.max_width ?? this._config?.max_width ?? this._defaultMaxWidth;
     if (value === undefined || value === "") return { fit: false };
     if (value === "fit") return { css: "fit-content", fit: true };
     if (typeof value === "number") return { css: `${value}px`, fit: false };
@@ -1039,6 +1055,66 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     handleAction(this, this.hass, action);
   };
 
+  private _runSheetItem(index: number): void {
+    const item = this._config?.sheet_items?.[index];
+    if (!item) return;
+    const action =
+      item.tap_action ??
+      (item.path
+        ? ({ action: "navigate", navigation_path: item.path } as HaActionConfig)
+        : undefined);
+    if (!action || !isActionable(action)) return;
+    if (this._config?.haptics !== false) fireHaptic(this, "light");
+    handleAction(this, this.hass, action);
+    if (this._config?.collapse_on_navigate !== false) this._setSheetOpen(false);
+  }
+
+  /**
+   * The shortcut grid in the drawer.
+   *
+   * This is what a "more" submenu turns into once there is somewhere to put it:
+   * the same entries, laid out as tiles you can actually see at a glance rather
+   * than a list you have to open first.
+   */
+  private _renderSheetItems(): TemplateResult | typeof nothing {
+    const items = this._config?.sheet_items ?? [];
+    if (!items.length) return nothing;
+    const accent = resolveThemeColor(this._config?.accent_color ?? DEFAULT_NAV_COLOR);
+    const columns = this._config?.sheet_columns;
+    const style = columns
+      ? `grid-template-columns: repeat(${columns}, minmax(0, 1fr));`
+      : "";
+
+    return html`
+      <div class="sheet-grid" style=${style}>
+        ${items.map((item, index) => {
+          const color = resolveThemeColor(this._resolve(item.color) || accent);
+          const tint = tintOn(this, color, this._config?.accent_opacity, NAV_ITEM_TINT);
+          return html`
+            <div
+              class="sheet-tile"
+              role="button"
+              tabindex="0"
+              aria-label=${item.name || item.path || ""}
+              @click=${() => this._runSheetItem(index)}
+              @keydown=${activateOnKey(() => this._runSheetItem(index))}
+            >
+              <span
+                class="sheet-tile-glyph"
+                style=${`background: ${tint}; color: ${foregroundOn(color, tint, 3, this)};`}
+              >
+                <ha-icon icon=${this._resolve(item.icon) || DEFAULT_NAV_ICON}></ha-icon>
+              </span>
+              ${item.name
+                ? html`<span class="sheet-tile-label">${this._resolve(item.name)}</span>`
+                : nothing}
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
   private _renderSheetPanel(): TemplateResult {
     // Edit mode always shows the drawer: a collapsed sheet in the editor is a
     // card with nothing in it to configure.
@@ -1082,7 +1158,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         <div class="sheet-body">
           ${this._renderSheetHead()}
           <div class="sheet-content" style=${`max-height: ${this._sheetMaxHeight};`}>
-            ${this._sheetCards}
+            ${this._renderSheetItems()} ${this._sheetCards}
           </div>
         </div>
       </div>
@@ -1286,6 +1362,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-scale": String(scale),
       "nav-radius": `${cfg.radius ?? NAV_FLOAT_RADIUS}px`,
       "nav-max-width": width.css,
+      "nav-glyph": cfg.icon_size !== undefined ? `${cfg.icon_size}px` : undefined,
       "nav-blur": cfg.blur !== undefined ? `${cfg.blur}px` : undefined,
       "nav-opacity": cfg.container_opacity !== undefined ? String(cfg.container_opacity / 100) : undefined,
       "nav-z": String(NAV_Z_INDEX),
@@ -1438,6 +1515,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .bar.capped,
     .sheet.capped {
       max-width: var(--nav-max-width, none);
+    }
+
+    /* Written with the host selector rather than as two bare classes so it
+       outranks the per-variant margin above it. Two bare classes lose to the
+       floating variant's own rule, and the bar then sits hard against the left
+       edge at its capped width instead of centred — which is precisely what it
+       did. */
+    :host([variant]) .bar.capped,
+    :host([variant]) .sheet.capped {
       margin-left: auto;
       margin-right: auto;
     }
@@ -1447,6 +1533,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .bar.fit .item,
     .sheet.fit .item {
       flex: 0 0 auto;
+      /* Hugging the entries makes them touch, so they get their own padding
+         back — a row of labels with no gap between them reads as one word. */
+      padding: 0 6px;
+    }
+
+    .bar.fit,
+    .sheet.fit {
+      gap: calc(${NAV_BAR_GAP}px * var(--nav-scale, 1) + 4px);
     }
 
     :host([variant="footer"]) .bar,
@@ -1562,7 +1656,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       display: flex;
       align-items: center;
       justify-content: center;
-      --mdc-icon-size: calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1));
+      --mdc-icon-size: var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1)));
       transition:
         border-radius ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING},
         background ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
@@ -1573,8 +1667,16 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     :host([variant="footer"]) .glyph,
     :host([variant="floating"]) .glyph,
     :host([variant="sheet"]) .glyph {
-      width: calc(${NAV_INDICATOR_WIDTH}px * var(--nav-scale, 1));
-      height: calc(${NAV_INDICATOR_HEIGHT}px * var(--nav-scale, 1));
+      /* The pill grows with the glyph rather than staying put, or a bigger icon
+         sits in a box that no longer contains it. */
+      width: max(
+        calc(${NAV_INDICATOR_WIDTH}px * var(--nav-scale, 1)),
+        calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 2.2)
+      );
+      height: max(
+        calc(${NAV_INDICATOR_HEIGHT}px * var(--nav-scale, 1)),
+        calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 1.35)
+      );
       border-radius: calc(${NAV_INDICATOR_RADIUS}px * var(--nav-scale, 1));
     }
 
@@ -1752,6 +1854,54 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    /* Fits as many tiles per row as the drawer is wide, which is the right
+       answer on both a phone and a desktop without either being configured. */
+    .sheet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      gap: 8px;
+    }
+
+    .sheet-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 4px;
+      border-radius: ${NAV_ITEM_RADIUS}px;
+      cursor: pointer;
+      transition: border-radius ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
+    }
+
+    .sheet-tile:active {
+      border-radius: ${NAV_ITEM_RADIUS_ACTIVE}px;
+    }
+
+    .sheet-tile:focus-visible {
+      outline: 2px solid var(--nav-ink, var(--primary-text-color));
+      outline-offset: 2px;
+    }
+
+    .sheet-tile-glyph {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      --mdc-icon-size: 22px;
+    }
+
+    .sheet-tile-label {
+      max-width: 100%;
+      font-size: 11px;
+      line-height: 1.2;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* Being edited or previewed, or a second sheet on the same view: the card

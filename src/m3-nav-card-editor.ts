@@ -6,6 +6,7 @@ import type {
   M3NavCardConfig,
   NavItemConfig,
   NavLayoutConfig,
+  NavSheetItem,
   NavSubmenuEntry,
 } from "./types";
 import {
@@ -201,6 +202,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
+      { name: "max_width", selector: { text: {} } },
       { name: "show_labels", selector: { boolean: {} } },
       { name: "hidden", selector: { boolean: {} } },
     ];
@@ -283,6 +285,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: NAV_SIZE_MIN, max: NAV_SIZE_MAX, step: 0.05, mode: "slider" } },
       },
       {
+        name: "icon_size",
+        selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
+      },
+      {
         name: "container_style",
         selector: {
           select: {
@@ -353,6 +359,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { entity: { domain: "input_boolean" } },
       },
       { name: "collapse_on_navigate", selector: { boolean: {} } },
+      {
+        name: "sheet_columns",
+        selector: { number: { min: 2, max: 8, step: 1, mode: "box" } },
+      },
     ];
   }
 
@@ -392,6 +402,67 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       delete next.snap_points;
     }
     this._emit(next);
+  }
+
+  // ---- sheet shortcut tiles -------------------------------------------------
+
+  private get _sheetItems(): NavSheetItem[] {
+    return this._config?.sheet_items ?? [];
+  }
+
+  private _setSheetItems(items: NavSheetItem[]): void {
+    if (!this._config) return;
+    const next = { ...this._config };
+    if (items.length) next.sheet_items = items;
+    else delete next.sheet_items;
+    this._emit(next);
+  }
+
+  private _sheetItemSchema(): SchemaEntry[] {
+    return [
+      { name: "name", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+      { name: "path", selector: { text: {} } },
+      { name: "tap_action", selector: { ui_action: {} } },
+    ];
+  }
+
+  private _sheetItemChanged(index: number, ev: CustomEvent): void {
+    const items = [...this._sheetItems];
+    items[index] = this._clean({
+      ...items[index],
+      ...(ev.detail.value as Record<string, unknown>),
+    }) as NavSheetItem;
+    this._setSheetItems(items);
+  }
+
+  /**
+   * Copies every submenu entry of every item into the drawer.
+   *
+   * This is the whole reason the drawer's tiles exist: the entries people want
+   * in it are the ones already sitting behind a "more" entry, and retyping
+   * seven of them by hand to move them there would be the card's problem, not
+   * theirs. Entries already in the drawer are matched by path and left alone,
+   * so pressing it twice does not double them.
+   */
+  private _importSubmenus(): void {
+    const known = new Set(this._sheetItems.map((i) => i.path).filter(Boolean));
+    const added: NavSheetItem[] = [];
+    for (const item of this._items) {
+      for (const entry of item.submenu ?? []) {
+        if (entry.path && known.has(entry.path)) continue;
+        if (entry.path) known.add(entry.path);
+        added.push(
+          this._clean({
+            name: entry.name,
+            icon: entry.icon,
+            path: entry.path,
+            tap_action: entry.tap_action,
+          }) as NavSheetItem,
+        );
+      }
+    }
+    if (added.length) this._setSheetItems([...this._sheetItems, ...added]);
   }
 
   /** True when any of the three layout slots asks for the sheet. */
@@ -495,6 +566,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       label_visibility: "editor_nav_label_visibility",
       max_width: "editor_nav_max_width",
       size: "editor_nav_size",
+      icon_size: "editor_nav_icon_size",
       container_style: "editor_nav_container",
       container_opacity: "editor_nav_opacity",
       blur: "editor_nav_blur",
@@ -508,6 +580,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       sheet_default: "editor_nav_sheet_default",
       sheet_state_entity: "editor_nav_sheet_state_entity",
       collapse_on_navigate: "editor_nav_collapse_on_navigate",
+      sheet_columns: "editor_nav_sheet_columns",
       snap_half: "editor_nav_sheet_snap_half",
     };
     const key = labelMap[schema.name];
@@ -708,6 +781,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                       sheet_default: cfg.sheet_default ?? "collapsed",
                       sheet_state_entity: cfg.sheet_state_entity ?? "",
                       collapse_on_navigate: cfg.collapse_on_navigate ?? true,
+                      sheet_columns: cfg.sheet_columns ?? "",
                     }}
                     .schema=${this._sheetSchema()}
                     .computeLabel=${this._computeLabel}
@@ -733,6 +807,40 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                     ></ha-form>
                   </div>
 
+                  <div class="block">
+                    <div class="hint">${this._t("editor_nav_sheet_items")}</div>
+                    ${this._sheetItems.map(
+                      (item, index) => html`
+                        <div class="block">
+                          <ha-form
+                            .hass=${this.hass}
+                            .data=${item}
+                            .schema=${this._sheetItemSchema()}
+                            .computeLabel=${this._computeLabel}
+                            @value-changed=${(ev: CustomEvent) =>
+                              this._sheetItemChanged(index, ev)}
+                          ></ha-form>
+                          <ha-button
+                            class="remove"
+                            @click=${() =>
+                              this._setSheetItems(
+                                this._sheetItems.filter((_, i) => i !== index),
+                              )}
+                            >${this._t("editor_nav_remove_item")}</ha-button
+                          >
+                        </div>
+                      `,
+                    )}
+                    <ha-button
+                      @click=${() => this._setSheetItems([...this._sheetItems, {}])}
+                      >${this._t("editor_nav_add_sheet_item")}</ha-button
+                    >
+                    <ha-button @click=${this._importSubmenus}
+                      >${this._t("editor_nav_import_submenus")}</ha-button
+                    >
+                    <div class="hint">${this._t("editor_nav_import_submenus_hint")}</div>
+                  </div>
+
                   <div class="hint">${this._t("editor_nav_sheet_cards_hint")}</div>
                 </div>
               </ha-expansion-panel>
@@ -748,6 +856,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 label_visibility: cfg.label_visibility ?? "always",
                 max_width: cfg.max_width ?? "",
                 size: cfg.size ?? 1,
+                icon_size: cfg.icon_size ?? 22,
                 container_style: cfg.container_style ?? "glass",
                 container_opacity: cfg.container_opacity ?? 100,
                 blur: cfg.blur ?? 20,

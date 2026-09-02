@@ -3120,7 +3120,32 @@ sheet_cards:
 items: [...]
 ```
 
-The drawer holds any Lovelace cards. It is dragged by the grip, by a swipe up
+The drawer holds two things. `sheet_items` are shortcut tiles — the same
+entries people usually hide behind a "more" submenu, laid out where you can see
+them at a glance instead of having to open a menu first. The editor has a
+button that copies an item's submenu straight in. Below them, `sheet_cards`
+takes any Lovelace cards at all, every M3 card included:
+
+```yaml
+sheet_title: More
+sheet_items:
+  - name: Cameras
+    icon: mdi:cctv
+    path: /lovelace/cameras
+  - name: Restart
+    icon: mdi:power
+    tap_action:
+      action: call-service
+      service: homeassistant.restart
+      confirmation:
+        text: Really restart Home Assistant?
+sheet_cards:
+  - type: custom:m3-button-card
+    entity: light.living_room
+```
+
+An action carrying a `confirmation` asks before it runs — worth knowing before
+putting "restart Home Assistant" one tap away. It is dragged by the grip, by a swipe up
 from the bar, or opened with a tap on the grip. A release goes to the nearest
 stop — unless it was a flick, which goes the way it was thrown whatever
 position the sheet was in at the time.
@@ -3199,7 +3224,9 @@ without a breaking config change.
 | `auto_hide_on_scroll` | `false` | Hide while scrolling down, show on the way up |
 | `hidden` | — | Jinja2 boolean; hides the whole card |
 | `styles` | — | Free CSS applied to the bar. Advanced |
-| `sheet_cards` | — | Cards rendered in the drawer |
+| `sheet_items` | — | Shortcut tiles in the drawer: `name`, `icon`, `path`, `color`, `tap_action` |
+| `sheet_columns` | auto | Tiles per row; unset fits as many as the width allows |
+| `sheet_cards` | — | Cards rendered in the drawer, below the tiles |
 | `sheet_title` | — | Title row above the drawer's content |
 | `sheet_action` | — | `{icon, tap_action}` button on the right of that row |
 | `sheet_max_height` | `60` | vh as a number, or any CSS length as a string |

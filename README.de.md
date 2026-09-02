@@ -3193,7 +3193,32 @@ sheet_cards:
 items: [...]
 ```
 
-Die Schublade nimmt beliebige Lovelace-Karten auf. Gezogen wird am Griff oder
+Die Schublade nimmt zweierlei auf. `sheet_items` sind Kurzbefehl-Kacheln — genau
+die Einträge, die sonst hinter einem „Mehr"-Untermenü verschwinden, hier aber
+auf einen Blick sichtbar statt erst nach dem Öffnen eines Menüs. Der Editor hat
+einen Knopf, der ein bestehendes Untermenü direkt übernimmt. Darunter nimmt
+`sheet_cards` beliebige Lovelace-Karten auf, jede M3-Karte eingeschlossen:
+
+```yaml
+sheet_title: Mehr
+sheet_items:
+  - name: Kameras
+    icon: mdi:cctv
+    path: /lovelace/kamera
+  - name: Neustart
+    icon: mdi:power
+    tap_action:
+      action: call-service
+      service: homeassistant.restart
+      confirmation:
+        text: Home Assistant wirklich neu starten?
+sheet_cards:
+  - type: custom:m3-button-card
+    entity: light.wohnzimmer
+```
+
+Eine Aktion mit `confirmation` fragt vorher nach — gut zu wissen, bevor man
+„Home Assistant neu starten" einen Tipp weit weg legt. Gezogen wird am Griff oder
 mit einem Wisch von der Leiste nach oben; ein Tipp auf den Griff öffnet sie
 ebenfalls. Beim Loslassen geht sie zum nächstgelegenen Rastpunkt — außer es
 war ein Schwung, dann geht sie in die geworfene Richtung, egal wo sie gerade
@@ -3273,7 +3298,9 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `auto_hide_on_scroll` | `false` | Beim Runterscrollen ausblenden, beim Hochscrollen zurück |
 | `hidden` | — | Jinja2-Boolean; blendet die ganze Karte aus |
 | `styles` | — | Freies CSS für die Leiste. Für Fortgeschrittene |
-| `sheet_cards` | — | Karten in der Schublade |
+| `sheet_items` | — | Kacheln in der Schublade: `name`, `icon`, `path`, `color`, `tap_action` |
+| `sheet_columns` | automatisch | Kacheln pro Zeile; leer füllt so viele, wie die Breite hergibt |
+| `sheet_cards` | — | Karten in der Schublade, unter den Kacheln |
 | `sheet_title` | — | Titelzeile über dem Inhalt der Schublade |
 | `sheet_action` | — | `{icon, tap_action}`-Knopf rechts in dieser Zeile |
 | `sheet_max_height` | `60` | vh als Zahl, oder jede CSS-Länge als Text |

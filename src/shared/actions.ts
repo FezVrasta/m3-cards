@@ -41,6 +41,26 @@ function navigate(source: HTMLElement, path: string): void {
  * of its own. An action with no entity behind it (a `navigate`, or a service
  * call with an explicit target) works fine without one.
  */
+/**
+ * Honours an action's `confirmation`, which Home Assistant's own action editor
+ * offers and which this handler used to ignore — so a "restart Home Assistant"
+ * action ran on the first tap, which is the one case it was configured not to.
+ *
+ * A native confirm is deliberate rather than a styled dialog: it is synchronous,
+ * so the decision cannot race the action, and it works identically in every
+ * context a card renders in. Home Assistant's own dialog is not reachable from
+ * a custom card without depending on frontend internals.
+ */
+function confirmed(action: HaActionConfig): boolean {
+  const confirmation = action.confirmation;
+  if (!confirmation) return true;
+  const text =
+    typeof confirmation === "object" && confirmation.text
+      ? confirmation.text
+      : "Are you sure?";
+  return window.confirm(text);
+}
+
 export function handleAction(
   source: HTMLElement,
   hass: HomeAssistant | undefined,
@@ -49,6 +69,7 @@ export function handleAction(
 ): void {
   if (!hass) return;
   const cfg = action ?? { action: "more-info" as const };
+  if (!confirmed(cfg)) return;
 
   switch (cfg.action) {
     case "none":

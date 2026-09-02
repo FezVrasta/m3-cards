@@ -162,6 +162,12 @@ export interface HaActionConfig {
   navigation_path?: string;
   url_path?: string;
   new_tab?: boolean;
+  /**
+   * Ask before running. Home Assistant's own action editor offers this, and an
+   * action that carries it must not run without asking — the whole point of
+   * putting it on "restart Home Assistant" is that a stray tap does not.
+   */
+  confirmation?: boolean | { text?: string };
 }
 
 export interface M3ButtonCardConfig {
@@ -1858,6 +1864,8 @@ export interface NavItemConfig {
 export interface NavLayoutConfig {
   style?: NavVariant;
   position?: NavPosition;
+  /** Width cap for this width class, overriding the card's own. See `max_width`. */
+  max_width?: number | string;
   /** Coarse switch; `label_visibility` is the finer one and wins when both are set. */
   show_labels?: boolean;
   /** Draws nothing at this width class. */
@@ -1868,6 +1876,23 @@ export interface NavLayoutConfig {
 
 export interface NavSheetAction {
   icon?: string;
+  tap_action?: HaActionConfig;
+}
+
+/**
+ * One shortcut tile in the drawer.
+ *
+ * Deliberately the same shape as a submenu row plus a colour: the entries
+ * people want in a drawer are the ones they already put behind a "more" entry,
+ * and having to retype them in a different shape to move them there would be
+ * the card's problem, not theirs.
+ */
+export interface NavSheetItem {
+  name?: string;
+  icon?: string;
+  /** Shorthand for `tap_action: { action: navigate, navigation_path: … }`. */
+  path?: string;
+  color?: string;
   tap_action?: HaActionConfig;
 }
 
@@ -1884,7 +1909,11 @@ export interface M3NavCardConfig {
   breakpoint?: number;
 
   // ---- sheet (style: sheet only)
-  /** Any Lovelace cards, rendered in the drawer. */
+  /** Shortcut tiles in the drawer, drawn as a grid above the cards. */
+  sheet_items?: NavSheetItem[];
+  /** Tiles per row. Unset fits as many as the width allows. */
+  sheet_columns?: number;
+  /** Any Lovelace cards, rendered in the drawer below the shortcuts. */
   sheet_cards?: Record<string, unknown>[];
   sheet_title?: string;
   sheet_action?: NavSheetAction;
@@ -1920,6 +1949,8 @@ export interface M3NavCardConfig {
   max_width?: number | string;
   /** Proportional scale for every measurement of the chosen variant, 0.7–1.5. */
   size?: number;
+  /** Icon size in px, when only the glyphs should grow and not the whole bar. */
+  icon_size?: number;
   container_style?: NavContainerStyle;
   container_opacity?: number;
   blur?: number;
