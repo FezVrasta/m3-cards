@@ -2035,6 +2035,11 @@ export interface M3NavCardConfig {
   /** Label size in px, when only the text should change and not the whole bar. */
   label_size?: number;
   /**
+   * Scales the marker around the active entry — the pill — without touching
+   * anything else. 1 is the Material size; `size` scales the whole bar instead.
+   */
+  pill_size?: number;
+  /**
    * Distance in px between the bar and the edge of the screen it docks to.
    * Added on top of the device's own safe area, never instead of it — the
    * gesture bar has to be cleared whatever this says.

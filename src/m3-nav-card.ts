@@ -1891,6 +1891,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-max-width": width.css,
       "nav-glyph": cfg.icon_size !== undefined ? `${cfg.icon_size}px` : undefined,
       "nav-label": cfg.label_size !== undefined ? `${cfg.label_size}px` : undefined,
+      "nav-pill": cfg.pill_size !== undefined ? String(cfg.pill_size) : undefined,
       "nav-blur": cfg.blur !== undefined ? `${cfg.blur}px` : undefined,
       "nav-opacity": cfg.container_opacity !== undefined ? String(cfg.container_opacity / 100) : undefined,
       "nav-z": String(NAV_Z_INDEX),
@@ -2226,7 +2227,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       position: relative;
       flex: 1 1 0;
       min-width: calc(${NAV_ITEM_MIN_WIDTH}px * var(--nav-scale, 1));
-      min-height: calc(${NAV_ITEM_HEIGHT}px * var(--nav-scale, 1));
+      min-height: calc(
+        ${NAV_ITEM_HEIGHT}px * var(--nav-scale, 1) * var(--nav-pill, 1)
+      );
       border-radius: calc(${NAV_ITEM_RADIUS}px * var(--nav-scale, 1));
       display: flex;
       flex-direction: column;
@@ -2331,13 +2334,17 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     :host([variant="sheet"]) .glyph {
       /* The pill grows with the glyph rather than staying put, or a bigger icon
          sits in a box that no longer contains it. */
-      width: max(
-        calc(${NAV_INDICATOR_WIDTH}px * var(--nav-scale, 1)),
-        calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 2.2)
+      width: calc(
+        max(
+          calc(${NAV_INDICATOR_WIDTH}px * var(--nav-scale, 1)),
+          calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 2.2)
+        ) * var(--nav-pill, 1)
       );
-      height: max(
-        calc(${NAV_INDICATOR_HEIGHT}px * var(--nav-scale, 1)),
-        calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 1.35)
+      height: calc(
+        max(
+          calc(${NAV_INDICATOR_HEIGHT}px * var(--nav-scale, 1)),
+          calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 1.35)
+        ) * var(--nav-pill, 1)
       );
       border-radius: calc(${NAV_INDICATOR_RADIUS}px * var(--nav-scale, 1));
     }
@@ -3065,7 +3072,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
        of a capsule rounded by half its own height. */
     :host([labels="right"][variant]) .bar .item:not(.labels-only),
     :host([labels="left"][variant]) .bar .item:not(.labels-only) {
-      padding: 0 calc(${NAV_ICON_SIDE_PADDING}px * var(--nav-scale, 1));
+      padding: 0 calc(
+        ${NAV_ICON_SIDE_PADDING}px * var(--nav-scale, 1) * var(--nav-pill, 1)
+      );
     }
 
     /* Beside a round button the bar is told to take the rest of the row, which

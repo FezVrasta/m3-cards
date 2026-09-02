@@ -591,6 +591,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         selector: { number: { min: 14, max: 40, step: 1, mode: "slider" } },
       },
       {
+        name: "pill_size",
+        selector: { number: { min: 0.7, max: 1.6, step: 0.05, mode: "slider" } },
+      },
+      {
         name: "label_size",
         selector: { number: { min: 9, max: 24, step: 1, mode: "slider" } },
       },
@@ -879,10 +883,11 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   /** The one number whose effect is not obvious from its name alone. */
-  private _computeHelper = (schema: SchemaEntry): string | undefined =>
-    schema.name === "edge_distance"
-      ? this._t("editor_nav_edge_distance_helper")
-      : undefined;
+  private _computeHelper = (schema: SchemaEntry): string | undefined => {
+    if (schema.name === "edge_distance") return this._t("editor_nav_edge_distance_helper");
+    if (schema.name === "pill_size") return this._t("editor_nav_pill_size_helper");
+    return undefined;
+  };
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
@@ -914,6 +919,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       size: "editor_nav_size",
       icon_size: "editor_nav_icon_size",
       label_size: "editor_nav_label_size",
+      pill_size: "editor_nav_pill_size",
       edge_distance: "editor_nav_edge_distance",
       close_icon: "editor_nav_close_icon",
       container_style: "editor_nav_container",
@@ -1340,6 +1346,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   .hass=${this.hass}
                   .data=${{
                     icon_size: cfg.icon_size ?? 22,
+                    pill_size: cfg.pill_size ?? 1,
                     label_size:
                       cfg.label_size ??
                       (cfg.label_position === "right" || cfg.label_position === "left"

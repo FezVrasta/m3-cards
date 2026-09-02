@@ -8,6 +8,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Nav card: the default colour follows the theme.** It was a fixed blue from
+  the suite's palette, which under a Material You theme made the bar the one
+  thing on the dashboard not wearing the colour generated from the wallpaper.
+  Navigation is the frame around everything else and has no hue of its own to
+  argue for, so it defaults to `primary` now, like the button card.
+  `accent_color` and per-entry `color` are unchanged.
+
+- **Nav card: `pill_size`** — scales the marker around the active entry on its
+  own. The variants mark different boxes, so the same number works on both: the
+  shape around the icon in the stacked variants, the whole entry where the label
+  sits beside it.
+
 - **Nav card: `label_size`**, and a bigger default for a label beside the icon.
   11px is what Material gives a label stacked under an icon, where it is the
   secondary half of the pair; set next to a 22px glyph it read as a caption
@@ -157,6 +169,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Nav-Karte: Die Standardfarbe folgt dem Theme.** Sie war ein festes Blau aus
+  der Palette der Sammlung — unter einem Material-You-Theme also das einzige auf
+  dem Dashboard, das nicht den aus dem Hintergrundbild erzeugten Ton trägt. Eine
+  Navigation ist der Rahmen um alles andere und hat keinen eigenen Farbton zu
+  vertreten; der Standard ist jetzt `primary`, wie bei der Button-Karte.
+  `accent_color` und die Farbe je Eintrag bleiben unverändert.
+
+- **Nav-Karte: `pill_size`** — skaliert allein die Markierung um den aktiven
+  Eintrag. Die Varianten markieren unterschiedliche Kästen, dieselbe Zahl wirkt
+  aber auf beide: die Fläche ums Icon bei den gestapelten, den ganzen Eintrag,
+  wo der Text daneben steht.
 
 - **Nav-Karte: `label_size`**, und ein größerer Standard für Text neben dem Icon.
   11px ist die Größe, die Material einem Text *unter* einem Icon gibt, wo er die

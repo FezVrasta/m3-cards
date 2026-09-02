@@ -1723,6 +1723,9 @@ const translations = {
     editor_nav_width_px_hint: "Diese Konfiguration hat eine feste Breite hinterlegt. Der Schalter oben überschreibt sie, solange er an ist.",
     editor_nav_size: "Gesamtgröße der Leiste",
     editor_nav_icon_size: "Icon-Größe (px)",
+    editor_nav_pill_size: "Größe der Markierung",
+    editor_nav_pill_size_helper:
+      "Wie groß die farbige Fläche um den Eintrag der aktuellen Seite ist. 1 ist die Standardgröße, kleinere Werte machen sie zierlicher, größere kräftiger. Icon und Text bleiben dabei gleich groß — dafür gibt es eigene Einstellungen.",
     editor_nav_label_size: "Textgröße (px)",
     editor_nav_edge_distance: "Abstand zum Bildschirmrand (px)",
     editor_nav_close_icon: "Icon zum Schließen",
@@ -3497,6 +3500,9 @@ const translations = {
     editor_nav_width_px_hint: "This configuration carries a fixed width. The switch above overrides it while it is on.",
     editor_nav_size: "Overall size of the bar",
     editor_nav_icon_size: "Icon size (px)",
+    editor_nav_pill_size: "Marker size",
+    editor_nav_pill_size_helper:
+      "How large the coloured shape around the current page's entry is. 1 is the standard size, smaller values make it slimmer, larger ones bolder. The icon and the text keep their own sizes, which have settings of their own.",
     editor_nav_label_size: "Text size (px)",
     editor_nav_edge_distance: "Distance from the screen edge (px)",
     editor_nav_close_icon: "Close icon",

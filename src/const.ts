@@ -1565,7 +1565,18 @@ export const CALENDAR_DAY_ROW_RADIUS = 14;
 // A navigation bar rather than a data card: the numbers below are chrome
 // measurements, so most of them are per-variant rather than derived from the
 // row/chip scale in tokens.ts. `size` scales every one of them proportionally.
-export const DEFAULT_NAV_COLOR = PALETTE.home;
+/**
+ * Navigation chrome follows the dashboard's own accent rather than picking a
+ * colour of its own.
+ *
+ * A data card is entitled to a hue that means something — solar yellow, grid
+ * blue. A navigation bar means nothing in particular: it is the frame around
+ * everything else, and the theme already says what colour that frame is. Under
+ * a Material You theme this is the tone generated from the user's wallpaper,
+ * which is why the bar was conspicuously the one blue thing on a green
+ * dashboard. `accent_color` still overrides it, per card or per entry.
+ */
+export const DEFAULT_NAV_COLOR = "primary";
 export const DEFAULT_NAV_RADIUS = RADIUS.card;
 export const DEFAULT_NAV_ICON = "mdi:circle-outline";
 
