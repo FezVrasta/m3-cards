@@ -83,6 +83,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Button card: the icon well changed shape before the tile did.** The well
+  transitions everything it has over 0.25s on an ease curve; the tile's corners
+  were given 0.3s on Material's. The inner shape therefore arrived first and the
+  two read as changing for separate reasons. Both corner changes now run on the
+  same clock, while the well's colours keep their own.
+
 - **Nav card editor: the round button was filed under Behaviour.** It is a
   visible part of the bar, and someone looking for a button to add or remove
   goes to Appearance. Moved there, above the advanced panel, so it is in view
@@ -291,6 +297,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Button-Karte: Das Icon-Feld hat seine Form vor der Kachel geändert.** Das
+  Feld überblendet alles, was es hat, in 0,25 s auf einer Ease-Kurve; die Ecken
+  der Kachel bekamen 0,3 s auf Materials Kurve. Die innere Form war damit zuerst
+  fertig, und die beiden wirkten, als änderten sie sich aus verschiedenen
+  Gründen. Beide Formwechsel laufen jetzt auf derselben Uhr, die Farben des
+  Feldes behalten ihre eigene.
 
 - **Nav-Karten-Editor: Der runde Knopf lag unter Verhalten.** Er ist ein
   sichtbarer Teil der Leiste, und wer einen Knopf hinzufügen oder entfernen will,

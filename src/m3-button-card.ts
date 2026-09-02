@@ -871,9 +871,24 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     }
 
     /* The well is a circle while the entity is off and a rounded square while
-       it is on. It already transitions everything, so the change carries. */
+       it is on. */
     .icon-container.shaped.active {
       border-radius: ${unsafeCSS(BUTTON_SHAPE_ON_ICON_RADIUS)};
+    }
+
+    /* The well transitions everything over 0.25s, the shell its corners over a
+       little longer and on a different curve — so the inner shape arrived
+       first and the two looked like they were changing for separate reasons.
+       Listing border-radius after "all" overrides it for that one property and
+       leaves the colours alone. */
+    .icon-container.shaped {
+      transition:
+        all 0.25s ease,
+        border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
+    }
+
+    .icon-container.shaped.no-animations {
+      transition: none;
     }
 
     /* Slider mode: opaque chip so the fill behind it doesn't double-tint. */

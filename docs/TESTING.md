@@ -625,6 +625,7 @@ dritten Kalender.
 - [ ] Umschalter Agenda/Monat morpht; `show_view_switch: false` blendet ihn aus
 - [ ] Beim Verlassen des Sichtbereichs hört der Minutentakt auf (VisibleTicker)
 
+| Beide Formen im Gleichschritt | Beim Schalten genau hinsehen | Icon-Feld und Kachelumriss verändern sich gemeinsam; die innere Form darf nicht früher fertig sein als die äußere |
 | Form auf flacher Kachel | `shape_by_state` auf einer Kachel mit `grid_options.rows: 1` | Beide Zustände sind unterscheidbar. Der Standardradius von 28px wäre auf 56px Höhe schon eine Kapsel gewesen und hätte im An genauso ausgesehen wie im Aus |
 | Form folgt dem Zustand | `shape_by_state: true` an einer Steckdose, dann schalten | An: Kachel eckig (Standardradius), Icon auf abgerundetem Quadrat. Aus: Kachel als Kapsel, Icon rund. Der Wechsel wird weich animiert |
 | Form ohne Animation | Dasselbe mit `animation: off` | Die beiden Formen stimmen weiterhin, der Wechsel springt aber ohne Übergang |
