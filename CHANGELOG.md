@@ -23,6 +23,33 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Home Assistant's own `vertical-stack` editor does (`hui-card-picker` /
   `hui-card-element-editor`), including search, favorites and
   paste-from-clipboard when adding a card.
+- **M3 Chip Buttons Card** (`m3-chip-buttons-card`) — a horizontal row of
+  tappable pill-shaped chips, one per entity, with tap/hold/double-tap
+  actions. The M3 answer to Bubble Card's "sub-buttons only" card: same core
+  idea, flatter configuration — one form per chip instead of several nested
+  panels, explicit Up/Down buttons to reorder instead of a dropdown menu. A
+  chip can be non-interactive (`interactive: false`) to act as a read-only
+  info readout (e.g. temperature/humidity).
+
+### Changed
+
+- **Entity/device/area registry lookups now read `hass.entities` /
+  `hass.devices` / `hass.areas` directly** instead of each discovery-driven
+  card (battery, room, lights/climate overview, etc.) firing its own
+  websocket round-trip for the same data. On a dashboard with several such
+  cards this cut N redundant registry fetches down to zero extra round-trips;
+  older frontends without these snapshots still fall back to the previous
+  `callWS` path. Raises the minimum Home Assistant version to 2024.4.0
+  (`hacs.json`) to match.
+
+### Fixed
+
+- **M3 Lights Overview Card — a popup could reopen itself indefinitely.**
+  The scoped popup card built for a room reset `hold_action`/
+  `double_tap_action` to avoid cascading, but still inherited `tap_action`
+  from the outer card. With `tap_action: popup` configured on the outer
+  card, tapping a light inside its own popup re-triggered "popup" instead of
+  toggling the light, opening another nested popup on top — repeatedly.
 
 ## [2.3.1]
 
