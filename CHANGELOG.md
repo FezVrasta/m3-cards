@@ -13,6 +13,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   radius while it is on, and the icon well going from a circle to a rounded
   square alongside. Animated, and off by default. It puts the state in a second
   channel, so a glance from across the room reads the shape before the colour.
+  The on-state radius defaults to 16px rather than the card's usual 28px, since
+  28px on a card one grid row tall is half its height and therefore a capsule
+  already — both states computed correctly and looked identical. An explicit
+  `radius` still wins.
 
 - **Nav card: the default colour follows the theme.** It was a fixed blue from
   the suite's palette, which under a Material You theme made the bar the one
@@ -214,7 +218,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   die Schnelleinstellungen eines Handys machen: Kapsel im Aus, der konfigurierte
   Eckenradius im An, und das Icon-Feld wandert dabei vom Kreis zum abgerundeten
   Quadrat. Animiert, standardmäßig aus. Der Zustand steht damit in einem zweiten
-  Kanal: aus einiger Entfernung liest man die Form vor der Farbe.
+  Kanal: aus einiger Entfernung liest man die Form vor der Farbe. Der Radius im
+  Ein-Zustand ist standardmäßig 16px statt der sonst üblichen 28px — 28px sind
+  auf einer Kachel von einer Rasterzeile Höhe die halbe Höhe und damit bereits
+  eine Kapsel, beide Zustände wurden also richtig berechnet und sahen doch gleich
+  aus. Ein ausdrücklich gesetzter `radius` gilt weiterhin.
 
 - **Nav-Karte: Die Standardfarbe folgt dem Theme.** Sie war ein festes Blau aus
   der Palette der Sammlung — unter einem Material-You-Theme also das einzige auf

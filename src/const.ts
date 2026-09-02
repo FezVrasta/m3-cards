@@ -121,6 +121,15 @@ export const DEFAULT_BUTTON_RADIUS = RADIUS.card;
  */
 export const BUTTON_SHAPE_OFF_RADIUS = 999;
 /**
+ * Corner radius while it is on, when the shape follows the state.
+ *
+ * Its own number rather than the card's usual radius, because that one is 28px
+ * — which on a card a single grid row tall is exactly half the height, and so
+ * already a capsule. Both states then computed correctly and looked identical.
+ * An explicit `radius` still wins; this is only the default while shaping.
+ */
+export const BUTTON_SHAPE_ON_RADIUS = 16;
+/**
  * Corner radius of the icon well while the entity is on, as a share of its own
  * size. A circle when off, a rounded square when on — the same pair of shapes
  * a phone's quick settings use, where the shape says as much as the colour.

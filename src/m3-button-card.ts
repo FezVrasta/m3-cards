@@ -13,6 +13,7 @@ import {
   DEFAULT_BUTTON_COLOR,
   DEFAULT_BUTTON_RADIUS,
   BUTTON_SHAPE_OFF_RADIUS,
+  BUTTON_SHAPE_ON_RADIUS,
   BUTTON_SHAPE_ON_ICON_RADIUS,
   BUTTON_SHAPE_MS,
   THEME_COLOR_TOKENS,
@@ -604,8 +605,10 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     // from across the room reads the outline before it reads the tint.
     const shaped = this._config.shape_by_state === true;
     const radius = resolveCornerRadius(
-      shaped && !active
-        ? BUTTON_SHAPE_OFF_RADIUS
+      shaped
+        ? active
+          ? (this._config.radius ?? BUTTON_SHAPE_ON_RADIUS)
+          : BUTTON_SHAPE_OFF_RADIUS
         : (this._config.radius ?? DEFAULT_BUTTON_RADIUS),
       this._config.corners,
     );
