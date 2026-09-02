@@ -3217,6 +3217,11 @@ sheet_cards:
     entity: light.wohnzimmer
 ```
 
+Eine Schublade ohne Inhalt — keine Kacheln, keine Karten, kein Titel — hat
+nichts aufzuziehen. Die Karte zeichnet dann eine schlichte schwebende Leiste
+statt eines Griffs, der ein leeres Fach öffnet, und der Editor sagt es, statt
+es einen beim Ziehen herausfinden zu lassen.
+
 Eine Aktion mit `confirmation` fragt vorher nach — gut zu wissen, bevor man
 „Home Assistant neu starten" einen Tipp weit weg legt. Gezogen wird am Griff oder
 mit einem Wisch von der Leiste nach oben; ein Tipp auf den Griff öffnet sie

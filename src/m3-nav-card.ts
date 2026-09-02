@@ -871,6 +871,24 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     return true;
   }
 
+  /**
+   * Whether the drawer has anything in it.
+   *
+   * A sheet with nothing configured draws a grip that opens an empty box, and
+   * from the outside that is indistinguishable from a broken one — reported as
+   * "I pull it and nothing happens". Without content the card renders as the
+   * floating bar it otherwise is, and the editor says why.
+   */
+  private get _sheetHasContent(): boolean {
+    const cfg = this._config;
+    return !!(
+      cfg?.sheet_items?.length ||
+      cfg?.sheet_cards?.length ||
+      cfg?.sheet_title ||
+      cfg?.sheet_action?.icon
+    );
+  }
+
   private get _sheetTarget(): CollapseTarget {
     // Cards carry no id, so the key is what identifies this sheet to a reader:
     // the page it is on and its own title.
@@ -1402,7 +1420,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     `;
 
     const body =
-      this._variant === "sheet"
+      this._variant === "sheet" && this._sheetHasContent
         ? html`
             <div
               class="sheet ${container} ${widthClass} ${animated ? "" : "no-animations"}"
@@ -1429,6 +1447,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
             ${this._t("nav_edit_entries").replace("{n}", String(items.length))}
           </span>
         </div>
+        ${this._variant === "sheet" && !this._sheetHasContent
+          ? html`<div class="edit-warn">${this._t("nav_sheet_empty")}</div>`
+          : nothing}
         ${body}
       </div>
       ${this._renderSubmenu()}
@@ -2047,6 +2068,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .edit-meta {
       font-weight: 400;
       opacity: 0.8;
+    }
+
+    .edit-warn {
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--error-color, #e57368);
+      opacity: 0.9;
     }
 
     .empty {

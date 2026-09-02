@@ -3144,6 +3144,11 @@ sheet_cards:
     entity: light.living_room
 ```
 
+A drawer with nothing in it — no tiles, no cards, no title — has nothing to
+pull open, so the card renders as a plain floating bar instead of a grip that
+opens an empty box. The editor says so rather than leaving it to be discovered
+by pulling.
+
 An action carrying a `confirmation` asks before it runs — worth knowing before
 putting "restart Home Assistant" one tap away. It is dragged by the grip, by a swipe up
 from the bar, or opened with a tap on the grip. A release goes to the nearest

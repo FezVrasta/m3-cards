@@ -101,40 +101,23 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   /**
-   * The width cap is two controls rather than one text field: a mode, and a
-   * number that only matters in one of the modes. A free-text field invited
-   * values that look plausible and are not — "fixed" was typed in place of
-   * "fit", stored happily, and produced a declaration the browser dropped, so
-   * the bar spanned the full width with nothing to show why.
+   * The width cap as one switch plus, only when it is actually in use, a
+   * number.
+   *
+   * It was a text field first, which invited values that look plausible and are
+   * not — "fixed" typed in place of "fit" produced a declaration the browser
+   * drops. Then a three-option dropdown, which named three concepts to answer
+   * one question. It is a switch now, because the question people are actually
+   * asking is "must this thing span my whole screen?" and that has two answers.
+   * A fixed pixel width is still honoured and still editable when a config
+   * carries one, but it is not offered to someone who never asked for it.
    */
-  private _widthMode(value: number | string | undefined): "full" | "fit" | "custom" {
-    if (value === undefined || value === "") return "full";
-    if (value === "fit" || value === "fit-content") return "fit";
-    return "custom";
-  }
-
-  private _widthPixels(value: number | string | undefined): number {
-    if (typeof value === "number") return value;
-    const parsed = Number.parseFloat(String(value ?? ""));
-    return Number.isFinite(parsed) ? parsed : 600;
+  private _isFit(value: number | string | undefined): boolean {
+    return value === "fit" || value === "fit-content";
   }
 
   private _widthSchema(): SchemaEntry[] {
-    return [
-      {
-        name: "width_mode",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [
-              { value: "full", label: this._t("editor_nav_width_full") },
-              { value: "fit", label: this._t("editor_nav_width_fit") },
-              { value: "custom", label: this._t("editor_nav_width_custom") },
-            ],
-          },
-        },
-      },
-    ];
+    return [{ name: "width_fit", selector: { boolean: {} } }];
   }
 
   private _widthPixelSchema(): SchemaEntry[] {
@@ -146,35 +129,38 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     ];
   }
 
-  /** Renders the mode select plus, in custom mode, the pixel slider. */
   private _renderWidth(
     value: number | string | undefined,
     apply: (next: number | string | undefined) => void,
+    withHint = true,
   ) {
-    const mode = this._widthMode(value);
+    const fit = this._isFit(value);
+    // A number already in the config stays visible, so switching the toggle off
+    // does not quietly throw someone's chosen width away.
+    const px = typeof value === "number" ? value : undefined;
     return html`
       <ha-form
         .hass=${this.hass}
-        .data=${{ width_mode: mode }}
+        .data=${{ width_fit: fit }}
         .schema=${this._widthSchema()}
         .computeLabel=${this._computeLabel}
         @value-changed=${(ev: CustomEvent) => {
-          const next = (ev.detail.value as { width_mode: string }).width_mode;
-          if (next === "full") apply(undefined);
-          else if (next === "fit") apply("fit");
-          else apply(this._widthPixels(value));
+          const on = (ev.detail.value as { width_fit: boolean }).width_fit === true;
+          apply(on ? "fit" : px);
         }}
       ></ha-form>
-      ${mode === "custom"
+      ${withHint ? html`<div class="hint">${this._t("editor_nav_width_hint")}</div>` : nothing}
+      ${px !== undefined
         ? html`
             <ha-form
               .hass=${this.hass}
-              .data=${{ width_px: this._widthPixels(value) }}
+              .data=${{ width_px: px }}
               .schema=${this._widthPixelSchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${(ev: CustomEvent) =>
                 apply((ev.detail.value as { width_px: number }).width_px)}
             ></ha-form>
+            <div class="hint">${this._t("editor_nav_width_px_hint")}</div>
           `
         : nothing}
     `;
@@ -650,7 +636,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
-      width_mode: "editor_nav_max_width",
+      width_fit: "editor_nav_width_fit",
       width_px: "editor_nav_max_width_px",
       size: "editor_nav_size",
       icon_size: "editor_nav_icon_size",
@@ -824,8 +810,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 .computeLabel=${this._layoutHiddenLabel}
                 @value-changed=${(ev: CustomEvent) => this._perWidthChanged("desktop", ev)}
               ></ha-form>
-              ${this._renderWidth(cfg.desktop?.max_width, (v) =>
-                this._perWidthWidth("desktop", v),
+              ${this._renderWidth(
+                cfg.desktop?.max_width,
+                (v) => this._perWidthWidth("desktop", v),
+                false,
               )}
             </div>
 
@@ -838,8 +826,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                 .computeLabel=${this._layoutHiddenLabel}
                 @value-changed=${(ev: CustomEvent) => this._perWidthChanged("mobile", ev)}
               ></ha-form>
-              ${this._renderWidth(cfg.mobile?.max_width, (v) =>
-                this._perWidthWidth("mobile", v),
+              ${this._renderWidth(
+                cfg.mobile?.max_width,
+                (v) => this._perWidthWidth("mobile", v),
+                false,
               )}
             </div>
             <div class="hint">${this._t("editor_nav_layout_hint")}</div>
@@ -964,7 +954,6 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               else next.max_width = v;
               this._emit(next);
             })}
-            <div class="hint">${this._t("editor_nav_max_width_hint")}</div>
             ${colorRow(this._t("editor_mode_color"), cfg.accent_color, (v) =>
               this._emit(
                 this._clean({ ...cfg, accent_color: v }) as unknown as M3NavCardConfig,
