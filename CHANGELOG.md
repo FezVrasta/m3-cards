@@ -8,6 +8,20 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: the bar sat on the gesture bar, not above it.** The card asked
+  for `env(safe-area-inset-bottom)`, which an Android WebView reports as 0 even
+  on a phone with gesture navigation. Home Assistant publishes the real value
+  as `--safe-area-inset-bottom`, fed by the companion app; the card reads that
+  now and keeps `env()` as the fallback for a plain browser.
+
+- **Nav card: the active entry could be scrolled out of sight.** A bar with
+  more entries than fit scrolls, and every view carries its own card — so
+  navigating built a fresh bar scrolled to the far left. If the entry for that
+  page sat past the right edge, the bar looked like it had jumped back to the
+  first entry and lost its highlight. The highlight was always correct, just
+  off-screen. The bar scrolls it into view now, and only when the page actually
+  changed, so scrolling through the entries by hand is never yanked back.
+
 - **Nav card: the active entry was one navigation behind.** Home Assistant
   keeps view elements in a cache and puts the same card back when you return to
   a view, and the card read the current path once, at construction. A card
@@ -23,6 +37,21 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Behoben
+
+- **Nav-Karte: Die Leiste saß auf dem Gestenbalken statt darüber.** Die Karte
+  hat `env(safe-area-inset-bottom)` gefragt, und das meldet ein Android-WebView
+  auch auf einem Handy mit Gestensteuerung als 0. Home Assistant veröffentlicht
+  den echten Wert als `--safe-area-inset-bottom`, gespeist von der Companion-App;
+  den liest die Karte jetzt, mit `env()` als Rückfall für einen normalen Browser.
+
+- **Nav-Karte: Der aktive Eintrag konnte außerhalb des Bildes liegen.** Eine
+  Leiste mit mehr Einträgen als Platz scrollt, und jede Ansicht bringt ihre
+  eigene Karte mit — beim Navigieren entstand also eine frische Leiste, ganz
+  links. Lag der Eintrag der Zielseite hinter dem rechten Rand, sah es aus, als
+  wäre die Leiste zum ersten Eintrag zurückgesprungen und hätte ihre Markierung
+  verloren. Die Markierung stimmte immer, sie war nur nicht zu sehen. Die Leiste
+  scrollt sie jetzt ins Bild, und nur bei einem echten Seitenwechsel — wer von
+  Hand durch die Einträge scrollt, wird nicht zurückgerissen.
 
 - **Nav-Karte: Der aktive Eintrag hinkte einen Schritt hinterher.** Home
   Assistant hält Ansichten in einem Cache und hängt beim Zurückkehren dieselbe

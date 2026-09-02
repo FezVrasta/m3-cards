@@ -180,6 +180,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   @state() private _narrow = false;
   /** Current URL path, kept as state so a navigation repaints the active entry. */
   @state() private _path = location.pathname;
+  /** Path the bar last scrolled its active entry into view for. */
+  private _scrolledFor?: string;
+  private _hasScrolledOnce = false;
   @state() private _pressed?: number;
   /** Set by auto_hide_on_scroll while the page is being scrolled down. */
   @state() private _autoHidden = false;
@@ -335,6 +338,47 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * was given, sidebar and column width already accounted for. Falling back to
    * the full width if anything is unexpected keeps the bar visible either way.
    */
+  /**
+   * Scrolls the active entry into view on a bar that is wider than the screen.
+   *
+   * Every view carries its own card, so navigating to a page builds a fresh
+   * bar that starts scrolled to the far left — and if the entry for that page
+   * sits past the right edge, the bar looks like it jumped back to the first
+   * entry and lost its highlight. The highlight was always right; it was just
+   * out of sight.
+   *
+   * Only ever runs when the active path changed, never on an unrelated
+   * re-render: a badge template ticking over must not yank the bar back while
+   * the reader is scrolling through it by hand.
+   */
+  private _keepActiveInView(): void {
+    if (this._scrolledFor === this._path) return;
+    const bar = this.renderRoot.querySelector<HTMLElement>(".bar");
+    const active = bar?.querySelector<HTMLElement>(".item.active");
+    if (!bar || !active) return;
+    // Nothing to scroll, so nothing to correct — and claiming this path as
+    // done would be wrong if the bar is still being laid out.
+    if (bar.scrollWidth - bar.clientWidth <= 1) return;
+    this._scrolledFor = this._path;
+
+    const barBox = bar.getBoundingClientRect();
+    const itemBox = active.getBoundingClientRect();
+    const target =
+      bar.scrollLeft +
+      (itemBox.left - barBox.left) -
+      (barBox.width - itemBox.width) / 2;
+    const max = bar.scrollWidth - bar.clientWidth;
+    const left = Math.max(0, Math.min(max, target));
+    if (Math.abs(left - bar.scrollLeft) < 1) return;
+
+    // The first paint jumps: an entry sliding into place while the page is
+    // still appearing reads as a glitch, not as motion.
+    const smooth =
+      this._hasScrolledOnce && shouldAnimate(this._config?.animation);
+    this._hasScrolledOnce = true;
+    bar.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
+  }
+
   private _measureDock = (): void => {
     const rect = this._contentRect();
     if (!rect) return;
@@ -444,6 +488,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // this does not listen on still corrects itself on the next render, and a
     // string comparison per update costs nothing.
     if (this._path !== location.pathname) this._path = location.pathname;
+    this._keepActiveInView();
     // The first measurement can land before the view has laid itself out, and
     // the observer only fires on a later change — which for a slot that never
     // resizes again never comes. Re-reading it per render is two rect reads.
@@ -1838,14 +1883,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       border-right: none;
       opacity: var(--nav-opacity, 1);
       padding-bottom: calc(
-        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + env(safe-area-inset-bottom, 0px)
+        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
       );
     }
 
     :host([variant="header"]) .bar {
       padding-bottom: calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1));
       padding-top: calc(
-        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + env(safe-area-inset-top, 0px)
+        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
       );
     }
 
@@ -1855,7 +1900,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       /* The home bar on an iPhone sits exactly where a bottom-docked bar wants
          to be, so the inset is added to the margin rather than to the padding —
          the bar moves up instead of growing a dead strip. */
-      margin-bottom: calc(${NAV_FLOAT_INSET}px + env(safe-area-inset-bottom, 0px));
+      margin-bottom: calc(${NAV_FLOAT_INSET}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
       border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
       opacity: var(--nav-opacity, 1);
     }
@@ -2052,7 +2097,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     :host([variant="floating"]) .bar-row,
     :host([variant="sheet"]) .bar-row {
       margin: ${NAV_FLOAT_INSET}px;
-      margin-bottom: calc(${NAV_FLOAT_INSET}px + env(safe-area-inset-bottom, 0px));
+      margin-bottom: calc(${NAV_FLOAT_INSET}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
     }
 
     :host([variant="floating"]) .bar-row .bar,
@@ -2097,7 +2142,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       flex-direction: column;
       overflow: hidden;
       margin: ${NAV_FLOAT_INSET}px;
-      margin-bottom: calc(${NAV_FLOAT_INSET}px + env(safe-area-inset-bottom, 0px));
+      margin-bottom: calc(${NAV_FLOAT_INSET}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
       border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
       opacity: var(--nav-opacity, 1);
       color: var(--nav-ink, var(--primary-text-color));
