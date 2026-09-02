@@ -1650,6 +1650,15 @@ export const NAV_PRESS_MS = 200;
 /** How long the marker takes to travel from one entry to the next. */
 export const NAV_MARKER_SLIDE_MS = 280;
 
+/**
+ * Default length of the page cross-fade.
+ *
+ * The browser's own default is 250ms, which reads as slow for a change the
+ * reader asked for and expects to have happened already. Navigation should feel
+ * immediate and merely not jump.
+ */
+export const NAV_PAGE_FADE_MS = 180;
+
 /** `segmented` is one pill holding the entries, so its own frame is tighter. */
 export const NAV_SEGMENT_HEIGHT = 44;
 export const NAV_SEGMENT_RADIUS = 22;

@@ -1724,6 +1724,7 @@ const translations = {
     editor_nav_size: "Gesamtgröße der Leiste",
     editor_nav_icon_size: "Icon-Größe (px)",
     editor_nav_page_transition: "Übergang beim Seitenwechsel",
+    editor_nav_page_transition_ms: "Dauer des Übergangs (ms)",
     editor_nav_page_transition_none: "Ohne — die neue Seite ist sofort da",
     editor_nav_page_transition_fade: "Überblenden — die Seiten gehen ineinander über",
     editor_nav_page_transition_helper:
@@ -3512,6 +3513,7 @@ const translations = {
     editor_nav_size: "Overall size of the bar",
     editor_nav_icon_size: "Icon size (px)",
     editor_nav_page_transition: "Page change transition",
+    editor_nav_page_transition_ms: "Transition length (ms)",
     editor_nav_page_transition_none: "None — the new page is simply there",
     editor_nav_page_transition_fade: "Cross-fade — the pages blend into each other",
     editor_nav_page_transition_helper:

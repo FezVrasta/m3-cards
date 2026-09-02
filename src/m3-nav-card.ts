@@ -55,6 +55,7 @@ import {
   NAV_ITEM_TINT,
   NAV_PRESS_MS,
   NAV_MARKER_SLIDE_MS,
+  NAV_PAGE_FADE_MS,
   NAV_SEGMENT_HEIGHT,
   NAV_SEGMENT_ITEM_RADIUS,
   NAV_SEGMENT_PADDING,
@@ -161,6 +162,28 @@ const SWIPE_EVENTS = [
  * the point is that the bar on the next page picks up where the one on this
  * page left off, and they are different elements in different views.
  */
+/**
+ * Sets how long the page cross-fade runs.
+ *
+ * A view transition animates `::view-transition-old(root)` and its twin, which
+ * live on the document root and cannot be reached from inside a shadow root —
+ * so this is the one thing the card has to write into the page itself. One
+ * element, rewritten in place, never more than one.
+ */
+function setPageFadeDuration(ms: number): void {
+  const id = "m3-nav-page-fade";
+  let style = document.getElementById(id) as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.id = id;
+    document.head.appendChild(style);
+  }
+  style.textContent =
+    `::view-transition-old(root), ::view-transition-new(root) {` +
+    ` animation-duration: ${ms}ms; }`;
+}
+
+
 const barScrollMemory = new Map<string, number>();
 
 const connectedSheets = new Set<M3NavCard>();
@@ -808,6 +831,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       run();
       return;
     }
+    setPageFadeDuration(this._config?.page_transition_ms ?? NAV_PAGE_FADE_MS);
     start.call(document, async () => {
       run();
       // The router puts the new view in place a frame or two later, and the

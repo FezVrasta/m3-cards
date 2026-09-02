@@ -2053,6 +2053,8 @@ export interface M3NavCardConfig {
    * browser's view-transition support and falls back to a plain navigation.
    */
   page_transition?: NavPageTransition;
+  /** How long the page cross-fade runs, in ms. */
+  page_transition_ms?: number;
   /**
    * Distance in px between the bar and the edge of the screen it docks to.
    * Added on top of the device's own safe area, never instead of it — the

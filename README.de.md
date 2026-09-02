@@ -3309,6 +3309,7 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `action_button` | — | `{icon, tap_action, color}` — ein runder Knopf neben der Leiste, außerhalb ihrer Fläche |
 | `max_width` | — | Breitenbegrenzung, mittig. Zahl = px, Text = CSS-Länge, `fit` = so breit wie die Einträge |
 | `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
+| `page_transition_ms` | `180` | Dauer dieser Überblendung. Die Browser-Voreinstellung von 250 ms wirkt träge für einen Wechsel, den man selbst ausgelöst hat |
 | `marker_motion` | `none` | `none` oder `slide` — ob eine einzelne Fläche zwischen den Einträgen wandert statt zweier, die ein- und ausblenden |
 | `page_transition` | `none` | `none` oder `fade` — blendet beim Navigieren über die Leiste die ganze Seite über, wo der Browser View-Transitions kann |
 | `pill_size` | `1` | Skaliert allein die Markierung um den aktiven Eintrag, ohne Icon oder Text anzufassen |

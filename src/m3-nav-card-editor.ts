@@ -628,6 +628,14 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         },
       },
       {
+        name: "page_transition_ms",
+        selector: { number: { min: 80, max: 600, step: 10, mode: "slider" } },
+      },
+      {
+        name: "page_transition_ms",
+        selector: { number: { min: 80, max: 600, step: 10, mode: "slider" } },
+      },
+      {
         name: "marker_motion",
         selector: {
           select: {
@@ -973,6 +981,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       pill_size: "editor_nav_pill_size",
       marker_motion: "editor_nav_marker_motion",
       page_transition: "editor_nav_page_transition",
+      page_transition_ms: "editor_nav_page_transition_ms",
       edge_distance: "editor_nav_edge_distance",
       close_icon: "editor_nav_close_icon",
       action_button_on: "editor_nav_action_button_on",
@@ -1484,6 +1493,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                   .data=${{
                     icon_size: cfg.icon_size ?? 22,
                     page_transition: cfg.page_transition ?? "none",
+                    page_transition_ms: cfg.page_transition_ms ?? 180,
                     marker_motion: cfg.marker_motion ?? "none",
                     pill_size: cfg.pill_size ?? 1,
                     label_size:

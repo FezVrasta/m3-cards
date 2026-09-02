@@ -3235,6 +3235,7 @@ without a breaking config change.
 | `action_button` | — | `{icon, tap_action, color}` — a round button set beside the bar, outside its surface |
 | `max_width` | — | Width cap, centred. A number is px, a string any CSS length, `fit` hugs the entries |
 | `size` | `1` | Scales every measurement, 0.7–1.5 |
+| `page_transition_ms` | `180` | Length of that cross-fade. The browser's own default of 250ms reads as slow for a change the reader just asked for |
 | `marker_motion` | `none` | `none` or `slide` — whether one shape travels between entries instead of two fading |
 | `page_transition` | `none` | `none` or `fade` — cross-fades the whole page when navigating from the bar, where the browser supports view transitions |
 | `pill_size` | `1` | Scales the marker around the active entry on its own, without touching the icon or the text |

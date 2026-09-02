@@ -15,6 +15,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   argue for, so it defaults to `primary` now, like the button card.
   `accent_color` and per-entry `color` are unchanged.
 
+- **Nav card: `page_transition_ms`** — how long that cross-fade runs, defaulting
+  to 180ms rather than the browser's 250ms, which reads as slow for a change the
+  reader just asked for. Written as a single style element on the document,
+  because the pseudo-elements a view transition animates live on the root and
+  cannot be reached from a shadow root.
+
 - **Nav card: `page_transition`** — cross-fades the whole page when a navigation
   starts from the bar. The card cannot animate Home Assistant's view swap from
   the outside, but it is what starts the swap, and a view transition wraps
@@ -197,6 +203,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Navigation ist der Rahmen um alles andere und hat keinen eigenen Farbton zu
   vertreten; der Standard ist jetzt `primary`, wie bei der Button-Karte.
   `accent_color` und die Farbe je Eintrag bleiben unverändert.
+
+- **Nav-Karte: `page_transition_ms`** — wie lange diese Überblendung läuft,
+  standardmäßig 180 ms statt der 250 ms des Browsers, die für einen selbst
+  ausgelösten Wechsel träge wirken. Als einzelnes Style-Element im Dokument
+  hinterlegt, weil die Pseudo-Elemente einer View-Transition am Wurzelelement
+  hängen und aus einem Shadow Root nicht erreichbar sind.
 
 - **Nav-Karte: `page_transition`** — blendet die ganze Seite über, wenn die
   Navigation von der Leiste ausgeht. Die Karte kann den Ansichtswechsel von Home
