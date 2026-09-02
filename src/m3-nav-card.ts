@@ -886,7 +886,34 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const wrapper = this.parentElement as unknown as
       | { editMode?: boolean; preview?: boolean }
       | null;
-    return !!(wrapper?.editMode || wrapper?.preview);
+    if (wrapper?.editMode || wrapper?.preview) return true;
+    return this._dashboardEditMode();
+  }
+
+  /**
+   * Whether the dashboard as a whole is being edited, read from the element
+   * that actually owns that state.
+   *
+   * The flags on the card and its immediate wrapper are the documented way and
+   * they cover the card picker's preview, but they are not set in every edit
+   * context — a card that trusted only those stayed docked to the screen while
+   * the view around it was in edit mode, so its slot in the grid was empty and
+   * there was nothing to click. Walking up to the Lovelace root and asking it
+   * is the authoritative answer; anything unexpected on the way just means the
+   * card falls back to the flags above.
+   */
+  private _dashboardEditMode(): boolean {
+    let node: Node | null = this;
+    for (let depth = 0; depth < 14 && node; depth++) {
+      const lovelace = (node as { lovelace?: { editMode?: boolean } }).lovelace;
+      if (lovelace && typeof lovelace.editMode === "boolean") return lovelace.editMode;
+      const parent: Node | null =
+        (node as Element).parentElement ??
+        ((node as unknown as { parentNode?: Node }).parentNode ?? null);
+      node =
+        parent && (parent as ShadowRoot).host ? (parent as ShadowRoot).host : parent;
+    }
+    return false;
   }
 
   /** Whether this instance is the one that gets to dock to the screen. */
