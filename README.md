@@ -7,7 +7,7 @@
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
 `button-card`, `card-mod`, `mod-card`, or `stack-in-card`. A single bundle
-(`m3-cards.js`) registers **35 cards**, all sharing one design language.
+(`m3-cards.js`) registers **36 cards**, all sharing one design language.
 
 New here? Start with the category that matches what you want to show — every
 card links to its full documentation further down.
@@ -2966,6 +2966,231 @@ heading that already says Today the badge would say nothing.
 | `show_next_chip` | `false` | Header chip with the next event and how far off it is |
 | `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
 | `navigation_path` | `/calendar` | Where `navigate` goes, and the dialog's button |
+
+## M3 Nav Card
+
+A navigation bar for the dashboard: one row of entries that light up for the
+page you are on. Five variants of the same bar, from a plain header to a
+drawer you pull up over the view, plus per-entry badges, templates and
+submenus — the feature set of the community's Navbar Card, drawn in this
+suite's own design language rather than in its.
+
+```yaml
+type: custom:m3-nav-card
+style: footer          # header | footer | segmented | floating | sheet
+items:
+  - name: Home
+    icon: mdi:home
+    path: /lovelace/0
+  - name: Energy
+    icon: mdi:flash
+    path: /lovelace/energy
+  - name: Garden
+    icon: mdi:sprout
+    path: /lovelace/garden
+```
+
+### The five variants
+
+| Variant | What it is | When it is the right one |
+| --- | --- | --- |
+| `header` | Docked to the top edge, full width | A desktop dashboard where the bar belongs with the title, not with the thumb |
+| `footer` | Docked to the bottom edge, full width | The phone default: where a thumb already is |
+| `segmented` | An inline pill group, in the card flow | A view switcher for one section, not for the dashboard — the only variant that scrolls with the page |
+| `floating` | A detached rounded bar over the content | The same job as `footer`, with the content visible underneath it |
+| `sheet` | `floating` plus a drawer that pulls up | When the bar should also hold something: shortcuts, a scene, a card |
+
+`header`, `footer`, `floating` and `sheet` position themselves against the
+screen, so their slot in the grid collapses and they do not take a row of the
+view. `segmented` is an ordinary card and sits wherever it is placed.
+
+### Desktop and mobile
+
+The usual pairing is a header on a wide screen and a footer or sheet on a
+phone, which is two layouts of one card rather than two cards:
+
+```yaml
+type: custom:m3-nav-card
+desktop:
+  style: header
+mobile:
+  style: sheet
+breakpoint: 768
+items: [...]
+```
+
+The switch is made by measuring the card's **own** box, not the window. A card
+in a narrow column on a wide screen is narrow, which is what a media query
+would get wrong. Either block can also hide the bar outright at that width
+(`hidden: true`), and either can override `show_labels`.
+
+### Templates
+
+`name`, `icon`, `color`, `hidden`, `disabled` and the badge accept Jinja2, and
+subscribe to it — the value is pushed by Home Assistant whenever anything the
+template reads changes, rather than polled or re-rendered on a timer:
+
+```yaml
+items:
+  - name: "{{ states('sensor.garden_mode') | title }}"
+    icon: >-
+      {{ 'mdi:water' if is_state('switch.irrigation', 'on') else 'mdi:sprout' }}
+    path: /lovelace/garden
+    hidden: "{{ not is_state('person.me', 'home') }}"
+```
+
+Only fields that actually contain `{{` or `{%` open a subscription, and two
+entries using the identical template share one. They are all closed when the
+card leaves the page.
+
+### Badges
+
+```yaml
+items:
+  - name: Alerts
+    icon: mdi:bell
+    path: /lovelace/alerts
+    badge:
+      count_entities: [binary_sensor.leak_kitchen, binary_sensor.leak_bath]
+    badge_style: count       # dot | count | text
+```
+
+A badge takes a `template`, an `entity` whose state it shows, or
+`count_entities` — how many of them are on. Whichever it is, `0`, `off`,
+`unavailable`, `unknown` and an empty value hide it: a bar of grey zeroes
+reads as broken rather than as quiet. `show_if` gates it on a second template.
+
+### Submenus
+
+An entry with a `submenu` opens a floating menu instead of navigating. It
+grows out of the button that opened it and closes on a selection, a click
+outside, or Escape.
+
+```yaml
+submenu_trigger: tap     # tap | hold
+items:
+  - name: More
+    icon: mdi:dots-horizontal
+    submenu:
+      - name: Printer
+        icon: mdi:printer-3d
+        path: /lovelace/printer
+      - name: Network
+        icon: mdi:lan
+        path: /lovelace/network
+```
+
+With `submenu_trigger: hold` the entry navigates on a tap as usual and the
+menu comes up on a long press instead — which is the right way round when the
+entry is a real destination and the menu is a shortcut to its neighbours.
+
+### The sheet
+
+```yaml
+type: custom:m3-nav-card
+style: sheet
+sheet_title: Quick access
+sheet_action:
+  icon: mdi:plus
+  tap_action:
+    action: navigate
+    navigation_path: /lovelace/edit
+sheet_default: collapsed   # collapsed | expanded | remember
+sheet_max_height: 60       # vh, or any CSS length as a string
+snap_points: [0, 0.5, 1]   # optional half-open stop
+sheet_cards:
+  - type: custom:m3-button-card
+    entity: light.living_room
+items: [...]
+```
+
+The drawer holds any Lovelace cards. It is dragged by the grip, by a swipe up
+from the bar, or opened with a tap on the grip. A release goes to the nearest
+stop — unless it was a flick, which goes the way it was thrown whatever
+position the sheet was in at the time.
+
+Dragging **inside** the drawer is the interesting case: the content scrolls
+normally, and the sheet only takes the gesture over when the content is
+already scrolled to the top and the finger is going down. That is what every
+native bottom sheet does, and it is the reason the browser's own scrolling —
+including its momentum, which no JavaScript reimplementation matches — is left
+alone everywhere else.
+
+`sheet_default: remember` keeps the open state per browser, or in an
+`input_boolean` via `sheet_state_entity`, which syncs it between devices and
+lets an automation open the drawer. Under a 600px-tall viewport (a phone in
+landscape) the height cap drops to 50vh, or the drawer would leave nothing of
+the page it is a drawer for.
+
+Two limits worth knowing. In edit mode the sheet renders inline and pinned
+open, because a drawer docked to the screen covers the card the editor is
+trying to show. And only the first sheet on a view docks itself: a second one
+would sit on top of the first with no way to tell which grip belongs to which,
+so it renders inline instead.
+
+### Visibility
+
+`hidden` takes a Jinja2 template and drops the whole bar while it is true. For
+visibility by user, device or screen size, use Home Assistant's own visibility
+feature in the card editor — it already does exactly that for every card, and
+a second implementation inside this one would only fight it.
+
+### Migrating from Navbar Card
+
+| Navbar Card | Here |
+| --- | --- |
+| `routes` | `items` |
+| `routes[].url` | `items[].path` |
+| `routes[].label` | `items[].name` |
+| `routes[].icon` / `icon_selected` | `items[].icon` (a template can switch it) |
+| `routes[].badge.template` | `items[].badge.template` |
+| `routes[].badge.color` | `items[].badge.color` |
+| `routes[].submenu` | `items[].submenu` |
+| `routes[].hidden` | `items[].hidden` |
+| `routes[].tap_action` / `hold_action` | same names |
+| `desktop.position: top/bottom` | `desktop.style: header/footer` |
+| `desktop.show_labels` | `desktop.show_labels`, or `label_visibility` |
+| `desktop.min_width` | `breakpoint` (the card's width, not the window's) |
+| `mobile.show_labels` | `mobile.show_labels` |
+| `styles` (free CSS) | `styles` (a property/value map) |
+| `template` for a whole route list | — no equivalent; entries are configured, individually templated |
+| `haptic` | `haptics` |
+
+`preload_views` is accepted and stored but currently does nothing: Home
+Assistant gives a custom card no way to warm another view, and the only
+workaround — navigating there invisibly and back — would flicker and leave a
+bogus history entry. The option is kept so a future version can implement it
+without a breaking config change.
+
+### Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `items` | — | The entries. Each: `name`, `icon`, `path`, `match`, `color`, `badge`, `badge_style`, `hidden`, `disabled`, `submenu`, `tap_action`, `hold_action`, `double_tap_action` |
+| `style` | `footer` | `header`, `footer`, `segmented`, `floating`, `sheet` |
+| `position` | per variant | `top` or `bottom`, for the detached variants |
+| `desktop` / `mobile` | — | Per-width overrides: `style`, `position`, `show_labels`, `hidden` |
+| `breakpoint` | `768` | Card width below which `mobile` applies |
+| `label_visibility` | `always` | `always`, `active_only`, `never` |
+| `size` | `1` | Scales every measurement, 0.7–1.5 |
+| `container_style` | `glass` | `glass`, `solid`, `transparent` |
+| `container_opacity` | `100` | Opacity of the bar, in percent |
+| `blur` | `20` | Backdrop blur in px |
+| `radius` | `30` | Corner radius of the detached variants |
+| `submenu_trigger` | `tap` | `tap` or `hold` |
+| `haptics` | `true` | Fire Home Assistant's haptic event on a tap |
+| `auto_hide_on_scroll` | `false` | Hide while scrolling down, show on the way up |
+| `hidden` | — | Jinja2 boolean; hides the whole card |
+| `styles` | — | Free CSS applied to the bar. Advanced |
+| `sheet_cards` | — | Cards rendered in the drawer |
+| `sheet_title` | — | Title row above the drawer's content |
+| `sheet_action` | — | `{icon, tap_action}` button on the right of that row |
+| `sheet_max_height` | `60` | vh as a number, or any CSS length as a string |
+| `sheet_default` | `collapsed` | `collapsed`, `expanded`, `remember` |
+| `sheet_state_entity` | — | An `input_boolean` holding the open state |
+| `snap_points` | `[0, 1]` | Fractions the drawer rests at |
+| `collapse_on_navigate` | `true` | Close the drawer when the page changes |
+| `preload_views` | `false` | Reserved; currently does nothing |
 
 ## License
 

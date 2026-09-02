@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **35 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **36 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
@@ -3034,6 +3034,235 @@ ohne Aussage.
 | `show_next_chip` | `false` | Chip in der Kopfzeile mit dem nächsten Termin |
 | `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
 | `navigation_path` | `/calendar` | Ziel von `navigate` und des Knopfs im Detailfenster |
+
+## M3 Nav Card
+
+Eine Navigationsleiste fürs Dashboard: eine Reihe Einträge, von denen der zur
+aktuellen Seite gehörende leuchtet. Fünf Varianten derselben Leiste, von einer
+schlichten Kopfzeile bis zu einem Sheet, das man über die Ansicht zieht — dazu
+Badges, Templates und Untermenüs je Eintrag. Der Funktionsumfang der Navbar
+Card aus der Community, gezeichnet in der Formensprache dieser Sammlung statt
+in ihrer.
+
+```yaml
+type: custom:m3-nav-card
+style: footer          # header | footer | segmented | floating | sheet
+items:
+  - name: Home
+    icon: mdi:home
+    path: /lovelace/0
+  - name: Energie
+    icon: mdi:flash
+    path: /lovelace/energie
+  - name: Garten
+    icon: mdi:sprout
+    path: /lovelace/garten
+```
+
+### Die fünf Varianten
+
+| Variante | Was sie ist | Wann sie die richtige ist |
+| --- | --- | --- |
+| `header` | Oben angedockt, volle Breite | Ein Desktop-Dashboard, wo die Leiste zum Titel gehört und nicht zum Daumen |
+| `footer` | Unten angedockt, volle Breite | Die Vorgabe fürs Handy: dort, wo der Daumen ohnehin ist |
+| `segmented` | Eine Pille im Kartenfluss | Ein Umschalter für einen Abschnitt, nicht fürs Dashboard — die einzige Variante, die mitscrollt |
+| `floating` | Eine abgesetzte runde Leiste über dem Inhalt | Dieselbe Aufgabe wie `footer`, nur mit sichtbarem Inhalt darunter |
+| `sheet` | `floating` plus aufziehbare Schublade | Wenn die Leiste auch etwas halten soll: Kurzbefehle, eine Szene, eine Karte |
+
+`header`, `footer`, `floating` und `sheet` positionieren sich gegen den
+Bildschirm; ihr Platz im Raster fällt zusammen, sie kosten also keine Zeile der
+Ansicht. `segmented` ist eine ganz normale Karte und steht, wo sie steht.
+
+### Desktop und Handy
+
+Die übliche Paarung ist Kopfzeile am großen Bildschirm, Fußzeile oder Sheet am
+Handy — zwei Layouts einer Karte, nicht zwei Karten:
+
+```yaml
+type: custom:m3-nav-card
+desktop:
+  style: header
+mobile:
+  style: sheet
+breakpoint: 768
+items: [...]
+```
+
+Umgeschaltet wird anhand der **eigenen** Breite der Karte, nicht der des
+Fensters. Eine Karte in einer schmalen Spalte auf einem breiten Bildschirm ist
+schmal — genau das würde eine Media Query falsch beantworten. Beide Blöcke
+können die Leiste auf ihrer Breite auch ganz ausblenden (`hidden: true`) und
+`show_labels` überschreiben.
+
+### Templates
+
+`name`, `icon`, `color`, `hidden`, `disabled` und der Badge nehmen Jinja2 —
+und abonnieren es: Home Assistant schiebt den neuen Wert, sobald sich etwas
+ändert, das im Template vorkommt. Kein Pollen, kein Neurendern auf Verdacht:
+
+```yaml
+items:
+  - name: "{{ states('sensor.gartenmodus') | title }}"
+    icon: >-
+      {{ 'mdi:water' if is_state('switch.bewaesserung', 'on') else 'mdi:sprout' }}
+    path: /lovelace/garten
+    hidden: "{{ not is_state('person.ich', 'home') }}"
+```
+
+Nur Felder, in denen wirklich `{{` oder `{%` steht, öffnen ein Abo, und zwei
+Einträge mit identischem Template teilen sich eines. Alle werden geschlossen,
+sobald die Karte die Seite verlässt.
+
+### Badges
+
+```yaml
+items:
+  - name: Meldungen
+    icon: mdi:bell
+    path: /lovelace/meldungen
+    badge:
+      count_entities: [binary_sensor.leck_kueche, binary_sensor.leck_bad]
+    badge_style: count       # dot | count | text
+```
+
+Ein Badge nimmt ein `template`, eine `entity`, deren Zustand er zeigt, oder
+`count_entities` — dann zählt er, wie viele davon an sind. In jedem Fall
+blenden `0`, `off`, `unavailable`, `unknown` und ein leerer Wert ihn aus: eine
+Leiste voller grauer Nullen wirkt kaputt, nicht ruhig. `show_if` hängt ihn an
+ein zweites Template.
+
+### Untermenüs
+
+Ein Eintrag mit `submenu` öffnet ein schwebendes Menü, statt zu navigieren. Es
+wächst aus dem Knopf heraus, der es geöffnet hat, und schließt bei Auswahl,
+Klick daneben oder Escape.
+
+```yaml
+submenu_trigger: tap     # tap | hold
+items:
+  - name: Mehr
+    icon: mdi:dots-horizontal
+    submenu:
+      - name: Drucker
+        icon: mdi:printer-3d
+        path: /lovelace/drucker
+      - name: Netzwerk
+        icon: mdi:lan
+        path: /lovelace/netzwerk
+```
+
+Mit `submenu_trigger: hold` navigiert ein Tipp wie gewohnt und das Menü kommt
+beim langen Drücken — herum, wie es sein sollte, wenn der Eintrag selbst ein
+echtes Ziel ist und das Menü nur die Abkürzung zu seinen Nachbarn.
+
+### Das Sheet
+
+```yaml
+type: custom:m3-nav-card
+style: sheet
+sheet_title: Schnellzugriff
+sheet_action:
+  icon: mdi:plus
+  tap_action:
+    action: navigate
+    navigation_path: /lovelace/edit
+sheet_default: collapsed   # collapsed | expanded | remember
+sheet_max_height: 60       # vh, oder jede CSS-Länge als Text
+snap_points: [0, 0.5, 1]   # optionale Zwischenstufe
+sheet_cards:
+  - type: custom:m3-button-card
+    entity: light.wohnzimmer
+items: [...]
+```
+
+Die Schublade nimmt beliebige Lovelace-Karten auf. Gezogen wird am Griff oder
+mit einem Wisch von der Leiste nach oben; ein Tipp auf den Griff öffnet sie
+ebenfalls. Beim Loslassen geht sie zum nächstgelegenen Rastpunkt — außer es
+war ein Schwung, dann geht sie in die geworfene Richtung, egal wo sie gerade
+stand.
+
+Der interessante Fall ist das Ziehen **im** Inhalt: der scrollt ganz normal,
+und das Sheet übernimmt die Geste nur dann, wenn der Inhalt schon ganz oben
+steht und der Finger nach unten geht. Genau so verhält sich jedes native
+Bottom Sheet — und deshalb bleibt das Scrollen des Browsers samt seiner
+Trägheit, die keine JavaScript-Nachbildung trifft, überall sonst unangetastet.
+
+`sheet_default: remember` merkt sich den Zustand je Browser, oder in einem
+`input_boolean` über `sheet_state_entity` — dann synchron über Geräte hinweg,
+und eine Automatisierung kann die Schublade öffnen. Unter 600px Fensterhöhe
+(Handy im Querformat) sinkt die Höhenbegrenzung auf 50vh, sonst bliebe von der
+Seite, für die die Schublade da ist, nichts übrig.
+
+Zwei Grenzen sind wichtig. Im Bearbeiten-Modus wird das Sheet im Kartenfluss
+und aufgeklappt gezeichnet, weil eine am Bildschirm angedockte Schublade genau
+die Karte verdeckt, die der Editor gerade zeigen will. Und nur das erste Sheet
+einer Ansicht dockt an: ein zweites läge über dem ersten, ohne dass man sähe,
+welcher Griff zu welchem gehört — es wird deshalb inline gezeichnet.
+
+### Sichtbarkeit
+
+`hidden` nimmt ein Jinja2-Template und lässt die ganze Leiste weg, solange es
+wahr ist. Für Sichtbarkeit nach Nutzer, Gerät oder Bildschirmgröße gibt es die
+eingebaute Sichtbarkeits-Funktion von Home Assistant im Karten-Editor — die
+kann das längst für jede Karte, und eine zweite Umsetzung in dieser hier würde
+ihr nur in die Quere kommen.
+
+### Umstieg von der Navbar Card
+
+| Navbar Card | Hier |
+| --- | --- |
+| `routes` | `items` |
+| `routes[].url` | `items[].path` |
+| `routes[].label` | `items[].name` |
+| `routes[].icon` / `icon_selected` | `items[].icon` (ein Template kann umschalten) |
+| `routes[].badge.template` | `items[].badge.template` |
+| `routes[].badge.color` | `items[].badge.color` |
+| `routes[].submenu` | `items[].submenu` |
+| `routes[].hidden` | `items[].hidden` |
+| `routes[].tap_action` / `hold_action` | gleiche Namen |
+| `desktop.position: top/bottom` | `desktop.style: header/footer` |
+| `desktop.show_labels` | `desktop.show_labels`, oder `label_visibility` |
+| `desktop.min_width` | `breakpoint` (Breite der Karte, nicht des Fensters) |
+| `mobile.show_labels` | `mobile.show_labels` |
+| `styles` (freies CSS) | `styles` (eine Eigenschaft/Wert-Zuordnung) |
+| `template` für eine ganze Routenliste | — kein Gegenstück; Einträge werden konfiguriert und einzeln getemplatet |
+| `haptic` | `haptics` |
+
+`preload_views` wird angenommen und gespeichert, tut aber derzeit nichts: Home
+Assistant bietet einer Karte keinen Weg, eine andere Ansicht vorzuwärmen, und
+der einzige Behelf — unsichtbar hin- und zurücknavigieren — würde flackern und
+einen falschen Verlaufseintrag hinterlassen. Die Option bleibt, damit eine
+spätere Version sie ohne Konfigurationsbruch umsetzen kann.
+
+### Optionen
+
+| Option | Vorgabe | Wirkung |
+| --- | --- | --- |
+| `items` | — | Die Einträge. Je: `name`, `icon`, `path`, `match`, `color`, `badge`, `badge_style`, `hidden`, `disabled`, `submenu`, `tap_action`, `hold_action`, `double_tap_action` |
+| `style` | `footer` | `header`, `footer`, `segmented`, `floating`, `sheet` |
+| `position` | je Variante | `top` oder `bottom`, für die abgesetzten Varianten |
+| `desktop` / `mobile` | — | Überschreibungen je Breite: `style`, `position`, `show_labels`, `hidden` |
+| `breakpoint` | `768` | Kartenbreite, unter der `mobile` gilt |
+| `label_visibility` | `always` | `always`, `active_only`, `never` |
+| `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
+| `container_style` | `glass` | `glass`, `solid`, `transparent` |
+| `container_opacity` | `100` | Deckkraft der Leiste in Prozent |
+| `blur` | `20` | Weichzeichnen des Hintergrunds in px |
+| `radius` | `30` | Eckenradius der abgesetzten Varianten |
+| `submenu_trigger` | `tap` | `tap` oder `hold` |
+| `haptics` | `true` | Haptik-Event von Home Assistant beim Tippen auslösen |
+| `auto_hide_on_scroll` | `false` | Beim Runterscrollen ausblenden, beim Hochscrollen zurück |
+| `hidden` | — | Jinja2-Boolean; blendet die ganze Karte aus |
+| `styles` | — | Freies CSS für die Leiste. Für Fortgeschrittene |
+| `sheet_cards` | — | Karten in der Schublade |
+| `sheet_title` | — | Titelzeile über dem Inhalt der Schublade |
+| `sheet_action` | — | `{icon, tap_action}`-Knopf rechts in dieser Zeile |
+| `sheet_max_height` | `60` | vh als Zahl, oder jede CSS-Länge als Text |
+| `sheet_default` | `collapsed` | `collapsed`, `expanded`, `remember` |
+| `sheet_state_entity` | — | Ein `input_boolean` mit dem Offen-Zustand |
+| `snap_points` | `[0, 1]` | Anteile, bei denen die Schublade einrastet |
+| `collapse_on_navigate` | `true` | Schublade beim Seitenwechsel schließen |
+| `preload_views` | `false` | Reserviert; tut derzeit nichts |
 
 ## Lizenz
 

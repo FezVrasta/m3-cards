@@ -1,0 +1,1634 @@
+import { LitElement, html, css, nothing, unsafeCSS } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import type {
+  HaActionConfig,
+  HomeAssistant,
+  LovelaceCard,
+  LovelaceCardEditor,
+  LovelaceGridOptions,
+  M3NavCardConfig,
+  NavBadgeStyle,
+  NavItemConfig,
+  NavLabelVisibility,
+  NavLayoutConfig,
+  NavPosition,
+  NavVariant,
+} from "./types";
+import {
+  CARD_VERSION,
+  DEFAULT_NAV_COLOR,
+  DEFAULT_NAV_ICON,
+  NAV_AUTOHIDE_MS,
+  NAV_AUTOHIDE_THRESHOLD_PX,
+  NAV_BADGE_DOT,
+  NAV_BADGE_FONT,
+  NAV_BADGE_HEIGHT,
+  NAV_BADGE_PADDING,
+  NAV_BADGE_RADIUS,
+  NAV_BAR_GAP,
+  NAV_BAR_HEIGHT,
+  NAV_BAR_PADDING,
+  NAV_DEFAULT_BREAKPOINT,
+  NAV_FLOAT_INSET,
+  NAV_FLOAT_RADIUS,
+  NAV_ITEM_GLYPH,
+  NAV_ITEM_HEIGHT,
+  NAV_ITEM_INACTIVE_OPACITY,
+  NAV_ITEM_LABEL_SIZE,
+  NAV_ITEM_MIN_WIDTH,
+  NAV_ITEM_RADIUS,
+  NAV_ITEM_RADIUS_ACTIVE,
+  NAV_ITEM_TINT,
+  NAV_PRESS_MS,
+  NAV_SEGMENT_HEIGHT,
+  NAV_SEGMENT_ITEM_RADIUS,
+  NAV_SEGMENT_PADDING,
+  NAV_SEGMENT_RADIUS,
+  NAV_SHEET_ACTION_RADIUS,
+  NAV_SHEET_ACTION_SIZE,
+  NAV_SHEET_DEFAULT_MAX_VH,
+  NAV_SHEET_HANDLE_HEIGHT,
+  NAV_SHEET_HANDLE_OPACITY,
+  NAV_SHEET_HANDLE_PADDING,
+  NAV_SHEET_HANDLE_RADIUS,
+  NAV_SHEET_HANDLE_WIDTH,
+  NAV_SHEET_SETTLE_MS,
+  NAV_SHEET_TITLE_SIZE,
+  NAV_SHORT_VIEWPORT_MAX_VH,
+  NAV_SHORT_VIEWPORT_PX,
+  NAV_SIZE_MAX,
+  NAV_SIZE_MIN,
+  NAV_SUBMENU_MIN_WIDTH,
+  NAV_SUBMENU_MS,
+  NAV_SUBMENU_PADDING,
+  NAV_SUBMENU_RADIUS,
+  NAV_SUBMENU_ROW_HEIGHT,
+  NAV_SUBMENU_ROW_RADIUS,
+  NAV_SUBMENU_TINT,
+  NAV_Z_INDEX,
+} from "./const";
+import { localize, type TranslationKey } from "./localize";
+import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
+import { activateOnKey } from "./shared/a11y";
+import { handleAction, isActionable } from "./shared/actions";
+import {
+  buildCssVars,
+  foregroundOn,
+  resolveCommonColors,
+  resolveThemeColor,
+  tintOn,
+} from "./shared/color-config";
+import { hassChangeMatters } from "./shared/should-update";
+import { readCollapsed, writeCollapsed, type CollapseTarget } from "./shared/collapse-state";
+import { createCards, updateCardsHass } from "./shared/card-helpers";
+import { SheetGesture } from "./shared/sheet-gesture";
+import {
+  TemplateSubManager,
+  isTemplate,
+  templateTruthy,
+  type TemplateSubscription,
+} from "./shared/template-sub";
+import { TapHold, fireHaptic } from "./shared/tap-hold";
+
+const EASING = unsafeCSS(STANDARD_EASING);
+
+const SHEET_STORAGE_PREFIX = "m3-nav-sheet";
+
+console.info(
+  `%c M3-NAV-CARD %c v${CARD_VERSION} `,
+  "color: #222; background: #85b7eb; font-weight: 700; border-radius: 4px 0 0 4px;",
+  "color: #85b7eb; background: #222; font-weight: 700; border-radius: 0 4px 4px 0;",
+);
+
+/**
+ * Every connected sheet-variant card on the page, in the order they connected.
+ *
+ * Only the first one docks to the screen. Two fixed sheets would sit on top of
+ * each other with no way to tell which handle belongs to which, so the later
+ * ones render inline in the card flow instead — and the editor says so, since
+ * that is where someone can see and fix it.
+ */
+const connectedSheets = new Set<M3NavCard>();
+
+/** An entry after its templates have been rendered and its state resolved. */
+interface ResolvedItem {
+  index: number;
+  config: NavItemConfig;
+  name: string;
+  icon: string;
+  color: string;
+  disabled: boolean;
+  active: boolean;
+  badge?: { text: string; dot: boolean; color: string };
+}
+
+@customElement("m3-nav-card")
+export class M3NavCard extends LitElement implements LovelaceCard {
+  @property({ attribute: false }) public hass?: HomeAssistant;
+
+  @state() private _config?: M3NavCardConfig;
+  /** True while the card's own box is narrower than the breakpoint. */
+  @state() private _narrow = false;
+  /** Current URL path, kept as state so a navigation repaints the active entry. */
+  @state() private _path = location.pathname;
+  @state() private _pressed?: number;
+  /** Set by auto_hide_on_scroll while the page is being scrolled down. */
+  @state() private _autoHidden = false;
+  /** Index of the entry whose submenu is open, if any. */
+  @state() private _submenuFor?: number;
+  /** Sheet variant: whether the drawer is open. */
+  @state() private _sheetOpen = false;
+  /**
+   * Where the drawer sits, 0 collapsed to 1 open. Normally one of the snap
+   * points; anything between the two only exists while a finger is down.
+   */
+  @state() private _sheetFraction = 0;
+  @state() private _sheetDragging = false;
+
+  /** Where the open submenu grows from — the entry that was tapped. */
+  private _submenuAnchor?: DOMRect;
+  /** The cards configured in `sheet_cards`, built once per config change. */
+  private _sheetCards: HTMLElement[] = [];
+  private _sheetCardsKey = "";
+  private _gesture?: SheetGesture;
+  private _gestureCleanups: Array<() => void> = [];
+  /** Measured pixels between collapsed and open; 0 until the panel has laid out. */
+  private _sheetTravel = 0;
+  private _panelObserver?: ResizeObserver;
+
+  private _resizeObserver?: ResizeObserver;
+  private _templates?: TemplateSubManager;
+  /** Template string → live subscription, rebuilt only when the config changes. */
+  private _subs = new Map<string, TemplateSubscription>();
+  private _tapHolds = new Map<number, TapHold>();
+  private _pressTimer?: number;
+  private _scrollTarget?: HTMLElement | Window;
+  private _lastScrollY = 0;
+
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import("./m3-nav-card-editor");
+    return document.createElement(
+      "m3-nav-card-editor",
+    ) as unknown as LovelaceCardEditor;
+  }
+
+  public static getStubConfig(): M3NavCardConfig {
+    return {
+      type: "custom:m3-nav-card",
+      style: "footer",
+      items: [
+        { name: "Home", icon: "mdi:home", path: "/lovelace/0" },
+        { name: "Energie", icon: "mdi:flash", path: "/lovelace/energie" },
+      ],
+    };
+  }
+
+  public setConfig(config: M3NavCardConfig): void {
+    this._config = { style: "footer", animation: "auto", ...config };
+    this._syncSubscriptions();
+    this._sheetOpen = this._readSheetOpen();
+    this._sheetFraction = this._sheetOpen ? 1 : 0;
+    void this._syncSheetCards();
+  }
+
+  public getCardSize(): number {
+    return 1;
+  }
+
+  public getGridOptions(): LovelaceGridOptions {
+    // A navigation bar spans whatever it is put in; a section grid that placed
+    // one beside a card would cut the entries in half.
+    return { columns: "full", rows: "auto" };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    // Templated fields arrive as a pushed value and call requestUpdate
+    // themselves, so only the entity-backed reads have to be declared here.
+    // `themes` is covered by hassChangeMatters — a hand-written filter that
+    // forgets it keeps the old theme's colours when the card is off screen.
+    return hassChangeMatters(changed, this.hass, this._watchedEntities());
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener("location-changed", this._onLocationChanged);
+    window.addEventListener("popstate", this._onLocationChanged);
+    this._templates = new TemplateSubManager(this.hass, () => this.requestUpdate());
+    this._syncSubscriptions();
+    this._attachScroll();
+    connectedSheets.add(this);
+    void this._syncSheetCards();
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener("location-changed", this._onLocationChanged);
+    window.removeEventListener("popstate", this._onLocationChanged);
+    this._resizeObserver?.disconnect();
+    this._detachScroll();
+    this._closeSubmenu();
+    this._detachGesture();
+    connectedSheets.delete(this);
+    window.clearTimeout(this._pressTimer);
+    for (const h of this._tapHolds.values()) h.destroy();
+    this._tapHolds.clear();
+    // Every subscription this card opened, closed in one go — a nav bar that
+    // leaks one per templated entry per navigation would pile them up fast.
+    this._subs.clear();
+    this._templates?.disconnect();
+    this._templates = undefined;
+  }
+
+  protected firstUpdated(changed: PropertyValues): void {
+    super.firstUpdated(changed);
+    // Deliberately not matchMedia: the card can sit in a narrow column on a
+    // wide screen, and "does the bar fit" is a question about the box it is in,
+    // not about the window.
+    this._resizeObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width <= 0) return;
+      const narrow = width < this._breakpoint;
+      if (narrow !== this._narrow) this._narrow = narrow;
+    });
+    this._resizeObserver.observe(this);
+  }
+
+  protected willUpdate(changed: PropertyValues): void {
+    if (changed.has("hass")) {
+      this._templates?.updateHass(this.hass);
+      // Every nested card takes its data from a `hass` property set from
+      // outside; one that never gets a fresh one shows the state it was born
+      // with, forever.
+      updateCardsHass(this._sheetCards, this.hass);
+    }
+    if (changed.has("_config")) {
+      this._syncSubscriptions();
+      void this._syncSheetCards();
+      // Toggling the option in the editor has to take effect without a reload,
+      // and the listener is only wanted while the option is on.
+      this._detachScroll();
+      this._attachScroll();
+    }
+    // The variant drives the host's own positioning, which static CSS reaches
+    // through an attribute selector rather than an inline style.
+    this.setAttribute("variant", this._layout.style ?? "footer");
+    this.setAttribute("edge", this._position);
+    // A sheet that is not the primary one, or is being edited, stays in the
+    // card flow — the attribute is what the CSS keys the difference off.
+    if (this._variant === "sheet" && !this._sheetDocked) {
+      this.setAttribute("inline", "");
+    } else {
+      this.removeAttribute("inline");
+    }
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    // An entity-backed sheet state can change from anywhere — another device,
+    // an automation — so it is re-read on every tick rather than only on a tap.
+    if (this._config?.sheet_state_entity) {
+      const wanted = this._readSheetOpen();
+      if (wanted !== this._sheetOpen) {
+        this._sheetOpen = wanted;
+        this._sheetFraction = wanted ? 1 : 0;
+      }
+    }
+    // The drawer's elements only exist once the sheet variant has rendered, so
+    // the handlers are wired here rather than in firstUpdated.
+    if (this._variant === "sheet" && !this._editing) {
+      this._attachGesture();
+    } else if (this._gesture) {
+      this._detachGesture();
+    }
+  }
+
+  // ---- language ------------------------------------------------------------
+
+  private get _language(): string {
+    return this.hass?.locale?.language ?? this.hass?.language ?? "en";
+  }
+
+  private _t(key: TranslationKey): string {
+    return localize(key, this._language);
+  }
+
+  // ---- layout resolution ---------------------------------------------------
+
+  private get _breakpoint(): number {
+    return (
+      this._config?.desktop?.breakpoint ??
+      this._config?.breakpoint ??
+      NAV_DEFAULT_BREAKPOINT
+    );
+  }
+
+  /**
+   * The layout in force at this width: the matching block's values, falling
+   * back to the card's own. Configuring neither block leaves one layout at
+   * every width, which is the common case.
+   */
+  private get _layout(): NavLayoutConfig {
+    const cfg = this._config;
+    if (!cfg) return {};
+    const block = (this._narrow ? cfg.mobile : cfg.desktop) ?? {};
+    return {
+      style: block.style ?? cfg.style ?? "footer",
+      position: block.position ?? cfg.position,
+      show_labels: block.show_labels,
+      hidden: block.hidden,
+    };
+  }
+
+  private get _variant(): NavVariant {
+    return this._layout.style ?? "footer";
+  }
+
+  private get _position(): NavPosition {
+    // A header means the top and a footer means the bottom; `position` only has
+    // something to decide for the detached variants.
+    const explicit = this._layout.position;
+    if (explicit) return explicit;
+    return this._variant === "header" ? "top" : "bottom";
+  }
+
+  private get _labelVisibility(): NavLabelVisibility {
+    const cfg = this._config;
+    // The per-width `show_labels` is a coarse on/off; an explicit
+    // `label_visibility` is the finer control and wins.
+    if (cfg?.label_visibility) return cfg.label_visibility;
+    if (this._layout.show_labels === false) return "never";
+    if (this._layout.show_labels === true) return "always";
+    return "always";
+  }
+
+  private get _size(): number {
+    return Math.max(
+      NAV_SIZE_MIN,
+      Math.min(NAV_SIZE_MAX, this._config?.size ?? 1),
+    );
+  }
+
+  // ---- templates -----------------------------------------------------------
+
+  /**
+   * Opens a subscription for every templated field in the config and drops the
+   * ones no longer referenced. Runs on a config change, not on a render: a nav
+   * bar re-renders on every state tick in the system, and re-subscribing there
+   * would tear down and rebuild every subscription several times a second.
+   */
+  private _syncSubscriptions(): void {
+    const manager = this._templates;
+    if (!manager) return;
+
+    const wanted = new Set<string>();
+    const add = (value: string | undefined): void => {
+      if (isTemplate(value)) wanted.add(value!);
+    };
+
+    add(this._config?.hidden);
+    for (const item of this._config?.items ?? []) {
+      add(item.name);
+      add(item.icon);
+      add(item.color);
+      add(item.hidden);
+      add(item.disabled);
+      add(item.badge?.template);
+      add(item.badge?.show_if);
+    }
+
+    for (const [template, sub] of this._subs) {
+      if (wanted.has(template)) continue;
+      sub.unsubscribe();
+      this._subs.delete(template);
+    }
+    for (const template of wanted) {
+      if (this._subs.has(template)) continue;
+      this._subs.set(template, manager.subscribe(template));
+    }
+  }
+
+  /** A field that may be Jinja: rendered value if it is, the literal if not. */
+  private _resolve(value: string | undefined): string | undefined {
+    if (!isTemplate(value)) return value;
+    return this._subs.get(value!)?.value ?? "";
+  }
+
+  private _resolveBool(value: string | undefined): boolean {
+    if (value === undefined) return false;
+    if (!isTemplate(value)) {
+      // A plain "true"/"on" is accepted so the field behaves the same whether
+      // or not someone wrapped it in braces.
+      return templateTruthy(value);
+    }
+    return templateTruthy(this._subs.get(value)?.value);
+  }
+
+  // ---- entities the card reads directly ------------------------------------
+
+  private _watchedEntities(): (string | undefined)[] {
+    const out: (string | undefined)[] = [];
+    for (const item of this._config?.items ?? []) {
+      out.push(item.badge?.entity);
+      for (const id of item.badge?.count_entities ?? []) out.push(id);
+    }
+    out.push(this._config?.sheet_state_entity);
+    return out;
+  }
+
+  // ---- routing -------------------------------------------------------------
+
+  private _onLocationChanged = (): void => {
+    if (this._path === location.pathname) return;
+    this._path = location.pathname;
+    // A menu left standing over the page someone just navigated to is in the
+    // way of the thing they navigated for.
+    this._closeSubmenu();
+    if (this._config?.collapse_on_navigate !== false && this._sheetOpen) {
+      this._setSheetOpen(false);
+    }
+  };
+
+  /**
+   * Whether an entry points at the page currently open.
+   *
+   * An exact match wins outright. Failing that a prefix counts, so
+   * `/lovelace/garten` stays lit on `/lovelace/garten/detail` — but only on a
+   * path boundary, or `/lovelace/gart` would match `/lovelace/garten` too. The
+   * dashboard root is excluded from prefix matching for the same reason: it is
+   * a prefix of every page on that dashboard.
+   */
+  private _isActive(item: NavItemConfig): boolean {
+    const path = item.path;
+    if (item.match) {
+      try {
+        return new RegExp(item.match).test(this._path);
+      } catch {
+        // A broken pattern is a config typo, not a reason to throw inside a
+        // render. It simply never matches.
+        return false;
+      }
+    }
+    if (!path) return false;
+    const current = this._path.replace(/\/+$/, "");
+    const target = path.replace(/\/+$/, "");
+    if (!target) return false;
+    if (current === target) return true;
+    return current.startsWith(`${target}/`);
+  }
+
+  // ---- items ---------------------------------------------------------------
+
+  private _badgeFor(item: NavItemConfig, color: string): ResolvedItem["badge"] {
+    const badge = item.badge;
+    if (!badge) return undefined;
+    if (badge.show_if !== undefined && !this._resolveBool(badge.show_if)) {
+      return undefined;
+    }
+
+    let text = "";
+    if (badge.template) {
+      text = this._resolve(badge.template) ?? "";
+    } else if (badge.entity) {
+      text = this.hass?.states[badge.entity]?.state ?? "";
+    } else if (badge.count_entities?.length) {
+      let on = 0;
+      for (const id of badge.count_entities) {
+        if (this.hass?.states[id]?.state === "on") on++;
+      }
+      text = String(on);
+    }
+
+    const trimmed = text.trim();
+    // "Nothing to report" has several spellings and none of them are worth a
+    // badge: a bar of grey zeroes reads as broken rather than as quiet.
+    if (
+      trimmed === "" ||
+      trimmed === "0" ||
+      trimmed.toLowerCase() === "off" ||
+      trimmed.toLowerCase() === "false" ||
+      trimmed.toLowerCase() === "unavailable" ||
+      trimmed.toLowerCase() === "unknown" ||
+      trimmed.toLowerCase() === "none"
+    ) {
+      return undefined;
+    }
+
+    const style: NavBadgeStyle = item.badge_style ?? "count";
+    return {
+      text: trimmed,
+      dot: style === "dot",
+      color: resolveThemeColor(badge.color ?? color),
+    };
+  }
+
+  private get _resolvedItems(): ResolvedItem[] {
+    const cfg = this._config;
+    if (!cfg?.items?.length) return [];
+    const accent = resolveThemeColor(cfg.accent_color ?? DEFAULT_NAV_COLOR);
+
+    const out: ResolvedItem[] = [];
+    cfg.items.forEach((item, index) => {
+      if (this._resolveBool(item.hidden)) return;
+      const color = resolveThemeColor(this._resolve(item.color) || accent);
+      out.push({
+        index,
+        config: item,
+        name: this._resolve(item.name) ?? "",
+        icon: this._resolve(item.icon) || DEFAULT_NAV_ICON,
+        color,
+        disabled: this._resolveBool(item.disabled),
+        active: this._isActive(item),
+        badge: this._badgeFor(item, color),
+      });
+    });
+    return out;
+  }
+
+  // ---- actions -------------------------------------------------------------
+
+  /** Whether this entry's submenu opens on a tap rather than on a hold. */
+  private _submenuOnTap(index: number): boolean {
+    const item = this._config?.items?.[index];
+    if (!item?.submenu?.length) return false;
+    return (this._config?.submenu_trigger ?? "tap") === "tap";
+  }
+
+  private _submenuOnHold(index: number): boolean {
+    const item = this._config?.items?.[index];
+    if (!item?.submenu?.length) return false;
+    return (this._config?.submenu_trigger ?? "tap") === "hold";
+  }
+
+  private _tapHoldFor(item: ResolvedItem): TapHold {
+    let handler = this._tapHolds.get(item.index);
+    if (!handler) {
+      handler = new TapHold({
+        hasHold: () => {
+          if (this._submenuOnHold(item.index)) return true;
+          const cfg = this._config?.items?.[item.index];
+          return isActionable(cfg?.hold_action) && !!cfg?.hold_action;
+        },
+        hasDoubleTap: () => {
+          const cfg = this._config?.items?.[item.index];
+          return isActionable(cfg?.double_tap_action) && !!cfg?.double_tap_action;
+        },
+        onTap: () => {
+          if (this._submenuOnTap(item.index)) {
+            this._toggleSubmenu(item.index);
+            return;
+          }
+          this._runItemAction(item.index, "tap");
+        },
+        onHold: () => {
+          if (this._submenuOnHold(item.index)) {
+            this._toggleSubmenu(item.index);
+            return;
+          }
+          this._runItemAction(item.index, "hold");
+        },
+        onDoubleTap: () => this._runItemAction(item.index, "double_tap"),
+      });
+      this._tapHolds.set(item.index, handler);
+    }
+    return handler;
+  }
+
+  // ---- submenu -------------------------------------------------------------
+
+  private _toggleSubmenu(index: number): void {
+    if (this._submenuFor === index) {
+      this._closeSubmenu();
+      return;
+    }
+    const anchor = this.renderRoot?.querySelector<HTMLElement>(
+      `.item[data-index="${index}"]`,
+    );
+    this._submenuAnchor = anchor?.getBoundingClientRect();
+    this._submenuFor = index;
+    if (this._config?.haptics !== false) fireHaptic(this, "selection");
+    // Scoped to the time the menu is open: a permanent document listener per
+    // nav card would fire on every click on the dashboard for nothing.
+    document.addEventListener("click", this._onDocumentClick, true);
+    document.addEventListener("keydown", this._onDocumentKey);
+  }
+
+  private _closeSubmenu(): void {
+    if (this._submenuFor === undefined) return;
+    this._submenuFor = undefined;
+    this._submenuAnchor = undefined;
+    document.removeEventListener("click", this._onDocumentClick, true);
+    document.removeEventListener("keydown", this._onDocumentKey);
+  }
+
+  private _onDocumentClick = (e: Event): void => {
+    // composedPath crosses the shadow boundary, which a plain `contains` check
+    // does not — without it every click inside the menu would close it.
+    if (e.composedPath().includes(this)) return;
+    this._closeSubmenu();
+  };
+
+  private _onDocumentKey = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      this._closeSubmenu();
+    }
+  };
+
+  private _runSubmenuEntry(itemIndex: number, entryIndex: number): void {
+    const entry = this._config?.items?.[itemIndex]?.submenu?.[entryIndex];
+    if (!entry) return;
+    this._closeSubmenu();
+    const action =
+      entry.tap_action ??
+      (entry.path
+        ? ({ action: "navigate", navigation_path: entry.path } as HaActionConfig)
+        : undefined);
+    if (!action || !isActionable(action)) return;
+    if (this._config?.haptics !== false) fireHaptic(this, "light");
+    handleAction(this, this.hass, action);
+  }
+
+  /** The action an entry runs when nothing is configured: go where it points. */
+  private _defaultTap(item: NavItemConfig): HaActionConfig | undefined {
+    if (!item.path) return { action: "none" };
+    return { action: "navigate", navigation_path: item.path };
+  }
+
+  private _runItemAction(index: number, kind: "tap" | "hold" | "double_tap"): void {
+    const item = this._config?.items?.[index];
+    if (!item) return;
+    if (this._resolveBool(item.disabled)) return;
+
+    const action =
+      kind === "tap"
+        ? (item.tap_action ?? this._defaultTap(item))
+        : kind === "hold"
+          ? item.hold_action
+          : item.double_tap_action;
+    if (!action || !isActionable(action)) return;
+
+    if (this._config?.haptics !== false) {
+      fireHaptic(this, kind === "hold" ? "medium" : "light");
+    }
+    this._flashPress(index);
+    handleAction(this, this.hass, action);
+  }
+
+  /**
+   * The bar carries no state of its own between a tap and the new page drawing,
+   * so the press morph is the only confirmation that the tap landed.
+   */
+  private _flashPress(index: number): void {
+    if (!shouldAnimate(this._config?.animation)) return;
+    this._pressed = index;
+    window.clearTimeout(this._pressTimer);
+    this._pressTimer = window.setTimeout(() => {
+      this._pressed = undefined;
+    }, NAV_PRESS_MS);
+  }
+
+  // ---- sheet ---------------------------------------------------------------
+
+  /**
+   * True while the dashboard is being edited. A sheet that docks itself to the
+   * screen there covers the very card the editor is trying to show, so it
+   * renders inline and open instead — the same reasoning the heading card uses
+   * for not hiding its siblings in edit mode.
+   */
+  private get _editing(): boolean {
+    const self = this as unknown as { editMode?: boolean; preview?: boolean };
+    if (self.editMode || self.preview) return true;
+    const wrapper = this.parentElement as unknown as
+      | { editMode?: boolean; preview?: boolean }
+      | null;
+    return !!(wrapper?.editMode || wrapper?.preview);
+  }
+
+  /** Whether this instance is the one that gets to dock to the screen. */
+  private get _isPrimarySheet(): boolean {
+    for (const card of connectedSheets) {
+      if (card._variant !== "sheet" || card._editing) continue;
+      return card === this;
+    }
+    return true;
+  }
+
+  /** A sheet only floats when it is the first one and the view is not in edit mode. */
+  private get _sheetDocked(): boolean {
+    return this._variant === "sheet" && !this._editing && this._isPrimarySheet;
+  }
+
+  private get _sheetTarget(): CollapseTarget {
+    // Cards carry no id, so the key is what identifies this sheet to a reader:
+    // the page it is on and its own title.
+    const label = this._config?.sheet_title ?? this._config?.name ?? "";
+    return {
+      entity: this._config?.sheet_state_entity,
+      storageKey: `${SHEET_STORAGE_PREFIX}:${location.pathname}:${label}`,
+      defaultCollapsed: (this._config?.sheet_default ?? "collapsed") !== "expanded",
+    };
+  }
+
+  private _readSheetOpen(): boolean {
+    const cfg = this._config;
+    if (!cfg) return false;
+    const mode = cfg.sheet_default ?? "collapsed";
+    // An entity is an explicit request to share the state — with another
+    // device, or with an automation — so it wins over a fixed initial state.
+    if (cfg.sheet_state_entity || mode === "remember") {
+      return !readCollapsed(this.hass, this._sheetTarget);
+    }
+    return mode === "expanded";
+  }
+
+  private _setSheetOpen(open: boolean): void {
+    this._sheetFraction = open ? 1 : 0;
+    if (this._sheetOpen === open) return;
+    this._sheetOpen = open;
+    const mode = this._config?.sheet_default ?? "collapsed";
+    if (this._config?.sheet_state_entity || mode === "remember") {
+      writeCollapsed(this.hass, this._sheetTarget, !open);
+    }
+    if (this._config?.haptics !== false) fireHaptic(this, "light");
+  }
+
+  private _toggleSheet = (e: Event): void => {
+    e.stopPropagation();
+    this._setSheetOpen(!this._sheetOpen);
+  };
+
+  /** The stops the drawer can rest at, always including shut and fully open. */
+  private get _snapPoints(): number[] {
+    const configured = this._config?.snap_points;
+    if (!configured?.length) return [0, 1];
+    const points = configured
+      .filter((p) => typeof p === "number" && p >= 0 && p <= 1)
+      .sort((a, b) => a - b);
+    if (!points.includes(0)) points.unshift(0);
+    if (!points.includes(1)) points.push(1);
+    return points;
+  }
+
+  private _attachGesture(): void {
+    if (this._gesture || this._variant !== "sheet") return;
+    // Nothing to drag in the editor: the drawer is pinned open there so the
+    // cards inside it can be configured.
+    if (this._editing) return;
+
+    const panel = this.renderRoot?.querySelector<HTMLElement>(".sheet-panel");
+    const handle = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
+    const content = this.renderRoot?.querySelector<HTMLElement>(".sheet-content");
+    const bar = this.renderRoot?.querySelector<HTMLElement>(".bar");
+    if (!panel || !handle) return;
+
+    this._gesture = new SheetGesture({
+      geometry: () => ({ travel: this._sheetTravel, snapPoints: this._snapPoints }),
+      current: () => this._sheetFraction,
+      onDrag: (fraction) => {
+        this._sheetDragging = true;
+        this._sheetFraction = fraction;
+      },
+      onSettle: (fraction) => {
+        this._sheetDragging = false;
+        // A mid stop is neither open nor shut for the purposes of remembering
+        // the state; anything off the floor counts as open.
+        this._setSheetOpen(fraction > 0);
+        this._sheetFraction = fraction;
+      },
+      onTap: () => {
+        this._sheetDragging = false;
+        this._setSheetOpen(!this._sheetOpen);
+      },
+      reducedMotion: () => !shouldAnimate(this._config?.animation),
+    });
+
+    this._gestureCleanups.push(this._gesture.attachHandle(handle));
+    if (content) this._gestureCleanups.push(this._gesture.attachContent(content));
+    if (bar) this._gestureCleanups.push(this._gesture.attachBar(bar));
+
+    // The drawer's height is whatever its cards add up to, and that changes
+    // when one of them does. Measuring it is what turns a percentage transform
+    // into a draggable pixel range.
+    this._panelObserver = new ResizeObserver(() => this._measurePanel());
+    this._panelObserver.observe(panel);
+    this._measurePanel();
+  }
+
+  private _detachGesture(): void {
+    for (const cleanup of this._gestureCleanups) cleanup();
+    this._gestureCleanups = [];
+    this._gesture?.destroy();
+    this._gesture = undefined;
+    this._panelObserver?.disconnect();
+    this._panelObserver = undefined;
+  }
+
+  private _measurePanel(): void {
+    const panel = this.renderRoot?.querySelector<HTMLElement>(".sheet-panel");
+    const handle = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
+    if (!panel || !handle) return;
+    // Collapsed leaves exactly the grip showing, so the travel is everything
+    // below it.
+    const travel = Math.max(0, panel.offsetHeight - handle.offsetHeight);
+    if (Math.abs(travel - this._sheetTravel) < 1) return;
+    this._sheetTravel = travel;
+    this.requestUpdate();
+  }
+
+  /** The drawer's height cap, as a CSS length. */
+  private get _sheetMaxHeight(): string {
+    const configured = this._config?.sheet_max_height;
+    const short = window.innerHeight > 0 && window.innerHeight < NAV_SHORT_VIEWPORT_PX;
+    if (typeof configured === "number") {
+      // A phone in landscape: 60vh of drawer would leave nothing of the page it
+      // is a drawer for, so the cap applies whatever was configured.
+      return `${short ? Math.min(configured, NAV_SHORT_VIEWPORT_MAX_VH) : configured}vh`;
+    }
+    if (typeof configured === "string" && configured) {
+      return short ? `min(${configured}, ${NAV_SHORT_VIEWPORT_MAX_VH}vh)` : configured;
+    }
+    return `${short ? NAV_SHORT_VIEWPORT_MAX_VH : NAV_SHEET_DEFAULT_MAX_VH}vh`;
+  }
+
+  /**
+   * Builds the drawer's cards when their config changes, and only then — a nav
+   * bar re-renders on every state tick, and rebuilding a nested card there
+   * would throw away whatever state it was holding several times a second.
+   */
+  private async _syncSheetCards(): Promise<void> {
+    const configs = this._config?.sheet_cards ?? [];
+    const key = JSON.stringify(configs);
+    if (key === this._sheetCardsKey) return;
+    this._sheetCardsKey = key;
+    this._sheetCards = await createCards(configs, this.hass);
+    this.requestUpdate();
+  }
+
+  private _renderSheetHead(): TemplateResult | typeof nothing {
+    const cfg = this._config;
+    const title = cfg?.sheet_title;
+    const action = cfg?.sheet_action;
+    if (!title && !action?.icon) return nothing;
+    const accent = resolveThemeColor(cfg?.accent_color ?? DEFAULT_NAV_COLOR);
+    const tint = tintOn(this, accent, cfg?.accent_opacity, NAV_ITEM_TINT);
+    return html`
+      <div class="sheet-head">
+        <span class="sheet-title">${title ?? ""}</span>
+        ${action?.icon
+          ? html`
+              <div
+                class="sheet-action"
+                style=${`background: ${tint}; color: ${foregroundOn(accent, tint, 3, this)};`}
+                role="button"
+                tabindex="0"
+                @click=${this._runSheetAction}
+                @keydown=${activateOnKey(this._runSheetAction)}
+              >
+                <ha-icon icon=${action.icon}></ha-icon>
+              </div>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _runSheetAction = (e: Event): void => {
+    e.stopPropagation();
+    const action = this._config?.sheet_action?.tap_action;
+    if (!action || !isActionable(action)) return;
+    if (this._config?.haptics !== false) fireHaptic(this, "light");
+    handleAction(this, this.hass, action);
+  };
+
+  private _renderSheetPanel(): TemplateResult {
+    // Edit mode always shows the drawer: a collapsed sheet in the editor is a
+    // card with nothing in it to configure.
+    const open = this._sheetOpen || this._editing;
+    const fraction = this._editing ? 1 : this._sheetFraction;
+    // Until the panel has been measured, the CSS percentage fallback does the
+    // positioning — the drawer is usable from the first frame either way, it
+    // just cannot be dragged to a fraction yet.
+    const positioned =
+      this._sheetTravel > 0
+        ? `transform: translateY(${(1 - fraction) * this._sheetTravel}px);`
+        : "";
+    return html`
+      <div
+        class="sheet-panel ${open ? "open" : ""} ${this._sheetDragging ? "dragging" : ""}"
+        style=${positioned}
+      >
+        <div
+          class="handle-zone"
+          role="button"
+          tabindex="0"
+          aria-expanded=${open ? "true" : "false"}
+          aria-label=${this._t(open ? "nav_sheet_collapse" : "nav_sheet_expand")}
+          @click=${this._toggleSheet}
+          @keydown=${activateOnKey(this._toggleSheet)}
+        >
+          <span class="handle"></span>
+        </div>
+        ${this._renderSheetHead()}
+        <div class="sheet-content" style=${`max-height: ${this._sheetMaxHeight};`}>
+          ${this._sheetCards}
+        </div>
+      </div>
+    `;
+  }
+
+  // ---- hide on scroll ------------------------------------------------------
+
+  private _attachScroll(): void {
+    if (!this._config?.auto_hide_on_scroll) return;
+    // HA scrolls an inner element, not the window, and which one depends on the
+    // view type — so the listener goes on both and whichever fires wins.
+    this._scrollTarget = window;
+    this._lastScrollY = window.scrollY;
+    window.addEventListener("scroll", this._onScroll, { passive: true, capture: true });
+  }
+
+  private _detachScroll(): void {
+    if (!this._scrollTarget) return;
+    window.removeEventListener("scroll", this._onScroll, { capture: true });
+    this._scrollTarget = undefined;
+  }
+
+  private _onScroll = (e: Event): void => {
+    const target = e.target as HTMLElement | Document;
+    const y =
+      target instanceof HTMLElement ? target.scrollTop : window.scrollY;
+    const delta = y - this._lastScrollY;
+    if (Math.abs(delta) < NAV_AUTOHIDE_THRESHOLD_PX) return;
+    this._lastScrollY = y;
+    // Down hides, up brings it back — the bar gets out of the way of reading
+    // and returns the moment someone looks for it.
+    const hidden = delta > 0 && y > NAV_BAR_HEIGHT;
+    if (hidden !== this._autoHidden) this._autoHidden = hidden;
+  };
+
+  // ---- rendering -----------------------------------------------------------
+
+  private _renderBadge(item: ResolvedItem): TemplateResult | typeof nothing {
+    const badge = item.badge;
+    if (!badge) return nothing;
+    if (badge.dot) {
+      return html`<span
+        class="badge dot"
+        style=${`background: ${badge.color};`}
+        aria-hidden="true"
+      ></span>`;
+    }
+    const background = badge.color;
+    return html`<span
+      class="badge"
+      style=${`background: ${background}; color: ${foregroundOn("#ffffff", background, 4.5, this)};`}
+      >${badge.text}</span
+    >`;
+  }
+
+  /**
+   * The open submenu, positioned against the entry that opened it.
+   *
+   * Rendered as a sibling of the bar rather than inside it: the glass bar sets
+   * `transform: translateZ(0)` for its own compositor layer, and a transform
+   * makes an element the containing block for any fixed-position descendant —
+   * a menu inside it would be positioned against the bar instead of against
+   * the viewport, and clipped by it.
+   */
+  private _renderSubmenu(): TemplateResult | typeof nothing {
+    const index = this._submenuFor;
+    if (index === undefined) return nothing;
+    const entries = this._config?.items?.[index]?.submenu ?? [];
+    if (!entries.length) return nothing;
+
+    const anchor = this._submenuAnchor;
+    const width = Math.max(
+      NAV_SUBMENU_MIN_WIDTH,
+      anchor?.width ?? NAV_SUBMENU_MIN_WIDTH,
+    );
+    const viewport = window.innerWidth;
+    // Centred on the entry, then pulled back inside the screen: an entry at the
+    // far edge would otherwise open a menu half off it.
+    const rawLeft = (anchor?.left ?? 0) + (anchor?.width ?? 0) / 2 - width / 2;
+    const left = Math.max(
+      NAV_FLOAT_INSET,
+      Math.min(rawLeft, viewport - width - NAV_FLOAT_INSET),
+    );
+    const fromTop = this._position === "top";
+    const vertical = fromTop
+      ? `top: ${(anchor?.bottom ?? 0) + NAV_SUBMENU_PADDING}px;`
+      : `bottom: ${window.innerHeight - (anchor?.top ?? 0) + NAV_SUBMENU_PADDING}px;`;
+    // The menu grows out of the button that opened it, so the origin follows
+    // the anchor rather than sitting in the middle of the menu.
+    const originX = (anchor?.left ?? 0) + (anchor?.width ?? 0) / 2 - left;
+    const accent = resolveThemeColor(
+      this._resolve(this._config?.items?.[index]?.color) ||
+        this._config?.accent_color ||
+        DEFAULT_NAV_COLOR,
+    );
+
+    return html`
+      <div
+        class="submenu ${shouldAnimate(this._config?.animation) ? "" : "no-animations"}"
+        role="menu"
+        style=${`left: ${left}px; width: ${width}px; ${vertical} transform-origin: ${originX}px ${
+          fromTop ? "0" : "100%"
+        };`}
+      >
+        ${entries.map((entry, entryIndex) => {
+          const tint = tintOn(this, accent, undefined, NAV_SUBMENU_TINT);
+          return html`
+            <div
+              class="submenu-row"
+              role="menuitem"
+              tabindex="0"
+              @click=${() => this._runSubmenuEntry(index, entryIndex)}
+              @keydown=${activateOnKey(() => this._runSubmenuEntry(index, entryIndex))}
+            >
+              ${entry.icon
+                ? html`<span class="submenu-glyph" style=${`background: ${tint};`}>
+                    <ha-icon icon=${entry.icon}></ha-icon>
+                  </span>`
+                : nothing}
+              <span class="submenu-label">${entry.name ?? entry.path ?? ""}</span>
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  private _renderItem(item: ResolvedItem): TemplateResult {
+    const labels = this._labelVisibility;
+    const showLabel =
+      !!item.name && (labels === "always" || (labels === "active_only" && item.active));
+    const handler = this._tapHoldFor(item);
+    const pressed = this._pressed === item.index;
+    const tint = tintOn(this, item.color, this._config?.accent_opacity, NAV_ITEM_TINT);
+    const ink = item.active
+      ? foregroundOn(item.color, tint, 4.5, this)
+      : "var(--nav-ink)";
+
+    return html`
+      <div
+        class="item ${item.active ? "active" : ""} ${pressed ? "pressed" : ""} ${item.disabled
+          ? "disabled"
+          : ""}"
+        data-index=${item.index}
+        style=${item.active ? `background: ${tint}; color: ${ink};` : nothing}
+        role="button"
+        aria-haspopup=${item.config.submenu?.length ? "menu" : nothing}
+        aria-expanded=${item.config.submenu?.length
+          ? this._submenuFor === item.index
+            ? "true"
+            : "false"
+          : nothing}
+        tabindex=${item.disabled ? nothing : "0"}
+        aria-current=${item.active ? "page" : nothing}
+        aria-disabled=${item.disabled ? "true" : nothing}
+        aria-label=${item.name || item.config.path || ""}
+        title=${item.name || ""}
+        @pointerdown=${item.disabled ? nothing : handler.down}
+        @pointermove=${item.disabled ? nothing : handler.move}
+        @pointerup=${item.disabled ? nothing : handler.up}
+        @pointercancel=${item.disabled ? nothing : handler.up}
+        @click=${item.disabled ? nothing : handler.click}
+        @keydown=${item.disabled ? nothing : activateOnKey(handler.click)}
+      >
+        <span class="glyph">
+          <ha-icon icon=${item.icon}></ha-icon>
+          ${this._renderBadge(item)}
+        </span>
+        ${showLabel ? html`<span class="label">${item.name}</span>` : nothing}
+      </div>
+    `;
+  }
+
+  protected render(): TemplateResult | typeof nothing {
+    const cfg = this._config;
+    if (!cfg) return nothing;
+    // A card that hides itself still occupies its grid slot; that is the
+    // dashboard's business, not the card's, and matches every other
+    // conditionally-empty card in the suite.
+    if (this._resolveBool(cfg.hidden)) return nothing;
+    if (this._layout.hidden) return nothing;
+
+    const items = this._resolvedItems;
+    if (!items.length) {
+      return html`<div class="empty">${this._t("nav_no_items")}</div>`;
+    }
+
+    const common = resolveCommonColors(cfg);
+    const scale = this._size;
+    const container = cfg.container_style ?? (cfg.glass_background === false ? "solid" : "glass");
+    const cssVars = buildCssVars({
+      "nav-ink": common.textColorCss,
+      "nav-muted": common.secondaryTextColorCss,
+      "nav-bg": cfg.card_background ? resolveThemeColor(cfg.card_background) : undefined,
+      "nav-scale": String(scale),
+      "nav-radius": `${cfg.radius ?? NAV_FLOAT_RADIUS}px`,
+      "nav-blur": cfg.blur !== undefined ? `${cfg.blur}px` : undefined,
+      "nav-opacity": cfg.container_opacity !== undefined ? String(cfg.container_opacity / 100) : undefined,
+      "nav-z": String(NAV_Z_INDEX),
+    });
+    // The documented advanced escape hatch, applied last so it can override
+    // anything the card computed. Deliberately not sanitised beyond being a
+    // property/value map — it is the card_mod-shaped door, and it is the user's
+    // own stylesheet.
+    const freeStyles = Object.entries(cfg.styles ?? {})
+      .map(([k, v]) => `${k}: ${v};`)
+      .join(" ");
+
+    const animated = shouldAnimate(cfg.animation);
+    const bar = html`
+      <nav
+        class="bar ${container} ${this._autoHidden ? "auto-hidden" : ""} ${animated
+          ? ""
+          : "no-animations"}"
+        style=${`${cssVars} ${freeStyles}`}
+        aria-label=${cfg.name || this._t("nav_label")}
+      >
+        ${items.map((item) => this._renderItem(item))}
+      </nav>
+    `;
+
+    if (this._variant !== "sheet") {
+      return html`${bar}${this._renderSubmenu()}`;
+    }
+
+    return html`
+      <div
+        class="sheet ${container} ${animated ? "" : "no-animations"}"
+        style=${`${cssVars} ${freeStyles}`}
+      >
+        ${this._renderSheetPanel()} ${bar}
+      </div>
+      ${this._renderSubmenu()}
+    `;
+  }
+
+  static styles = css`
+    :host {
+      display: block;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* The docked variants leave the card flow entirely. Their grid slot then
+       collapses, which is the point: the bar sits over the view rather than
+       taking a row of it. Only "segmented" stays in flow. */
+    :host([variant="footer"]),
+    :host([variant="header"]),
+    :host([variant="floating"]),
+    :host([variant="sheet"]) {
+      position: fixed;
+      left: 0;
+      right: 0;
+      z-index: var(--nav-z, ${NAV_Z_INDEX});
+      pointer-events: none;
+    }
+
+    :host([variant="footer"][edge="bottom"]),
+    :host([variant="floating"][edge="bottom"]),
+    :host([variant="sheet"][edge="bottom"]) {
+      bottom: 0;
+    }
+
+    :host([variant="header"][edge="top"]),
+    :host([variant="footer"][edge="top"]),
+    :host([variant="floating"][edge="top"]),
+    :host([variant="sheet"][edge="top"]) {
+      top: 0;
+    }
+
+    /* Everything inside the bar takes pointer events back; the host itself
+       stays transparent to them so the view behind it stays usable where the
+       bar does not actually cover it. */
+    .bar {
+      pointer-events: auto;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: calc(${NAV_BAR_GAP}px * var(--nav-scale, 1));
+      padding: calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1));
+      min-height: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));
+      color: var(--nav-ink, var(--primary-text-color));
+      transition: transform ${unsafeCSS(NAV_AUTOHIDE_MS)}ms ${EASING};
+    }
+
+    .bar.glass {
+      background: var(
+        --nav-bg,
+        color-mix(
+          in srgb,
+          var(--ha-card-background, var(--card-background-color)) 55%,
+          transparent
+        )
+      );
+      backdrop-filter: blur(var(--nav-blur, 20px));
+      -webkit-backdrop-filter: blur(var(--nav-blur, 20px));
+      /* Its own compositor layer: two adjacent backdrop-filter elements
+         otherwise show a seam where their GPU tiles meet. */
+      transform: translateZ(0);
+      isolation: isolate;
+      border: 1px solid rgba(100, 100, 100, 0.25);
+    }
+
+    .bar.solid {
+      background: var(--nav-bg, var(--ha-card-background, var(--card-background-color)));
+      border: 1px solid rgba(100, 100, 100, 0.25);
+    }
+
+    .bar.transparent {
+      background: none;
+      border: none;
+    }
+
+    :host([variant="footer"]) .bar,
+    :host([variant="header"]) .bar {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      opacity: var(--nav-opacity, 1);
+      padding-bottom: calc(
+        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + env(safe-area-inset-bottom, 0px)
+      );
+    }
+
+    :host([variant="header"]) .bar {
+      padding-bottom: calc(${NAV_BAR_PADDING}px * var(--nav-scale, 1));
+      padding-top: calc(
+        ${NAV_BAR_PADDING}px * var(--nav-scale, 1) + env(safe-area-inset-top, 0px)
+      );
+    }
+
+    :host([variant="floating"]) .bar,
+    :host([variant="sheet"]) .bar {
+      margin: ${NAV_FLOAT_INSET}px;
+      /* The home bar on an iPhone sits exactly where a bottom-docked bar wants
+         to be, so the inset is added to the margin rather than to the padding —
+         the bar moves up instead of growing a dead strip. */
+      margin-bottom: calc(${NAV_FLOAT_INSET}px + env(safe-area-inset-bottom, 0px));
+      border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
+      opacity: var(--nav-opacity, 1);
+    }
+
+    :host([variant="segmented"]) .bar {
+      border-radius: calc(${NAV_SEGMENT_RADIUS}px * var(--nav-scale, 1));
+      min-height: calc(${NAV_SEGMENT_HEIGHT}px * var(--nav-scale, 1));
+      padding: calc(${NAV_SEGMENT_PADDING}px * var(--nav-scale, 1));
+      gap: calc(${NAV_SEGMENT_PADDING}px * var(--nav-scale, 1));
+    }
+
+    .bar.auto-hidden {
+      transform: translateY(calc(100% + ${NAV_FLOAT_INSET}px));
+    }
+
+    :host([edge="top"]) .bar.auto-hidden {
+      transform: translateY(calc(-100% - ${NAV_FLOAT_INSET}px));
+    }
+
+    .item {
+      position: relative;
+      flex: 1 1 0;
+      min-width: calc(${NAV_ITEM_MIN_WIDTH}px * var(--nav-scale, 1));
+      min-height: calc(${NAV_ITEM_HEIGHT}px * var(--nav-scale, 1));
+      border-radius: calc(${NAV_ITEM_RADIUS}px * var(--nav-scale, 1));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      color: inherit;
+      opacity: ${NAV_ITEM_INACTIVE_OPACITY};
+      transition:
+        border-radius ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING},
+        background ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING},
+        opacity ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
+    }
+
+    :host([variant="segmented"]) .item {
+      flex-direction: row;
+      gap: 8px;
+      min-height: calc(
+        (${NAV_SEGMENT_HEIGHT}px - 2 * ${NAV_SEGMENT_PADDING}px) * var(--nav-scale, 1)
+      );
+      border-radius: calc(${NAV_SEGMENT_ITEM_RADIUS}px * var(--nav-scale, 1));
+    }
+
+    .item.active {
+      opacity: 1;
+      font-weight: 600;
+    }
+
+    .item.pressed {
+      border-radius: calc(${NAV_ITEM_RADIUS_ACTIVE}px * var(--nav-scale, 1));
+    }
+
+    .item.disabled {
+      cursor: default;
+      opacity: 0.3;
+    }
+
+    .item:focus-visible {
+      outline: 2px solid var(--nav-ink, var(--primary-text-color));
+      outline-offset: 2px;
+    }
+
+    .glyph {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      --mdc-icon-size: calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1));
+    }
+
+    .label {
+      font-size: calc(${NAV_ITEM_LABEL_SIZE}px * var(--nav-scale, 1));
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      position: absolute;
+      top: -4px;
+      right: -8px;
+      height: ${NAV_BADGE_HEIGHT}px;
+      min-width: ${NAV_BADGE_HEIGHT}px;
+      box-sizing: border-box;
+      padding: 0 ${NAV_BADGE_PADDING}px;
+      border-radius: ${NAV_BADGE_RADIUS}px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: ${NAV_BADGE_FONT}px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+
+    .badge.dot {
+      top: -2px;
+      right: -2px;
+      width: ${NAV_BADGE_DOT}px;
+      min-width: 0;
+      height: ${NAV_BADGE_DOT}px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    /* ---- sheet ---- */
+
+    /* The sheet's own frame carries the glass; the bar inside it draws none, or
+       the two surfaces would stack into a double-tinted strip. */
+    .sheet {
+      pointer-events: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin: ${NAV_FLOAT_INSET}px;
+      margin-bottom: calc(${NAV_FLOAT_INSET}px + env(safe-area-inset-bottom, 0px));
+      border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
+      opacity: var(--nav-opacity, 1);
+      color: var(--nav-ink, var(--primary-text-color));
+    }
+
+    .sheet .bar {
+      background: none;
+      border: none;
+      border-radius: 0;
+      margin: 0;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      /* Above the panel, so a collapsed drawer slides away behind it and only
+         the handle strip stays out. */
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Collapsed, the panel drops by its own height less the handle strip, which
+       leaves exactly the grip visible above the bar. A percentage rather than a
+       measured pixel value: the drawer's height depends on its cards, and a
+       measurement would have to be re-taken every time one of them changed. */
+    .sheet-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      transform: translateY(
+        calc(100% - ${NAV_SHEET_HANDLE_HEIGHT + 2 * NAV_SHEET_HANDLE_PADDING}px)
+      );
+      transition: transform ${unsafeCSS(NAV_SHEET_SETTLE_MS)}ms ${EASING};
+    }
+
+    .sheet-panel.open {
+      transform: translateY(0);
+    }
+
+    /* While a finger is down the transform is written on every frame, so a
+       transition would make the drawer lag behind the finger by its whole
+       duration. It comes back for the settle. */
+    .sheet-panel.dragging {
+      transition: none;
+    }
+
+    .no-animations .sheet-panel {
+      transition: none;
+    }
+
+    .handle-zone {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: ${NAV_SHEET_HANDLE_PADDING}px 0;
+      cursor: grab;
+      /* Only the grip refuses the browser's own panning — the drawer's content
+         has to keep scrolling normally. */
+      touch-action: none;
+    }
+
+    .handle-zone:focus-visible {
+      outline: 2px solid var(--nav-ink, var(--primary-text-color));
+      outline-offset: -2px;
+      border-radius: 8px;
+    }
+
+    .handle {
+      width: ${NAV_SHEET_HANDLE_WIDTH}px;
+      height: ${NAV_SHEET_HANDLE_HEIGHT}px;
+      border-radius: ${NAV_SHEET_HANDLE_RADIUS}px;
+      background: currentColor;
+      opacity: ${NAV_SHEET_HANDLE_OPACITY};
+    }
+
+    .sheet-head {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 2px 16px 10px;
+    }
+
+    .sheet-title {
+      flex: 1;
+      min-width: 0;
+      font-size: ${NAV_SHEET_TITLE_SIZE}px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sheet-action {
+      flex-shrink: 0;
+      width: ${NAV_SHEET_ACTION_SIZE}px;
+      height: ${NAV_SHEET_ACTION_SIZE}px;
+      border-radius: ${NAV_SHEET_ACTION_RADIUS}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      --mdc-icon-size: 18px;
+    }
+
+    .sheet-action:focus-visible {
+      outline: 2px solid var(--nav-ink, var(--primary-text-color));
+      outline-offset: 2px;
+    }
+
+    .sheet-content {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 0 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Not the primary sheet, or the dashboard is being edited: the card goes
+       back into the flow so it can be seen and configured. */
+    :host([variant="sheet"][inline]) {
+      position: static;
+    }
+
+    :host([variant="sheet"][inline]) .sheet {
+      margin: 0;
+    }
+
+    /* ---- submenu ---- */
+
+    .submenu {
+      position: fixed;
+      z-index: calc(var(--nav-z, ${NAV_Z_INDEX}) + 1);
+      box-sizing: border-box;
+      pointer-events: auto;
+      padding: ${NAV_SUBMENU_PADDING}px;
+      min-width: ${NAV_SUBMENU_MIN_WIDTH}px;
+      border-radius: ${NAV_SUBMENU_RADIUS}px;
+      border: 1px solid rgba(100, 100, 100, 0.25);
+      background: color-mix(
+        in srgb,
+        var(--ha-card-background, var(--card-background-color)) 92%,
+        transparent
+      );
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      color: var(--nav-ink, var(--primary-text-color));
+      animation: submenu-in ${unsafeCSS(NAV_SUBMENU_MS)}ms ${EASING};
+    }
+
+    @keyframes submenu-in {
+      from {
+        opacity: 0;
+        transform: scale(0.82);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .submenu.no-animations {
+      animation: none;
+    }
+
+    .submenu-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: ${NAV_SUBMENU_ROW_HEIGHT}px;
+      padding: 0 10px;
+      border-radius: ${NAV_SUBMENU_ROW_RADIUS}px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background ${unsafeCSS(NAV_PRESS_MS)}ms ${EASING};
+    }
+
+    .submenu-row:hover,
+    .submenu-row:focus-visible {
+      background: rgba(127, 127, 127, 0.16);
+      outline: none;
+    }
+
+    .submenu-glyph {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      --mdc-icon-size: 17px;
+    }
+
+    .submenu-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty {
+      pointer-events: auto;
+      padding: 12px;
+      font-size: 13px;
+      opacity: 0.6;
+      color: var(--primary-text-color);
+    }
+
+    .no-animations,
+    .no-animations .item {
+      transition: none;
+    }
+  `;
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "m3-nav-card": M3NavCard;
+  }
+}
+
+const windowWithCards = window as unknown as {
+  customCards: Array<Record<string, unknown>>;
+};
+windowWithCards.customCards = windowWithCards.customCards || [];
+windowWithCards.customCards.push({
+  type: "m3-nav-card",
+  name: "M3 Nav Card",
+  description:
+    "Navigationsleiste für das Dashboard — als Kopf-, Fußzeile, Segment-Pille oder schwebende Leiste, mit Badges, Templates und getrennten Layouts für Desktop und Handy.",
+  preview: true,
+  documentationURL: "https://github.com/j0sp0r/m3-cards",
+});

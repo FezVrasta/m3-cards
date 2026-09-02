@@ -1217,6 +1217,7 @@ export interface M3ClockCardConfig {
 }
 
 export type M3CardConfig =
+  | M3NavCardConfig
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
   | M3ButtonCardConfig
@@ -1760,6 +1761,169 @@ export interface M3CalendarCardConfig {
   navigation_path?: string;
 
   accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+// ---- m3-nav-card ----------------------------------------------------------
+
+/**
+ * How the bar is drawn. `header`/`footer` dock to the top/bottom of the view,
+ * `segmented` is an inline pill group that sits in the card flow like any other
+ * card, `floating` detaches into a rounded bar over the content, and `sheet`
+ * is `floating` plus a drawer that pulls up over it.
+ */
+export type NavVariant = "header" | "footer" | "segmented" | "floating" | "sheet";
+
+/** Which edge a docked variant attaches to. Ignored by `segmented`. */
+export type NavPosition = "top" | "bottom";
+
+/**
+ * `active_only` is the Google-Photos pattern — every entry an icon, the current
+ * one an icon with its label — and is why this is not a boolean.
+ */
+export type NavLabelVisibility = "always" | "active_only" | "never";
+
+export type NavBadgeStyle = "dot" | "count" | "text";
+
+export type NavContainerStyle = "glass" | "solid" | "transparent";
+
+export type NavSubmenuTrigger = "tap" | "hold";
+
+export type NavSheetDefault = "collapsed" | "expanded" | "remember";
+
+/**
+ * A badge on one entry. The three sources are read in the order template,
+ * entity, count_entities and the first one set wins. Whichever it is, a value
+ * of 0 / "off" / "" / unavailable hides the badge rather than drawing an empty
+ * or zero one — a nav bar covered in grey zeroes says nothing.
+ */
+export interface NavBadgeConfig {
+  /** Jinja2, rendered live over the websocket. */
+  template?: string;
+  /** The entity's state is the badge. */
+  entity?: string;
+  /** Counts how many of these are `on`. */
+  count_entities?: string[];
+  color?: string;
+  /** Jinja2 boolean; the badge is drawn only while this renders truthy. */
+  show_if?: string;
+}
+
+/** One row of a popup submenu. */
+export interface NavSubmenuEntry {
+  name?: string;
+  icon?: string;
+  /** Shorthand for `tap_action: { action: navigate, navigation_path: … }`. */
+  path?: string;
+  tap_action?: HaActionConfig;
+}
+
+export interface NavItemConfig {
+  /** Accepts Jinja2. */
+  name?: string;
+  /** Accepts Jinja2. */
+  icon?: string;
+  /** Where a tap goes, and what the active-state URL match compares against. */
+  path?: string;
+  /** Regex overriding the automatic active match when the path shape is unusual. */
+  match?: string;
+  /** Accepts Jinja2. The active state takes this colour. */
+  color?: string;
+  badge?: NavBadgeConfig;
+  badge_style?: NavBadgeStyle;
+  /** Overrides the per-variant default corner the badge sits in. */
+  badge_position?: "top_right" | "top_left" | "inline";
+  /** Jinja2 boolean: the entry is left out entirely while this is truthy. */
+  hidden?: string;
+  /** Jinja2 boolean: the entry stays visible but stops responding to taps. */
+  disabled?: string;
+  submenu?: NavSubmenuEntry[];
+  tap_action?: HaActionConfig;
+  hold_action?: HaActionConfig;
+  double_tap_action?: HaActionConfig;
+}
+
+/**
+ * A layout override for one width class. Anything left unset falls back to the
+ * card's own top-level value, so configuring neither block keeps the card
+ * behaving as one layout at every width.
+ */
+export interface NavLayoutConfig {
+  style?: NavVariant;
+  position?: NavPosition;
+  /** Coarse switch; `label_visibility` is the finer one and wins when both are set. */
+  show_labels?: boolean;
+  /** Draws nothing at this width class. */
+  hidden?: boolean;
+  /** Only read from the `desktop` block. Width in px, below which `mobile` applies. */
+  breakpoint?: number;
+}
+
+export interface NavSheetAction {
+  icon?: string;
+  tap_action?: HaActionConfig;
+}
+
+export interface M3NavCardConfig {
+  type: string;
+  style?: NavVariant;
+  position?: NavPosition;
+  items?: NavItemConfig[];
+
+  // ---- per-width layouts
+  desktop?: NavLayoutConfig;
+  mobile?: NavLayoutConfig;
+  /** Fallback for `desktop.breakpoint`. */
+  breakpoint?: number;
+
+  // ---- sheet (style: sheet only)
+  /** Any Lovelace cards, rendered in the drawer. */
+  sheet_cards?: Record<string, unknown>[];
+  sheet_title?: string;
+  sheet_action?: NavSheetAction;
+  /** A CSS length, or a number read as vh. */
+  sheet_max_height?: string | number;
+  sheet_default?: NavSheetDefault;
+  /** An `input_boolean` holding the open state, instead of localStorage. */
+  sheet_state_entity?: string;
+  /** Fractions between 0 and 1; [0, 1] by default, [0, 0.5, 1] for a half stop. */
+  snap_points?: number[];
+  collapse_on_navigate?: boolean;
+
+  // ---- behaviour
+  submenu_trigger?: NavSubmenuTrigger;
+  haptics?: boolean;
+  auto_hide_on_scroll?: boolean;
+  /**
+   * Reserved. Home Assistant exposes no way for a card to warm another view,
+   * so this is parsed and stored but does nothing — see the README.
+   */
+  preload_views?: boolean;
+  /** Jinja2 boolean: the whole card draws nothing while this is truthy. */
+  hidden?: string;
+
+  // ---- appearance
+  label_visibility?: NavLabelVisibility;
+  /** Proportional scale for every measurement of the chosen variant, 0.7–1.5. */
+  size?: number;
+  container_style?: NavContainerStyle;
+  container_opacity?: number;
+  blur?: number;
+  /** Free CSS, applied to the bar. Advanced; the documented escape hatch. */
+  styles?: Record<string, string>;
+
+  // ---- appearance (shared conventions)
+  name?: string;
+  icon?: string;
+  accent_color?: string;
+  accent_opacity?: number;
   text_color?: string;
   secondary_text_color?: string;
   card_background?: string;

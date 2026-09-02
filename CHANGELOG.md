@@ -4,6 +4,74 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **M3 Nav Card** (`m3-nav-card`) — a navigation bar for the dashboard, in five
+  variants: `header` and `footer` dock to an edge, `segmented` is an inline pill
+  group that scrolls with the page, `floating` detaches into a rounded bar, and
+  `sheet` adds a drawer that pulls up over the view. The four docked variants
+  take no row of the grid: their slot collapses and they position themselves
+  against the screen.
+
+  Configurable to the level of the community's Navbar Card, in this suite's own
+  design language: per-entry badges (a template, an entity's state, or a count
+  of entities that are on — hidden automatically at 0/off/empty/unavailable),
+  popup submenus that grow out of the button that opened them, tap/hold/
+  double-tap actions with Home Assistant's haptic event, and separate desktop
+  and mobile layouts.
+
+  The desktop/mobile switch measures the card's **own** box through a
+  ResizeObserver rather than the window through a media query: a card in a
+  narrow column on a wide screen is narrow, and a media query would get that
+  wrong.
+
+  `name`, `icon`, `color`, `hidden`, `disabled` and the badge accept Jinja2 and
+  subscribe to it — Home Assistant pushes a new value whenever anything the
+  template reads changes. Only fields that actually contain `{{` or `{%` open a
+  subscription, and identical templates share one.
+
+  The sheet is dragged, and the interesting part is not the drag but the
+  conflict with the content scrolling inside it: the content scrolls normally,
+  and the sheet only takes over when the content is already at the top and the
+  finger is going down. A release goes to the nearest snap point unless it was a
+  flick, which goes the way it was thrown whatever position the sheet was in.
+  In edit mode the sheet renders inline and pinned open, because a drawer docked
+  to the screen covers the card the editor is trying to show, and only the first
+  sheet on a view docks itself.
+
+  `preload_views` is accepted and stored but does nothing: Home Assistant gives
+  a custom card no way to warm another view, and the only workaround would
+  flicker and leave a bogus history entry. Kept as a reserved key so a future
+  version can implement it without a breaking config change. Card-wide
+  visibility by user, device or screen size is likewise **not** reimplemented —
+  Home Assistant's own `visibility` feature already does that for every card,
+  and the card's `hidden` is scoped to what only a template can answer.
+
+- **`src/shared/template-sub.ts`** — the `render_template` websocket
+  subscription manager: one subscription per unique template, ref-counted and
+  shared between fields, closed together when the card leaves the page. This is
+  the live, pushed subscription, not the one-shot evaluator an automation uses;
+  the two are easy to confuse and have different capabilities.
+- **`src/shared/sheet-gesture.ts`** — pointer drag with a velocity estimate and
+  snap-point resolution, plus the scroll-versus-sheet rule above. Nothing in the
+  suite tracked pointer velocity before; the light card's sliders are position-
+  follows-finger with no notion of a throw.
+- **`src/shared/tap-hold.ts`** — tap, hold and double-tap told apart from each
+  other and from a drag. `shared/actions.ts` has said since it was written that
+  the next card needing this should not write a third copy; this is that module.
+  The button card is deliberately left on its own copy for now — it is the
+  most-used card in the suite and gains nothing from the change today.
+- **`src/shared/card-helpers.ts`** — `loadCardHelpers()` / `createCardElement()`
+  for hosting arbitrary Lovelace cards, with the two lifecycle rules that are
+  easy to get wrong: build on a config change and never in the render path, and
+  push a fresh `hass` into every nested card on every tick.
+
+### Changed
+
+- The suite registers **36 cards**.
+
 ## [2.2.0]
 
 ### Added

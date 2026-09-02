@@ -1560,3 +1560,98 @@ export const CALENDAR_SELECTED_RADIUS = 10;
 export const CALENDAR_ADJACENT_OPACITY = 0.3;
 export const CALENDAR_DAY_ROW_HEIGHT = 40;
 export const CALENDAR_DAY_ROW_RADIUS = 14;
+
+// ---- nav card --------------------------------------------------------------
+// A navigation bar rather than a data card: the numbers below are chrome
+// measurements, so most of them are per-variant rather than derived from the
+// row/chip scale in tokens.ts. `size` scales every one of them proportionally.
+export const DEFAULT_NAV_COLOR = PALETTE.home;
+export const DEFAULT_NAV_RADIUS = RADIUS.card;
+export const DEFAULT_NAV_ICON = "mdi:circle-outline";
+
+/** Below this card width the `mobile` layout block applies. */
+export const NAV_DEFAULT_BREAKPOINT = 768;
+/** `size` is a multiplier on every measurement, clamped to this range. */
+export const NAV_SIZE_MIN = 0.7;
+export const NAV_SIZE_MAX = 1.5;
+
+// The bar itself.
+export const NAV_BAR_HEIGHT = 62;
+export const NAV_BAR_PADDING = 6;
+export const NAV_BAR_GAP = 2;
+export const NAV_ITEM_MIN_WIDTH = 56;
+export const NAV_ITEM_HEIGHT = 50;
+export const NAV_ITEM_RADIUS = 17;
+/** The pressed-state radius morph this suite uses instead of a ripple. */
+export const NAV_ITEM_RADIUS_ACTIVE = 11;
+export const NAV_ITEM_GLYPH = 22;
+export const NAV_ITEM_LABEL_SIZE = 11;
+export const NAV_ITEM_TINT = 16;
+export const NAV_ITEM_INACTIVE_OPACITY = 0.6;
+export const NAV_PRESS_MS = 200;
+
+/** `segmented` is one pill holding the entries, so its own frame is tighter. */
+export const NAV_SEGMENT_HEIGHT = 44;
+export const NAV_SEGMENT_RADIUS = 22;
+export const NAV_SEGMENT_ITEM_RADIUS = 18;
+export const NAV_SEGMENT_PADDING = 4;
+
+/** `floating`/`sheet` detach from the view and keep this gap to its edges. */
+export const NAV_FLOAT_INSET = 8;
+export const NAV_FLOAT_RADIUS = 30;
+/**
+ * Below HA's dialog band (its dialogs sit far above this), above ordinary card
+ * content. Exposed as `--nav-z` so a dashboard with an unusual stacking context
+ * can move it without a card change.
+ */
+export const NAV_Z_INDEX = 500;
+export const NAV_AUTOHIDE_MS = 220;
+/** A scroll shorter than this does not count as a direction change. */
+export const NAV_AUTOHIDE_THRESHOLD_PX = 12;
+
+// Badges.
+export const NAV_BADGE_DOT = 8;
+export const NAV_BADGE_HEIGHT = 16;
+export const NAV_BADGE_RADIUS = 8;
+export const NAV_BADGE_FONT = 10;
+export const NAV_BADGE_PADDING = 5;
+
+// Popup submenu.
+export const NAV_SUBMENU_RADIUS = 22;
+export const NAV_SUBMENU_ROW_HEIGHT = 44;
+export const NAV_SUBMENU_ROW_RADIUS = 15;
+export const NAV_SUBMENU_PADDING = 6;
+export const NAV_SUBMENU_MIN_WIDTH = 180;
+export const NAV_SUBMENU_MS = 300;
+export const NAV_SUBMENU_TINT = 10;
+
+// Sheet.
+export const NAV_SHEET_HANDLE_WIDTH = 42;
+export const NAV_SHEET_HANDLE_HEIGHT = 4;
+export const NAV_SHEET_HANDLE_RADIUS = 2;
+export const NAV_SHEET_HANDLE_OPACITY = 0.35;
+export const NAV_SHEET_HANDLE_PADDING = 10;
+export const NAV_SHEET_DEFAULT_MAX_VH = 60;
+/** A phone in landscape: 60vh of drawer would leave nothing of the view. */
+export const NAV_SHORT_VIEWPORT_PX = 600;
+export const NAV_SHORT_VIEWPORT_MAX_VH = 50;
+export const NAV_SHEET_TITLE_SIZE = 15;
+export const NAV_SHEET_ACTION_SIZE = 34;
+export const NAV_SHEET_ACTION_RADIUS = 12;
+export const NAV_SHEET_SETTLE_MS = 320;
+
+// Gestures.
+/** Movement under this is a tap, not a drag — the button card's own threshold. */
+export const NAV_DRAG_THRESHOLD_PX = 8;
+export const NAV_HOLD_MS = 500;
+export const NAV_DOUBLE_TAP_MS = 250;
+/**
+ * A release faster than this opens or closes outright, whatever the sheet's
+ * position — a flick is an instruction, not a measurement.
+ */
+export const NAV_FLING_VELOCITY_PX_MS = 0.5;
+/** Pointer samples kept for the velocity estimate at release. */
+export const NAV_VELOCITY_SAMPLES = 5;
+export const NAV_VELOCITY_WINDOW_MS = 100;
+/** One transform write per frame is enough while a finger is down. */
+export const NAV_DRAG_THROTTLE_MS = 16;

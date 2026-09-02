@@ -54,7 +54,7 @@ Beide Fehler ließen die Seite besser aussehen, als sie war.
 - Ein Handy oder ein per DevTools emuliertes Touch-Gerät für alle Drag-Interaktionen
   (Wave-Slider, Wischen) — Maus-Events allein decken `touch-action`-Konflikte nicht ab.
 
-## Cross-Cutting-Checkliste (für jede der 35 Karten)
+## Cross-Cutting-Checkliste (für jede der 36 Karten)
 
 Diese Punkte gelten kartenübergreifend, weil sie über gemeinsame `shared/*`-Module
 implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichzeitig.
@@ -625,6 +625,46 @@ dritten Kalender.
 - [ ] Umschalter Agenda/Monat morpht; `show_view_switch: false` blendet ihn aus
 - [ ] Beim Verlassen des Sichtbereichs hört der Minutentakt auf (VisibleTicker)
 
+## M3 Nav Card
+
+Die Karte ist Navigations-Chrome statt Datenkachel: sie positioniert sich gegen
+den Bildschirm, hängt an der URL und hört auf Gesten. Entsprechend liegen die
+Fallen woanders als bei den übrigen Karten.
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Vier statische Varianten | `style` nacheinander auf `header`, `footer`, `segmented`, `floating` | `header`/`footer` kleben an der jeweiligen Kante über die volle Breite; `floating` schwebt mit 8px Abstand; `segmented` bleibt eine Pille im Kartenfluss und scrollt mit |
+| Aktiver Eintrag | Zwischen den konfigurierten Seiten navigieren | Genau der Eintrag der aktuellen Seite ist eingefärbt; eine Unterseite (`/lovelace/garten/detail`) hält den Eintrag `/lovelace/garten` aktiv |
+| Regex-Override | `match` auf einem Eintrag setzen, das nicht zur `path` passt | Aktiv-Zustand folgt dem Regex; ein kaputtes Muster macht den Eintrag nie aktiv, wirft aber nichts |
+| Template live | In zwei Browser-Tabs öffnen, in Tab A den Zustand einer im Template gelesenen Entität ändern | In Tab B ändert sich Name/Icon/Badge **ohne Reload** — das beweist das Abo statt eines einmaligen Renderns |
+| Template-Abos schließen | Karte aus der Ansicht löschen, Netzwerk-Tab beobachten | Keine weiteren `render_template`-Nachrichten für diese Karte |
+| Badge-Quellen | Je einmal `template`, `entity`, `count_entities` | Zeigt Text/Zustand/Anzahl; bei 0, `off`, leer, `unavailable` verschwindet der Badge ganz |
+| Badge-Darstellung | `badge_style` auf `dot`, `count`, `text` | Punkt ohne Text, Zahl, freier Text — jeweils an der Ecke des Icons |
+| Umschaltpunkt | Karte in eine schmale Dashboard-**Spalte** legen (nicht das Fenster verkleinern) | Mobil-Layout greift; das beweist die ResizeObserver-Messung statt einer Media Query |
+| Beschriftungen | `label_visibility` auf `always`, `active_only`, `never` | Alle, nur am aktiven Eintrag, keine |
+| Tap/Hold/Doppeltipp | Alle drei Aktionen auf einem Eintrag setzen | Jede löst genau einmal aus; ein Tipp ohne konfigurierte Doppeltipp-Aktion fühlt sich **nicht** verzögert an |
+| Haptik | Auf dem Handy in der Companion-App tippen | Kurze Vibration; mit `haptics: false` keine |
+| Ausblenden beim Scrollen | `auto_hide_on_scroll: true`, lange Ansicht scrollen | Leiste fährt beim Runterscrollen weg und beim Hochscrollen zurück |
+| Untermenü öffnen | Eintrag mit `submenu` antippen | Menü wächst aus dem Knopf heraus; schließt bei Auswahl, Klick daneben und Escape |
+| Untermenü am Rand | Denselben Eintrag ganz links und ganz rechts platzieren | Menü bleibt vollständig im Bild, statt über den Rand zu laufen |
+| Untermenü per Halten | `submenu_trigger: hold` | Tipp navigiert, langes Drücken öffnet das Menü |
+| Untermenü mit Tastatur | Menü öffnen, Tab drücken | Fokus erreicht die Menüzeilen; Escape schließt |
+| Sheet: Tippen | `style: sheet`, auf den Griff tippen | Schublade fährt auf und zu |
+| Sheet: Inhalt | `sheet_cards` mit einer **interaktiven** Karte füllen (z. B. Light-Card) | Karte rendert, reagiert auf Bedienung und zeigt aktuelle Zustände — beweist, dass `hass` weitergereicht wird |
+| Sheet: Ziehen | Am Griff auf und ab ziehen | Schublade folgt dem Finger ohne Nachlauf |
+| Sheet: Schwung | Schnell nach oben bzw. unten schnippen, aus halber Position | Öffnet bzw. schließt ganz, unabhängig von der Position beim Loslassen |
+| Sheet: Rastpunkte | `snap_points: [0, 0.5, 1]`, langsam auf halbe Höhe ziehen und loslassen | Rastet auf halber Höhe ein |
+| **Sheet: Scroll-Konflikt** | Schublade mit mehr Inhalt füllen, als hineinpasst. Dann: (a) mitten im Inhalt nach unten ziehen, (b) Inhalt ganz nach oben scrollen und weiter nach unten ziehen | (a) der Inhalt scrollt, das Sheet bewegt sich **nicht**; (b) das Sheet folgt dem Finger |
+| Sheet: Wisch von der Leiste | Von der Navigationsleiste nach oben wischen | Schublade öffnet; ein Tipp auf einen Eintrag navigiert weiterhin normal |
+| Sheet: Zustand merken | `sheet_default: remember`, öffnen, Seite neu laden | Bleibt offen. Mit `sheet_state_entity` zusätzlich auf einem zweiten Gerät prüfen |
+| Sheet: beim Navigieren | Schublade offen lassen, Eintrag antippen | Schublade schließt (außer `collapse_on_navigate: false`) |
+| Sheet: Bearbeiten-Modus | Dashboard in den Bearbeiten-Modus schalten | Sheet wird **im Kartenfluss** und aufgeklappt gezeichnet, nicht am Bildschirm fixiert |
+| Sheet: zwei Instanzen | Zwei Sheet-Karten auf eine Ansicht legen | Nur die erste dockt an; die zweite rendert inline |
+| Sheet: kleines Fenster | Fenster auf unter 600px Höhe bringen (DevTools, Handy quer) | Höhe der Schublade ist auf 50vh begrenzt |
+| Sheet: Safe Area | Auf einem iPhone in Safari öffnen | Leiste sitzt über der Home-Bar, nicht darunter |
+| Reduced Motion | C11/C12 mit `style: sheet` | Schublade springt zwischen den Rastpunkten, ohne Nachfedern |
+| Ganze Karte ausblenden | `hidden` auf ein Template setzen, das wahr wird | Leiste verschwindet vollständig |
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und
@@ -644,6 +684,6 @@ kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.
 1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
    durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
    eine mit Animation wie Progress/Light).
-2. Jede der 35 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+2. Jede der 36 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
