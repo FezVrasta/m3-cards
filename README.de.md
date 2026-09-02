@@ -3303,6 +3303,7 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `desktop` / `mobile` | — | Überschreibungen je Breite: `style`, `position`, `show_labels`, `hidden` |
 | `breakpoint` | `768` | Kartenbreite, unter der `mobile` gilt |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
+| `show_icons` | `true` | Aus ergibt eine Leiste aus reinen Beschriftungen — eine Segmentleiste |
 | `max_width` | — | Breitenbegrenzung, mittig. Zahl = px, Text = CSS-Länge, `fit` = so breit wie die Einträge |
 | `size` | `1` | Skaliert jedes Maß, 0,7–1,5 |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |

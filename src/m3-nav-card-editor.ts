@@ -481,6 +481,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         name: "size",
         selector: { number: { min: NAV_SIZE_MIN, max: NAV_SIZE_MAX, step: 0.05, mode: "slider" } },
       },
+      { name: "show_icons", selector: { boolean: {} } },
       {
         name: "container_style",
         selector: {
@@ -804,6 +805,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
+      show_icons: "editor_nav_show_icons",
       split: "editor_nav_different_widths",
       width_fit: "editor_nav_width_fit",
       width_px: "editor_nav_max_width_px",
@@ -1211,6 +1213,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${{
                 label_visibility: cfg.label_visibility ?? "always",
                 size: cfg.size ?? 1,
+                show_icons: cfg.show_icons !== false,
                 container_style: cfg.container_style ?? "glass",
               }}
               .schema=${this._appearanceSchema()}

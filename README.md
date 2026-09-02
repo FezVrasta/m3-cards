@@ -3229,6 +3229,7 @@ without a breaking config change.
 | `desktop` / `mobile` | — | Per-width overrides: `style`, `position`, `show_labels`, `hidden` |
 | `breakpoint` | `768` | Card width below which `mobile` applies |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
+| `show_icons` | `true` | Off gives a bar of pure labels — a segmented control |
 | `max_width` | — | Width cap, centred. A number is px, a string any CSS length, `fit` hugs the entries |
 | `size` | `1` | Scales every measurement, 0.7–1.5 |
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |

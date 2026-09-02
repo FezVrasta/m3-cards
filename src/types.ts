@@ -1955,6 +1955,12 @@ export interface M3NavCardConfig {
   // ---- appearance
   label_visibility?: NavLabelVisibility;
   /**
+   * Draw the icons at all. Off gives a bar of pure labels, which is what a
+   * segmented control usually is — and the one shape `label_visibility` cannot
+   * produce on its own.
+   */
+  show_icons?: boolean;
+  /**
    * How wide the bar is allowed to get, centred in the space it docks to.
    * A number is px, a string is any CSS length, and `"fit"` makes it exactly
    * as wide as its entries need. Unset spans the whole width — which is right

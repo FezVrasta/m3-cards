@@ -494,7 +494,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * Whether entries stack their label under the icon (and share the row width
    * evenly) or sit as icon-and-label pills sized to their own content.
    */
+  private get _showIcons(): boolean {
+    return this._config?.show_icons !== false;
+  }
+
   private get _stacked(): boolean {
+    // With no icon there is no glyph box to put the active pill on, so the
+    // entry itself carries it — the same arrangement the horizontal variants
+    // already use.
+    if (!this._showIcons) return false;
     const variant = this._variant;
     return variant === "footer" || variant === "floating" || variant === "sheet";
   }
@@ -1457,7 +1465,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       <div
         class="item ${item.active ? "active" : ""} ${pressed ? "pressed" : ""} ${item.disabled
           ? "disabled"
-          : ""}"
+          : ""} ${this._showIcons ? "" : "labels-only"}"
         data-index=${item.index}
         style=${this._stacked ? nothing : indicator}
         role="button"
@@ -1479,11 +1487,18 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         @click=${item.disabled ? nothing : handler.click}
         @keydown=${item.disabled ? nothing : activateOnKey(handler.click)}
       >
-        <span class="glyph" style=${this._stacked ? indicator : nothing}>
-          <ha-icon icon=${item.icon}></ha-icon>
-          ${this._renderBadge(item)}
-        </span>
-        ${showLabel ? html`<span class="label">${item.name}</span>` : nothing}
+        ${this._showIcons
+          ? html`
+              <span class="glyph" style=${this._stacked ? indicator : nothing}>
+                <ha-icon icon=${item.icon}></ha-icon>
+                ${this._renderBadge(item)}
+              </span>
+            `
+          : nothing}
+        ${showLabel
+          ? html`<span class="label">${item.name}</span>`
+          : nothing}
+        ${this._showIcons ? nothing : this._renderBadge(item)}
       </div>
     `;
   }
@@ -1785,9 +1800,19 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       border-radius: calc(${NAV_SEGMENT_ITEM_RADIUS}px * var(--nav-scale, 1));
     }
 
+    /* Tabs that do not fit scroll sideways rather than shrinking into
+       illegibility. "safe center" keeps them centred while they do fit and
+       stops the first one being clipped out of reach once they do not. */
     :host([variant="segmented"]) .bar,
     :host([variant="header"]) .bar {
-      justify-content: center;
+      justify-content: safe center;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    :host([variant="segmented"]) .bar::-webkit-scrollbar,
+    :host([variant="header"]) .bar::-webkit-scrollbar {
+      display: none;
     }
 
     .item.active {
@@ -1840,6 +1865,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         calc(var(--nav-glyph, ${NAV_ITEM_GLYPH}px) * 1.35)
       );
       border-radius: calc(${NAV_INDICATOR_RADIUS}px * var(--nav-scale, 1));
+    }
+
+    :host(:not([variant="segmented"]):not([variant="header"])) .item.labels-only {
+      flex-direction: row;
+      padding: 0 14px;
+    }
+
+    .item.labels-only .label {
+      font-size: calc(${NAV_ITEM_LABEL_SIZE + 2}px * var(--nav-scale, 1));
     }
 
     .label {
