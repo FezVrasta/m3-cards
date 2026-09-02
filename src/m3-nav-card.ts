@@ -889,6 +889,29 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     );
   }
 
+  /**
+   * Width classes that have a drawer configured but use a variant without one.
+   *
+   * The root `style` only applies where no per-width block overrides it, so a
+   * card set to `sheet` with `mobile: { style: floating }` has a drawer full of
+   * shortcuts that the phone — the one device it was meant for — never shows a
+   * grip for. Nothing is broken and nothing errors; the drawer simply is not
+   * reachable there, which is worth saying out loud in the editor.
+   */
+  private get _drawerlessWidths(): TranslationKey[] {
+    const cfg = this._config;
+    if (!cfg || !this._sheetHasContent) return [];
+    const out: TranslationKey[] = [];
+    const rootIsSheet = (cfg.style ?? "footer") === "sheet";
+    const check = (block: NavLayoutConfig | undefined, key: TranslationKey): void => {
+      const effective = block?.style ?? cfg.style ?? "footer";
+      if (effective !== "sheet" && (rootIsSheet || block?.style)) out.push(key);
+    };
+    check(cfg.desktop, "editor_nav_desktop");
+    check(cfg.mobile, "editor_nav_mobile");
+    return out;
+  }
+
   private get _sheetTarget(): CollapseTarget {
     // Cards carry no id, so the key is what identifies this sheet to a reader:
     // the page it is on and its own title.
@@ -1449,6 +1472,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         </div>
         ${this._variant === "sheet" && !this._sheetHasContent
           ? html`<div class="edit-warn">${this._t("nav_sheet_empty")}</div>`
+          : nothing}
+        ${this._drawerlessWidths.length
+          ? html`<div class="edit-warn">
+              ${this._t("nav_sheet_wrong_variant").replace(
+                "{where}",
+                this._drawerlessWidths.map((k) => this._t(k)).join(" / "),
+              )}
+            </div>`
           : nothing}
         ${body}
       </div>

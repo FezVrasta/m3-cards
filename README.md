@@ -3144,6 +3144,12 @@ sheet_cards:
     entity: light.living_room
 ```
 
+Careful with the per-width blocks here: the root `style` only applies where a
+block does not override it. A card set to `sheet` with `mobile: { style:
+floating }` has a drawer full of shortcuts and no grip on the phone — the one
+device it was built for. Nothing errors; the drawer is simply not reachable
+there. The editor now says so.
+
 A drawer with nothing in it — no tiles, no cards, no title — has nothing to
 pull open, so the card renders as a plain floating bar instead of a grip that
 opens an empty box. The editor says so rather than leaving it to be discovered

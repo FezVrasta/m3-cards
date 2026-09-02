@@ -3217,6 +3217,12 @@ sheet_cards:
     entity: light.wohnzimmer
 ```
 
+Vorsicht bei den Blöcken je Breite: der Wurzel-`style` gilt nur dort, wo kein
+Block ihn überschreibt. Eine Karte auf `sheet` mit `mobile: { style: floating }`
+hat eine volle Schublade und am Handy — dem Gerät, für das sie gedacht war —
+keinen Griff. Es bricht nichts, die Schublade ist dort schlicht nicht
+erreichbar. Der Editor weist jetzt darauf hin.
+
 Eine Schublade ohne Inhalt — keine Kacheln, keine Karten, kein Titel — hat
 nichts aufzuziehen. Die Karte zeichnet dann eine schlichte schwebende Leiste
 statt eines Griffs, der ein leeres Fach öffnet, und der Editor sagt es, statt
