@@ -777,6 +777,8 @@ windowWithCards.customCards.push({
   name: "M3 Leak Card",
   description:
     "Eine Material-3-Übersicht für Wassermelder mit ruhigem Normalzustand, unübersehbarem Alarm und direkter Absperr-Aktion.",
-  preview: true,
+  // false: auto_discover would otherwise run full-house discovery in HA's
+  // card picker preview — see m3-battery-card.ts for the full rationale.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

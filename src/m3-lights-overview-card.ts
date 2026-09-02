@@ -732,6 +732,8 @@ windowWithCards.customCards.push({
   type: "m3-lights-overview-card",
   name: "M3 Lights Overview Card",
   description: "Eine Material-3-Übersicht aller Lichter, automatisch nach Bereich gruppiert.",
-  preview: true,
+  // false: auto_discover would otherwise run full-house discovery in HA's
+  // card picker preview — see m3-battery-card.ts for the full rationale.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

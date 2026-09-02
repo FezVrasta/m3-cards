@@ -642,6 +642,11 @@ windowWithCards.customCards.push({
   name: "M3 Battery Card",
   description:
     "Eine Material-3-Übersicht aller Batteriestände mit automatischer Erkennung, Schwellwert-Farben und Sortierung.",
-  preview: true,
+  // false: auto_discover scans every matching entity in hass.states and, once
+  // live, subscribes to state updates for all of them — HA's "Add Card"
+  // picker instantiates a real, hass-wired element per card type just to
+  // draw this preview, so leaving it on runs full-house discovery for
+  // everyone opening the dialog. See m3-updates-card.ts and siblings.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });
