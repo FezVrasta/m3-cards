@@ -496,8 +496,17 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * Whether entries stack their label under the icon (and share the row width
    * evenly) or sit as icon-and-label pills sized to their own content.
    */
+  private get _iconVisibility(): NavLabelVisibility {
+    const cfg = this._config;
+    if (cfg?.icon_visibility) return cfg.icon_visibility;
+    // `show_icons` came first and stays as the coarse version of the same
+    // question.
+    return cfg?.show_icons === false ? "never" : "always";
+  }
+
+  /** Whether any entry at all draws an icon, which decides the layout. */
   private get _showIcons(): boolean {
-    return this._config?.show_icons !== false;
+    return this._iconVisibility !== "never";
   }
 
   private get _stacked(): boolean {
@@ -1460,6 +1469,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     const labels = this._labelVisibility;
     const showLabel =
       !!item.name && (labels === "always" || (labels === "active_only" && item.active));
+    const icons = this._iconVisibility;
+    const showIcon =
+      icons === "always" || (icons === "active_only" && item.active);
     const handler = this._tapHoldFor(item);
     const pressed = this._pressed === item.index;
     // A solid fill is the reference look; the ink on it is chosen between the
@@ -1483,7 +1495,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       <div
         class="item ${item.active ? "active" : ""} ${pressed ? "pressed" : ""} ${item.disabled
           ? "disabled"
-          : ""} ${this._showIcons ? "" : "labels-only"}"
+          : ""} ${showIcon ? "" : "labels-only"} ${
+          this._config?.item_background ? "plated" : ""
+        }"
         data-index=${item.index}
         style=${this._stacked ? nothing : indicator}
         role="button"
@@ -1505,7 +1519,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         @click=${item.disabled ? nothing : handler.click}
         @keydown=${item.disabled ? nothing : activateOnKey(handler.click)}
       >
-        ${this._showIcons
+        ${showIcon
           ? html`
               <span class="glyph" style=${this._stacked ? indicator : nothing}>
                 <ha-icon icon=${item.icon}></ha-icon>
@@ -1516,7 +1530,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         ${showLabel
           ? html`<span class="label">${item.name}</span>`
           : nothing}
-        ${this._showIcons ? nothing : this._renderBadge(item)}
+        ${showIcon ? nothing : this._renderBadge(item)}
       </div>
     `;
   }
@@ -1700,7 +1714,8 @@ export class M3NavCard extends LitElement implements LovelaceCard {
        own for four of the variants, the sheet for the fifth — where the bar is
        one part of a larger box and draws nothing itself. */
     .bar.glass,
-    .sheet.glass {
+    .sheet.glass,
+    .bubble.glass {
       background: var(
         --nav-bg,
         color-mix(
@@ -1719,13 +1734,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     }
 
     .bar.solid,
-    .sheet.solid {
+    .sheet.solid,
+    .bubble.solid {
       background: var(--nav-bg, var(--ha-card-background, var(--card-background-color)));
       border: 1px solid rgba(100, 100, 100, 0.25);
     }
 
     .bar.transparent,
-    .sheet.transparent {
+    .sheet.transparent,
+    .bubble.transparent {
       background: none;
       border: none;
     }
@@ -1859,6 +1876,12 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       display: none;
     }
 
+    /* Every entry on its own faint surface, not only the current one — the
+       header-tabs design draws the inactive tabs as pills too. */
+    .item.plated:not(.active) {
+      background: rgba(127, 127, 127, 0.14);
+    }
+
     .item.active {
       opacity: 1;
       font-weight: 600;
@@ -1964,7 +1987,16 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       pointer-events: auto;
       display: flex;
       align-items: stretch;
+      justify-content: center;
       gap: 8px;
+    }
+
+    /* A capped bar centres itself with auto margins, which inside the row
+       shoves the button out to the far edge instead of leaving it beside the
+       bar. The row does the centring when there is a button in it. */
+    :host([variant]) .bar-row .bar.capped {
+      margin-left: 0;
+      margin-right: 0;
     }
 
     :host([variant="floating"]) .bar-row,

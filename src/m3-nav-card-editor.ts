@@ -481,7 +481,20 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         name: "size",
         selector: { number: { min: NAV_SIZE_MIN, max: NAV_SIZE_MAX, step: 0.05, mode: "slider" } },
       },
-      { name: "show_icons", selector: { boolean: {} } },
+      {
+        name: "icon_visibility",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "always", label: this._t("editor_nav_label_always") },
+              { value: "active_only", label: this._t("editor_nav_label_active") },
+              { value: "never", label: this._t("editor_nav_label_never") },
+            ],
+          },
+        },
+      },
+      { name: "item_background", selector: { boolean: {} } },
       {
         name: "active_style",
         selector: {
@@ -817,7 +830,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
-      show_icons: "editor_nav_show_icons",
+      icon_visibility: "editor_nav_icon_visibility",
+      item_background: "editor_nav_item_background",
       active_style: "editor_nav_active_style",
       split: "editor_nav_different_widths",
       width_fit: "editor_nav_width_fit",
@@ -1226,7 +1240,9 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${{
                 label_visibility: cfg.label_visibility ?? "always",
                 size: cfg.size ?? 1,
-                show_icons: cfg.show_icons !== false,
+                icon_visibility:
+                  cfg.icon_visibility ?? (cfg.show_icons === false ? "never" : "always"),
+                item_background: cfg.item_background ?? false,
                 active_style: cfg.active_style ?? "tint",
                 container_style: cfg.container_style ?? "glass",
               }}

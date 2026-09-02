@@ -3303,7 +3303,8 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `desktop` / `mobile` | — | Überschreibungen je Breite: `style`, `position`, `show_labels`, `hidden` |
 | `breakpoint` | `768` | Kartenbreite, unter der `mobile` gilt |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
-| `show_icons` | `true` | Aus ergibt eine Leiste aus reinen Beschriftungen — eine Segmentleiste |
+| `icon_visibility` | `always` | `always`, `active_only`, `never` — dieselben drei Möglichkeiten wie bei den Beschriftungen, unabhängig davon |
+| `item_background` | `false` | Eine zarte Fläche unter jedem Eintrag, nicht nur unter dem aktuellen |
 | `active_style` | `tint` | `tint` (zarte Tönung in der Farbe des Eintrags) oder `solid` (voll gefüllt, dunkle Schrift darauf) |
 | `action_button` | — | `{icon, tap_action, color}` — ein runder Knopf neben der Leiste, außerhalb ihrer Fläche |
 | `max_width` | — | Breitenbegrenzung, mittig. Zahl = px, Text = CSS-Länge, `fit` = so breit wie die Einträge |

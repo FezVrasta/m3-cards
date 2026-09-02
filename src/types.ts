@@ -1969,7 +1969,16 @@ export interface M3NavCardConfig {
 
   // ---- appearance
   label_visibility?: NavLabelVisibility;
+  /**
+   * The same three choices for the icons, independently of the labels. The two
+   * axes are what separate the reference designs from each other: labels always
+   * with the icon only on the current entry is one bar, icons always with the
+   * label only on the current entry is a different one.
+   */
+  icon_visibility?: NavLabelVisibility;
   active_style?: NavActiveStyle;
+  /** A faint surface under every entry, not only the current one. */
+  item_background?: boolean;
   /** A round button set beside the bar, outside its surface. */
   action_button?: NavActionButton;
   /**

@@ -3229,7 +3229,8 @@ without a breaking config change.
 | `desktop` / `mobile` | — | Per-width overrides: `style`, `position`, `show_labels`, `hidden` |
 | `breakpoint` | `768` | Card width below which `mobile` applies |
 | `label_visibility` | `always` | `always`, `active_only`, `never` |
-| `show_icons` | `true` | Off gives a bar of pure labels — a segmented control |
+| `icon_visibility` | `always` | `always`, `active_only`, `never` — the same three choices as the labels, independently |
+| `item_background` | `false` | A faint surface under every entry, not only the current one |
 | `active_style` | `tint` | `tint` (a wash of the entry's colour) or `solid` (filled outright, dark ink on it) |
 | `action_button` | — | `{icon, tap_action, color}` — a round button set beside the bar, outside its surface |
 | `max_width` | — | Width cap, centred. A number is px, a string any CSS length, `fit` hugs the entries |
