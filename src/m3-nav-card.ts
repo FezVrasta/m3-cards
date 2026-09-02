@@ -1768,12 +1768,28 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     /* Exactly as wide as the entries need: they stop sharing the row out
        between them and take only their own content. */
-    .bar.fit .item,
-    .sheet.fit .item {
+    :host([variant]) .bar.fit .item,
+    :host([variant]) .sheet.fit .item {
+      /* Content-sized and never shrinking: the whole point of hugging the
+         entries is that each one keeps its own width. A per-variant rule used
+         to outrank this, so the entries went on shrinking and their labels
+         were ellipsised down to a single letter. */
       flex: 0 0 auto;
       /* Hugging the entries makes them touch, so they get their own padding
          back — a row of labels with no gap between them reads as one word. */
-      padding: 0 6px;
+      padding: 0 10px;
+    }
+
+    /* Entries that keep their width can add up to more than the screen, so the
+       bar scrolls rather than clipping the last one off the edge. */
+    :host([variant]) .bar.fit {
+      overflow-x: auto;
+      scrollbar-width: none;
+      max-width: min(var(--nav-max-width, 100%), 100%);
+    }
+
+    :host([variant]) .bar.fit::-webkit-scrollbar {
+      display: none;
     }
 
     .bar.fit,
