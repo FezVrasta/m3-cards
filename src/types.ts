@@ -1794,7 +1794,19 @@ export type NavPosition = "top" | "bottom";
  * `active_only` is the Google-Photos pattern — every entry an icon, the current
  * one an icon with its label — and is why this is not a boolean.
  */
-export type NavLabelVisibility = "always" | "active_only" | "never";
+export type NavLabelVisibility =
+  | "always"
+  | "active_only"
+  | "inactive_only"
+  | "never";
+
+/**
+ * Where an entry's text sits relative to its icon. The horizontal placements
+ * also move the active pill: it wraps icon and text together rather than
+ * sitting behind the icon alone, which is what a bar with side-by-side labels
+ * looks like everywhere it is used.
+ */
+export type NavLabelPosition = "below" | "above" | "right" | "left";
 
 export type NavBadgeStyle = "dot" | "count" | "text";
 
@@ -1989,6 +2001,8 @@ export interface M3NavCardConfig {
 
   // ---- appearance
   label_visibility?: NavLabelVisibility;
+  /** Where the text sits relative to the icon. Default `below`. */
+  label_position?: NavLabelPosition;
   /**
    * The same three choices for the icons, independently of the labels. The two
    * axes are what separate the reference designs from each other: labels always

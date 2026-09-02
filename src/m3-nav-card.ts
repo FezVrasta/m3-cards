@@ -10,6 +10,7 @@ import type {
   M3NavCardConfig,
   NavBadgeStyle,
   NavItemConfig,
+  NavLabelPosition,
   NavActionMenuEntry,
   NavLabelVisibility,
   NavLayoutConfig,
@@ -539,6 +540,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // through an attribute selector rather than an inline style.
     this.setAttribute("variant", this._layout.style ?? "footer");
     this.setAttribute("edge", this._position);
+    this.setAttribute("labels", this._labelPosition);
     // Docking is what makes the bar cost no row of the view, and it is exactly
     // what makes it unreachable in the editor: a fixed card leaves the flow, so
     // its slot in the grid collapses to nothing and there is no longer anything
@@ -660,11 +662,20 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     return this._iconVisibility !== "never";
   }
 
+  private get _labelPosition(): NavLabelPosition {
+    return this._config?.label_position ?? "below";
+  }
+
   private get _stacked(): boolean {
     // With no icon there is no glyph box to put the active pill on, so the
     // entry itself carries it — the same arrangement the horizontal variants
     // already use.
     if (!this._showIcons) return false;
+    // Text beside the icon is the other case where the pill has to wrap both:
+    // a pill around the icon alone, with the label hanging outside it, is not
+    // a shape anyone draws.
+    const pos = this._labelPosition;
+    if (pos === "left" || pos === "right") return false;
     const variant = this._variant;
     return variant === "footer" || variant === "floating" || variant === "sheet";
   }
@@ -1729,12 +1740,12 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   }
 
   private _renderItem(item: ResolvedItem): TemplateResult {
-    const labels = this._labelVisibility;
-    const showLabel =
-      !!item.name && (labels === "always" || (labels === "active_only" && item.active));
-    const icons = this._iconVisibility;
-    const showIcon =
-      icons === "always" || (icons === "active_only" && item.active);
+    const visible = (rule: NavLabelVisibility): boolean =>
+      rule === "always" ||
+      (rule === "active_only" && item.active) ||
+      (rule === "inactive_only" && !item.active);
+    const showLabel = !!item.name && visible(this._labelVisibility);
+    const showIcon = visible(this._iconVisibility);
     const handler = this._tapHoldFor(item);
     const pressed = this._pressed === item.index;
     // A solid fill is the reference look; the ink on it is chosen between the
@@ -2368,6 +2379,33 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       margin: 0;
       flex: 1;
       min-width: 0;
+    }
+
+    /* Where the text sits relative to the icon. "below" is the default and
+       needs no rule; the other three re-flow the entry, and the horizontal
+       ones give it side padding because the active pill now wraps both the
+       icon and the text rather than just the icon. */
+    :host([labels="above"]) .item {
+      flex-direction: column-reverse;
+    }
+
+    :host([labels="right"]) .item,
+    :host([labels="left"]) .item {
+      flex-direction: row;
+      gap: calc(${NAV_BAR_GAP}px * var(--nav-scale, 1));
+      padding: 0 calc(14px * var(--nav-scale, 1));
+      min-width: 0;
+    }
+
+    :host([labels="left"]) .item {
+      flex-direction: row-reverse;
+    }
+
+    /* An entry laid out sideways is as wide as its content, so a bar of them
+       hugs rather than stretching each one to an equal share. */
+    :host([labels="right"]) .bar .item,
+    :host([labels="left"]) .bar .item {
+      flex: 0 0 auto;
     }
 
     /* The trigger and its menu share a box so the menu can hang off the

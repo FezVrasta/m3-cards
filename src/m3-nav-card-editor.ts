@@ -516,7 +516,22 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             options: [
               { value: "always", label: this._t("editor_nav_label_always") },
               { value: "active_only", label: this._t("editor_nav_label_active") },
+              { value: "inactive_only", label: this._t("editor_nav_label_inactive") },
               { value: "never", label: this._t("editor_nav_label_never") },
+            ],
+          },
+        },
+      },
+      {
+        name: "label_position",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "below", label: this._t("editor_nav_label_pos_below") },
+              { value: "above", label: this._t("editor_nav_label_pos_above") },
+              { value: "right", label: this._t("editor_nav_label_pos_right") },
+              { value: "left", label: this._t("editor_nav_label_pos_left") },
             ],
           },
         },
@@ -533,6 +548,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
             options: [
               { value: "always", label: this._t("editor_nav_label_always") },
               { value: "active_only", label: this._t("editor_nav_label_active") },
+              { value: "inactive_only", label: this._t("editor_nav_label_inactive") },
               { value: "never", label: this._t("editor_nav_label_never") },
             ],
           },
@@ -884,6 +900,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       hold_action: "editor_nav_hold_action",
       double_tap_action: "editor_nav_double_tap_action",
       label_visibility: "editor_nav_label_visibility",
+      label_position: "editor_nav_label_position",
       icon_visibility: "editor_nav_icon_visibility",
       item_background: "editor_nav_item_background",
       active_style: "editor_nav_active_style",

@@ -8,6 +8,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Nav card: `label_position`** — whether an entry's text sits below, above,
+  right or left of its icon. The two horizontal placements also move the active
+  pill so it wraps icon and text together, because a pill around the icon alone
+  with the label hanging outside it is not a shape anyone draws.
+
+- **Nav card: `inactive_only`** for `label_visibility` and `icon_visibility` —
+  the missing inverse of `active_only`. Together they express a bar whose
+  selected page reads as text while every other page is just an icon.
+
 - **Nav card: the action button can open a menu.** Give `action_button` a
   `menu` and tapping it raises a stack of labelled pills out of the button —
   each with its own text, icon, colour and action — while the button itself
@@ -63,6 +72,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Nav-Karte: `label_position`** — ob der Text eines Eintrags unter, über,
+  rechts oder links neben seinem Icon steht. Die beiden waagerechten Varianten
+  verschieben auch die aktive Pille, sodass sie Icon und Text gemeinsam
+  umschließt: eine Pille nur ums Icon, mit dem Text daneben außerhalb, ist keine
+  Form, die irgendwo so gezeichnet wird.
+
+- **Nav-Karte: `inactive_only`** für `label_visibility` und `icon_visibility` —
+  das fehlende Gegenstück zu `active_only`. Zusammen ergeben sie eine Leiste,
+  in der die ausgewählte Seite als Text erscheint und alle anderen als Icon.
 
 - **Nav-Karte: Der Aktionsknopf kann ein Menü öffnen.** Bekommt `action_button`
   ein `menu`, steigen beim Antippen beschriftete Pillen aus dem Knopf auf — jede
