@@ -42,6 +42,7 @@ import {
   NAV_INDICATOR_HEIGHT,
   NAV_INDICATOR_RADIUS,
   NAV_SIDE_PADDING,
+  NAV_ICON_SIDE_PADDING,
   NAV_DOCK_MIN_INSET,
   NAV_INDICATOR_RADIUS_ACTIVE,
   NAV_INDICATOR_WIDTH,
@@ -536,6 +537,13 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   }
 
   protected willUpdate(changed: PropertyValues): void {
+    // Before the render, not after it. A navigation that reaches the card by
+    // a route this does not listen on used to be corrected in updated(), which
+    // meant the wrong entry was painted first and put right on the next frame
+    // — a box flashing on a neighbour of the page you actually opened. Read
+    // here it never reaches the screen, and a string comparison per update
+    // costs nothing.
+    if (this._path !== location.pathname) this._path = location.pathname;
     if (changed.has("_config")) {
       this._syncSubscriptions();
       void this._syncSheetCards();
@@ -566,10 +574,6 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
-    // Cheap belt and braces: a navigation that reaches the card by a route
-    // this does not listen on still corrects itself on the next render, and a
-    // string comparison per update costs nothing.
-    if (this._path !== location.pathname) this._path = location.pathname;
     this._keepActiveInView();
     // The first measurement can land before the view has laid itself out, and
     // the observer only fires on a later change — which for a slot that never
@@ -1778,6 +1782,8 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         class="item ${item.active ? "active" : ""} ${pressed ? "pressed" : ""} ${item.disabled
           ? "disabled"
           : ""} ${showIcon ? "" : "labels-only"} ${
+          showIcon && !showLabel ? "icons-only" : ""
+        } ${
           this._config?.item_background ? "plated" : ""
         }"
         data-index=${item.index}
@@ -2098,7 +2104,20 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     :host([variant]) .bar.fit {
       overflow-x: auto;
       scrollbar-width: none;
-      max-width: min(var(--nav-max-width, 100%), 100%);
+      /* Hugging is done with width, not with a cap. It used to be written as
+         min(var(--nav-max-width), 100%), where the variable holds the keyword
+         fit-content — and a keyword inside min() is invalid at computed-value
+         time, so the whole declaration fell back to none. The bar was never
+         capped at all: it stayed the full width with its entries spread out
+         inside it, which is what "only as wide as its entries" was supposed to
+         prevent.
+
+         The cap that remains is a real length, and it exists because the
+         margin holding the bar off the screen edge sits outside this box: at
+         100% the bar is the width of the screen and the margins push it out
+         past both edges. */
+      width: fit-content;
+      max-width: calc(100% - 2 * var(--nav-edge, ${NAV_FLOAT_INSET}px));
     }
 
     :host([variant]) .bar.fit::-webkit-scrollbar {
@@ -2975,12 +2994,53 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       gap: calc(8px * var(--nav-scale, 1));
     }
 
-    :host([labels="right"][variant]) .bar .item:not(.labels-only) {
-      padding-left: calc(6px * var(--nav-scale, 1));
+    /* Equal at both ends. Hugging the icon side looked deliberate written down
+       and lopsided on screen: the text ended up 36px from one end of the pill
+       and 16px from the other, and at 6px the icon still sat inside the curve
+       of a capsule rounded by half its own height. */
+    :host([labels="right"][variant]) .bar .item:not(.labels-only),
+    :host([labels="left"][variant]) .bar .item:not(.labels-only) {
+      padding: 0 calc(${NAV_ICON_SIDE_PADDING}px * var(--nav-scale, 1));
     }
 
-    :host([labels="left"][variant]) .bar .item:not(.labels-only) {
-      padding-right: calc(6px * var(--nav-scale, 1));
+    /* Beside a round button the bar is told to take the rest of the row, which
+       is right until the bar is meant to hug its entries — then growing is
+       exactly what it must not do. */
+    :host([variant="floating"]) .bar-row .bar.fit,
+    :host([variant="sheet"]) .bar-row .bar.fit {
+      flex: 0 1 auto;
+    }
+
+    /* A docked bar is the full width of what it docks to, whatever the width
+       cap says. The cap decides how far the entries spread inside it, not how
+       wide the panel is: a header shrunk to its entries leaves its glass
+       hanging in the middle of the screen with a visible edge at each end,
+       which is the seam and not a bar. */
+    :host([variant="header"]) .bar.capped,
+    :host([variant="footer"]) .bar.capped,
+    :host([variant="header"]) .bar.fit,
+    :host([variant="footer"]) .bar.fit {
+      max-width: none;
+      width: 100%;
+      justify-content: safe center;
+    }
+
+    /* An entry that is nothing but an icon gets a round marker rather than a
+       rounded rectangle: the rectangle is the shape of a pill sitting above a
+       label, and with no label under it there is nothing for that shape to
+       line up with. */
+    :host([variant]) .item.icons-only .glyph {
+      width: calc(
+        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) * 1.9
+      );
+      height: calc(
+        var(--nav-glyph, calc(${NAV_ITEM_GLYPH}px * var(--nav-scale, 1))) * 1.9
+      );
+      border-radius: 50%;
+    }
+
+    :host([variant]) .bar .item.icons-only {
+      border-radius: 999px;
     }
 
     /* A pill around icon and text is a capsule: its ends are half its own

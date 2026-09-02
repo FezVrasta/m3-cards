@@ -1611,6 +1611,8 @@ export const NAV_DOCK_MIN_INSET = 40;
 
 /** Side padding of an entry whose label sits beside its icon. */
 export const NAV_SIDE_PADDING = 16;
+/** The same, for an entry that carries an icon as well as its label. */
+export const NAV_ICON_SIDE_PADDING = 12;
 export const NAV_ITEM_INACTIVE_OPACITY = 0.6;
 export const NAV_PRESS_MS = 200;
 

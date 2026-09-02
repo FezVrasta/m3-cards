@@ -32,6 +32,27 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: `max_width: fit` never actually capped the bar.** The cap was
+  written as `min(var(--nav-max-width), 100%)`, and that variable holds the
+  keyword `fit-content` — a keyword inside `min()` is invalid at computed-value
+  time, so the browser threw the whole declaration away and fell back to `none`.
+  The entries hugged, the bar did not: it stayed the full width with its
+  contents spread across it, which is the opposite of what the option promises.
+  Hugging is done with `width: fit-content` now, and the remaining cap is a real
+  length. Beside a round action button the bar no longer grows to fill the row
+  either.
+
+- **Nav card: a docked bar (`header`/`footer`) shrank to its entries.** With a
+  width cap the glass panel hugged the entries and left a visible edge at each
+  end, mid-screen. A docked bar is now always the full width of what it docks
+  to; the cap decides how far the entries spread inside it.
+
+- **Nav card: the wrong entry could flash for a frame when navigating.** The
+  card corrected a stale path in `updated()` — after the render. So a render
+  that started with the old path painted the old entry and put it right on the
+  next frame, which is exactly a box blinking on a neighbour of the page you
+  opened. The correction happens before the render now.
+
 - **Nav card: a docked bar stopped short of both screen edges.** `header` and
   `footer` match the width of the content area so they do not run under the
   sidebar — but a view is also padded away from the screen edges, and that
@@ -117,6 +138,29 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Nav-Karte: `max_width: fit` hat die Leiste nie begrenzt.** Die Begrenzung
+  stand als `min(var(--nav-max-width), 100%)` da, und diese Variable enthält das
+  Schlüsselwort `fit-content` — ein Schlüsselwort in `min()` ist zum Zeitpunkt
+  der Wertberechnung ungültig, der Browser verwarf also die ganze Deklaration und
+  fiel auf `none` zurück. Die Einträge schmiegten sich an, die Leiste nicht: sie
+  blieb über die volle Breite, mit ihrem Inhalt darin verteilt — das Gegenteil
+  dessen, was die Option verspricht. Das Anschmiegen macht jetzt `width:
+  fit-content`, die verbleibende Begrenzung ist eine echte Länge. Neben einem
+  runden Aktionsknopf dehnt sich die Leiste ebenfalls nicht mehr auf die Zeile.
+
+- **Nav-Karte: Eine angedockte Leiste (`header`/`footer`) schrumpfte auf ihre
+  Einträge.** Mit Breitenbegrenzung schmiegte sich die Glasfläche an die Einträge
+  und ließ an beiden Enden mitten im Bild eine sichtbare Kante stehen. Eine
+  angedockte Leiste ist jetzt immer so breit wie das, woran sie andockt; die
+  Begrenzung entscheidet nur, wie weit die Einträge darin auseinanderrücken.
+
+- **Nav-Karte: Beim Wechseln konnte für einen Frame der falsche Eintrag
+  aufblitzen.** Die Karte hat einen veralteten Pfad in `updated()` korrigiert —
+  also nach dem Rendern. Ein Rendern, das mit dem alten Pfad begann, zeichnete
+  somit den alten Eintrag und korrigierte ihn erst im nächsten Frame: genau eine
+  Box, die kurz auf einem Nachbarn der geöffneten Seite aufblitzt. Die Korrektur
+  passiert jetzt vor dem Rendern.
 
 - **Nav-Karte: Eine angedockte Leiste schloss links und rechts nicht ab.**
   `header` und `footer` richten sich nach der Breite des Inhaltsbereichs, damit

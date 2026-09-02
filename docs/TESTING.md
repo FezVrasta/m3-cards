@@ -635,6 +635,7 @@ Fallen woanders als bei den übrigen Karten.
 |---|---|---|
 | Vier statische Varianten | `style` nacheinander auf `header`, `footer`, `segmented`, `floating` | `header`/`footer` kleben an der jeweiligen Kante über die volle Breite; `floating` schwebt mit 8px Abstand; `segmented` bleibt eine Pille im Kartenfluss und scrollt mit |
 | Aktiver Eintrag | Zwischen den konfigurierten Seiten navigieren | Genau der Eintrag der aktuellen Seite ist eingefärbt; eine Unterseite (`/lovelace/garten/detail`) hält den Eintrag `/lovelace/garten` aktiv |
+| Kein Aufblitzen beim Wechsel | Mehrfach zwischen benachbarten Seiten wechseln und die Leiste beobachten | Zu keinem Zeitpunkt ist kurz ein anderer Eintrag umrandet, auch nicht für einen Frame |
 | Aktiver Eintrag nach Rückkehr | Auf Seite A, dann B, dann über die Leiste zurück auf A — nicht neu laden | Die Markierung steht sofort auf A. Sie blieb einen Schritt zurück, solange die Karte aus dem Ansichts-Cache mit ihrem alten Pfad zurückkam |
 | Regex-Override | `match` auf einem Eintrag setzen, das nicht zur `path` passt | Aktiv-Zustand folgt dem Regex; ein kaputtes Muster macht den Eintrag nie aktiv, wirft aber nichts |
 | Template live | In zwei Browser-Tabs öffnen, in Tab A den Zustand einer im Template gelesenen Entität ändern | In Tab B ändert sich Name/Icon/Badge **ohne Reload** — das beweist das Abo statt eines einmaligen Renderns |
@@ -661,6 +662,9 @@ Fallen woanders als bei den übrigen Karten.
 | Aktiver Eintrag außer Sicht | Leiste mit mehr Einträgen als Platz (`max_width: fit`), auf den letzten Eintrag navigieren | Die Leiste scrollt den aktiven Eintrag von selbst ins Bild. Beim Scrollen von Hand darf sie **nicht** zurückspringen, auch wenn ein Badge-Template währenddessen aktualisiert |
 | Scrollen bleibt ruhig | Zwischen zwei benachbarten Einträgen wechseln, die beide sichtbar sind | Die Leiste bewegt sich **gar nicht**, nur die Markierung wechselt den Platz |
 | Leiste über Seiten hinweg | Ganz nach rechts scrollen, auf den letzten Eintrag wechseln, dann auf den vorletzten | Die Leiste steht auf jeder Seite dort, wo sie auf der vorigen stand; nur die Markierung wechselt. Kein Zurückspringen nach links, keine Animation |
+| `fit` begrenzt wirklich | `max_width: fit` auf einem breiten Fenster | Die Leiste ist so breit wie ihre Einträge und mittig, **nicht** über die volle Breite mit auseinandergezogenen Einträgen |
+| `fit` neben dem runden Knopf | Dasselbe mit `action_button` | Leiste und Knopf stehen zusammen in der Mitte; die Leiste dehnt sich nicht bis zum Knopf |
+| Angedockt trotz `fit` | `header`/`footer` mit `max_width: fit` | Die Glasfläche geht über die volle Breite, nur die Einträge rücken zusammen — keine sichtbare Kante links und rechts der Einträge |
 | Angedockt bis an den Rand | `header` bzw. `footer` auf dem Handy | Die Leiste reicht links und rechts bis an den Bildschirmrand. Am Desktop mit ausgeklappter Seitenleiste beginnt sie weiterhin neben dieser, nicht darunter |
 | Form der aktiven Pille | `label_position: right`, aktiven Eintrag ansehen | Die Pille ist eine Kapsel — die Enden sind vollständig rund, nicht abgeflacht. Das Icon sitzt ohne eigenen Kasten direkt darauf, links und rechts gleich viel Luft |
 | Textposition | `label_position` auf `below`, `above`, `right`, `left` | Text sitzt unter, über, rechts bzw. links vom Icon. Bei `right`/`left` umschließt die aktive Pille **Icon und Text** zusammen, nicht nur das Icon |
