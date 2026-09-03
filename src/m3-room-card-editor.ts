@@ -387,10 +387,24 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
           },
         });
       }
-      schema.push({
-        name: "collapse_state_entity",
-        selector: { entity: { domain: "input_boolean" } },
-      });
+      schema.push(
+        {
+          name: "collapse_memory",
+          selector: {
+            select: {
+              mode: "dropdown",
+              options: [
+                { value: "device", label: this._t("editor_room_collapse_memory_device") },
+                { value: "session", label: this._t("editor_room_collapse_memory_session") },
+              ],
+            },
+          },
+        },
+        {
+          name: "collapse_state_entity",
+          selector: { entity: { domain: "input_boolean" } },
+        },
+      );
     }
     return schema;
   }
@@ -532,6 +546,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       default_collapsed: "editor_room_default_collapsed",
       scroll_on_expand: "editor_room_scroll_on_expand",
       scroll_duration: "editor_room_scroll_duration",
+      collapse_memory: "editor_room_collapse_memory",
       collapse_state_entity: "editor_room_collapse_entity",
       animation: "editor_progress_animation",
     };
@@ -904,6 +919,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                 default_collapsed: cfg.default_collapsed ?? false,
                 scroll_on_expand: cfg.scroll_on_expand ?? false,
                 scroll_duration: cfg.scroll_duration ?? ROOM_SCROLL_MS,
+                collapse_memory: cfg.collapse_memory ?? "device",
                 collapse_state_entity: cfg.collapse_state_entity ?? "",
               }}
               .schema=${this._foldSchema()}

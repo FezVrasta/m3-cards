@@ -296,6 +296,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       // one view would share a fold, which is the behaviour a person expects.
       storageKey: `m3-room-folded:${location.pathname}:${this._config?.area ?? ""}`,
       defaultCollapsed: this._config?.default_collapsed,
+      memory: this._config?.collapse_memory,
     };
   }
 

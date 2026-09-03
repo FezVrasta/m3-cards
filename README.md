@@ -2629,6 +2629,7 @@ collapse_state_entity: input_boolean.media_section_collapsed
 | `default_collapsed` | boolean | `false` | `collapsible` only |
 | `scroll_on_expand` | `false` | Scrolls the card into view after it is unfolded. A collapsed card near the bottom of a view opens downwards, off the screen — so the thing you just asked to see is the thing you cannot see |
 | `scroll_duration` | `240` | How long that scroll takes, in milliseconds. `0` jumps straight there. The browser's own smooth scroll picks a duration from the distance and is slower than a tap wants to be, so the card drives it itself |
+| `collapse_memory` | `device` | Where the fold is remembered. `device` keeps it for good, so a card left open is still open next time. `session` keeps it only while the app is running: it follows you around the dashboard and is gone at the next start, so every start shows the overview again. Ignored when `collapse_state_entity` is set — the helper is then the answer |
 | `collapse_state_entity` | string | – | `collapsible` only: an `input_boolean` holding the state |
 
 

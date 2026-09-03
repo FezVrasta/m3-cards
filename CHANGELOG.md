@@ -19,6 +19,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   own smooth scroll, which picks its pace from the distance and reads as the
   page taking its time about a tap it has already answered.
 
+- **Room card: `collapse_memory`** — how long a fold is remembered. It was
+  always kept on the device, so a card left open stayed open for good; that
+  suits a dashboard someone arranged once and gets in the way of one that should
+  open on its overview every time. `session` keeps the fold only while the app
+  is running: it still follows you around the dashboard, and the next start
+  finds every card folded again. A configured `collapse_state_entity` still
+  wins, since a helper is a deliberate answer to the same question.
+
 - **Room card: `door_entities`** — contacts counted apart from the windows, with
   a chip of their own. A door standing open and a window standing open are
   different facts, and a room card that adds them together answers neither. It
@@ -387,6 +395,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   dauert; die voreingestellten 240 ms sind bewusst kürzer als das weiche
   Scrollen des Browsers, das sein Tempo aus der Entfernung ableitet und so
   wirkt, als ließe sich die Seite Zeit mit einem längst beantworteten Tippen.
+
+- **Raumkarte: `collapse_memory`** — wie lange ein Auf- oder Zugeklappt gemerkt
+  wird. Bisher immer auf dem Gerät, eine offen gelassene Karte blieb also für
+  immer offen; das passt zu einem einmal eingerichteten Dashboard und steht
+  einem im Weg, das jedes Mal mit der Übersicht beginnen soll. `session` merkt
+  sich den Zustand nur, solange die App läuft: er folgt dir weiterhin durchs
+  Dashboard, und beim nächsten Start ist wieder alles eingeklappt. Ein
+  eingetragenes `collapse_state_entity` sticht das weiterhin, denn ein Helfer
+  ist eine bewusste Antwort auf dieselbe Frage.
 
 - **Raumkarte: `door_entities`** — Kontakte, die getrennt von den Fenstern zählen,
   mit eigenem Chip. Eine offene Tür und ein offenes Fenster sind verschiedene

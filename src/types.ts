@@ -1645,6 +1645,7 @@ export interface M3RoomCardConfig {
    */
   scroll_on_expand?: boolean;
   scroll_duration?: number;
+  collapse_memory?: "device" | "session";
   /** An `input_boolean` holding the folded state, instead of localStorage. */
   collapse_state_entity?: string;
   /** Leave unset to discover it from the area. */
