@@ -121,6 +121,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Button card: `static_color` made the tile look switched off.** It works by
+  rendering the card as inactive, which was only ever about colour — but the new
+  off icon and state shape read that same flag, so a fridge that was running
+  showed a crossed-out icon and the off outline. Those two follow the entity
+  now; `static_color` keeps meaning what its name says.
+
 - **Room card editor: one card type showed its translation key.** The label was
   derived from the type by string surgery, and `climate-card-mini` came out as a
   key that does not exist — with a cast in the way that stopped the compiler
@@ -422,6 +428,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Button-Karte: `static_color` ließ die Kachel ausgeschaltet aussehen.** Die
+  Option arbeitet, indem sie die Karte als inaktiv zeichnet — was immer nur die
+  Farbe betraf. Das neue Aus-Icon und die Zustandsform lasen aber dasselbe
+  Merkmal, ein laufender Kühlschrank zeigte also durchgestrichenes Icon und
+  Aus-Umriss. Diese beiden folgen jetzt der Entität; `static_color` bedeutet
+  weiterhin, was sein Name sagt.
 
 - **Raumkarten-Editor: Ein Kartentyp zeigte seinen Übersetzungsschlüssel.** Die
   Beschriftung wurde per Zeichenkettenoperation aus dem Typ abgeleitet, und aus

@@ -629,6 +629,7 @@ dritten Kalender.
 | Icon je Zustand | `icon: mdi:power-plug` mit `icon_off: mdi:power-plug-off`, dann schalten | Aus zeigt das durchgestrichene Symbol, An das normale. Ohne `icon_off` bleibt es in beiden Zuständen dasselbe |
 | Formwechsel legt den ganzen Weg zurück | Beim Schalten den Umriss beobachten | Die Ecken wandern gleichmäßig über die volle Dauer. Sie dürfen nicht fast stillstehen und am Ende umklappen — das passierte, solange der Aus-Radius eine große Zahl statt der tatsächlichen halben Kachelhöhe war |
 | Beide Formen im Gleichschritt | Beim Schalten genau hinsehen | Icon-Feld und Kachelumriss verändern sich gemeinsam; die innere Form darf nicht früher fertig sein als die äußere |
+| Feste Farbe blockiert den Zustand nicht | `static_color: true` zusammen mit `icon_off` und `shape_by_state` an einer eingeschalteten Entität | Farben bleiben unverändert, Icon und Form folgen aber dem Zustand — die Kachel darf nicht als ausgeschaltet erscheinen |
 | Form auf flacher Kachel | `shape_by_state` auf einer Kachel mit `grid_options.rows: 1` | Beide Zustände sind unterscheidbar. Der Standardradius von 28px wäre auf 56px Höhe schon eine Kapsel gewesen und hätte im An genauso ausgesehen wie im Aus |
 | Form folgt dem Zustand | `shape_by_state: true` an einer Steckdose, dann schalten | An: Kachel eckig (Standardradius), Icon auf abgerundetem Quadrat. Aus: Kachel als Kapsel, Icon rund. Der Wechsel wird weich animiert |
 | Form ohne Animation | Dasselbe mit `animation: off` | Die beiden Formen stimmen weiterhin, der Wechsel springt aber ohne Übergang |

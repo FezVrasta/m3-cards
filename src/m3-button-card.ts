@@ -577,10 +577,14 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const domain = this._config.entity?.split(".")[0] ?? "";
     // Action-only buttons (no entity) always render "active" — there is no
     // real state to be inactive about, matching STATELESS_DOMAINS behavior.
-    const active =
-      !unavailable &&
-      this._config.static_color !== true &&
-      (entity ? this._isActive(entity.state, domain) : true);
+    // Whether the entity is actually on. `static_color` freezes the colours by
+    // making the card render as inactive, which is what it has always done —
+    // but the off icon and the state shape are not colours. They exist to say
+    // what the entity is doing, and a colour option has no business silencing
+    // them, so they follow this rather than the flag below.
+    const stateActive =
+      !unavailable && (entity ? this._isActive(entity.state, domain) : true);
+    const active = stateActive && this._config.static_color !== true;
     const rawActiveColor = this._activeColor(entity?.state ?? "");
     const rawInactiveColor = this._config.inactive_color
       ? this._resolveColor(this._config.inactive_color)
@@ -625,7 +629,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     // struck-through variant of a symbol reads as "not connected" before any
     // colour does. Falls back to the one icon when no second one is given.
     const stateIcon =
-      !active && this._config.icon_off ? this._config.icon_off : this._config.icon;
+      !stateActive && this._config.icon_off
+        ? this._config.icon_off
+        : this._config.icon;
     const icon = stateIcon || "mdi:gesture-tap-button";
     const stateText = !entity
       ? ""
@@ -653,7 +659,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const shaped = this._config.shape_by_state === true;
     const radius = resolveCornerRadius(
       shaped
-        ? active
+        ? stateActive
           ? (this._config.radius ?? BUTTON_SHAPE_ON_RADIUS)
           : this._capsuleRadius
         : (this._config.radius ?? DEFAULT_BUTTON_RADIUS),
@@ -712,7 +718,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
                   <div
                     class="icon-container ${active ? "active" : ""} ${
                       shaped ? "shaped" : ""
-                    }"
+                    } ${stateActive ? "on" : ""}"
                     @click=${this._onIconClick}
                     @pointerdown=${this._onIconPointerDown}
                     @pointerup=${this._onIconPointerUp}
@@ -919,7 +925,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     /* The well is a circle while the entity is off and a rounded square while
        it is on. */
-    .icon-container.shaped.active {
+    .icon-container.shaped.on {
       border-radius: ${unsafeCSS(BUTTON_SHAPE_ON_ICON_RADIUS)};
     }
 
