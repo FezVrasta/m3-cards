@@ -3119,6 +3119,35 @@ max_width: fit        # oder 600, oder "40rem"
 items: [...]
 ```
 
+### Die Reiter von Home Assistant
+
+Die Karte fasst sie nicht an und kann es auch nicht: Eine Karte lebt in ihrem
+eigenen Kasten, und Home Assistant bietet keinen unterstützten Weg, aus ihm
+heraus die Kopfzeile auszublenden. Auf einem Dashboard, das seine Reiterleiste
+noch zeigt, hat man also zwei Navigationen gleichzeitig. Zwei Wege heraus, die
+sich kombinieren lassen:
+
+**`subview: true` bei den Ansichten, zu denen die Leiste führt.** In Home
+Assistant eingebaut, ohne Zusatzsoftware. Eine Unteransicht taucht in der
+Reiterleiste gar nicht auf und wird nur über Navigation erreicht — genau das,
+was diese Leiste tut. Ansichten, die man nie als Reiter wollte, sind dann keine.
+
+**Die Kopfzeile mit [kiosk-mode](https://github.com/NemesisRE/kiosk-mode)
+ausblenden.** Ganz oben in der Rohkonfiguration eines Dashboards, und es lohnt
+sich, das auf die Breite zu begrenzen, die es braucht:
+
+```yaml
+kiosk_mode:
+  mobile_settings:
+    hide_header: true
+```
+
+Das passt zur Aufteilung Desktop/Handy von oben: Das Handy verliert die
+Kopfzeile von Home Assistant und behält nur diese Leiste, der Desktop behält
+seine Reiter. Wer die Kopfzeile überall ausblendet, verliert auch den Stift, der
+den Editor öffnet — kiosk-mode beschreibt, wie man wieder hineinkommt, und
+`?disable_km` an der URL ist die kurze Antwort.
+
 ### Desktop und Handy
 
 Die übliche Paarung ist Kopfzeile am großen Bildschirm, Fußzeile oder Sheet am

@@ -3047,6 +3047,33 @@ max_width: fit        # or 600, or "40rem"
 items: [...]
 ```
 
+### Home Assistant's own tabs
+
+The card does not touch them, and cannot: a card lives inside its own box, and
+Home Assistant offers no supported way to reach out of it and hide the header.
+So a bar added to a dashboard that still shows its tab strip gives you two
+navigations at once. Two ways out, and they combine:
+
+**`subview: true` on the views you navigate to.** Built into Home Assistant, no
+add-on. A subview is left out of the tab strip entirely and is reached by
+navigating to it — which is exactly what this bar does. Views you never wanted
+as tabs stop being tabs.
+
+**Hide the header with [kiosk-mode](https://github.com/NemesisRE/kiosk-mode).**
+At the top of a dashboard's raw config, and worth scoping to the width that
+needs it:
+
+```yaml
+kiosk_mode:
+  mobile_settings:
+    hide_header: true
+```
+
+That pairs with the desktop/mobile split above: the phone drops Home Assistant's
+header and keeps only this bar, the desktop keeps its tabs. Hiding the header
+everywhere also hides the pencil that opens the editor — kiosk-mode documents
+how to get back in, and `?disable_km` on the URL is the short answer.
+
 ### Desktop and mobile
 
 The usual pairing is a header on a wide screen and a footer or sheet on a
