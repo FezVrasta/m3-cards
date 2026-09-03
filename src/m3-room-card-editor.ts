@@ -11,6 +11,7 @@ import {
   ROOM_CATEGORIES,
   ROOM_FALLBACK_CATEGORY,
   ROOM_POWER_THRESHOLD,
+  ROOM_NESTED_CARD_TYPES,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import {
@@ -59,6 +60,80 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   // ---- the card's own cards -------------------------------------------------
+
+  /**
+   * The nested card's own editor, whichever card it is.
+   *
+   * Hand-picking a few fields was the first attempt and the wrong shape: it
+   * offered four of the button card's settings, silently lacked the rest, and
+   * would have fallen behind every time that card grew an option. Asking the
+   * card class for its editor is the same contract Home Assistant itself uses,
+   * so it cannot fall behind — and it works for any card in the suite, not just
+   * the one the entity picker happens to create.
+   *
+   * Kept per row rather than rebuilt each render, or every keystroke would
+   * replace the element under the cursor. The config is pushed back in only
+   * when it differs, so typing in one field does not reset the panel it sits
+   * in. Built asynchronously because a card loads its editor on demand.
+   */
+  @state() private _addType: string = "custom:m3-button-card";
+
+  private _cardEditors = new Map<number, HTMLElement>();
+  private _editorPending = new Set<number>();
+
+  private _nestedEditor(
+    card: Record<string, unknown>,
+    index: number,
+  ): HTMLElement | undefined {
+    const existing = this._cardEditors.get(index);
+    if (existing) {
+      (existing as { hass?: unknown }).hass = this.hass;
+      const key = JSON.stringify(card);
+      const holder = existing as { _lastKey?: string; setConfig?: (c: unknown) => void };
+      if (holder._lastKey !== key) {
+        holder._lastKey = key;
+        holder.setConfig?.(card);
+      }
+      return existing;
+    }
+    if (this._editorPending.has(index)) return undefined;
+    this._editorPending.add(index);
+    void this._buildEditor(card, index);
+    return undefined;
+  }
+
+  private async _buildEditor(
+    card: Record<string, unknown>,
+    index: number,
+  ): Promise<void> {
+    const tag = String(card.type ?? "").replace("custom:", "");
+    const ctor = customElements.get(tag) as
+      | { getConfigElement?: () => Promise<HTMLElement> }
+      | undefined;
+    let el: HTMLElement | undefined;
+    try {
+      el = await ctor?.getConfigElement?.();
+    } catch {
+      el = undefined;
+    }
+    this._editorPending.delete(index);
+    if (!el) {
+      this.requestUpdate();
+      return;
+    }
+    el.addEventListener("config-changed", (ev: Event) => {
+      // Stopped, or the room card's own editor would take the nested card's
+      // config for its own and write that to the dashboard.
+      ev.stopPropagation();
+      const next = (ev as CustomEvent).detail.config as Record<string, unknown>;
+      const cards = [...this._cards];
+      cards[index] = next;
+      (el as { _lastKey?: string })._lastKey = JSON.stringify(next);
+      this._setCards(cards);
+    });
+    this._cardEditors.set(index, el);
+    this.requestUpdate();
+  }
 
   private get _cards(): Record<string, unknown>[] {
     return this._config?.cards ?? [];
@@ -419,6 +494,8 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       detail_path: "editor_room_detail_path",
       mode: "editor_room_mode",
       cards_columns: "editor_room_cards_columns",
+      add_type: "editor_room_add_type",
+      add_entities: "editor_room_add_cards",
       show_sensors: "editor_room_show_sensors",
       show_windows: "editor_room_show_windows",
       temperature_entity: "editor_room_temperature",
@@ -503,43 +580,10 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                       </ha-icon-button>
                     </div>
                     <div class="panel-content">
-                      ${card.type === "custom:m3-button-card"
-                        ? html`<ha-form
-                            .hass=${this.hass}
-                            .data=${{
-                              entity: card.entity ?? "",
-                              name: card.name ?? "",
-                              icon: card.icon ?? "",
-                              tap_action: card.tap_action ?? { action: "toggle" },
-                            }}
-                            .schema=${[
-                              { name: "entity", selector: { entity: {} } },
-                              { name: "name", selector: { text: {} } },
-                              { name: "icon", selector: { icon: {} } },
-                              { name: "tap_action", selector: { ui_action: {} } },
-                            ]}
-                            .computeLabel=${this._computeLabel}
-                            @value-changed=${(ev: CustomEvent) => {
-                              const patch = ev.detail.value as Record<string, unknown>;
-                              const cards = [...this._cards];
-                              const merged: Record<string, unknown> = {
-                                ...cards[index],
-                                ...patch,
-                              };
-                              // An empty field means "unset", not "empty
-                              // string" — a name of "" would blank the card's
-                              // own name instead of falling back to the
-                              // entity's.
-                              for (const key of ["name", "icon"]) {
-                                if (!merged[key]) delete merged[key];
-                              }
-                              cards[index] = merged;
-                              this._setCards(cards);
-                            }}
-                          ></ha-form>`
-                        : html`<div class="hint">
-                            ${this._t("editor_room_card_yaml_only")}
-                          </div>`}
+                      ${this._nestedEditor(card, index) ??
+                      html`<div class="hint">
+                        ${this._t("editor_room_card_yaml_only")}
+                      </div>`}
                       <ha-button
                         class="remove"
                         @click=${() =>
@@ -552,26 +596,45 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               )}
               <ha-form
                 .hass=${this.hass}
-                .data=${{ add_entities: [] }}
+                .data=${{ add_type: this._addType, add_entities: [] }}
                 .schema=${[
+                  {
+                    name: "add_type",
+                    selector: {
+                      select: {
+                        mode: "dropdown",
+                        options: ROOM_NESTED_CARD_TYPES.map((type) => ({
+                          value: type,
+                          label: this._t(
+                            `editor_room_card_type_${type.replace("custom:m3-", "").replace("-card", "")}` as TranslationKey,
+                          ),
+                        })),
+                      },
+                    },
+                  },
                   {
                     name: "add_entities",
                     selector: { entity: { multiple: true } },
                   },
                 ]}
-                .computeLabel=${() => this._t("editor_room_add_cards")}
+                .computeLabel=${this._computeLabel}
                 @value-changed=${(ev: CustomEvent) => {
-                  const picked = (ev.detail.value as { add_entities?: string[] })
-                    .add_entities;
+                  const value = ev.detail.value as {
+                    add_type?: string;
+                    add_entities?: string[];
+                  };
+                  if (value.add_type && value.add_type !== this._addType) {
+                    this._addType = value.add_type;
+                    return;
+                  }
+                  const picked = value.add_entities;
                   if (!picked?.length) return;
-                  // One button card per entity, which is what this list is for;
-                  // anything else is still written by hand below.
+                  // One card of the chosen kind per entity. Anything the suite
+                  // does not build from an entity alone is still written by
+                  // hand, and gets its own editor once it is there.
                   this._setCards([
                     ...this._cards,
-                    ...picked.map((entity) => ({
-                      type: "custom:m3-button-card",
-                      entity,
-                    })),
+                    ...picked.map((entity) => ({ type: this._addType, entity })),
                   ]);
                 }}
               ></ha-form>

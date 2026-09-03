@@ -1347,6 +1347,21 @@ export const HEADING_NARROW_PX = 260;
 export const DEFAULT_ROOM_RADIUS = RADIUS.card;
 /** Columns the cards inside a room card are laid out in. */
 export const DEFAULT_ROOM_CARD_COLUMNS = 2;
+
+/**
+ * Card types the room card's editor can build from an entity alone.
+ *
+ * Not a limit on what a room card can hold — it renders any Lovelace card, and
+ * each one gets its own editor once it is in the list. This is only what the
+ * picker knows how to create in one step.
+ */
+export const ROOM_NESTED_CARD_TYPES = [
+  "custom:m3-button-card",
+  "custom:m3-light-card",
+  "custom:m3-cover-card",
+  "custom:m3-media-card",
+  "custom:m3-climate-card-mini",
+] as const;
 /**
  * A room is not a kind of data with a colour of its own — it is a place, and
  * the dashboard's own accent is the honest default. Under a Material You theme

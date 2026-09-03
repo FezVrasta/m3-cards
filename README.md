@@ -2758,6 +2758,8 @@ person would rather decide.
 | `collapse_state_entity` | string | – | An `input_boolean` holding the folded state |
 | `strip_area_name` | boolean | `false` | Remove the room's name from a single device's name. Off because it assumes a convention |
 
+The editor builds tiles from an entity picker — as a button, light, cover, media or compact climate card — and each row opens that card's own editor, so a nested card is as configurable as it is anywhere else. Any other Lovelace card can be added by hand and gets its own editor too.
+
 
 ## M3 Humidifier Card
 

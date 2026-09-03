@@ -637,6 +637,9 @@ dritten Kalender.
 | Themefarbe je Karte | In einem beliebigen Karten-Editor den Palettenknopf neben einem Farbfeld drücken | Das Feld steht auf `primary`, der Knopf ist markiert, die Karte trägt den Themeton. Nochmal drücken leert das Feld und stellt die Kartenfarbe wieder her |
 | Raumkarte: Karten nebeneinander | `cards_columns` auf 1 und auf 2 | Eine bzw. zwei Karten je Zeile |
 | Raumkarte: Karten im Editor | Im Editor Entitäten über „Entitäten als Kacheln hinzufügen" wählen | Für jede entsteht eine Kachel. Reihenfolge über die Pfeile, Entfernen im aufgeklappten Eintrag |
+| Raumkarte: voller Karten-Editor | Einen Eintrag aufklappen | Der komplette Editor **dieser** Karte erscheint — bei einer Button-Kachel also auch Zustandsfarben, invertierte Farben und alles Weitere, nicht nur eine Auswahl |
+| Raumkarte: gemischte Typen | Eine Button- und eine Licht-Kachel eintragen | Jeder Eintrag zeigt den Editor seines eigenen Kartentyps |
+| Raumkarte: Schreiben trifft nur eine | In einem Eintrag etwas ändern | Nur diese Karte ändert sich; die übrigen und die Einstellungen der Raumkarte selbst bleiben unberührt |
 | Raumkarte: Tipp-Aktion je Kachel | Einen Eintrag aufklappen und `tap_action` auf „Info anzeigen" stellen | Nur diese Kachel öffnet die Details statt zu schalten; die übrigen bleiben unverändert |
 | Raumkarte: Kategorien im manuellen Modus | `mode: manual` und den Editor öffnen | Der Bereich „Kategorien" fehlt — er konfiguriert Kacheln, die in diesem Modus niemand zeichnet |
 | Raumkarte: eigene Karten | `cards:` mit zwei `custom:m3-button-card` füllen | Beide erscheinen im aufklappbaren Bereich, zeigen echte Zustände und lassen sich bedienen — das beweist, dass `hass` bei ihnen ankommt |

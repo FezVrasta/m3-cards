@@ -2820,6 +2820,8 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `collapse_state_entity` | string | – | `input_boolean` mit dem eingeklappten Zustand |
 | `strip_area_name` | boolean | `false` | Entfernt den Raumnamen aus dem Namen eines einzelnen Geräts. Aus, weil es eine Konvention voraussetzt |
 
+Der Editor legt Kacheln über einen Entitätswähler an — als Button-, Licht-, Rollladen-, Medien- oder kompakte Klima-Karte — und jeder Eintrag klappt zum Editor genau dieser Karte auf, eine eingebettete Karte ist also so einstellbar wie überall sonst. Jede andere Lovelace-Karte lässt sich von Hand eintragen und bekommt ebenfalls ihren Editor.
+
 
 ## M3 Humidifier Card
 

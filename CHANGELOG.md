@@ -8,6 +8,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Room card editor: each nested card opens its own editor.** Not a hand-picked
+  handful of fields — the card class is asked for its editor, the same contract
+  Home Assistant uses, so a nested button card offers exactly what it offers
+  anywhere else: state colours, inverted colours, the lot. It follows any card
+  in the suite, and cannot fall behind when one of them grows an option. The
+  picker builds button, light, cover, media and compact climate cards from an
+  entity; anything else added by hand gets its editor just the same.
+
 - **Room card editor: the cards are editable in the UI.** Entities can be added
   as tiles from a picker, reordered, removed, and each one opens to its entity,
   name, icon and tap action — so a card that should open the details rather than
@@ -290,6 +298,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Raumkarten-Editor: Jede eingebettete Karte öffnet ihren eigenen Editor.**
+  Keine handverlesene Auswahl an Feldern — die Karte wird nach ihrem Editor
+  gefragt, über denselben Vertrag, den Home Assistant selbst nutzt. Eine
+  eingebettete Button-Karte bietet damit genau das, was sie überall sonst bietet:
+  Zustandsfarben, invertierte Farben, alles. Das gilt für jede Karte der Sammlung
+  und kann nicht veralten, wenn eine davon eine Option dazubekommt. Der Wähler
+  legt Button-, Licht-, Rollladen-, Medien- und kompakte Klima-Karten aus einer
+  Entität an; alles andere von Hand eingetragene bekommt seinen Editor ebenso.
 
 - **Raumkarten-Editor: Die Karten sind in der Oberfläche bearbeitbar.** Entitäten
   lassen sich als Kacheln hinzufügen, sortieren, entfernen, und jede klappt zu
