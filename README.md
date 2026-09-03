@@ -2639,7 +2639,8 @@ One card per room. Point it at a Home Assistant area and it works out the rest:
 which kinds of device are in there, what each of them is doing, the climate
 readings, and whether anyone is in the room.
 
-<img src="docs/images/room-card.png" alt="Room Card" width="440">
+<img src="docs/images/room-card.png" alt="Room Card, discovering an area" width="440">
+<img src="docs/images/room-card-manual.png" alt="Room Card holding cards of its own" width="440">
 
 ```yaml
 type: custom:m3-room-card
@@ -2996,6 +2997,8 @@ anyway. It is a suggestion and nothing more — the entries are ordinary config
 from that moment on, to edit, reorder or delete, and the bar never reads the
 dashboard again by itself. "Import views" in the editor repeats the reading at
 any time.
+
+<img src="docs/images/nav-card.png" alt="Nav Card — five variants of the same bar" width="440">
 
 ```yaml
 type: custom:m3-nav-card

@@ -2697,7 +2697,8 @@ Eine Karte pro Raum. Man gibt ihr einen Bereich aus Home Assistant, den Rest
 findet sie selbst: welche Gerätearten dort hängen, was jede davon gerade tut,
 die Klimawerte und ob jemand im Raum ist.
 
-<img src="docs/images/room-card.png" alt="Room Card" width="440">
+<img src="docs/images/room-card.png" alt="Raumkarte, die einen Bereich selbst auswertet" width="440">
+<img src="docs/images/room-card-manual.png" alt="Raumkarte mit eigenen Karten" width="440">
 
 ```yaml
 type: custom:m3-room-card
@@ -3066,6 +3067,8 @@ ohnehin endet. Das ist ein Vorschlag und nicht mehr: Die Einträge sind ab
 diesem Moment gewöhnliche Konfiguration zum Bearbeiten, Umsortieren oder
 Löschen, und die Leiste liest das Dashboard von sich aus nie wieder.
 „Ansichten übernehmen" im Editor wiederholt das Einlesen jederzeit.
+
+<img src="docs/images/nav-card.png" alt="Nav Card — fünf Varianten derselben Leiste" width="440">
 
 ```yaml
 type: custom:m3-nav-card
