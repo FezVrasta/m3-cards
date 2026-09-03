@@ -154,6 +154,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Energy card: a water or gas meter's month was off by a factor of a
+  thousand.** Statistics were always requested in m³ for the volume device
+  classes, while the value was labelled with the entity's own unit — so a litre
+  meter's month read a thousandth of the truth: 57 L of watering appeared as
+  "0.06 L". The daily chart was right, because that path asks for no unit at
+  all, which made the two views of the same entity disagree. The unit asked for
+  is now the one the number is printed with. Multiple sources in mixed units
+  still add up: they normalize to the first entity's unit instead of to m³.
+
 - **Room card: a manual room always read "all off".** The summary line counted
   the area registry's entities, but manual mode exists precisely for rooms whose
   devices the registry does not know about — so a card showing six sockets, half
@@ -538,6 +547,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Energiekarte: Der Monatswert eines Wasser- oder Gaszählers lag um den
+  Faktor tausend daneben.** Für die Volumen-Geräteklassen wurde die Statistik
+  immer in m³ angefordert, beschriftet wurde der Wert aber mit der Einheit der
+  Entität — ein Literzähler zeigte im Monat also ein Tausendstel: aus 57 L
+  Gießwasser wurden „0,06 L". Die Tagesansicht stimmte, weil dieser Weg gar
+  keine Einheit anfordert; dieselbe Entität widersprach sich also selbst.
+  Angefordert wird jetzt die Einheit, in der die Zahl auch ausgegeben wird.
+  Mehrere Quellen in gemischten Einheiten addieren sich weiterhin korrekt: sie
+  werden auf die Einheit der ersten Entität normalisiert statt auf m³.
 
 - **Raumkarte: Ein manueller Raum meldete immer „Alles aus".** Die Zusammen-
   fassung zählte die Entitäten aus der Bereichsverwaltung — den manuellen Modus
