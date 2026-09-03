@@ -49,6 +49,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Home Assistant's own `visibility` feature already does that for every card,
   and the card's `hidden` is scoped to what only a template can answer.
 
+- **Nav card: a tap outside an open drawer shuts it.** Every sheet behaves this
+  way and this one did not: the only way back was the grip or a drag. It is a
+  surface of its own rather than a listener on the document, because the tap has
+  to be consumed — left to reach the page, one tap outside would shut the drawer
+  *and* press whatever was under it, switching something on for someone who was
+  only putting the drawer away. The surface is invisible: a dimmed scrim is the
+  other honest answer, but it changes what the dashboard looks like the moment
+  the drawer opens, and that was not asked for. Edit mode keeps its drawer open
+  and gets no surface, or the editor would be covered by the card it is editing.
+
 - **Nav card: a new card arrives filled in from the dashboard it landed on.**
   It used to start with two invented entries pointing at views that may not
   exist, which is a worse start than an empty one: the reader has to work out
@@ -540,6 +550,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   ebenfalls **nicht** nachgebaut — Home Assistants eigenes `visibility` kann das
   längst für jede Karte, und `hidden` bleibt auf das beschränkt, was nur eine
   Vorlage beantworten kann.
+
+- **Nav-Karte: Ein Tipp außerhalb schließt die geöffnete Schublade.** Jedes
+  Sheet macht das, dieses nicht: zurück kam man nur über den Griff oder durch
+  Ziehen. Es ist eine eigene Fläche und kein Listener am Dokument, weil der Tipp
+  *verbraucht* werden muss — ließe man ihn zur Seite durch, würde ein Tipp
+  daneben die Schublade schließen *und* drücken, was darunter liegt: etwas
+  eingeschaltet von jemandem, der nur die Schublade wegräumen wollte. Die Fläche
+  ist unsichtbar; ein abgedunkelter Scrim wäre die andere ehrliche Antwort,
+  ändert aber das Aussehen des Dashboards in dem Moment, in dem sich die
+  Schublade öffnet, und danach hat niemand gefragt. Im Bearbeitungsmodus bleibt
+  die Schublade offen und bekommt keine Fläche — sonst läge sie zwischen dem
+  Editor und der Karte, die er bearbeitet.
 
 - **Nav-Karte: Eine neue Karte kommt ausgefüllt vom Dashboard, auf dem sie
   landet.** Bisher begann sie mit zwei erfundenen Einträgen auf Ansichten, die

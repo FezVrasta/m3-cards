@@ -3359,6 +3359,10 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `sheet_state_entity` | — | Ein `input_boolean` mit dem Offen-Zustand |
 | `snap_points` | `[0, 1]` | Anteile, bei denen die Schublade einrastet |
 | `collapse_on_navigate` | `true` | Schublade beim Seitenwechsel schließen |
+
+Eine offene Schublade schließt außerdem bei einem Tipp irgendwo außerhalb. Die
+Fläche, die diesen Tipp fängt, ist unsichtbar und verbraucht ihn — hinter der
+Schublade reagiert also nichts darauf, dass sie weggetippt wurde.
 | `preload_views` | `false` | Reserviert; tut derzeit nichts |
 
 ## Lizenz

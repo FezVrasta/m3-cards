@@ -3284,6 +3284,10 @@ without a breaking config change.
 | `sheet_state_entity` | — | An `input_boolean` holding the open state |
 | `snap_points` | `[0, 1]` | Fractions the drawer rests at |
 | `collapse_on_navigate` | `true` | Close the drawer when the page changes |
+
+An open drawer also closes on a tap anywhere outside it. The surface that
+catches that tap is invisible and swallows it, so nothing behind the drawer
+reacts to being tapped away.
 | `preload_views` | `false` | Reserved; currently does nothing |
 
 ## License

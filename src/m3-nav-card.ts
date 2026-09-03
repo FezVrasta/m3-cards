@@ -1477,6 +1477,20 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   }
 
   /**
+   * A tap anywhere but the drawer shuts it.
+   *
+   * What every sheet does, and the reason it needs a surface of its own rather
+   * than a listener on the document: the tap has to be *consumed*. Left to
+   * reach the page, one tap outside would shut the drawer and press whatever
+   * happened to be under it, which is a card being switched on by someone who
+   * was only putting the drawer away.
+   */
+  private _dismissSheet = (e: Event): void => {
+    e.stopPropagation();
+    this._setSheetOpen(false);
+  };
+
+  /**
    * Keyboard only. Pointer taps on the grip come through the gesture handler's
    * own tap branch — wiring a click listener here as well meant one tap
    * toggled twice, so the drawer opened and shut again in the same gesture and
@@ -2213,9 +2227,22 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         ? bar
         : html`<div class="bar-row" style=${cssVars}>${bar}${bubble}</div>`;
 
+    // Not in edit mode: there the drawer is held open so it can be configured,
+    // and a surface over the page would sit between the editor and the card it
+    // is editing.
+    const sheetScrim =
+      this._variant === "sheet" && this._sheetOpen && !this._editing
+        ? html`<div
+            class="sheet-scrim"
+            @click=${this._dismissSheet}
+            aria-hidden="true"
+          ></div>`
+        : nothing;
+
     const body =
       this._variant === "sheet" && this._sheetHasContent
         ? html`
+            ${sheetScrim}
             <div
               class="sheet ${container} ${widthClass} ${animated ? "" : "no-animations"}"
               style=${`${cssVars} ${freeStyles}`}
@@ -2911,6 +2938,20 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       border-radius: var(--nav-radius, ${NAV_SHEET_RADIUS}px);
       opacity: var(--nav-opacity, 1);
       color: var(--nav-ink, var(--primary-text-color));
+    }
+
+    /* Invisible on purpose. A dimmed scrim is the other way to do this and a
+       fair one, but it changes what the dashboard looks like the moment the
+       drawer opens, and nobody asked for the page to go dark. This one only
+       catches the tap. It comes before the drawer in the markup and both are
+       positioned, so the drawer stays on top without either naming a
+       z-index. */
+    .sheet-scrim {
+      position: fixed;
+      inset: 0;
+      /* The host lets pointer events through and each part takes back what it
+         needs; catching them is this element's whole purpose. */
+      pointer-events: auto;
     }
 
     .sheet .bar {
