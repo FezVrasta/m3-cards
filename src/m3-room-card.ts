@@ -51,7 +51,8 @@ import {
   ROOM_ARROW_RADIUS_FOLDED,
   ROOM_ARROW_TINT,
   ROOM_FOLD_MS,
-  NAV_SCROLL_PARENT_DEPTH,
+  ROOM_SCROLL_MARGIN,
+  ROOM_SCROLL_SETTLE_MS,
   ROOM_TILE_TINT_IDLE,
   resolveCornerRadius,
   type RoomCategoryDef,
@@ -281,7 +282,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     window.clearTimeout(this._foldTimer);
 
     if (!animate || !shouldAnimate(this._config?.animation)) {
+      const grew = this._folded ? 0 : body.scrollHeight - body.getBoundingClientRect().height;
       body.style.height = this._folded ? "0px" : "";
+      // Without an animation there is no transition to wait for, but a card
+      // opening off the bottom of the screen is just as invisible — the scroll
+      // belongs on this path too.
+      if (!this._folded) this._scrollIntoView(grew);
       return;
     }
 
@@ -337,53 +343,44 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     return covered;
   }
 
-  /** The nearest ancestor that actually scrolls, shadow boundaries included. */
-  private _scrollParent(): Element | undefined {
-    let node: Node | null = this.parentNode ?? null;
-    for (let depth = 0; depth < NAV_SCROLL_PARENT_DEPTH && node; depth++) {
-      const el = node as Element;
-      if (el.scrollHeight !== undefined && el.scrollHeight > el.clientHeight + 1) {
-        const overflow = getComputedStyle(el).overflowY;
-        if (overflow === "auto" || overflow === "scroll") return el;
-      }
-      node =
-        (node as Element).parentElement ??
-        ((node as { host?: Node }).host ?? (node.parentNode as Node | null));
-    }
-    return undefined;
-  }
-
-  /**
-   * Brings a freshly unfolded card into view.
-   *
-   * `growth` is how much taller the card is about to get, so the destination
-   * can be worked out before it has grown — the scroll then runs with the fold
-   * instead of after it.
-   */
   private _scrollIntoView(growth: number): void {
     if (this._config?.scroll_on_expand !== true) return;
     const rect = this.getBoundingClientRect();
-    const bottomLimit = window.innerHeight - this._bottomObstruction() - 8;
-    const finalBottom = rect.bottom + Math.max(0, growth);
+    const obstruction = this._bottomObstruction();
+    const bottomLimit = window.innerHeight - obstruction - ROOM_SCROLL_MARGIN;
+    const grow = Math.max(0, growth);
+    const finalBottom = rect.bottom + grow;
+    const fitsBelow = finalBottom <= bottomLimit;
+    const tooTall = finalBottom - rect.top > bottomLimit;
 
-    let delta = 0;
-    if (finalBottom - rect.top > bottomLimit) {
-      // Taller than the space there is: its top is the useful end.
-      delta = rect.top - 8;
-    } else if (finalBottom > bottomLimit) {
-      delta = finalBottom - bottomLimit;
-    } else if (rect.top < 0) {
-      delta = rect.top - 8;
-    }
-    if (Math.abs(delta) < 2) return;
+    if (fitsBelow && rect.top >= 0) return;
 
     const behavior: ScrollBehavior = shouldAnimate(this._config?.animation)
       ? "smooth"
       : "auto";
-    const scroller = this._scrollParent();
-    if (scroller) scroller.scrollBy({ top: delta, behavior });
-    else window.scrollBy({ top: delta, behavior });
+
+    // scroll-margin rather than arithmetic on a scroller found by hand. Which
+    // element actually scrolls is Home Assistant's business, several shadow
+    // roots deep, and the browser is the only thing that reliably knows — but
+    // it aligns to the window edge, which a docked navigation bar covers.
+    // scroll-margin is exactly the property for saying "and leave this much
+    // room", and adding the growth on top aims at where the card is going
+    // rather than where it currently ends.
+    const marginBottom = obstruction + ROOM_SCROLL_MARGIN + grow;
+    this.style.scrollMarginBottom = `${marginBottom}px`;
+    this.style.scrollMarginTop = `${ROOM_SCROLL_MARGIN}px`;
+    this.scrollIntoView({ behavior, block: tooTall ? "start" : "end" });
+
+    // Left in place it would follow the card into every later scroll of the
+    // page, which is not what a margin meant for one alignment should do.
+    window.clearTimeout(this._scrollMarginTimer);
+    this._scrollMarginTimer = window.setTimeout(() => {
+      this.style.scrollMarginBottom = "";
+      this.style.scrollMarginTop = "";
+    }, ROOM_SCROLL_SETTLE_MS);
   }
+
+  private _scrollMarginTimer?: number;
 
   private get _language(): string {
     return this.hass?.locale?.language ?? this.hass?.language ?? "en";

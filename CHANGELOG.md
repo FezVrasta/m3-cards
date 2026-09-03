@@ -141,6 +141,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Room card: scrolling into view did nothing with animations switched off.**
+  The path that skips the fold animation returned before the scroll, so a card
+  opening past the bottom of the screen stayed there. A card without animations
+  still has to be visible.
+
 - **Room card: scrolling a card into view was late and stopped too low.** It
   waited for the fold to finish and then scrolled, which reads as two movements
   with a pause between them — the destination is known before the box grows into
@@ -481,6 +486,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarte: Ohne Animationen wurde gar nicht ins Sichtfeld gescrollt.** Der
+  Zweig, der die Faltanimation überspringt, kehrte vor dem Scrollen zurück — eine
+  Karte, die sich unter den Bildrand öffnet, blieb also dort. Auch ohne
+  Animationen muss sie zu sehen sein.
 
 - **Raumkarte: Das Ins-Bild-Holen kam zu spät und hörte zu tief auf.** Es wartete
   das Aufklappen ab und scrollte dann — das wirkt wie zwei Bewegungen mit einer
