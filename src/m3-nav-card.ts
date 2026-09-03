@@ -35,7 +35,7 @@ import {
   NAV_BAR_PADDING,
   NAV_DEFAULT_BREAKPOINT,
   NAV_FLOAT_INSET,
-  NAV_FLOAT_RADIUS,
+  NAV_BAR_RADIUS,
   NAV_ITEM_GLYPH,
   NAV_ITEM_HEIGHT,
   NAV_ITEM_INACTIVE_OPACITY,
@@ -2066,7 +2066,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-muted": common.secondaryTextColorCss,
       "nav-bg": cfg.card_background ? resolveThemeColor(cfg.card_background) : undefined,
       "nav-scale": String(scale),
-      "nav-radius": `${cfg.radius ?? NAV_FLOAT_RADIUS}px`,
+      "nav-radius": `${cfg.radius ?? NAV_BAR_RADIUS}px`,
       "nav-max-width": width.css,
       "nav-glyph": cfg.icon_size !== undefined ? `${cfg.icon_size}px` : undefined,
       "nav-label": cfg.label_size !== undefined ? `${cfg.label_size}px` : undefined,
@@ -2403,7 +2403,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         var(--nav-edge, ${NAV_FLOAT_INSET}px) +
         var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
       );
-      border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
+      border-radius: var(--nav-radius, ${NAV_BAR_RADIUS}px);
       opacity: var(--nav-opacity, 1);
     }
 
@@ -2846,7 +2846,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         var(--nav-edge, ${NAV_FLOAT_INSET}px) +
         var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
       );
-      border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
+      border-radius: var(--nav-radius, ${NAV_BAR_RADIUS}px);
       opacity: var(--nav-opacity, 1);
       color: var(--nav-ink, var(--primary-text-color));
     }
@@ -3096,7 +3096,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     /* Without the fixed frame there is nothing to line the bar up against, so
        the docking offsets have to stop applying too. */
     :host([inline]) .bar {
-      border-radius: var(--nav-radius, ${NAV_FLOAT_RADIUS}px);
+      border-radius: var(--nav-radius, ${NAV_BAR_RADIUS}px);
     }
 
     :host([variant="header"][inline]) .bar,

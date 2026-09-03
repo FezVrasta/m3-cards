@@ -3334,7 +3334,7 @@ spätere Version sie ohne Konfigurationsbruch umsetzen kann.
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
 | `container_opacity` | `100` | Deckkraft der Leiste in Prozent |
 | `blur` | `20` | Weichzeichnen des Hintergrunds in px |
-| `radius` | `30` | Eckenradius der abgesetzten Varianten |
+| `radius` | Kapsel | Eckenradius der Leiste. Ohne Angabe sind die Enden vollrund, egal wie hoch die Leiste ist — so machen es die Vorbilder; eine Zahl legt ihn stattdessen fest. Vorsicht bei Werten knapp unter der halben Leistenhöhe (unskaliert 31 px): das wirkt wie eine gestauchte Kapsel, nicht wie ein abgerundetes Rechteck |
 | `submenu_trigger` | `tap` | `tap` oder `hold` |
 | `haptics` | `true` | Haptik-Event von Home Assistant beim Tippen auslösen |
 | `auto_hide_on_scroll` | `false` | Beim Runterscrollen ausblenden, beim Hochscrollen zurück |

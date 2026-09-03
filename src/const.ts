@@ -1750,7 +1750,21 @@ export const NAV_SEGMENT_PADDING = 4;
 /** `floating`/`sheet` detach from the view and keep this gap to its edges. */
 export const NAV_FLOAT_INSET = 8;
 
-export const NAV_FLOAT_RADIUS = 30;
+/**
+ * The bar's corner when nothing is configured: fully round ends, whatever the
+ * bar turns out to be tall.
+ *
+ * Written as a number no bar can reach, so the browser clamps it to half the
+ * height — the intent is a shape, not a measurement. It used to be a fixed 30
+ * against a 62px bar, one pixel short of the capsule it was meant to be, and a
+ * pixel short does not read as a rounded rectangle. It reads as a capsule that
+ * has been squashed: the ends stop curving just before they should and leave a
+ * flat sliver in the middle of each one. Scaling the bar made it worse, because
+ * the number stayed while the height moved.
+ */
+export const NAV_BAR_RADIUS = 999;
+/** What that capsule measures on an unscaled bar, for the editor's slider. */
+export const NAV_BAR_RADIUS_UI = NAV_BAR_HEIGHT / 2;
 /**
  * Below HA's dialog band (its dialogs sit far above this), above ordinary card
  * content. Exposed as `--nav-z` so a dashboard with an unusual stacking context

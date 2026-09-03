@@ -221,6 +221,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: the bar's default corner missed the capsule by a pixel.** 30 px
+  against a bar 62 px tall leaves 1 px of straight edge in the middle of each
+  end, and that does not read as a rounded rectangle — it reads as a capsule
+  that has been squashed, which is exactly what someone comparing it against a
+  reference bar sees. Scaling the bar made it worse, because the number stayed
+  while the height moved. The default is now the shape rather than a
+  measurement: a radius no bar can reach, which the browser clamps to half
+  whatever the height turns out to be. A configured `radius` still wins — but a
+  value just under half the bar's height buys the same squashed look
+  deliberately.
+
 - **Nav card editor: the page transition sat under Appearance.** What happens
   when the page changes is behaviour; only the marker's own movement is about
   how the bar looks. Its length now appears only once a transition is chosen,
@@ -689,6 +700,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Die Sammlung registriert **36 Karten**.
 
 ### Behoben
+
+- **Nav-Karte: Die voreingestellte Ecke der Leiste verfehlte die Kapsel um einen
+  Pixel.** 30 px bei einer 62 px hohen Leiste lassen in der Mitte jedes Endes
+  1 px gerade Kante stehen, und das wirkt nicht wie ein abgerundetes Rechteck,
+  sondern wie eine gestauchte Kapsel — genau das, was auffällt, wenn man
+  daneben eine Vorbild-Leiste hält. Beim Skalieren wurde es schlimmer, weil die
+  Zahl blieb und die Höhe sich bewegte. Voreingestellt ist jetzt die Form statt
+  eines Maßes: ein Radius, den keine Leiste erreicht, den der Browser also auf
+  die halbe tatsächliche Höhe begrenzt. Ein gesetztes `radius` sticht das
+  weiterhin — ein Wert knapp unter der halben Leistenhöhe kauft dann aber
+  denselben gestauchten Eindruck mit Absicht.
 
 - **Nav-Karten-Editor: Der Seitenübergang lag unter Darstellung.** Was beim
   Seitenwechsel passiert, ist Verhalten; nur die Bewegung der Markierung

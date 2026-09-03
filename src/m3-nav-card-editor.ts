@@ -11,6 +11,7 @@ import type {
   NavSubmenuEntry,
 } from "./types";
 import {
+  NAV_BAR_RADIUS_UI,
   NAV_DEFAULT_BREAKPOINT,
   NAV_SIZE_MAX,
   NAV_SIZE_MIN,
@@ -1507,7 +1508,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
                     edge_distance: cfg.edge_distance ?? 8,
                     container_opacity: cfg.container_opacity ?? 100,
                     blur: cfg.blur ?? 20,
-                    radius: cfg.radius ?? 30,
+                    radius: cfg.radius ?? NAV_BAR_RADIUS_UI,
                   }}
                   .schema=${this._appearanceAdvancedSchema()}
                   .computeLabel=${this._computeLabel}

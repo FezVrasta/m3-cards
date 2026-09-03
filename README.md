@@ -3259,7 +3259,7 @@ without a breaking config change.
 | `container_style` | `glass` | `glass`, `solid`, `transparent` |
 | `container_opacity` | `100` | Opacity of the bar, in percent |
 | `blur` | `20` | Backdrop blur in px |
-| `radius` | `30` | Corner radius of the detached variants |
+| `radius` | capsule | Corner radius of the bar. Left unset the ends are fully round whatever the bar's height, which is what the reference bars do; a number fixes it instead. Beware of a value just under half the bar's height (31 px unscaled) — that reads as a squashed capsule rather than as a rounded rectangle |
 | `submenu_trigger` | `tap` | `tap` or `hold` |
 | `haptics` | `true` | Fire Home Assistant's haptic event on a tap |
 | `auto_hide_on_scroll` | `false` | Hide while scrolling down, show on the way up |
