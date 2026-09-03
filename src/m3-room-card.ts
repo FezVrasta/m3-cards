@@ -52,7 +52,12 @@ import {
   ROOM_ARROW_TINT,
   ROOM_FOLD_MS,
   ROOM_SCROLL_MARGIN,
-  ROOM_SCROLL_SETTLE_MS,
+  DOCK_SCAN_BUDGET,
+  DOCK_MIN_WIDTH_SHARE,
+  DOCK_MAX_HEIGHT_SHARE,
+  ROOM_CARD_SCAN_DEPTH,
+  ROOM_SCROLL_MS,
+  ROOM_SCROLL_MAX_MS,
   ROOM_TILE_TINT_IDLE,
   resolveCornerRadius,
   type RoomCategoryDef,
@@ -107,6 +112,91 @@ interface Category {
   active: boolean;
   badge: string;
   override?: RoomCategoryConfig;
+}
+
+/**
+ * How much of the bottom of the window something is parked over.
+ *
+ * Asking the point what covers it looked like the tidy way to do this and does
+ * not work: `elementsFromPoint` hands back the shadow host rather than what is
+ * inside it, and following the hosts down one branch at a time walks into
+ * whichever subtree paints on top — on a real dashboard that is the card being
+ * scrolled, not the navigation bar two sections away. So the tree is walked
+ * instead, and every element that is pinned to the viewport and lies across the
+ * bottom edge counts, wherever in the shadow DOM it happens to live.
+ */
+function bottomDock(): number {
+  const viewport = window.innerHeight;
+  const edge = viewport - 2;
+  const minWidth = window.innerWidth * DOCK_MIN_WIDTH_SHARE;
+  let covered = 0;
+  let budget = DOCK_SCAN_BUDGET;
+
+  const stack: (Element | ShadowRoot)[] = [document.body];
+  while (stack.length && budget-- > 0) {
+    const node = stack.pop()!;
+    if (node instanceof Element) {
+      const position = getComputedStyle(node).position;
+      if (position === "fixed" || position === "sticky") {
+        const rect = node.getBoundingClientRect();
+        // Across the bottom edge and wide enough to be a bar rather than a
+        // floating button, which leaves plenty of room beside it. The height
+        // test is per element and not a check on the result: a dashboard has
+        // several viewport-sized fixed layers — the background, the dialog
+        // host — and every one of them crosses the bottom edge. Taking the
+        // largest first and rejecting it afterwards throws the bar away with
+        // them, which is exactly what happened here.
+        const inset = viewport - rect.top;
+        if (
+          rect.top <= edge &&
+          rect.bottom >= edge &&
+          rect.width >= minWidth &&
+          inset <= viewport * DOCK_MAX_HEIGHT_SHARE
+        ) {
+          covered = Math.max(covered, inset);
+        }
+      }
+      if (node.shadowRoot) stack.push(node.shadowRoot);
+    }
+    stack.push(...node.children);
+  }
+
+  return covered;
+}
+
+/**
+ * The thing that actually scrolls above an element.
+ *
+ * `scrollIntoView` finds this by itself and was the first choice for exactly
+ * that reason, but it also owns the timing, and the browser's smooth scroll is
+ * slower than a card opening under a finger wants to be. Driving the scroll by
+ * hand means finding the scroller by hand — up the tree and out through each
+ * shadow root, since a Lovelace view is several of them deep.
+ */
+function scrollParent(start: Element): Element {
+  let node: Node | null = start;
+  while (node) {
+    if (node instanceof ShadowRoot) {
+      node = node.host;
+      continue;
+    }
+    if (node instanceof Element && node !== start) {
+      const overflow = getComputedStyle(node).overflowY;
+      if (
+        (overflow === "auto" || overflow === "scroll" || overflow === "overlay") &&
+        node.scrollHeight > node.clientHeight + 1
+      ) {
+        return node;
+      }
+    }
+    node = node.parentNode;
+  }
+  return document.scrollingElement ?? document.documentElement;
+}
+
+/** Fast out of the gate, gentle into the stop — Material's usual shape. */
+function easeOut(t: number): number {
+  return 1 - (1 - t) ** 3;
 }
 
 interface Chip {
@@ -245,6 +335,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     window.clearTimeout(this._holdTimer);
     window.clearTimeout(this._sheetCloseTimer);
     window.clearTimeout(this._foldTimer);
+    if (this._scrollFrame !== undefined) cancelAnimationFrame(this._scrollFrame);
   }
 
   protected updated(): void {
@@ -282,12 +373,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     window.clearTimeout(this._foldTimer);
 
     if (!animate || !shouldAnimate(this._config?.animation)) {
-      const grew = this._folded ? 0 : body.scrollHeight - body.getBoundingClientRect().height;
       body.style.height = this._folded ? "0px" : "";
       // Without an animation there is no transition to wait for, but a card
       // opening off the bottom of the screen is just as invisible — the scroll
-      // belongs on this path too.
-      if (!this._folded) this._scrollIntoView(grew);
+      // belongs on this path too. No growth to allow for: the height above is
+      // already committed, and measuring the card now reads the grown box.
+      if (!this._folded) this._scrollIntoView(0);
       return;
     }
 
@@ -312,6 +403,15 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       body.style.height = folded ? "0px" : "";
       void body.offsetHeight;
       body.style.transition = "";
+      // And aim once more, now that the card really is as tall as it was going
+      // to be. The first attempt runs while the page is still the height it had
+      // when folded, so a card near the bottom asks to be scrolled further than
+      // there is document to scroll and stops at the end — it came to rest
+      // under the navigation bar every time. This is not a second movement in
+      // the usual case: _scrollIntoView returns without doing anything once the
+      // card is fully visible, which is what the first aim achieves whenever
+      // there was room for it.
+      if (!folded) this._scrollIntoView(0);
     }, ROOM_FOLD_MS + 40);
 
     // Alongside the fold rather than after it. Waiting for the animation to
@@ -330,17 +430,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
    * layout, hidden to the reader.
    */
   private _bottomObstruction(): number {
-    const bars = document.querySelectorAll<HTMLElement>("m3-nav-card");
-    let covered = 0;
-    for (const bar of bars) {
-      const rect = bar.getBoundingClientRect();
-      if (rect.height === 0) continue;
-      // Only something actually pinned across the bottom edge counts.
-      if (rect.bottom < window.innerHeight - 4) continue;
-      if (rect.top > window.innerHeight) continue;
-      covered = Math.max(covered, window.innerHeight - rect.top);
-    }
-    return covered;
+    return bottomDock();
   }
 
   private _scrollIntoView(growth: number): void {
@@ -355,32 +445,67 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
     if (fitsBelow && rect.top >= 0) return;
 
-    const behavior: ScrollBehavior = shouldAnimate(this._config?.animation)
-      ? "smooth"
-      : "auto";
+    // A card taller than the space left over cannot be shown whole, so its top
+    // is what matters; anything else is aligned by its bottom, which is the
+    // edge that was hidden.
+    const shift = tooTall
+      ? rect.top - ROOM_SCROLL_MARGIN
+      : finalBottom - bottomLimit;
 
-    // scroll-margin rather than arithmetic on a scroller found by hand. Which
-    // element actually scrolls is Home Assistant's business, several shadow
-    // roots deep, and the browser is the only thing that reliably knows — but
-    // it aligns to the window edge, which a docked navigation bar covers.
-    // scroll-margin is exactly the property for saying "and leave this much
-    // room", and adding the growth on top aims at where the card is going
-    // rather than where it currently ends.
-    const marginBottom = obstruction + ROOM_SCROLL_MARGIN + grow;
-    this.style.scrollMarginBottom = `${marginBottom}px`;
-    this.style.scrollMarginTop = `${ROOM_SCROLL_MARGIN}px`;
-    this.scrollIntoView({ behavior, block: tooTall ? "start" : "end" });
-
-    // Left in place it would follow the card into every later scroll of the
-    // page, which is not what a margin meant for one alignment should do.
-    window.clearTimeout(this._scrollMarginTimer);
-    this._scrollMarginTimer = window.setTimeout(() => {
-      this.style.scrollMarginBottom = "";
-      this.style.scrollMarginTop = "";
-    }, ROOM_SCROLL_SETTLE_MS);
+    this._scrollBy(shift);
   }
 
-  private _scrollMarginTimer?: number;
+  /**
+   * Move the page by this much, over `ROOM_SCROLL_MS` rather than the browser's
+   * own idea of a smooth scroll — see `ROOM_SCROLL_MS` for why.
+   *
+   * The destination is re-asked every frame instead of being worked out once.
+   * A card that is unfolding is still growing the page, and a page cannot be
+   * scrolled to a place that does not exist yet: computing the limit at the
+   * moment of the tap meant the first movement was whatever little room there
+   * happened to be, and the real travel only came afterwards, from the second
+   * aim once the card had finished growing. Two movements, one after the
+   * other, when the fold and the scroll should be the same gesture.
+   */
+  private _scrollBy(shift: number): void {
+    if (this._scrollFrame !== undefined) cancelAnimationFrame(this._scrollFrame);
+    if (Math.abs(shift) < 1) return;
+
+    const scroller = scrollParent(this);
+    const from = scroller.scrollTop;
+    const desired = from + shift;
+    const reachable = (): number =>
+      Math.min(Math.max(0, scroller.scrollHeight - scroller.clientHeight), Math.max(0, desired));
+
+    const duration = Math.max(
+      0,
+      Math.min(ROOM_SCROLL_MAX_MS, this._config?.scroll_duration ?? ROOM_SCROLL_MS),
+    );
+    if (duration === 0 || !shouldAnimate(this._config?.animation)) {
+      scroller.scrollTop = reachable();
+      return;
+    }
+
+    // Out of room for now means the fold is what is holding the scroll back,
+    // so the scroll keeps pace with it and the two land together. When the room
+    // is already there the configured duration stands and nothing waits.
+    const span =
+      Math.abs(reachable() - desired) > 1 ? Math.max(duration, ROOM_FOLD_MS) : duration;
+
+    const started = performance.now();
+    const step = (now: number): void => {
+      const progress = Math.min(1, (now - started) / span);
+      const wanted = from + (desired - from) * easeOut(progress);
+      scroller.scrollTop = Math.min(
+        Math.max(0, scroller.scrollHeight - scroller.clientHeight),
+        Math.max(0, wanted),
+      );
+      this._scrollFrame = progress < 1 ? requestAnimationFrame(step) : undefined;
+    };
+    this._scrollFrame = requestAnimationFrame(step);
+  }
+
+  private _scrollFrame?: number;
 
   private get _language(): string {
     return this.hass?.locale?.language ?? this.hass?.language ?? "en";
@@ -424,9 +549,55 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         cfg.collapse_state_entity,
         ...(cfg.extra_sensors ?? []),
         ...(cfg.window_entities ?? []),
+        ...(cfg.door_entities ?? []),
+        ...(cfg.power_entities ?? []),
+        ...(this._manual ? this._manualEntities() : []),
       );
     }
     return ids;
+  }
+
+  /** True while the body is the configured cards rather than the discovery. */
+  private get _manual(): boolean {
+    return (this._config?.mode ?? "auto") === "manual";
+  }
+
+  /**
+   * The entities behind the manually configured cards.
+   *
+   * Manual mode exists for rooms whose devices the area registry does not know
+   * about, so counting only registry entities leaves such a room reading "all
+   * off" while its sockets are visibly on. Nested stacks are followed, and the
+   * shapes a card config uses for its entities — `entity`, a list of ids, a
+   * list of rows — are all read.
+   */
+  private _manualEntities(): string[] {
+    const out: string[] = [];
+
+    const walk = (cards: Record<string, unknown>[] | undefined, depth: number): void => {
+      if (!cards?.length || depth > ROOM_CARD_SCAN_DEPTH) return;
+      for (const card of cards) {
+        if (typeof card?.entity === "string") out.push(card.entity);
+        if (Array.isArray(card?.entities)) {
+          for (const row of card.entities as unknown[]) {
+            if (typeof row === "string") out.push(row);
+            else if (typeof (row as { entity?: unknown })?.entity === "string")
+              out.push((row as { entity: string }).entity);
+          }
+        }
+        walk(card?.cards as Record<string, unknown>[] | undefined, depth + 1);
+      }
+    };
+
+    walk(this._config?.cards, 0);
+    return [...new Set(out)];
+  }
+
+  private _manualActiveCount(): number {
+    if (!this.hass) return 0;
+    return this._manualEntities().filter((id) =>
+      this._isActive(id.split(".", 1)[0], this.hass!.states[id]),
+    ).length;
   }
 
   private _defFor(domain: string): RoomCategoryDef {
@@ -1182,7 +1353,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
     const name = cfg.name ?? area?.name ?? cfg.area;
     const icon = cfg.icon ?? area?.icon ?? guessRoomIcon(name);
-    const activeDevices = categories.reduce((sum, c) => sum + c.activeCount, 0);
+    // Manual leaves the body to the configured cards, so the summary line has
+    // to describe those rather than the area's registry entries.
+    const manual = this._manual;
+    const activeDevices = manual
+      ? this._manualActiveCount()
+      : categories.reduce((sum, c) => sum + c.activeCount, 0);
 
     const countText =
       activeDevices === 0
@@ -1223,9 +1399,6 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         : undefined,
     });
     const radius = resolveCornerRadius(cfg.radius ?? DEFAULT_ROOM_RADIUS, cfg.corners);
-
-    // Manual leaves the body to the configured cards; auto keeps discovering.
-    const manual = (cfg.mode ?? "auto") === "manual";
 
     return html`
       <ha-card style=${`${cssVars} border-radius: ${radius};`}>

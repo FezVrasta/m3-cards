@@ -12,6 +12,8 @@ import {
   ROOM_FALLBACK_CATEGORY,
   ROOM_POWER_THRESHOLD,
   ROOM_NESTED_CARD_TYPES,
+  ROOM_SCROLL_MS,
+  ROOM_SCROLL_MAX_MS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import {
@@ -369,12 +371,26 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     if (this._config?.collapsible) {
       schema.push(
         { name: "default_collapsed", selector: { boolean: {} } },
-      { name: "scroll_on_expand", selector: { boolean: {} } },
-        {
-          name: "collapse_state_entity",
-          selector: { entity: { domain: "input_boolean" } },
-        },
+        { name: "scroll_on_expand", selector: { boolean: {} } },
       );
+      if (this._config?.scroll_on_expand) {
+        schema.push({
+          name: "scroll_duration",
+          selector: {
+            number: {
+              min: 0,
+              max: ROOM_SCROLL_MAX_MS,
+              step: 20,
+              unit_of_measurement: "ms",
+              mode: "box",
+            },
+          },
+        });
+      }
+      schema.push({
+        name: "collapse_state_entity",
+        selector: { entity: { domain: "input_boolean" } },
+      });
     }
     return schema;
   }
@@ -515,6 +531,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       collapsible: "editor_room_collapsible",
       default_collapsed: "editor_room_default_collapsed",
       scroll_on_expand: "editor_room_scroll_on_expand",
+      scroll_duration: "editor_room_scroll_duration",
       collapse_state_entity: "editor_room_collapse_entity",
       animation: "editor_progress_animation",
     };
@@ -886,6 +903,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                 collapsible: cfg.collapsible ?? false,
                 default_collapsed: cfg.default_collapsed ?? false,
                 scroll_on_expand: cfg.scroll_on_expand ?? false,
+                scroll_duration: cfg.scroll_duration ?? ROOM_SCROLL_MS,
                 collapse_state_entity: cfg.collapse_state_entity ?? "",
               }}
               .schema=${this._foldSchema()}

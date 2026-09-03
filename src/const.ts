@@ -1446,10 +1446,28 @@ export const ROOM_SHEET_MAX_HEIGHT = 60;
 
 /** Folding a room card down to its header. */
 export const ROOM_FOLD_MS = HEADING_COLLAPSE_MS;
+/** How many elements the search for a docked bar is willing to look at. */
+export const DOCK_SCAN_BUDGET = 4000;
+/** A docked bar has to cover at least this share of the window's width. */
+export const DOCK_MIN_WIDTH_SHARE = 0.34;
+/** And at most this share of its height — above that it is a layer, not a bar. */
+export const DOCK_MAX_HEIGHT_SHARE = 0.5;
+/** How deep the scan for the entities behind manual cards nests. */
+export const ROOM_CARD_SCAN_DEPTH = 4;
 /** Air left around a card that has been scrolled into view. */
 export const ROOM_SCROLL_MARGIN = 8;
-/** How long the one-off scroll margin stays before it is cleared again. */
-export const ROOM_SCROLL_SETTLE_MS = 1200;
+/**
+ * How long the scroll to a freshly opened card takes.
+ *
+ * The browser's own `behavior: "smooth"` picks a duration from the distance and
+ * is generous about it — half a second and more on a long dashboard, which
+ * reads as the page taking its time about a tap that was already answered. This
+ * is short enough to feel like a response and long enough to stay a movement
+ * the eye can follow, so nobody loses track of where the card went.
+ */
+export const ROOM_SCROLL_MS = 240;
+/** The slowest `scroll_duration` the editor will offer. */
+export const ROOM_SCROLL_MAX_MS = 1500;
 export const ROOM_ARROW = HEADING_ARROW;
 export const ROOM_ARROW_RADIUS = HEADING_ARROW_RADIUS;
 export const ROOM_ARROW_RADIUS_FOLDED = HEADING_ARROW_RADIUS_COLLAPSED;

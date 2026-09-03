@@ -2685,6 +2685,7 @@ collapse_state_entity: input_boolean.medien_eingeklappt
 | `action` | Objekt | – | Nur `status`: `{ name, icon, tap_action }` |
 | `default_collapsed` | boolean | `false` | Nur `collapsible` |
 | `scroll_on_expand` | `false` | Holt die Karte nach dem Aufklappen ins Sichtfeld. Eine eingeklappte Karte am unteren Rand öffnet sich nach unten aus dem Bild heraus — ausgerechnet das, was man sehen wollte, sieht man dann nicht |
+| `scroll_duration` | `240` | Wie lange dieses Scrollen dauert, in Millisekunden. `0` springt direkt. Das eingebaute weiche Scrollen des Browsers richtet sich nach der Entfernung und ist langsamer, als ein Tippen es erwarten lässt — deshalb steuert die Karte es selbst |
 | `collapse_state_entity` | string | – | Nur `collapsible`: ein `input_boolean` mit dem Zustand |
 
 

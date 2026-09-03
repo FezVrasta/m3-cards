@@ -8,11 +8,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
-- **Room card: `scroll_on_expand`** — brings the card into view after it
-  unfolds. A collapsed card near the bottom of a view opens downwards, past the
-  edge of the screen, so the thing you just asked to see is the thing you cannot
-  see. It scrolls after the animation rather than during it, by the least it
-  can, and not at all when the card is already fully visible.
+- **Room card: `scroll_on_expand` and `scroll_duration`** — brings the card into
+  view after it unfolds. A collapsed card near the bottom of a view opens
+  downwards, past the edge of the screen, so the thing you just asked to see is
+  the thing you cannot see. It moves by the least it can, not at all when the
+  card is already fully visible, and it leaves room for anything docked over the
+  bottom of the window — a navigation bar from this suite included, found
+  wherever in the shadow DOM it happens to live. `scroll_duration` sets how long
+  that takes; the default of 240 ms is deliberately shorter than the browser's
+  own smooth scroll, which picks its pace from the distance and reads as the
+  page taking its time about a tap it has already answered.
 
 - **Room card: `door_entities`** — contacts counted apart from the windows, with
   a chip of their own. A door standing open and a window standing open are
@@ -140,6 +145,31 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   onto a phone's gesture bar.
 
 ### Fixed
+
+- **Room card: a manual room always read "all off".** The summary line counted
+  the area registry's entities, but manual mode exists precisely for rooms whose
+  devices the registry does not know about — so a card showing six sockets, half
+  of them on, said nothing was running. It now counts what it actually shows,
+  nested stacks included, and re-renders when any of those entities changes.
+
+- **Room card: the scroll into view came to rest under a docked bar.** Two
+  faults, one symptom. The search for whatever covers the bottom of the window
+  asked the point what was under it, and `elementsFromPoint` hands back a shadow
+  host rather than what is inside it, so following it down one branch walked
+  into the card being scrolled and never reached the navigation bar two sections
+  away; the tree is now walked instead. And the plausibility check that rejects
+  a "bar" taller than half the screen ran on the largest match rather than on
+  each candidate, so a viewport-sized fixed layer — a dashboard has several —
+  took the real bar down with it.
+
+- **Room card: the scroll waited for the fold instead of running with it.** The
+  furthest the page can be scrolled was worked out once, at the moment of the
+  tap — when the card is still folded and that distance barely exists. The first
+  movement was therefore whatever little room happened to be there, and the real
+  travel only followed afterwards, once the card had finished growing: two
+  movements, one after the other, for what should be a single gesture. The
+  destination is now re-asked every frame, so the scroll follows the page as it
+  grows and the two land together.
 
 - **Room card: scrolling into view did nothing with animations switched off.**
   The path that skips the fold animation returned before the scroll, so a card
@@ -347,11 +377,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
-- **Raumkarte: `scroll_on_expand`** — holt die Karte nach dem Aufklappen ins
-  Sichtfeld. Eine eingeklappte Karte am unteren Rand öffnet sich nach unten aus
-  dem Bild heraus; ausgerechnet das, was man sehen wollte, sieht man dann nicht.
-  Gescrollt wird nach der Animation statt währenddessen, so wenig wie möglich —
-  und gar nicht, wenn die Karte ohnehin ganz zu sehen ist.
+- **Raumkarte: `scroll_on_expand` und `scroll_duration`** — holt die Karte nach
+  dem Aufklappen ins Sichtfeld. Eine eingeklappte Karte am unteren Rand öffnet
+  sich nach unten aus dem Bild heraus; ausgerechnet das, was man sehen wollte,
+  sieht man dann nicht. Gescrollt wird so wenig wie möglich, gar nicht, wenn die
+  Karte ohnehin ganz zu sehen ist, und mit Platz für alles, was unten am
+  Fensterrand klebt — auch für eine Navigationsleiste aus dieser Sammlung, egal
+  wie tief im Shadow DOM sie sitzt. `scroll_duration` bestimmt, wie lange das
+  dauert; die voreingestellten 240 ms sind bewusst kürzer als das weiche
+  Scrollen des Browsers, das sein Tempo aus der Entfernung ableitet und so
+  wirkt, als ließe sich die Seite Zeit mit einem längst beantworteten Tippen.
 
 - **Raumkarte: `door_entities`** — Kontakte, die getrennt von den Fenstern zählen,
   mit eigenem Chip. Eine offene Tür und ein offenes Fenster sind verschiedene
@@ -486,6 +521,32 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarte: Ein manueller Raum meldete immer „Alles aus".** Die Zusammen-
+  fassung zählte die Entitäten aus der Bereichsverwaltung — den manuellen Modus
+  gibt es aber gerade für Räume, deren Geräte dort nicht eingetragen sind. Eine
+  Karte mit sechs Steckdosen, halb davon an, behauptete also, es laufe nichts.
+  Gezählt wird jetzt, was tatsächlich angezeigt wird, verschachtelte Stapel
+  eingeschlossen; und die Karte zeichnet neu, sobald sich eine davon ändert.
+
+- **Raumkarte: Das Scrollen endete unter einer angedockten Leiste.** Zwei Fehler,
+  ein Symptom. Die Suche nach dem, was den unteren Fensterrand verdeckt, fragte
+  den Punkt — und `elementsFromPoint` liefert den Shadow-Host statt dessen
+  Inhalt, sodass der Abstieg entlang eines Zweigs in der gerade gescrollten
+  Karte landete und die Navigationsleiste zwei Abschnitte weiter nie erreichte;
+  jetzt wird der Baum durchlaufen. Und die Plausibilitätsgrenze, die eine
+  „Leiste" von mehr als halber Bildschirmhöhe verwirft, prüfte den größten
+  Treffer statt jeden einzelnen — eine bildschirmhohe fixierte Ebene, und davon
+  hat ein Dashboard mehrere, riss die echte Leiste mit sich.
+
+- **Raumkarte: Das Scrollen wartete auf das Aufklappen, statt mitzulaufen.** Wie
+  weit die Seite überhaupt gescrollt werden kann, wurde einmal ermittelt — im
+  Moment des Tippens, wenn die Karte noch eingeklappt ist und es diese Strecke
+  praktisch nicht gibt. Die erste Bewegung war deshalb nur der Rest an Platz,
+  der zufällig da war, und der eigentliche Weg kam erst danach, als die Karte
+  fertig gewachsen war: zwei Bewegungen nacheinander für das, was eine einzige
+  Geste sein sollte. Das Ziel wird jetzt in jedem Frame neu erfragt, sodass das
+  Scrollen der wachsenden Seite folgt und beides gemeinsam ankommt.
 
 - **Raumkarte: Ohne Animationen wurde gar nicht ins Sichtfeld gescrollt.** Der
   Zweig, der die Faltanimation überspringt, kehrte vor dem Scrollen zurück — eine
