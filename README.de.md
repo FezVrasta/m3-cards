@@ -3148,6 +3148,15 @@ seine Reiter. Wer die Kopfzeile überall ausblendet, verliert auch den Stift, de
 den Editor öffnet — kiosk-mode beschreibt, wie man wieder hineinkommt, und
 `?disable_km` an der URL ist die kurze Antwort.
 
+Dass man eine zweite Erweiterung braucht, damit die erste richtig aussieht, ist
+keine gute Antwort, und eine spätere Fassung sollte das selbst können: Die Karte
+findet die Kopfzeile von ihrem Platz aus, und sie nur auszublenden, solange eine
+Leiste auf der Ansicht liegt, träfe es genauer als jede Einstellung pro
+Dashboard. In dieser Version steckt es nicht, weil der Zugriff auf HAs eigenes
+DOM nicht unterstützt ist und nach dessen Zeitplan bricht — und weil eine
+Kopfzeile, die nicht zurückkommt, den Editor mitnimmt. Bis dahin sind die beiden
+Wege oben die ehrliche Antwort.
+
 ### Desktop und Handy
 
 Die übliche Paarung ist Kopfzeile am großen Bildschirm, Fußzeile oder Sheet am

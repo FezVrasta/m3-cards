@@ -3074,6 +3074,14 @@ header and keeps only this bar, the desktop keeps its tabs. Hiding the header
 everywhere also hides the pencil that opens the editor — kiosk-mode documents
 how to get back in, and `?disable_km` on the URL is the short answer.
 
+Needing a second add-on to make the first one look right is not a good answer,
+and a later version should carry it: the card can find the header from where it
+sits, and hiding it only while a bar is on the view would scope it better than
+any per-dashboard setting can. It is not in this release because reaching into
+Home Assistant's own DOM is unsupported and breaks on its schedule, and because
+a header that fails to come back takes the editor with it. Until then, the two
+above are the honest answer.
+
 ### Desktop and mobile
 
 The usual pairing is a header on a wide screen and a footer or sheet on a
