@@ -330,7 +330,9 @@ More-Info-Dialog.
 ## M3 Button Card
 
 Generische Karte für Entities außerhalb von `climate` (Buttons, Schalter,
-Lichter, Szenen, Türsensoren, ...) im selben Design.
+Lichter, Szenen, Türsensoren, ...) im selben Design. Kann außerdem eine
+eigene Zeile [Chip Buttons](#m3-chip-buttons-card) einbetten — siehe
+`chip_buttons` unten.
 
 <details>
 <summary>Konfiguration, Beispiele & Optionen</summary>
@@ -388,6 +390,8 @@ hold_action:
 | `icon_tap_action` | Action | `more-info` | Eigene Tap-Aktion nur für das Icon/den Icon-Kreis, unabhängig von `tap_action` — wie bei der nativen Tile-Karte |
 | `icon_hold_action` | Action | `none` | Aktion bei langem Drücken auf das Icon |
 | `icon_double_tap_action` | Action | `none` | Aktion bei Doppeltipp auf das Icon |
+| `chip_buttons` | list | `[]` | Eine eingebettete Zeile [Chip Buttons](#m3-chip-buttons-card) — gleiche Felder wie `buttons[]` der Chip Buttons Card (`entity`, `name`, `icon`, `color`, `inactive_color`, `show_state`, `static_color`, `interactive`, `tap_action`, `hold_action`, `double_tap_action`) |
+| `chip_buttons_justify` | `start` \| `center` \| `end` | `end` | Ausrichtung der Chip-Zeile — greift nur, wenn die Karte höher als eine normale Zeile ist (siehe unten); bei normaler Höhe sind die Chips immer rechtsbündig |
 
 Aktive Zustände (`on`, `open`, `home`, `playing`, ...) färben Icon und
 Icon-Hintergrund in der konfigurierten `color` (oder dem passenden
@@ -415,6 +419,27 @@ tap_action:
   action: perform-action
   perform_action: script.futterung_10g
   target: {}
+```
+
+#### Eingebettete Chip Buttons
+
+`chip_buttons` fügt dem Button selbst eine Zeile antippbarer Chips hinzu —
+z.B. eine Schnellwahl zum Raum-Mediaplayer direkt am Licht-Button. Bei
+normaler Kartenhöhe sitzen sie rechtsbündig neben Icon/Text; wird die Karte
+höher gezogen (z.B. `rows: 2` in der Sections-Ansicht), wandern sie in eine
+untere Leiste, deren Ausrichtung über `chip_buttons_justify` einstellbar ist.
+
+<img src="docs/images/button-card-chip-buttons.png" alt="Button Card mit eingebettetem Chip Button" width="440">
+
+```yaml
+type: custom:m3-button-card
+entity: light.wohnzimmer
+name: Licht
+chip_buttons:
+  - icon: mdi:speaker
+    name: Sonos
+    interactive: false
+chip_buttons_justify: end
 ```
 
 </details>

@@ -4,6 +4,7 @@ import type {
   HomeAssistant,
   LovelaceCardEditor,
   M3ButtonCardConfig,
+  ChipButtonConfig,
 } from "./types";
 import {
   DEFAULT_BUTTON_RADIUS,
@@ -24,6 +25,10 @@ import {
   renderRadiusCornerFields,
   type AppearanceState,
 } from "./shared/appearance-editor";
+import {
+  chipButtonLabelMap,
+  renderChipButtonsListEditor,
+} from "./shared/chip-buttons-editor";
 
 @customElement("m3-button-card-editor")
 export class M3ButtonCardEditor
@@ -89,6 +94,34 @@ export class M3ButtonCardEditor
     ];
   }
 
+  private _chipButtonsLayoutSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "chip_buttons_justify",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "start", label: this._t("editor_chip_buttons_justify_start") },
+              { value: "center", label: this._t("editor_chip_buttons_justify_center") },
+              { value: "end", label: this._t("editor_chip_buttons_justify_end") },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  private _chipItemLabel(item: ChipButtonConfig, index: number): string {
+    return (
+      item.name ??
+      (item.entity
+        ? ((this.hass?.states[item.entity]?.attributes.friendly_name as string | undefined) ??
+          item.entity)
+        : `#${index + 1}`)
+    );
+  }
+
   private _interactionsSchema(): SchemaEntry[] {
     return [
       { name: "tap_action", selector: { ui_action: {} } },
@@ -145,6 +178,8 @@ export class M3ButtonCardEditor
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
+      ...chipButtonLabelMap,
+      chip_buttons_justify: "editor_chip_buttons_justify",
       entity: "editor_entity",
       name: "editor_name",
       icon: "editor_icon",
@@ -267,6 +302,12 @@ export class M3ButtonCardEditor
     fireEvent(this, "config-changed", { config: this._config });
   }
 
+  private _chipButtonsChanged(chip_buttons: ChipButtonConfig[]): void {
+    if (!this._config) return;
+    this._config = { ...this._config, chip_buttons };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
   private _radiusPresetChanged(ev: CustomEvent): void {
     if (!this._config) return;
     const patch = radiusPresetPatch(ev.detail.value.radius_preset as string);
@@ -380,6 +421,31 @@ export class M3ButtonCardEditor
           </div>
         </ha-expansion-panel>
 
+        <ha-expansion-panel outlined .header=${this._t("editor_button_chip_buttons")}>
+          <ha-icon slot="leading-icon" icon="mdi:gesture-tap-button"></ha-icon>
+          <div class="panel-content">
+            ${renderChipButtonsListEditor({
+              hass: this.hass,
+              items: this._config.chip_buttons ?? [],
+              onChange: (items) => this._chipButtonsChanged(items),
+              computeLabel: this._computeLabel,
+              addLabel: this._t("editor_chip_buttons_add"),
+              removeLabel: this._t("editor_chip_buttons_remove"),
+              moveUpLabel: this._t("editor_chip_buttons_move_up"),
+              moveDownLabel: this._t("editor_chip_buttons_move_down"),
+              itemLabel: (item, index) => this._chipItemLabel(item, index),
+            })}
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ chip_buttons_justify: this._config.chip_buttons_justify ?? "end" }}
+              .schema=${this._chipButtonsLayoutSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_button_chip_buttons_justify_helper")}</div>
+          </div>
+        </ha-expansion-panel>
+
         <ha-expansion-panel outlined .header=${this._t("editor_appearance")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
@@ -475,6 +541,23 @@ export class M3ButtonCardEditor
       font-size: 12px;
       opacity: 0.6;
       color: var(--primary-text-color);
+    }
+
+    .chip-buttons-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chip-buttons-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip-buttons-row-actions .remove {
+      margin-left: auto;
+      --mdc-theme-primary: var(--error-color, #e57368);
     }
 
     .color-row {

@@ -190,6 +190,11 @@ export interface M3ButtonCardConfig {
   unavailable_style?: "dimmed" | "normal" | "hidden";
   show_slider?: boolean;
   vertical?: boolean;
+  /** Chip buttons embedded in the card — see shared/chip-buttons.ts. Right-aligned
+   * next to the content at normal card height; move to a bottom bar (aligned per
+   * `chip_buttons_justify`) once the card is resized taller. */
+  chip_buttons?: ChipButtonConfig[];
+  chip_buttons_justify?: "start" | "center" | "end";
   radius?: number;
   corners?: CornerRadiusConfig;
   glass_background?: boolean;

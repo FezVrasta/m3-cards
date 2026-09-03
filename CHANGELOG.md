@@ -30,6 +30,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   panels, explicit Up/Down buttons to reorder instead of a dropdown menu. A
   chip can be non-interactive (`interactive: false`) to act as a read-only
   info readout (e.g. temperature/humidity).
+- **M3 Button Card can now embed its own row of chip buttons** via the new
+  `chip_buttons` option, reusing the same editor and rendering as the
+  standalone Chip Buttons Card. Layout adapts to the card's height: at a
+  normal single-row height the chips sit right-aligned next to the
+  icon/text, and once the card is resized taller they move to a
+  bottom-anchored bar whose alignment (`chip_buttons_justify`: left/center/
+  right) becomes configurable — the switch is handled purely with a CSS
+  container query, so it needs no JS height measuring and adapts instantly
+  as the card is resized in the dashboard editor.
 
 ### Changed
 
