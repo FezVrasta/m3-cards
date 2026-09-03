@@ -2156,10 +2156,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       </nav>
     `;
 
+    // The variables live on the bar, and the round button is its sibling rather
+    // than its child, so without this it never saw them: --nav-scale fell back
+    // to 1 and the button stayed full size beside a scaled-down bar. Only the
+    // variables are repeated here, not the free styles, which belong to the bar
+    // alone and would otherwise be applied twice.
     const barRow =
       bubble === nothing
         ? bar
-        : html`<div class="bar-row">${bar}${bubble}</div>`;
+        : html`<div class="bar-row" style=${cssVars}>${bar}${bubble}</div>`;
 
     const body =
       this._variant === "sheet" && this._sheetHasContent
@@ -2809,9 +2814,19 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     .bubble {
       position: relative;
       flex-shrink: 0;
-      align-self: center;
-      width: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));
-      height: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));
+      /* Exactly as tall as the bar it stands beside, by taking the row's height
+         rather than naming a number. The shared constant cannot do it: the bar
+         ends up that number plus its own border, so a button given the bare
+         number is two pixels short, and one given the number without
+         border-box was two pixels over. Two pixels over was the worse of the
+         two — a stretching row handed the difference to the bar, which then had
+         more air above and below its marker than beside it. Width follows the
+         height, so it stays a circle at any scale. */
+      box-sizing: border-box;
+      align-self: stretch;
+      aspect-ratio: 1;
+      width: auto;
+      min-width: calc(${NAV_BAR_HEIGHT}px * var(--nav-scale, 1));
       border-radius: 50%;
       display: flex;
       align-items: center;

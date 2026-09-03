@@ -221,6 +221,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Nav card: the marker had more air above and below it than beside it.** The
+  round action button sits next to the bar rather than inside it, so it never
+  saw `--nav-scale` — that variable is set on the bar, and a sibling does not
+  inherit from a sibling. It also counted its glass border outside its height
+  while the bar counts its own inside. Both errors made the button taller than
+  the bar, a stretching row passed the difference to the bar, and centring left
+  the surplus as a margin above and below the marker: 9.5 px against 6.4 px at
+  the sides on a scaled-down bar. The row now shares its variables, and the
+  button takes its size from the row instead of naming a number — so it is a
+  circle exactly as tall as the bar at any scale, and the marker sits with the
+  same air on all four sides.
+
 - **Nav card: the bar's default corner missed the capsule by a pixel.** 30 px
   against a bar 62 px tall leaves 1 px of straight edge in the middle of each
   end, and that does not read as a rounded rectangle — it reads as a capsule
@@ -700,6 +712,19 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Die Sammlung registriert **36 Karten**.
 
 ### Behoben
+
+- **Nav-Karte: Über und unter der Markierung war mehr Luft als daneben.** Der
+  runde Aktionsknopf steht neben der Leiste, nicht in ihr, und sah `--nav-scale`
+  deshalb nie — die Variable sitzt auf der Leiste, und ein Geschwister erbt
+  nicht vom Geschwister. Zudem rechnete er seinen Glasrand außerhalb seiner
+  Höhe, während die Leiste ihren innerhalb zählt. Beides machte den Knopf höher
+  als die Leiste, eine streckende Zeile reichte die Differenz an die Leiste
+  weiter, und das Zentrieren legte den Überschuss als Rand über und unter die
+  Markierung: 9,5 px gegen 6,4 px an den Seiten bei verkleinerter Leiste. Die
+  Zeile teilt ihre Variablen jetzt, und der Knopf nimmt seine Größe aus der
+  Zeile statt aus einer Zahl — er ist damit bei jeder Skalierung ein Kreis
+  von exakt Leistenhöhe, und die Markierung hat auf allen vier Seiten
+  denselben Abstand.
 
 - **Nav-Karte: Die voreingestellte Ecke der Leiste verfehlte die Kapsel um einen
   Pixel.** 30 px bei einer 62 px hohen Leiste lassen in der Mitte jedes Endes
