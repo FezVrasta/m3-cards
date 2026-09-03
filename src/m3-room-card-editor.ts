@@ -58,6 +58,42 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     fireEvent(this, "config-changed", { config });
   }
 
+  // ---- the card's own cards -------------------------------------------------
+
+  private get _cards(): Record<string, unknown>[] {
+    return this._config?.cards ?? [];
+  }
+
+  private _setCards(cards: Record<string, unknown>[]): void {
+    if (!this._config) return;
+    const next = { ...this._config };
+    if (cards.length) next.cards = cards;
+    else delete next.cards;
+    this._emit(next);
+  }
+
+  private _moveCard(index: number, delta: number): void {
+    const cards = [...this._cards];
+    const target = index + delta;
+    if (target < 0 || target >= cards.length) return;
+    cards.splice(target, 0, cards.splice(index, 1)[0]);
+    this._setCards(cards);
+  }
+
+  /**
+   * What to call a nested card in the list.
+   *
+   * Its own name if it has one, otherwise the entity it points at, otherwise
+   * the card type — enough to tell the rows apart without pretending to be a
+   * preview of the card.
+   */
+  private _cardLabel(card: Record<string, unknown>, index: number): string {
+    const name = typeof card.name === "string" ? card.name : "";
+    const entity = typeof card.entity === "string" ? card.entity : "";
+    const type = typeof card.type === "string" ? card.type.replace("custom:", "") : "";
+    return name || entity || type || `#${index + 1}`;
+  }
+
   // ---- detection ------------------------------------------------------------
 
   /**
@@ -407,6 +443,11 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
   protected render() {
     if (!this.hass || !this._config) return nothing;
     const cfg = this._config;
+    // Manual mode draws none of the discovered tiles, so everything that
+    // configures them is describing something the card will not render — a
+    // whole section of switches with no effect, which is worse than an absent
+    // one.
+    const manual = (cfg?.mode ?? "auto") === "manual";
     const detected = this._detected();
     const hidden = new Set(cfg.hidden_categories ?? []);
 
@@ -430,11 +471,118 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
-            <div class="hint">${this._t("editor_room_cards_hint")}</div>
+            <div class="block">
+              <div class="block-title">${this._t("editor_room_cards")}</div>
+              ${this._cards.map(
+                (card, index) => html`
+                  <ha-expansion-panel outlined .header=${this._cardLabel(card, index)}>
+                    <!-- Arrows in the header so reordering does not mean
+                         opening and closing every panel on the way. -->
+                    <div slot="icons" class="reorder">
+                      <ha-icon-button
+                        .label=${this._t("editor_room_move_up")}
+                        .disabled=${index === 0}
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          this._moveCard(index, -1);
+                        }}
+                      >
+                        <ha-icon icon="mdi:arrow-up"></ha-icon>
+                      </ha-icon-button>
+                      <ha-icon-button
+                        .label=${this._t("editor_room_move_down")}
+                        .disabled=${index === this._cards.length - 1}
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          this._moveCard(index, 1);
+                        }}
+                      >
+                        <ha-icon icon="mdi:arrow-down"></ha-icon>
+                      </ha-icon-button>
+                    </div>
+                    <div class="panel-content">
+                      ${card.type === "custom:m3-button-card"
+                        ? html`<ha-form
+                            .hass=${this.hass}
+                            .data=${{
+                              entity: card.entity ?? "",
+                              name: card.name ?? "",
+                              icon: card.icon ?? "",
+                              tap_action: card.tap_action ?? { action: "toggle" },
+                            }}
+                            .schema=${[
+                              { name: "entity", selector: { entity: {} } },
+                              { name: "name", selector: { text: {} } },
+                              { name: "icon", selector: { icon: {} } },
+                              { name: "tap_action", selector: { ui_action: {} } },
+                            ]}
+                            .computeLabel=${this._computeLabel}
+                            @value-changed=${(ev: CustomEvent) => {
+                              const patch = ev.detail.value as Record<string, unknown>;
+                              const cards = [...this._cards];
+                              const merged: Record<string, unknown> = {
+                                ...cards[index],
+                                ...patch,
+                              };
+                              // An empty field means "unset", not "empty
+                              // string" — a name of "" would blank the card's
+                              // own name instead of falling back to the
+                              // entity's.
+                              for (const key of ["name", "icon"]) {
+                                if (!merged[key]) delete merged[key];
+                              }
+                              cards[index] = merged;
+                              this._setCards(cards);
+                            }}
+                          ></ha-form>`
+                        : html`<div class="hint">
+                            ${this._t("editor_room_card_yaml_only")}
+                          </div>`}
+                      <ha-button
+                        class="remove"
+                        @click=${() =>
+                          this._setCards(this._cards.filter((_, i) => i !== index))}
+                        >${this._t("editor_room_remove_card")}</ha-button
+                      >
+                    </div>
+                  </ha-expansion-panel>
+                `,
+              )}
+              <ha-form
+                .hass=${this.hass}
+                .data=${{ add_entities: [] }}
+                .schema=${[
+                  {
+                    name: "add_entities",
+                    selector: { entity: { multiple: true } },
+                  },
+                ]}
+                .computeLabel=${() => this._t("editor_room_add_cards")}
+                @value-changed=${(ev: CustomEvent) => {
+                  const picked = (ev.detail.value as { add_entities?: string[] })
+                    .add_entities;
+                  if (!picked?.length) return;
+                  // One button card per entity, which is what this list is for;
+                  // anything else is still written by hand below.
+                  this._setCards([
+                    ...this._cards,
+                    ...picked.map((entity) => ({
+                      type: "custom:m3-button-card",
+                      entity,
+                    })),
+                  ]);
+                }}
+              ></ha-form>
+              <div class="hint">${this._t("editor_room_cards_hint")}</div>
+            </div>
           </div>
         </ha-expansion-panel>
 
-        <ha-expansion-panel outlined .header=${this._t("editor_room_categories")}>
+        ${manual
+          ? nothing
+          : html`<ha-expansion-panel outlined .header=${this._t("editor_room_categories")}>
           <ha-icon slot="leading-icon" icon="mdi:view-grid-outline"></ha-icon>
           <div class="panel-content">
             <div class="hint">${this._t("editor_room_categories_hint")}</div>
@@ -544,7 +692,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               this._emit(next);
             })}
           </div>
-        </ha-expansion-panel>
+        </ha-expansion-panel>`}
 
         <ha-expansion-panel outlined .header=${this._t("editor_room_sensors")}>
           <ha-icon slot="leading-icon" icon="mdi:thermometer"></ha-icon>

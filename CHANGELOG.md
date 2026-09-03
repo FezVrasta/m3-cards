@@ -8,6 +8,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Room card editor: the cards are editable in the UI.** Entities can be added
+  as tiles from a picker, reordered, removed, and each one opens to its entity,
+  name, icon and tap action — so a card that should open the details rather than
+  switch something off by accident is a dropdown, not a YAML edit. Card types
+  the picker does not create keep their order and removal controls and say they
+  are edited in YAML.
+
 - **Every colour field can take the theme's colour, and now says so.** A card's
   colour has always accepted `primary`, which resolves to the theme's accent —
   under Material You, the tone generated from the wallpaper. It was a token you
@@ -105,6 +112,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   onto a phone's gesture bar.
 
 ### Fixed
+
+- **Room card editor: the category section showed in manual mode.** It
+  configures tiles that manual mode does not draw, so it was a section of
+  switches with no effect — including a list of discovered categories that
+  looked active but governed nothing.
 
 - **Room card: a fixed blue accent.** A room is a place, not a kind of data with
   a colour of its own, so it follows the dashboard's accent now — which under a
@@ -279,6 +291,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
+- **Raumkarten-Editor: Die Karten sind in der Oberfläche bearbeitbar.** Entitäten
+  lassen sich als Kacheln hinzufügen, sortieren, entfernen, und jede klappt zu
+  Entität, Name, Icon und Tipp-Aktion auf — eine Kachel, die lieber die Details
+  öffnet als versehentlich etwas abzuschalten, ist damit ein Auswahlfeld statt
+  einer YAML-Änderung. Kartentypen, die der Wähler nicht anlegt, behalten
+  Sortierung und Entfernen und sagen, dass sie im YAML bearbeitet werden.
+
 - **Jedes Farbfeld kann die Themefarbe übernehmen — und sagt das jetzt auch.**
   Die Farbe einer Karte akzeptiert seit jeher `primary`, was den Akzent des
   Themes bedeutet: unter Material You der aus dem Hintergrundbild erzeugte Ton.
@@ -381,6 +400,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarten-Editor: Der Kategorien-Bereich erschien auch im manuellen Modus.**
+  Er konfiguriert Kacheln, die in diesem Modus niemand zeichnet — ein Abschnitt
+  voller wirkungsloser Schalter, samt einer Liste erkannter Kategorien, die
+  aktiv aussah und nichts steuerte.
 
 - **Raumkarte: ein festes Blau als Akzent.** Ein Raum ist ein Ort und keine
   Datenart mit eigener Farbe; er folgt jetzt dem Akzent des Dashboards — unter
