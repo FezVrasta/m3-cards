@@ -1765,6 +1765,19 @@ export const NAV_FLOAT_INSET = 8;
 export const NAV_BAR_RADIUS = 999;
 /** What that capsule measures on an unscaled bar, for the editor's slider. */
 export const NAV_BAR_RADIUS_UI = NAV_BAR_HEIGHT / 2;
+
+/**
+ * How a freshly created nav card is filled in from the dashboard it lands on.
+ *
+ * A card that arrives empty asks the reader to type out what the dashboard
+ * already knows. These two numbers shape the suggestion instead: the first few
+ * views become entries, the next few go behind the round button, and everything
+ * after that is left alone. A bar cannot usefully hold eighty views, and a
+ * suggestion that tried would be worse than none — the point is something
+ * recognisable to edit, not a complete transcription.
+ */
+export const NAV_STUB_BAR_ITEMS = 3;
+export const NAV_STUB_MENU_ITEMS = 5;
 /**
  * Below HA's dialog band (its dialogs sit far above this), above ordinary card
  * content. Exposed as `--nav-z` so a dashboard with an unusual stacking context

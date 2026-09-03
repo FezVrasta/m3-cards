@@ -49,6 +49,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Home Assistant's own `visibility` feature already does that for every card,
   and the card's `hidden` is scoped to what only a template can answer.
 
+- **Nav card: a new card arrives filled in from the dashboard it landed on.**
+  It used to start with two invented entries pointing at views that may not
+  exist, which is a worse start than an empty one: the reader has to work out
+  what the shape means before replacing it. The views are in the dashboard's own
+  config, so the card offers them — the first three as entries, the next five
+  behind the round button, the arrangement a bar with more pages than fit ends
+  up in anyway. Subviews are left out, since they are reached from another view
+  rather than from the tab strip, and a first view with no path of its own is
+  addressed by its index, the way a hand-written bar does it. It is a suggestion
+  and nothing else: the entries become ordinary config on the spot, and nothing
+  reads the dashboard again unless "Import views" is pressed.
+
 - **Nav card: the default colour follows the theme.** It was a fixed blue from
   the suite's palette, which under a Material You theme made the bar the one
   thing on the dashboard not wearing the colour generated from the wallpaper.
@@ -528,6 +540,20 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   ebenfalls **nicht** nachgebaut — Home Assistants eigenes `visibility` kann das
   längst für jede Karte, und `hidden` bleibt auf das beschränkt, was nur eine
   Vorlage beantworten kann.
+
+- **Nav-Karte: Eine neue Karte kommt ausgefüllt vom Dashboard, auf dem sie
+  landet.** Bisher begann sie mit zwei erfundenen Einträgen auf Ansichten, die
+  es vielleicht gar nicht gibt — ein schlechterer Anfang als gar keiner, denn
+  erst muss man verstehen, was die Form bedeutet, bevor man sie ersetzen kann.
+  Die Ansichten stehen in der Konfiguration des Dashboards, also bietet die
+  Karte sie an: die ersten drei als Einträge, die nächsten fünf hinter dem
+  runden Knopf — die Anordnung, in der eine Leiste mit mehr Seiten als Platz
+  ohnehin endet. Unteransichten bleiben außen vor, weil sie aus einer anderen
+  Ansicht geöffnet werden und nicht aus der Reiterleiste, und eine erste Ansicht
+  ohne eigenen Pfad wird über ihren Index angesprochen, so wie es eine von Hand
+  gebaute Leiste tut. Es ist ein Vorschlag und sonst nichts: Die Einträge sind
+  sofort gewöhnliche Konfiguration, und niemand liest das Dashboard erneut,
+  solange nicht „Ansichten übernehmen" gedrückt wird.
 
 - **Nav-Karte: Die Standardfarbe folgt dem Theme.** Sie war ein festes Blau aus
   der Palette der Sammlung — unter einem Material-You-Theme also das einzige auf

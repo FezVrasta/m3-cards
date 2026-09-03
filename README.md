@@ -2989,6 +2989,14 @@ drawer you pull up over the view, plus per-entry badges, templates and
 submenus — the feature set of the community's Navbar Card, drawn in this
 suite's own design language rather than in its.
 
+Added from the card picker, it arrives already filled in from the dashboard it
+landed on: the first three views become entries and the next five go behind the
+round button, which is the arrangement a bar with more pages than fit ends up in
+anyway. It is a suggestion and nothing more — the entries are ordinary config
+from that moment on, to edit, reorder or delete, and the bar never reads the
+dashboard again by itself. "Import views" in the editor repeats the reading at
+any time.
+
 ```yaml
 type: custom:m3-nav-card
 style: footer          # header | footer | segmented | floating | sheet

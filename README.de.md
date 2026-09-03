@@ -3059,6 +3059,14 @@ Badges, Templates und Untermenüs je Eintrag. Der Funktionsumfang der Navbar
 Card aus der Community, gezeichnet in der Formensprache dieser Sammlung statt
 in ihrer.
 
+Über die Kartenauswahl hinzugefügt, kommt sie bereits ausgefüllt: die ersten
+drei Ansichten des Dashboards werden Einträge, die nächsten fünf wandern hinter
+den runden Knopf — die Anordnung, in der eine Leiste mit mehr Seiten als Platz
+ohnehin endet. Das ist ein Vorschlag und nicht mehr: Die Einträge sind ab
+diesem Moment gewöhnliche Konfiguration zum Bearbeiten, Umsortieren oder
+Löschen, und die Leiste liest das Dashboard von sich aus nie wieder.
+„Ansichten übernehmen" im Editor wiederholt das Einlesen jederzeit.
+
 ```yaml
 type: custom:m3-nav-card
 style: footer          # header | footer | segmented | floating | sheet

@@ -16,6 +16,7 @@ import {
   NAV_SIZE_MAX,
   NAV_SIZE_MIN,
 } from "./const";
+import { viewPath, type LovelaceViewLike } from "./shared/dashboard-views";
 import { localize, type TranslationKey } from "./localize";
 import {
   colorRow,
@@ -23,13 +24,6 @@ import {
   fireEvent,
   type SchemaEntry,
 } from "./shared/editor-helpers";
-
-/** One view of the dashboard the card is being edited on. */
-interface LovelaceViewLike {
-  path?: string;
-  title?: string;
-  icon?: string;
-}
 
 @customElement("m3-nav-card-editor")
 export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
@@ -290,7 +284,10 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       this;
     for (let depth = 0; depth < 12 && node; depth++) {
       const views = node.lovelace?.config?.views;
-      if (Array.isArray(views)) return views;
+      // A subview is opened from another view, never from the tab strip, so it
+      // does not belong in a bar built out of the tabs — same rule the
+      // suggestion a new card starts with applies.
+      if (Array.isArray(views)) return views.filter((view) => view && !view.subview);
       const parent: Node | null =
         (node as unknown as { parentNode?: Node }).parentNode ?? null;
       node = (parent && (parent as ShadowRoot).host
@@ -306,9 +303,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const known = new Set(this._items.map((i) => i.path).filter(Boolean));
     const added: NavItemConfig[] = [];
     views.forEach((view, index) => {
-      const path = `${location.pathname.split("/").slice(0, 2).join("/")}/${
-        view.path ?? index
-      }`;
+      const path = viewPath(view, index);
       if (known.has(path)) return;
       added.push(
         this._clean({

@@ -36,6 +36,8 @@ import {
   NAV_DEFAULT_BREAKPOINT,
   NAV_FLOAT_INSET,
   NAV_BAR_RADIUS,
+  NAV_STUB_BAR_ITEMS,
+  NAV_STUB_MENU_ITEMS,
   NAV_ITEM_GLYPH,
   NAV_ITEM_HEIGHT,
   NAV_ITEM_INACTIVE_OPACITY,
@@ -96,6 +98,11 @@ import {
   NAV_MENU_MAX_WIDTH,
   NAV_Z_INDEX,
 } from "./const";
+import {
+  dashboardViews,
+  viewPath,
+  type LovelaceViewLike,
+} from "./shared/dashboard-views";
 import { localize, type TranslationKey } from "./localize";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
@@ -320,8 +327,24 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     ) as unknown as LovelaceCardEditor;
   }
 
-  public static getStubConfig(): M3NavCardConfig {
-    return {
+  /**
+   * A first draft built from the dashboard the card is being added to.
+   *
+   * Two invented entries pointing at views that may not exist is a worse start
+   * than none: the reader has to work out what the shape means before they can
+   * replace it. The views are right there in the dashboard's own config, so the
+   * card offers them — the first few as entries, the next few behind the round
+   * button, in the arrangement a bar with more pages than fit ends up in
+   * anyway.
+   *
+   * It is a suggestion and nothing more. Nothing is read again after this: the
+   * entries land in the config as ordinary ones and are edited, reordered or
+   * thrown away like any other. A bar that silently followed the dashboard
+   * would put a half-finished view in front of everyone the moment it was
+   * created.
+   */
+  public static async getStubConfig(hass: HomeAssistant): Promise<M3NavCardConfig> {
+    const fallback: M3NavCardConfig = {
       type: "custom:m3-nav-card",
       style: "footer",
       items: [
@@ -329,6 +352,29 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         { name: "Energie", icon: "mdi:flash", path: "/lovelace/energie" },
       ],
     };
+
+    const views = await dashboardViews(hass);
+    // One view is not a navigation bar, so the invented pair is still the more
+    // useful thing to show what the config looks like.
+    if (views.length < 2) return fallback;
+
+    const entry = (view: LovelaceViewLike, index: number): NavItemConfig => {
+      const out: NavItemConfig = { path: viewPath(view, index) };
+      if (view.title) out.name = view.title;
+      if (view.icon) out.icon = view.icon;
+      return out;
+    };
+
+    const items = views.slice(0, NAV_STUB_BAR_ITEMS).map(entry);
+    const rest = views.slice(NAV_STUB_BAR_ITEMS, NAV_STUB_BAR_ITEMS + NAV_STUB_MENU_ITEMS);
+    const config: M3NavCardConfig = { type: "custom:m3-nav-card", style: "footer", items };
+    if (rest.length) {
+      config.action_button = {
+        icon: "mdi:dots-horizontal",
+        menu: rest.map((view, i) => entry(view, i + NAV_STUB_BAR_ITEMS)),
+      };
+    }
+    return config;
   }
 
   public setConfig(config: M3NavCardConfig): void {
