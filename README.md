@@ -815,8 +815,8 @@ name: Electricity Meter
   as needed to never truncate the value.
 - The decimal separator and number format follow `hass.locale` (e.g. comma
   instead of period in German).
-- If the card is narrower than 340px, the digit cells shrink automatically
-  (ResizeObserver).
+- If the card is narrower than 340px, the digit cells shrink automatically —
+  measured on the card itself, so it works in a narrow column too.
 - `unavailable`: cells show a dimmed "–", the power chip is hidden.
 
 ### Power chip and ticker

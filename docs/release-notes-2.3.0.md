@@ -27,22 +27,27 @@ building the new one.
   Per-entry badges take a template, an entity's state, or a count of entities
   that are on — hidden automatically at 0, off, empty or unavailable. Popup
   submenus grow out of the button that opened them. Tap, hold and double-tap
-  each get an action, with Home Assistant's haptic event. Desktop and mobile
-  have separate layouts, and which one applies is measured on the card's **own**
-  box through a ResizeObserver rather than on the window through a media query:
-  a card in a narrow column on a wide screen is narrow, and a media query would
-  get that wrong.
+  each get an action, and the phone gives a short buzz to confirm one.
 
-  `name`, `icon`, `color`, `hidden`, `disabled` and the badge accept Jinja2 and
-  subscribe to it, so Home Assistant pushes a new value whenever anything the
-  template reads changes. Only fields that actually contain `{{` or `{%` open a
-  subscription, and identical templates share one.
+  Desktop and mobile have separate layouts, and the bar picks between them by
+  measuring **its own width**, not the window's. Put it in a narrow column on a
+  wide screen and it knows it is narrow — the usual approach, which asks how
+  wide the screen is, would lay out a cramped bar as though it had the whole
+  display.
+
+  `name`, `icon`, `color`, `hidden`, `disabled` and the badge accept a template,
+  so you can compute what an entry shows instead of fixing it in the config. The
+  card registers each template with Home Assistant, which sends a fresh value
+  whenever any entity the template mentions changes — a badge updates by itself,
+  with no polling. Only fields that really contain a template are registered,
+  and two entries using the same one share a single registration.
 
   The sheet is dragged, and the interesting part is not the drag but the
   conflict with the content scrolling inside it: the content scrolls normally,
   and the sheet only takes over once the content is already at the top and the
-  finger is going down. A release goes to the nearest snap point unless it was a
-  flick, which goes the way it was thrown whatever position the sheet was in.
+  finger is going down. Let go and it settles to whichever open or closed
+  position is nearest — unless you flicked it, in which case it goes the way it
+  was thrown, wherever it happened to be.
 
 - **Nav card: the marker and the page move together.** `marker_motion: slide`
   moves a single shape between entries instead of fading one out and another in
@@ -194,23 +199,29 @@ genutzte Module entstanden.
   Abzeichen je Eintrag nehmen eine Vorlage, den Zustand einer Entität oder die
   Anzahl eingeschalteter Entitäten — bei 0, aus, leer oder nicht verfügbar
   automatisch ausgeblendet. Aufklappmenüs wachsen aus dem Knopf, der sie
-  geöffnet hat. Tippen, Halten und Doppeltippen bekommen je eine Aktion, samt
-  haptischer Rückmeldung von Home Assistant. Desktop und Handy haben getrennte
-  Layouts, und welches gilt, misst ein ResizeObserver an der **eigenen** Box der
-  Karte statt am Fenster per Media Query: eine Karte in einer schmalen Spalte
-  auf einem breiten Bildschirm ist schmal, und eine Media Query läge da falsch.
+  geöffnet hat. Tippen, Halten und Doppeltippen bekommen je eine Aktion, und
+  das Telefon bestätigt sie mit einem kurzen Vibrieren.
 
-  `name`, `icon`, `color`, `hidden`, `disabled` und das Abzeichen nehmen Jinja2
-  und abonnieren es — Home Assistant schickt einen neuen Wert, sobald sich
-  etwas ändert, das die Vorlage liest. Nur Felder, die tatsächlich `{{` oder
-  `{%` enthalten, öffnen ein Abonnement, und gleiche Vorlagen teilen sich eines.
+  Desktop und Handy haben getrennte Layouts, und die Leiste entscheidet anhand
+  **ihrer eigenen Breite**, nicht der des Fensters. Liegt sie auf einem breiten
+  Bildschirm in einer schmalen Spalte, weiß sie, dass sie schmal ist — der
+  übliche Weg, der nach der Bildschirmbreite fragt, würde eine eingezwängte
+  Leiste behandeln, als hätte sie den ganzen Bildschirm.
+
+  `name`, `icon`, `color`, `hidden`, `disabled` und das Abzeichen nehmen eine
+  Vorlage, man kann also berechnen, was ein Eintrag anzeigt, statt es fest
+  einzutragen. Die Karte meldet jede Vorlage bei Home Assistant an, und das
+  schickt einen neuen Wert, sobald sich eine darin vorkommende Entität ändert —
+  ein Abzeichen aktualisiert sich von selbst, ohne Nachfragen. Angemeldet werden
+  nur Felder, die wirklich eine Vorlage enthalten, und zwei Einträge mit
+  derselben Vorlage teilen sich eine Anmeldung.
 
   Die Schublade wird gezogen, und das Interessante daran ist nicht das Ziehen,
   sondern der Konflikt mit dem Scrollen ihres Inhalts: der Inhalt scrollt ganz
   normal, und die Schublade übernimmt erst, wenn er schon oben steht und der
-  Finger nach unten geht. Beim Loslassen springt sie zum nächsten Rastpunkt —
-  außer beim Schnippen, dann fliegt sie in die geworfene Richtung, gleich wo sie
-  gerade stand.
+  Finger nach unten geht. Lässt man los, geht sie in die nächstgelegene Lage,
+  offen oder zu — außer beim Schnippen, dann fliegt sie in die geworfene
+  Richtung, gleich wo sie gerade stand.
 
 - **Nav-Karte: Markierung und Seite bewegen sich gemeinsam.**
   `marker_motion: slide` schiebt eine einzige Form zwischen den Einträgen, statt

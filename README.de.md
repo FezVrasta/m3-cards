@@ -818,7 +818,8 @@ name: Stromzähler
 - Dezimaltrennzeichen und Zahlenformat folgen `hass.locale` (z.B. Komma statt
   Punkt auf Deutsch).
 - Ist die Karte schmaler als 340px, verkleinern sich die Ziffernzellen
-  automatisch (ResizeObserver).
+  automatisch — gemessen an der Karte selbst, das klappt also auch in einer
+  schmalen Spalte.
 - `unavailable`: Zellen zeigen gedimmt „–“, der Leistungs-Chip wird
   ausgeblendet.
 
