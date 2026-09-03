@@ -1635,6 +1635,15 @@ export interface M3RoomCardConfig {
   /** Fold the card down to its header, like the heading card's variant. */
   collapsible?: boolean;
   default_collapsed?: boolean;
+  /**
+   * Scrolls the card into view after it is unfolded.
+   *
+   * A collapsed card near the bottom of a view opens downwards, off the screen
+   * — so the thing you just asked to see is the thing you cannot see. Only ever
+   * scrolls when part of the card is actually out of view, and by the least it
+   * can.
+   */
+  scroll_on_expand?: boolean;
   /** An `input_boolean` holding the folded state, instead of localStorage. */
   collapse_state_entity?: string;
   /** Leave unset to discover it from the area. */

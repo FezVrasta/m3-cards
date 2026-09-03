@@ -8,6 +8,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Room card: `scroll_on_expand`** — brings the card into view after it
+  unfolds. A collapsed card near the bottom of a view opens downwards, past the
+  edge of the screen, so the thing you just asked to see is the thing you cannot
+  see. It scrolls after the animation rather than during it, by the least it
+  can, and not at all when the card is already fully visible.
+
 - **Room card: `door_entities`** — contacts counted apart from the windows, with
   a chip of their own. A door standing open and a window standing open are
   different facts, and a room card that adds them together answers neither. It
@@ -327,6 +333,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Raumkarte: `scroll_on_expand`** — holt die Karte nach dem Aufklappen ins
+  Sichtfeld. Eine eingeklappte Karte am unteren Rand öffnet sich nach unten aus
+  dem Bild heraus; ausgerechnet das, was man sehen wollte, sieht man dann nicht.
+  Gescrollt wird nach der Animation statt währenddessen, so wenig wie möglich —
+  und gar nicht, wenn die Karte ohnehin ganz zu sehen ist.
 
 - **Raumkarte: `door_entities`** — Kontakte, die getrennt von den Fenstern zählen,
   mit eigenem Chip. Eine offene Tür und ein offenes Fenster sind verschiedene

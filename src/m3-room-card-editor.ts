@@ -369,6 +369,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     if (this._config?.collapsible) {
       schema.push(
         { name: "default_collapsed", selector: { boolean: {} } },
+      { name: "scroll_on_expand", selector: { boolean: {} } },
         {
           name: "collapse_state_entity",
           selector: { entity: { domain: "input_boolean" } },
@@ -513,6 +514,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       presence_style: "editor_room_presence_style",
       collapsible: "editor_room_collapsible",
       default_collapsed: "editor_room_default_collapsed",
+      scroll_on_expand: "editor_room_scroll_on_expand",
       collapse_state_entity: "editor_room_collapse_entity",
       animation: "editor_progress_animation",
     };
@@ -883,6 +885,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${{
                 collapsible: cfg.collapsible ?? false,
                 default_collapsed: cfg.default_collapsed ?? false,
+                scroll_on_expand: cfg.scroll_on_expand ?? false,
                 collapse_state_entity: cfg.collapse_state_entity ?? "",
               }}
               .schema=${this._foldSchema()}

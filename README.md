@@ -2627,6 +2627,7 @@ collapse_state_entity: input_boolean.media_section_collapsed
 | `count_entities` | list | – | `status` only: the chip counts how many are on |
 | `action` | object | – | `status` only: `{ name, icon, tap_action }` |
 | `default_collapsed` | boolean | `false` | `collapsible` only |
+| `scroll_on_expand` | `false` | Scrolls the card into view after it is unfolded. A collapsed card near the bottom of a view opens downwards, off the screen — so the thing you just asked to see is the thing you cannot see |
 | `collapse_state_entity` | string | – | `collapsible` only: an `input_boolean` holding the state |
 
 

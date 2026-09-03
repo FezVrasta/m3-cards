@@ -305,7 +305,35 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       body.style.height = folded ? "0px" : "";
       void body.offsetHeight;
       body.style.transition = "";
+      if (!folded) this._scrollIntoView();
     }, ROOM_FOLD_MS + 40);
+  }
+
+  /**
+   * Brings a freshly unfolded card into view.
+   *
+   * After the animation, not during it: the card's final height is what decides
+   * whether anything is off screen, and scrolling against a growing box lands
+   * in the wrong place. scrollIntoView is used rather than arithmetic on the
+   * window because the scrolling ancestor is somewhere inside Home Assistant's
+   * shadow DOM, and only the browser knows which one it is.
+   */
+  private _scrollIntoView(): void {
+    if (this._config?.scroll_on_expand !== true) return;
+    const rect = this.getBoundingClientRect();
+    const viewport = window.innerHeight;
+    const behavior: ScrollBehavior = shouldAnimate(this._config?.animation)
+      ? "smooth"
+      : "auto";
+    // Taller than the screen: its top is the useful end. Otherwise pull up only
+    // as far as the bottom edge, so a card that is already fully visible does
+    // not move at all.
+    if (rect.height > viewport) {
+      if (rect.top < 0) this.scrollIntoView({ behavior, block: "start" });
+      return;
+    }
+    if (rect.bottom > viewport) this.scrollIntoView({ behavior, block: "end" });
+    else if (rect.top < 0) this.scrollIntoView({ behavior, block: "start" });
   }
 
   private get _language(): string {
