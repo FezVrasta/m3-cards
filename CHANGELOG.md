@@ -141,6 +141,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Room card: scrolling a card into view was late and stopped too low.** It
+  waited for the fold to finish and then scrolled, which reads as two movements
+  with a pause between them — the destination is known before the box grows into
+  it, so the two run together now. And it scrolled flush to the bottom of the
+  window, which on a dashboard with a docked navigation bar leaves the card's
+  last row underneath it. Anything pinned across the bottom edge is measured and
+  kept clear.
+
 - **Room card editor: the window list was a text field.** Entity ids nobody
   types from memory were asked for as comma-separated text. It is the same
   picker the power list uses now, filtered to window, door and opening sensors.
@@ -473,6 +481,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarte: Das Ins-Bild-Holen kam zu spät und hörte zu tief auf.** Es wartete
+  das Aufklappen ab und scrollte dann — das wirkt wie zwei Bewegungen mit einer
+  Pause dazwischen. Das Ziel steht schon fest, bevor die Karte hineinwächst, also
+  laufen beide jetzt gemeinsam. Und es scrollte bündig zum Fensterrand, womit auf
+  einem Dashboard mit angedockter Navigationsleiste die letzte Zeile darunter
+  verschwand. Was über den unteren Rand gelegt ist, wird jetzt gemessen und
+  freigehalten.
 
 - **Raumkarten-Editor: Die Fensterliste war ein Textfeld.** Entitäts-IDs, die
   niemand auswendig tippt, wurden als kommagetrennter Text verlangt. Jetzt

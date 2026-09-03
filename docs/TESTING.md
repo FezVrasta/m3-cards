@@ -643,6 +643,7 @@ dritten Kalender.
 | Raumkarte: Schreiben trifft nur eine | In einem Eintrag etwas ändern | Nur diese Karte ändert sich; die übrigen und die Einstellungen der Raumkarte selbst bleiben unberührt |
 | Raumkarte: Tipp-Aktion je Kachel | Einen Eintrag aufklappen und `tap_action` auf „Info anzeigen" stellen | Nur diese Kachel öffnet die Details statt zu schalten; die übrigen bleiben unverändert |
 | Raumkarte: Kategorien im manuellen Modus | `mode: manual` und den Editor öffnen | Der Bereich „Kategorien" fehlt — er konfiguriert Kacheln, die in diesem Modus niemand zeichnet |
+| Raumkarte: Scrollen unter der Leiste | Mit angedockter Nav-Leiste eine Karte am unteren Rand aufklappen | Die letzte Zeile der Karte steht **über** der Leiste, nicht darunter. Das Scrollen läuft gleichzeitig mit dem Aufklappen, nicht danach |
 | Raumkarte: ins Sichtfeld holen | `scroll_on_expand: true`, eingeklappte Karte am unteren Bildrand aufklappen | Die Seite scrollt nach dem Aufklappen so weit, dass die Karte ganz sichtbar ist. Eine bereits vollständig sichtbare Karte darf sich **nicht** bewegen |
 | Raumkarte: Kontakte trennen | Einen Kontakt in `door_entities` eintragen | Er erscheint als eigener Chip mit Tür-Symbol und wird **nicht** mehr bei den Fenstern gezählt |
 | Raumkarte: keine Doppelzählung | Denselben Kontakt in `window_entities` **und** `door_entities` | Er zählt nur bei den Türen |

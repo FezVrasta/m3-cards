@@ -51,6 +51,7 @@ import {
   ROOM_ARROW_RADIUS_FOLDED,
   ROOM_ARROW_TINT,
   ROOM_FOLD_MS,
+  NAV_SCROLL_PARENT_DEPTH,
   ROOM_TILE_TINT_IDLE,
   resolveCornerRadius,
   type RoomCategoryDef,
@@ -305,35 +306,83 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       body.style.height = folded ? "0px" : "";
       void body.offsetHeight;
       body.style.transition = "";
-      if (!folded) this._scrollIntoView();
     }, ROOM_FOLD_MS + 40);
+
+    // Alongside the fold rather than after it. Waiting for the animation to
+    // finish and only then scrolling reads as two separate movements with a
+    // pause in the middle; the final height is already known here, so the
+    // right destination can be computed before the box has grown into it.
+    if (!this._folded) this._scrollIntoView(to - from);
+  }
+
+  /**
+   * Whatever is docked over the bottom of the screen.
+   *
+   * A navigation bar from this suite sits on top of the view, so the bottom of
+   * the window is not the bottom of what can be seen. Scrolling a card flush to
+   * the window edge leaves its last row underneath the bar — visible to the
+   * layout, hidden to the reader.
+   */
+  private _bottomObstruction(): number {
+    const bars = document.querySelectorAll<HTMLElement>("m3-nav-card");
+    let covered = 0;
+    for (const bar of bars) {
+      const rect = bar.getBoundingClientRect();
+      if (rect.height === 0) continue;
+      // Only something actually pinned across the bottom edge counts.
+      if (rect.bottom < window.innerHeight - 4) continue;
+      if (rect.top > window.innerHeight) continue;
+      covered = Math.max(covered, window.innerHeight - rect.top);
+    }
+    return covered;
+  }
+
+  /** The nearest ancestor that actually scrolls, shadow boundaries included. */
+  private _scrollParent(): Element | undefined {
+    let node: Node | null = this.parentNode ?? null;
+    for (let depth = 0; depth < NAV_SCROLL_PARENT_DEPTH && node; depth++) {
+      const el = node as Element;
+      if (el.scrollHeight !== undefined && el.scrollHeight > el.clientHeight + 1) {
+        const overflow = getComputedStyle(el).overflowY;
+        if (overflow === "auto" || overflow === "scroll") return el;
+      }
+      node =
+        (node as Element).parentElement ??
+        ((node as { host?: Node }).host ?? (node.parentNode as Node | null));
+    }
+    return undefined;
   }
 
   /**
    * Brings a freshly unfolded card into view.
    *
-   * After the animation, not during it: the card's final height is what decides
-   * whether anything is off screen, and scrolling against a growing box lands
-   * in the wrong place. scrollIntoView is used rather than arithmetic on the
-   * window because the scrolling ancestor is somewhere inside Home Assistant's
-   * shadow DOM, and only the browser knows which one it is.
+   * `growth` is how much taller the card is about to get, so the destination
+   * can be worked out before it has grown — the scroll then runs with the fold
+   * instead of after it.
    */
-  private _scrollIntoView(): void {
+  private _scrollIntoView(growth: number): void {
     if (this._config?.scroll_on_expand !== true) return;
     const rect = this.getBoundingClientRect();
-    const viewport = window.innerHeight;
+    const bottomLimit = window.innerHeight - this._bottomObstruction() - 8;
+    const finalBottom = rect.bottom + Math.max(0, growth);
+
+    let delta = 0;
+    if (finalBottom - rect.top > bottomLimit) {
+      // Taller than the space there is: its top is the useful end.
+      delta = rect.top - 8;
+    } else if (finalBottom > bottomLimit) {
+      delta = finalBottom - bottomLimit;
+    } else if (rect.top < 0) {
+      delta = rect.top - 8;
+    }
+    if (Math.abs(delta) < 2) return;
+
     const behavior: ScrollBehavior = shouldAnimate(this._config?.animation)
       ? "smooth"
       : "auto";
-    // Taller than the screen: its top is the useful end. Otherwise pull up only
-    // as far as the bottom edge, so a card that is already fully visible does
-    // not move at all.
-    if (rect.height > viewport) {
-      if (rect.top < 0) this.scrollIntoView({ behavior, block: "start" });
-      return;
-    }
-    if (rect.bottom > viewport) this.scrollIntoView({ behavior, block: "end" });
-    else if (rect.top < 0) this.scrollIntoView({ behavior, block: "start" });
+    const scroller = this._scrollParent();
+    if (scroller) scroller.scrollBy({ top: delta, behavior });
+    else window.scrollBy({ top: delta, behavior });
   }
 
   private get _language(): string {

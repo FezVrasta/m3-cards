@@ -1446,6 +1446,12 @@ export const ROOM_SHEET_MAX_HEIGHT = 60;
 
 /** Folding a room card down to its header. */
 export const ROOM_FOLD_MS = HEADING_COLLAPSE_MS;
+/**
+ * How far up to look for the element that actually scrolls. Home Assistant
+ * nests the view several shadow roots deep, so the scroller is never the
+ * card's immediate parent.
+ */
+export const NAV_SCROLL_PARENT_DEPTH = 30;
 export const ROOM_ARROW = HEADING_ARROW;
 export const ROOM_ARROW_RADIUS = HEADING_ARROW_RADIUS;
 export const ROOM_ARROW_RADIUS_FOLDED = HEADING_ARROW_RADIUS_COLLAPSED;
