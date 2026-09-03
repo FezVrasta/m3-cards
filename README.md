@@ -319,7 +319,7 @@ more-info dialog.
 A generic card for entities outside of `climate` (buttons, switches,
 lights, scenes, door sensors, ...) in the same design.
 
-<img src="docs/images/button-card.png" alt="Button Card" width="440">
+<img src="docs/images/button-card.png" alt="Button Card — shapes, icon fills, and the shape following the state" width="440">
 
 ```yaml
 type: custom:m3-button-card

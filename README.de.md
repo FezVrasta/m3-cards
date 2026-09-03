@@ -315,7 +315,7 @@ More-Info-Dialog.
 Generische Karte für Entities außerhalb von `climate` (Buttons, Schalter,
 Lichter, Szenen, Türsensoren, ...) im selben Design.
 
-<img src="docs/images/button-card.png" alt="Button Card" width="440">
+<img src="docs/images/button-card.png" alt="Button Card — Formen, Icon-Füllungen und die zustandsabhängige Form" width="440">
 
 ```yaml
 type: custom:m3-button-card
