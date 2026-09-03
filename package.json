@@ -1,7 +1,7 @@
 {
   "name": "m3-cards",
-  "version": "2.2.0",
-  "description": "Material 3 style Lovelace cards for Home Assistant \u2014 30 cards across energy, climate, light and media, household and safety \u2014 built natively with Lit, with no button-card or card-mod dependency.",
+  "version": "2.3.0",
+  "description": "Material 3 style Lovelace cards for Home Assistant \u2014 36 cards across energy, climate, light and media, household and safety \u2014 built natively with Lit, with no button-card or card-mod dependency.",
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
