@@ -504,6 +504,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       power_threshold: "editor_room_power_threshold",
       power_entities: "editor_room_power_entities",
       window_entities: "editor_room_windows",
+      door_entities: "editor_room_doors",
       category_tap: "editor_room_category_tap",
       badge: "editor_room_badge",
       tile_name: "editor_room_tile_name",
@@ -840,6 +841,34 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                 const next = { ...cfg };
                 if (picked?.length) next.window_entities = picked;
                 else delete next.window_entities;
+                this._emit(next);
+              }}
+            ></ha-form>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ door_entities: cfg.door_entities ?? [] }}
+              .schema=${[
+                {
+                  name: "door_entities",
+                  selector: {
+                    entity: {
+                      multiple: true,
+                      filter: [
+                        { domain: "binary_sensor", device_class: "window" },
+                        { domain: "binary_sensor", device_class: "door" },
+                        { domain: "binary_sensor", device_class: "opening" },
+                      ],
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const picked = (ev.detail.value as { door_entities?: string[] })
+                  .door_entities;
+                const next = { ...cfg };
+                if (picked?.length) next.door_entities = picked;
+                else delete next.door_entities;
                 this._emit(next);
               }}
             ></ha-form>

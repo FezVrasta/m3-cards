@@ -1625,6 +1625,13 @@ export interface M3RoomCardConfig {
   show_windows?: boolean;
   /** Leave unset to discover them from the area. */
   window_entities?: string[];
+  /**
+   * Contacts counted apart from the windows — a door, or something that is not
+   * a way in at all, like a blind's position contact. Home Assistant labels
+   * most contact sensors `door` whatever they are on, so which is which cannot
+   * be discovered; it has to be said.
+   */
+  door_entities?: string[];
   /** Fold the card down to its header, like the heading card's variant. */
   collapsible?: boolean;
   default_collapsed?: boolean;

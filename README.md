@@ -2752,6 +2752,7 @@ person would rather decide.
 | `extra_sensors` | list | – | More chips, in order |
 | `show_windows` | boolean | `true` | The window and door chip |
 | `window_entities` | list | – | Overrides the discovery |
+| `door_entities` | list | – | Contacts counted apart from the windows — a door, or something that is not a way in at all, like a blind's position contact. Home Assistant labels almost every contact sensor `door`, so which is which cannot be discovered |
 | `presence_entity` | string | discovered | |
 | `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
 | `collapsible` | boolean | `false` | Fold the card down to its header |

@@ -702,6 +702,8 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
 
     const windows = this._windowChip();
     if (windows) chips.push(windows);
+    const doors = this._doorChip();
+    if (doors) chips.push(doors);
 
     for (const id of cfg.extra_sensors ?? []) {
       const chip = this._chipFor(id, "mdi:gauge");
@@ -713,12 +715,50 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
   private _windowEntities(): string[] {
     const cfg = this._config;
     if (!cfg || cfg.show_windows === false) return [];
-    if (cfg.window_entities?.length) return cfg.window_entities;
+    // Anything listed as a door is counted there instead, so a contact never
+    // lands in both chips.
+    const doors = new Set(cfg.door_entities ?? []);
+    if (cfg.window_entities?.length) {
+      return cfg.window_entities.filter((id) => !doors.has(id));
+    }
     return this._areaEntities.filter(
       (id) =>
         id.startsWith("binary_sensor.") &&
+        !doors.has(id) &&
         OPENING_CLASSES.has(this.hass?.states[id]?.attributes?.device_class as string),
     );
+  }
+
+  /**
+   * The same count for the contacts that are not windows.
+   *
+   * A separate chip rather than a separate colour: a door standing open and a
+   * window standing open are different facts, and a room card that adds them
+   * together answers neither question. Only ever from an explicit list —
+   * Home Assistant calls almost every contact sensor a `door`, so there is
+   * nothing here to discover.
+   */
+  private _doorChip(): Chip | undefined {
+    const cfg = this._config;
+    if (!cfg || cfg.show_windows === false) return undefined;
+    const entities = cfg.door_entities ?? [];
+    const live = entities.filter(
+      (id) => !UNAVAILABLE.has(this.hass?.states[id]?.state ?? "unavailable"),
+    );
+    if (live.length === 0) return undefined;
+    const open = live.filter((id) => this.hass?.states[id]?.state === "on");
+    if (open.length === 0) {
+      return { key: "doors", icon: "mdi:door-closed", text: this._t("room_doors_closed") };
+    }
+    return {
+      key: "doors",
+      icon: "mdi:door-open",
+      text:
+        live.length === 1
+          ? this._t("room_door_open")
+          : this._t("room_doors_open").replace("{n}", String(open.length)),
+      color: PALETTE_WARN,
+    };
   }
 
   /**

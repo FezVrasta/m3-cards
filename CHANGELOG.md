@@ -8,6 +8,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Room card: `door_entities`** — contacts counted apart from the windows, with
+  a chip of their own. A door standing open and a window standing open are
+  different facts, and a room card that adds them together answers neither. It
+  has to be an explicit list because Home Assistant labels almost every contact
+  sensor `door` whatever it is fitted to, so the distinction cannot be
+  discovered. An entity listed here never counts in the window chip as well.
+
 - **Room card: `power_entities`** — several power sensors added together, chosen
   from an entity picker in the editor. A room's consumption is usually the sum
   of its plugs, and the card could previously only name one sensor: discovery
@@ -320,6 +327,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Raumkarte: `door_entities`** — Kontakte, die getrennt von den Fenstern zählen,
+  mit eigenem Chip. Eine offene Tür und ein offenes Fenster sind verschiedene
+  Tatsachen, und eine Raumkarte, die beides zusammenzählt, beantwortet keine von
+  beiden. Es muss eine ausdrückliche Liste sein, weil Home Assistant fast jeden
+  Kontaktsensor als `door` führt, woran er auch hängt — die Unterscheidung ist
+  nicht erkennbar. Was hier steht, zählt nie zusätzlich bei den Fenstern.
 
 - **Raumkarte: `power_entities`** — mehrere Leistungssensoren, die zusammengezählt
   werden, im Editor über einen Entitätswähler auszuwählen. Der Verbrauch eines

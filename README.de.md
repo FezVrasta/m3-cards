@@ -2814,6 +2814,7 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `extra_sensors` | Liste | – | Weitere Chips, in dieser Reihenfolge |
 | `show_windows` | boolean | `true` | Chip für Fenster und Türen |
 | `window_entities` | Liste | – | Überschreibt die Erkennung |
+| `door_entities` | Liste | – | Kontakte, die getrennt von den Fenstern zählen — eine Tür, oder etwas, das gar kein Weg hinein ist, etwa der Positionskontakt einer Jalousie. Home Assistant nennt fast jeden Kontaktsensor `door`, was welcher ist, lässt sich also nicht erkennen |
 | `presence_entity` | string | erkannt | |
 | `presence_style` | `tint` \| `dot_only` \| `none` | `tint` | |
 | `collapsible` | boolean | `false` | Klappt die Karte auf ihre Kopfzeile zusammen |
