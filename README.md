@@ -2999,6 +2999,8 @@ dashboard again by itself. "Import views" in the editor repeats the reading at
 any time.
 
 <img src="docs/images/nav-card.png" alt="Nav Card — five variants of the same bar" width="440">
+<img src="docs/images/nav-card-sheet-list.png" alt="Nav Card — the drawer open, shortcuts as rows" width="220">
+<img src="docs/images/nav-card-sheet-grid.png" alt="Nav Card — the drawer open, shortcuts as tiles" width="220">
 
 ```yaml
 type: custom:m3-nav-card

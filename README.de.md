@@ -3069,6 +3069,8 @@ Löschen, und die Leiste liest das Dashboard von sich aus nie wieder.
 „Ansichten übernehmen" im Editor wiederholt das Einlesen jederzeit.
 
 <img src="docs/images/nav-card.png" alt="Nav Card — fünf Varianten derselben Leiste" width="440">
+<img src="docs/images/nav-card-sheet-list.png" alt="Nav Card — offene Schublade, Kürzel als Zeilen" width="220">
+<img src="docs/images/nav-card-sheet-grid.png" alt="Nav Card — offene Schublade, Kürzel als Kacheln" width="220">
 
 ```yaml
 type: custom:m3-nav-card
