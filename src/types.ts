@@ -1564,10 +1564,26 @@ export interface RoomCategoryConfig {
   tap_action?: HaActionConfig;
 }
 
+/**
+ * How a room card decides what to show.
+ *
+ * `auto` discovers the area's devices and draws a tile per category, which is
+ * what the card has always done. `manual` draws nothing of its own and leaves
+ * the body to the cards listed in `cards` — a room card holding the sockets of
+ * that room, say, rather than a summary of them.
+ */
+export type RoomCardMode = "auto" | "manual";
+
 export interface M3RoomCardConfig {
   type: string;
   /** HA area id. Everything else is discovered from it. */
   area: string;
+  mode?: RoomCardMode;
+  /**
+   * Lovelace cards drawn inside the room card's folding body. Shown below the
+   * discovered tiles in `auto`, and on their own in `manual`.
+   */
+  cards?: Record<string, unknown>[];
   name?: string;
   icon?: string;
   /** Opened on hold; falls back to more-info of the category's first entity. */

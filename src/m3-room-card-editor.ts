@@ -200,6 +200,18 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
+      {
+        name: "mode",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "auto", label: this._t("editor_room_mode_auto") },
+              { value: "manual", label: this._t("editor_room_mode_manual") },
+            ],
+          },
+        },
+      },
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "detail_path", selector: { text: {} } },
@@ -355,12 +367,17 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: px } });
   }
 
+  /** The one choice that changes what the rest of the editor is for. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "mode" ? this._t("editor_room_mode_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       area: "editor_room_area",
       name: "editor_name",
       icon: "editor_icon",
       detail_path: "editor_room_detail_path",
+      mode: "editor_room_mode",
       show_sensors: "editor_room_show_sensors",
       show_windows: "editor_room_show_windows",
       temperature_entity: "editor_room_temperature",
@@ -397,14 +414,17 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .hass=${this.hass}
               .data=${{
                 area: cfg.area ?? "",
+                mode: cfg.mode ?? "auto",
                 name: cfg.name ?? "",
                 icon: cfg.icon ?? "",
                 detail_path: cfg.detail_path ?? "",
               }}
               .schema=${this._roomSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_room_cards_hint")}</div>
           </div>
         </ha-expansion-panel>
 

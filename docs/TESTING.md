@@ -634,6 +634,10 @@ dritten Kalender.
 | Form ohne Animation | Dasselbe mit `animation: off` | Die beiden Formen stimmen weiterhin, der Wechsel springt aber ohne Übergang |
 | Form abgeschaltet | Ohne `shape_by_state` | Der Eckenradius bleibt in beiden Zuständen der konfigurierte, das Icon bleibt rund |
 
+| Raumkarte: eigene Karten | `cards:` mit zwei `custom:m3-button-card` füllen | Beide erscheinen im aufklappbaren Bereich, zeigen echte Zustände und lassen sich bedienen — das beweist, dass `hass` bei ihnen ankommt |
+| Raumkarte: manueller Modus | `mode: manual` | Keine automatisch erkannten Kacheln mehr, nur die eigenen Karten. Ohne `cards` steht dort ein Hinweis statt einer leeren Fläche |
+| Raumkarte: beides zusammen | `mode: auto` **und** `cards:` | Erkannte Kacheln oben, eigene Karten darunter |
+
 ## M3 Nav Card
 
 Die Karte ist Navigations-Chrome statt Datenkachel: sie positioniert sich gegen

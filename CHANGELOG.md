@@ -8,6 +8,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Room card: `mode` and `cards`.** A room card can now hold Lovelace cards of
+  its own. `auto` is what it has always done — discover the area's devices and
+  draw a tile per category — and `manual` draws none of that, leaving the body
+  to the cards you list. Either way `cards` renders inside the folding area, so
+  a collapsible room card holding that room's sockets is a few lines of config
+  rather than a heading card and a hand-built section.
+
 - **Button card: `icon_fill: solid`** — turns the active pairing inside out. The
   well takes the accent and the glyph is darkened against it, rather than a pale
   wash of the accent carrying an accent-coloured glyph. The bolder of the two,
@@ -254,6 +261,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Raumkarte: `mode` und `cards`.** Eine Raumkarte kann jetzt eigene
+  Lovelace-Karten aufnehmen. `auto` ist, was sie immer getan hat — die Geräte des
+  Bereichs erkennen und je Gerätetyp eine Kachel zeichnen — und `manual`
+  zeichnet davon nichts, sondern überlässt den Inhalt den eingetragenen Karten.
+  In beiden Fällen stehen sie im aufklappbaren Bereich; eine zusammenklappbare
+  Raumkarte mit den Steckdosen dieses Raums sind damit ein paar Zeilen
+  Konfiguration statt einer Heading-Karte mit handgebauter Sektion.
 
 - **Button-Karte: `icon_fill: solid`** — dreht das aktive Paar um. Die Fläche
   bekommt die Akzentfarbe, die Glyphe wird dagegen abgedunkelt, statt einer

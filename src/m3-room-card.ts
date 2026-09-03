@@ -73,6 +73,7 @@ import { areaEntityIds, areaInfo } from "./shared/ha-registry";
 import { guessRoomIcon } from "./shared/room-icons";
 import { readCollapsed, writeCollapsed, type CollapseTarget } from "./shared/collapse-state";
 import { hassChangeMatters } from "./shared/should-update";
+import { createCards, updateCardsHass } from "./shared/card-helpers";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
@@ -114,7 +115,30 @@ interface Chip {
 
 @customElement("m3-room-card")
 export class M3RoomCard extends LitElement implements LovelaceCard {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  /**
+   * A plain property would leave the cards inside the room card starved: they
+   * take their data from a `hass` pushed onto them from outside, and the render
+   * path is filtered by shouldUpdate, so pushing from there means a nested card
+   * showing the state it was born with. The accessor pushes on every tick and
+   * lets Lit see the change as before.
+   */
+  @property({ attribute: false })
+  public get hass(): HomeAssistant | undefined {
+    return this._hass;
+  }
+
+  public set hass(value: HomeAssistant | undefined) {
+    const previous = this._hass;
+    this._hass = value;
+    updateCardsHass(this._cards, value);
+    this.requestUpdate("hass", previous);
+  }
+
+  private _hass?: HomeAssistant;
+
+  /** Built when the config changes, never in the render path. */
+  private _cards: HTMLElement[] = [];
+  private _cardsFor?: Record<string, unknown>[];
 
   @state() private _config?: M3RoomCardConfig;
   /** Domain of the category whose device picker is open, if any. */
@@ -146,6 +170,30 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     if (!config.area) throw new Error("m3-room-card: 'area' is required");
     this._config = { glass_background: true, animation: "auto", show_sensors: true, ...config };
     this._folded = this._config.collapsible ? readCollapsed(this.hass, this._foldTarget) : false;
+    void this._syncCards();
+  }
+
+  /**
+   * Builds the nested cards when their config changes, and only then.
+   *
+   * Rebuilding per render would be expensive and would throw away whatever the
+   * nested card was holding — a half-open section, a slider mid-drag. Compared
+   * by serialised config rather than by identity, because a config object is a
+   * fresh one on every editor keystroke while its contents are unchanged.
+   */
+  private async _syncCards(): Promise<void> {
+    const configs = this._config?.cards ?? [];
+    const key = JSON.stringify(configs);
+    if (key === JSON.stringify(this._cardsFor ?? [])) return;
+    this._cardsFor = configs;
+    this._cards = await createCards(configs, this._hass);
+    // Home Assistant sets the config before it sets hass, and building is
+    // asynchronous — so the hass that arrived while this was awaiting never
+    // reached a list that was still empty when the setter ran. Push it again
+    // now that the cards exist, or they render the state of a card with no
+    // hass at all, which is nothing.
+    updateCardsHass(this._cards, this._hass);
+    this.requestUpdate();
   }
 
   private get _foldTarget(): CollapseTarget {
@@ -1036,6 +1084,9 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     });
     const radius = resolveCornerRadius(cfg.radius ?? DEFAULT_ROOM_RADIUS, cfg.corners);
 
+    // Manual leaves the body to the configured cards; auto keeps discovering.
+    const manual = (cfg.mode ?? "auto") === "manual";
+
     return html`
       <ha-card style=${`${cssVars} border-radius: ${radius};`}>
         <div
@@ -1068,9 +1119,16 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           <div class="body">
             <div class="body-inner">
               ${this._renderChips(chips)}
-              ${categories.length
-                ? html`<div class="grid">${categories.map((c) => this._renderTile(c))}</div>`
-                : html`<div class="empty">${this._t("room_empty")}</div>`}
+              ${manual
+                ? nothing
+                : categories.length
+                  ? html`<div class="grid">${categories.map((c) => this._renderTile(c))}</div>`
+                  : html`<div class="empty">${this._t("room_empty")}</div>`}
+              ${this._cards.length
+                ? html`<div class="cards">${this._cards}</div>`
+                : manual
+                  ? html`<div class="empty">${this._t("room_manual_empty")}</div>`
+                  : nothing}
             </div>
           </div>
           ${this._sheet ? this._renderSheet(categories) : nothing}
@@ -1091,6 +1149,20 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       .card-inner {
         gap: 0;
         position: relative;
+      }
+
+      /* The nested cards stack like they would in a section, with the same
+         gap the tiles use between rows. They bring their own backgrounds, so
+         the room card adds nothing but the spacing. */
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* Only when both are present: tiles above, cards below. */
+      .grid + .cards {
+        margin-top: 8px;
       }
 
       .card-inner.occupied {
