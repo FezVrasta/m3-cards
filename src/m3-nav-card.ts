@@ -36,6 +36,7 @@ import {
   NAV_DEFAULT_BREAKPOINT,
   NAV_FLOAT_INSET,
   NAV_BAR_RADIUS,
+  NAV_SHEET_RADIUS,
   NAV_STUB_BAR_ITEMS,
   NAV_STUB_MENU_ITEMS,
   NAV_ITEM_GLYPH,
@@ -2112,7 +2113,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       "nav-muted": common.secondaryTextColorCss,
       "nav-bg": cfg.card_background ? resolveThemeColor(cfg.card_background) : undefined,
       "nav-scale": String(scale),
-      "nav-radius": `${cfg.radius ?? NAV_BAR_RADIUS}px`,
+      "nav-radius": cfg.radius != null ? `${cfg.radius}px` : undefined,
       "nav-max-width": width.css,
       "nav-glyph": cfg.icon_size !== undefined ? `${cfg.icon_size}px` : undefined,
       "nav-label": cfg.label_size !== undefined ? `${cfg.label_size}px` : undefined,
@@ -2907,7 +2908,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         var(--nav-edge, ${NAV_FLOAT_INSET}px) +
         var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
       );
-      border-radius: var(--nav-radius, ${NAV_BAR_RADIUS}px);
+      border-radius: var(--nav-radius, ${NAV_SHEET_RADIUS}px);
       opacity: var(--nav-opacity, 1);
       color: var(--nav-ink, var(--primary-text-color));
     }
@@ -2917,6 +2918,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       border: none !important;
       border-radius: 0;
       margin: 0;
+      /* The grip's band stands in for the padding at this edge instead of
+         adding to it. Kept, the two stack up and the icons sit lower than the
+         text sits high, which is what makes a collapsed drawer look top-heavy
+         next to an ordinary bar. */
+      padding-top: 0;
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       /* Above the panel, so a collapsed drawer slides away behind it and only

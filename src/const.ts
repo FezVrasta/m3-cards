@@ -1765,6 +1765,16 @@ export const NAV_FLOAT_INSET = 8;
 export const NAV_BAR_RADIUS = 999;
 /** What that capsule measures on an unscaled bar, for the editor's slider. */
 export const NAV_BAR_RADIUS_UI = NAV_BAR_HEIGHT / 2;
+/**
+ * The drawer's corner, which cannot be the bar's.
+ *
+ * "Fully round ends" is the right instruction for a box wider than it is tall.
+ * A drawer pulled open is the other way round, and the same instruction turns
+ * it into an oval: the browser clamps the radius to half the *smaller* side, so
+ * a panel 850 wide comes out with 425px corners and stops being a rectangle at
+ * all. A panel wants a corner it can keep, not one derived from its height.
+ */
+export const NAV_SHEET_RADIUS = 30;
 
 /**
  * How a freshly created nav card is filled in from the dashboard it lands on.
@@ -1834,7 +1844,21 @@ export const NAV_SHEET_HANDLE_WIDTH = 42;
 export const NAV_SHEET_HANDLE_HEIGHT = 4;
 export const NAV_SHEET_HANDLE_RADIUS = 2;
 export const NAV_SHEET_HANDLE_OPACITY = 0.35;
-export const NAV_SHEET_HANDLE_PADDING = 10;
+/**
+ * Air around the grip of a collapsed drawer.
+ *
+ * This band sits on top of the bar, so every pixel of it is a pixel the icons
+ * are pushed down by while the text below them keeps the bar's own padding —
+ * the drawer read as top-heavy for exactly that reason. Ten left a 24px strip
+ * above a bar that is otherwise even top and bottom.
+ *
+ * Two leaves a strip of eight, near enough the bar's own six that the two ends
+ * read as a pair. It cannot go to nothing: the grip has to be grabbable, and
+ * the band is what is grabbed. The last couple of pixels are the price of
+ * having a grip at all, and they are below the threshold where an eye picks a
+ * difference out of a shape this size.
+ */
+export const NAV_SHEET_HANDLE_PADDING = 2;
 export const NAV_SHEET_DEFAULT_MAX_VH = 60;
 /** A phone in landscape: 60vh of drawer would leave nothing of the view. */
 export const NAV_SHORT_VIEWPORT_PX = 600;
