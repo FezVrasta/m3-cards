@@ -503,6 +503,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       power_entity: "editor_room_power",
       power_threshold: "editor_room_power_threshold",
       power_entities: "editor_room_power_entities",
+      window_entities: "editor_room_windows",
       category_tap: "editor_room_category_tap",
       badge: "editor_room_badge",
       tile_name: "editor_room_tile_name",
@@ -811,12 +812,37 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               else delete next.extra_sensors;
               this._emit(next);
             })}
-            ${listRow(this._t("editor_room_windows"), cfg.window_entities ?? [], (values) => {
-              const next = { ...cfg };
-              if (values.length) next.window_entities = values;
-              else delete next.window_entities;
-              this._emit(next);
-            })}
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ window_entities: cfg.window_entities ?? [] }}
+              .schema=${[
+                {
+                  name: "window_entities",
+                  // The same picker the power list uses. A sensor that is not
+                  // in the room's area cannot be discovered, and typing its id
+                  // from memory is not a reasonable ask.
+                  selector: {
+                    entity: {
+                      multiple: true,
+                      filter: [
+                        { domain: "binary_sensor", device_class: "window" },
+                        { domain: "binary_sensor", device_class: "door" },
+                        { domain: "binary_sensor", device_class: "opening" },
+                      ],
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const picked = (ev.detail.value as { window_entities?: string[] })
+                  .window_entities;
+                const next = { ...cfg };
+                if (picked?.length) next.window_entities = picked;
+                else delete next.window_entities;
+                this._emit(next);
+              }}
+            ></ha-form>
           </div>
         </ha-expansion-panel>
 

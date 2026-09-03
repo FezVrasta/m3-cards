@@ -128,6 +128,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Room card editor: the window list was a text field.** Entity ids nobody
+  types from memory were asked for as comma-separated text. It is the same
+  picker the power list uses now, filtered to window, door and opening sensors.
+
 - **Button card: `static_color` made the tile look switched off.** It works by
   rendering the card as inactive, which was only ever about colour — but the new
   off icon and state shape read that same flag, so a fridge that was running
@@ -443,6 +447,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarten-Editor: Die Fensterliste war ein Textfeld.** Entitäts-IDs, die
+  niemand auswendig tippt, wurden als kommagetrennter Text verlangt. Jetzt
+  derselbe Wähler wie bei der Leistungsliste, gefiltert auf Fenster-, Tür- und
+  Öffnungssensoren.
 
 - **Button-Karte: `static_color` ließ die Kachel ausgeschaltet aussehen.** Die
   Option arbeitet, indem sie die Karte als inaktiv zeichnet — was immer nur die
