@@ -121,6 +121,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Room card editor: one card type showed its translation key.** The label was
+  derived from the type by string surgery, and `climate-card-mini` came out as a
+  key that does not exist — with a cast in the way that stopped the compiler
+  from saying so. Each type now carries its own key, checked at build time.
+
 - **Room card editor: the category section showed in manual mode.** It
   configures tiles that manual mode does not draw, so it was a section of
   switches with no effect — including a list of discovered categories that
@@ -417,6 +422,12 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarten-Editor: Ein Kartentyp zeigte seinen Übersetzungsschlüssel.** Die
+  Beschriftung wurde per Zeichenkettenoperation aus dem Typ abgeleitet, und aus
+  `climate-card-mini` wurde ein Schlüssel, den es nicht gibt — mit einem Cast
+  davor, der den Compiler daran hinderte, das zu sagen. Jeder Typ trägt jetzt
+  seinen eigenen Schlüssel, zur Bauzeit geprüft.
 
 - **Raumkarten-Editor: Der Kategorien-Bereich erschien auch im manuellen Modus.**
   Er konfiguriert Kacheln, die in diesem Modus niemand zeichnet — ein Abschnitt

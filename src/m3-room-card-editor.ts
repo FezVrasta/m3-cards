@@ -603,11 +603,13 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                     selector: {
                       select: {
                         mode: "dropdown",
-                        options: ROOM_NESTED_CARD_TYPES.map((type) => ({
+                        // Paired with its label rather than deriving one from
+                        // the type: the derivation turned "climate-card-mini"
+                        // into a key that did not exist, and the cast it needed
+                        // stopped the compiler from saying so.
+                        options: ROOM_NESTED_CARD_TYPES.map(({ type, label }) => ({
                           value: type,
-                          label: this._t(
-                            `editor_room_card_type_${type.replace("custom:m3-", "").replace("-card", "")}` as TranslationKey,
-                          ),
+                          label: this._t(label),
                         })),
                       },
                     },

@@ -1356,11 +1356,14 @@ export const DEFAULT_ROOM_CARD_COLUMNS = 2;
  * picker knows how to create in one step.
  */
 export const ROOM_NESTED_CARD_TYPES = [
-  "custom:m3-button-card",
-  "custom:m3-light-card",
-  "custom:m3-cover-card",
-  "custom:m3-media-card",
-  "custom:m3-climate-card-mini",
+  { type: "custom:m3-button-card", label: "editor_room_card_type_button" },
+  { type: "custom:m3-light-card", label: "editor_room_card_type_light" },
+  { type: "custom:m3-cover-card", label: "editor_room_card_type_cover" },
+  { type: "custom:m3-media-card", label: "editor_room_card_type_media" },
+  {
+    type: "custom:m3-climate-card-mini",
+    label: "editor_room_card_type_climate_mini",
+  },
 ] as const;
 /**
  * A room is not a kind of data with a colour of its own — it is a place, and
