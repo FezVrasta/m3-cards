@@ -837,6 +837,7 @@ name: Stromzähler
 |---|---|---|---|
 | `entity` | string | – | Zählerstand-Sensor (Pflicht) |
 | `power_entity` | string | – | Optionaler Leistungs-Sensor für den Header-Chip |
+| `power_entities` | Liste | – | Leistungssensoren, die zusammengezählt werden — für einen Raum, dessen Verbrauch die Summe seiner Steckdosen ist. Schlägt `power_entity` und die automatische Suche, die beide nur einen benennen können |
 | `daily_entity` | string | – | Optionaler Tages-Sensor für die Ticker-Zeile |
 | `name` | string | Entity-Name | Angezeigter Name |
 | `icon` | string | `mdi:counter` | Icon in der Icon-Kachel |

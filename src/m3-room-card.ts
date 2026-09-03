@@ -657,6 +657,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     const temperature =
       cfg.temperature_entity ?? area?.temperatureEntity ?? this._findSensor("temperature");
     const humidity = cfg.humidity_entity ?? area?.humidityEntity ?? this._findSensor("humidity");
+    const powerList = cfg.power_entities ?? [];
     const power = cfg.power_entity ?? this._findSensor("power");
 
     const tempChip = this._chipFor(temperature, "mdi:thermometer");
@@ -664,9 +665,33 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     const humChip = this._chipFor(humidity, "mdi:water-percent");
     if (humChip) chips.push(humChip);
 
-    if (power) {
+    const threshold = cfg.power_threshold ?? ROOM_POWER_THRESHOLD;
+    if (powerList.length) {
+      // A room's consumption is usually the sum of its plugs, not one meter —
+      // and picking the first power sensor in an area gets that wrong loudly
+      // when the area also holds a mains channel. Unavailable readings are
+      // skipped rather than counted as zero, so a flat battery on one plug does
+      // not quietly shrink the total.
+      let sum = 0;
+      let any = false;
+      for (const id of powerList) {
+        const watts = parseFloat(this.hass?.states[id]?.state ?? "");
+        if (!Number.isFinite(watts)) continue;
+        sum += watts;
+        any = true;
+      }
+      if (any && sum > threshold) {
+        chips.push({
+          key: "power-sum",
+          icon: "mdi:flash",
+          text: `${formatNumber(this.hass?.language ?? "en", sum, {
+            maximumFractionDigits: sum >= 100 ? 0 : 1,
+          })} W`,
+          color: "#f0a24a",
+        });
+      }
+    } else if (power) {
       const watts = parseFloat(this.hass?.states[power]?.state ?? "");
-      const threshold = cfg.power_threshold ?? ROOM_POWER_THRESHOLD;
       // A room drawing 0.4W is a room drawing nothing, and a chip saying so
       // costs a row on every card that has a plug in it.
       if (Number.isFinite(watts) && watts > threshold) {

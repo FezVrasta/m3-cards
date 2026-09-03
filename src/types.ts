@@ -1611,6 +1611,13 @@ export interface M3RoomCardConfig {
   temperature_entity?: string;
   humidity_entity?: string;
   power_entity?: string;
+  /**
+   * Several power sensors added together, for a room whose consumption is the
+   * sum of its plugs rather than one meter. Wins over `power_entity` and over
+   * discovery, both of which can only name one — and picking one gets it loudly
+   * wrong in an area that also holds a mains channel.
+   */
+  power_entities?: string[];
   /** Watts below which the power chip is not worth the space. */
   power_threshold?: number;
   extra_sensors?: string[];

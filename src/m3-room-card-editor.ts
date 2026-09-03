@@ -502,6 +502,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       humidity_entity: "editor_room_humidity",
       power_entity: "editor_room_power",
       power_threshold: "editor_room_power_threshold",
+      power_entities: "editor_room_power_entities",
       category_tap: "editor_room_category_tap",
       badge: "editor_room_badge",
       tile_name: "editor_room_tile_name",
@@ -776,6 +777,34 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ power_entities: cfg.power_entities ?? [] }}
+              .schema=${[
+                {
+                  name: "power_entities",
+                  // A picker rather than a comma-separated text field: these are
+                  // entity ids nobody types from memory, and the filter keeps
+                  // the list to things measured in watts.
+                  selector: {
+                    entity: {
+                      multiple: true,
+                      filter: { domain: "sensor", device_class: "power" },
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const picked = (ev.detail.value as { power_entities?: string[] })
+                  .power_entities;
+                const next = { ...cfg };
+                if (picked?.length) next.power_entities = picked;
+                else delete next.power_entities;
+                this._emit(next);
+              }}
+            ></ha-form>
+            <div class="hint">${this._t("editor_room_power_entities_hint")}</div>
             ${listRow(this._t("editor_room_extra_sensors"), cfg.extra_sensors ?? [], (values) => {
               const next = { ...cfg };
               if (values.length) next.extra_sensors = values;

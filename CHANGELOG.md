@@ -8,6 +8,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Room card: `power_entities`** — several power sensors added together, chosen
+  from an entity picker in the editor. A room's consumption is usually the sum
+  of its plugs, and the card could previously only name one sensor: discovery
+  picked the first in the area, which in a hallway holding a mains channel meant
+  a chip reporting the whole phase as if it were that room. Unavailable readings
+  are skipped rather than counted as zero.
+
 - **Room card editor: each nested card opens its own editor.** Not a hand-picked
   handful of fields — the card class is asked for its editor, the same contract
   Home Assistant uses, so a nested button card offers exactly what it offers
@@ -309,6 +316,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   swiping.
 
 ### Hinzugefügt
+
+- **Raumkarte: `power_entities`** — mehrere Leistungssensoren, die zusammengezählt
+  werden, im Editor über einen Entitätswähler auszuwählen. Der Verbrauch eines
+  Raums ist meist die Summe seiner Steckdosen, und die Karte konnte bisher nur
+  einen Sensor benennen: die automatische Suche nahm den ersten im Bereich, was
+  in einem Flur mit Hausanschlusszähler einen Chip ergab, der die ganze Phase als
+  Raumverbrauch auswies. Nicht verfügbare Messwerte werden übersprungen statt als
+  Null gezählt.
 
 - **Raumkarten-Editor: Jede eingebettete Karte öffnet ihren eigenen Editor.**
   Keine handverlesene Auswahl an Feldern — die Karte wird nach ihrem Editor

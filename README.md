@@ -833,6 +833,7 @@ name: Electricity Meter
 |---|---|---|---|
 | `entity` | string | – | Meter-reading sensor (required) |
 | `power_entity` | string | – | Optional power sensor for the header chip |
+| `power_entities` | list | – | Power sensors added together, for a room whose consumption is the sum of its plugs. Wins over `power_entity` and over discovery, both of which can only name one |
 | `daily_entity` | string | – | Optional daily sensor for the ticker line |
 | `name` | string | entity name | Displayed name |
 | `icon` | string | `mdi:counter` | Icon in the icon tile |
