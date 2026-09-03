@@ -215,6 +215,10 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "detail_path", selector: { text: {} } },
+      {
+        name: "cards_columns",
+        selector: { number: { min: 1, max: 4, step: 1, mode: "slider" } },
+      },
     ];
   }
 
@@ -378,6 +382,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       icon: "editor_icon",
       detail_path: "editor_room_detail_path",
       mode: "editor_room_mode",
+      cards_columns: "editor_room_cards_columns",
       show_sensors: "editor_room_show_sensors",
       show_windows: "editor_room_show_windows",
       temperature_entity: "editor_room_temperature",
@@ -418,6 +423,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                 name: cfg.name ?? "",
                 icon: cfg.icon ?? "",
                 detail_path: cfg.detail_path ?? "",
+                cards_columns: cfg.cards_columns ?? 2,
               }}
               .schema=${this._roomSchema()}
               .computeLabel=${this._computeLabel}

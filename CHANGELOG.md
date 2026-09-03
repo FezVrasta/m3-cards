@@ -8,6 +8,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Every colour field can take the theme's colour, and now says so.** A card's
+  colour has always accepted `primary`, which resolves to the theme's accent —
+  under Material You, the tone generated from the wallpaper. It was a token you
+  had to know to type into a free-text field. Each colour row now carries a
+  palette button that sets it, and shows itself as pressed while a colour is the
+  theme's. One shared row, so all 36 cards gained it at once.
+
 - **Room card: `mode` and `cards`.** A room card can now hold Lovelace cards of
   its own. `auto` is what it has always done — discover the area's devices and
   draw a tile per category — and `manual` draws none of that, leaving the body
@@ -98,6 +105,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   onto a phone's gesture bar.
 
 ### Fixed
+
+- **Room card: a fixed blue accent.** A room is a place, not a kind of data with
+  a colour of its own, so it follows the dashboard's accent now — which under a
+  Material You theme is the wallpaper's tone rather than the one thing on the
+  screen that had not been told about the theme.
+
+- **Button card editor: it had its own copy of the colour row.** Nearly the same
+  as the shared one, but with a better swatch fallback — and it missed the new
+  theme button entirely. The improvement moved into the shared row and the copy
+  is gone.
 
 - **Button card editor: `icon_off` showed empty even when set.** The field was
   in the form's schema but not in the data handed to it, so a configured off
@@ -262,6 +279,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
+- **Jedes Farbfeld kann die Themefarbe übernehmen — und sagt das jetzt auch.**
+  Die Farbe einer Karte akzeptiert seit jeher `primary`, was den Akzent des
+  Themes bedeutet: unter Material You der aus dem Hintergrundbild erzeugte Ton.
+  Nur musste man dieses Wort kennen und in ein Freitextfeld tippen. Jede
+  Farbzeile hat jetzt einen Palettenknopf, der das setzt, und zeigt sich
+  gedrückt, solange eine Farbe die des Themes ist. Eine geteilte Zeile — alle 36
+  Karten haben es damit auf einen Schlag.
+
 - **Raumkarte: `mode` und `cards`.** Eine Raumkarte kann jetzt eigene
   Lovelace-Karten aufnehmen. `auto` ist, was sie immer getan hat — die Geräte des
   Bereichs erkennen und je Gerätetyp eine Kachel zeichnen — und `manual`
@@ -356,6 +381,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Leiste also auf die Gestenleiste des Handys schieben.
 
 ### Behoben
+
+- **Raumkarte: ein festes Blau als Akzent.** Ein Raum ist ein Ort und keine
+  Datenart mit eigener Farbe; er folgt jetzt dem Akzent des Dashboards — unter
+  einem Material-You-Theme also dem Ton des Hintergrundbilds statt als einziges
+  Element auf dem Bildschirm nichts vom Theme zu wissen.
+
+- **Button-Karten-Editor: eine eigene Kopie der Farbzeile.** Fast dieselbe wie
+  die geteilte, aber mit besserer Swatch-Auflösung — und ohne den neuen
+  Themefarben-Knopf. Die Verbesserung ist in die geteilte Zeile gewandert, die
+  Kopie ist weg.
 
 - **Button-Karten-Editor: `icon_off` blieb leer, obwohl gesetzt.** Das Feld
   stand im Schema des Formulars, aber nicht in den Daten, die es bekommt — ein

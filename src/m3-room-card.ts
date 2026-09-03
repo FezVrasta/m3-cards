@@ -14,6 +14,7 @@ import {
   CARD_VERSION,
   DEFAULT_ROOM_ACCENT,
   DEFAULT_ROOM_RADIUS,
+  DEFAULT_ROOM_CARD_COLUMNS,
   ROOM_CATEGORIES,
   ROOM_CHIP_HEIGHT,
   ROOM_CHIP_RADIUS,
@@ -1125,7 +1126,14 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
                   ? html`<div class="grid">${categories.map((c) => this._renderTile(c))}</div>`
                   : html`<div class="empty">${this._t("room_empty")}</div>`}
               ${this._cards.length
-                ? html`<div class="cards">${this._cards}</div>`
+                ? html`<div
+                    class="cards"
+                    style=${`--room-card-columns: ${
+                      cfg.cards_columns ?? DEFAULT_ROOM_CARD_COLUMNS
+                    };`}
+                  >
+                    ${this._cards}
+                  </div>`
                 : manual
                   ? html`<div class="empty">${this._t("room_manual_empty")}</div>`
                   : nothing}
@@ -1154,9 +1162,16 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
       /* The nested cards stack like they would in a section, with the same
          gap the tiles use between rows. They bring their own backgrounds, so
          the room card adds nothing but the spacing. */
+      /* A grid rather than a column: a row of buttons in a room card is the
+         point of the thing, and one full-width button per row wastes the width
+         the card already has. Entries that do not fit wrap, so a narrow card on
+         a phone falls back to a single column on its own. */
       .cards {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(
+          var(--room-card-columns, 2),
+          minmax(0, 1fr)
+        );
         gap: 8px;
       }
 

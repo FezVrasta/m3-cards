@@ -1345,7 +1345,15 @@ export const HEADING_NARROW_PX = 260;
 
 // ---- room card -------------------------------------------------------------
 export const DEFAULT_ROOM_RADIUS = RADIUS.card;
-export const DEFAULT_ROOM_ACCENT = PALETTE.home;
+/** Columns the cards inside a room card are laid out in. */
+export const DEFAULT_ROOM_CARD_COLUMNS = 2;
+/**
+ * A room is not a kind of data with a colour of its own — it is a place, and
+ * the dashboard's own accent is the honest default. Under a Material You theme
+ * that is the tone generated from the wallpaper, which is why a fixed blue read
+ * as the one thing on the dashboard that had not been told about the theme.
+ */
+export const DEFAULT_ROOM_ACCENT = "primary";
 export const ROOM_PRESENCE_COLOR = PALETTE.dryAuto;
 
 export const ROOM_HEADER_ICON = 56;

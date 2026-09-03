@@ -634,6 +634,8 @@ dritten Kalender.
 | Form ohne Animation | Dasselbe mit `animation: off` | Die beiden Formen stimmen weiterhin, der Wechsel springt aber ohne Übergang |
 | Form abgeschaltet | Ohne `shape_by_state` | Der Eckenradius bleibt in beiden Zuständen der konfigurierte, das Icon bleibt rund |
 
+| Themefarbe je Karte | In einem beliebigen Karten-Editor den Palettenknopf neben einem Farbfeld drücken | Das Feld steht auf `primary`, der Knopf ist markiert, die Karte trägt den Themeton. Nochmal drücken leert das Feld und stellt die Kartenfarbe wieder her |
+| Raumkarte: Karten nebeneinander | `cards_columns` auf 1 und auf 2 | Eine bzw. zwei Karten je Zeile |
 | Raumkarte: eigene Karten | `cards:` mit zwei `custom:m3-button-card` füllen | Beide erscheinen im aufklappbaren Bereich, zeigen echte Zustände und lassen sich bedienen — das beweist, dass `hass` bei ihnen ankommt |
 | Raumkarte: manueller Modus | `mode: manual` | Keine automatisch erkannten Kacheln mehr, nur die eigenen Karten. Ohne `cards` steht dort ein Hinweis statt einer leeren Fläche |
 | Raumkarte: beides zusammen | `mode: auto` **und** `cards:` | Erkannte Kacheln oben, eigene Karten darunter |

@@ -2798,6 +2798,7 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `area` | string | – | Die Bereichs-ID aus HA. Pflicht |
 | `mode` | `auto` \| `manual` | `auto` | `auto` erkennt die Geräte des Bereichs und zeigt je Gerätetyp eine Kachel; `manual` zeichnet davon nichts und zeigt nur `cards` |
 | `cards` | Liste | – | Lovelace-Karten im aufklappbaren Bereich — unter den Kacheln bei `auto`, allein bei `manual`. Schreibweise wie in einer Ansicht |
+| `cards_columns` | number | `2` | Wie viele dieser Karten nebeneinander stehen |
 | `name` / `icon` | string | aus dem Bereich | Das Icon wird sonst aus dem Raumnamen geraten |
 | `detail_path` | string | – | Öffnet sich bei langem Druck |
 | `extra_domains` | Liste | – | Domains über die neun eingebauten hinaus |

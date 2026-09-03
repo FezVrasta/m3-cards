@@ -1584,6 +1584,8 @@ export interface M3RoomCardConfig {
    * discovered tiles in `auto`, and on their own in `manual`.
    */
   cards?: Record<string, unknown>[];
+  /** How many of those cards sit side by side. */
+  cards_columns?: number;
   name?: string;
   icon?: string;
   /** Opened on hold; falls back to more-info of the category's first entity. */

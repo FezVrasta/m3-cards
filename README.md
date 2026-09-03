@@ -2736,6 +2736,7 @@ person would rather decide.
 | `area` | string | – | The HA area id. Required |
 | `mode` | `auto` \| `manual` | `auto` | `auto` discovers the area's devices and draws a tile per category; `manual` draws none of that and shows only `cards` |
 | `cards` | list | – | Lovelace cards drawn inside the folding body — below the tiles in `auto`, on their own in `manual`. Written as in a view |
+| `cards_columns` | number | `2` | How many of those cards sit side by side |
 | `name` / `icon` | string | the area's own | The icon falls back to a guess from the room name |
 | `detail_path` | string | – | Opened on hold |
 | `extra_domains` | list | – | Domains beyond the built-in nine |
