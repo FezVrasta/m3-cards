@@ -8,86 +8,46 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
-- **Room card: `scroll_on_expand` and `scroll_duration`** — brings the card into
-  view after it unfolds. A collapsed card near the bottom of a view opens
-  downwards, past the edge of the screen, so the thing you just asked to see is
-  the thing you cannot see. It moves by the least it can, not at all when the
-  card is already fully visible, and it leaves room for anything docked over the
-  bottom of the window — a navigation bar from this suite included, found
-  wherever in the shadow DOM it happens to live. `scroll_duration` sets how long
-  that takes; the default of 240 ms is deliberately shorter than the browser's
-  own smooth scroll, which picks its pace from the distance and reads as the
-  page taking its time about a tap it has already answered.
+- **M3 Nav Card** (`m3-nav-card`) — the headline of this release: a navigation
+  bar for the dashboard, in five variants: `header` and `footer` dock to an
+  edge, `segmented` is an inline pill group that scrolls with the page,
+  `floating` detaches into a rounded bar, and `sheet` adds a drawer that pulls
+  up over the view. The four docked variants take no row of the grid: their
+  slot collapses and they position themselves against the screen.
 
-- **Room card: `collapse_memory`** — how long a fold is remembered. It was
-  always kept on the device, so a card left open stayed open for good; that
-  suits a dashboard someone arranged once and gets in the way of one that should
-  open on its overview every time. `session` keeps the fold only while the app
-  is running: it still follows you around the dashboard, and the next start
-  finds every card folded again. A configured `collapse_state_entity` still
-  wins, since a helper is a deliberate answer to the same question.
+  Configurable to the level of the community's Navbar Card, in this suite's own
+  design language: per-entry badges (a template, an entity's state, or a count
+  of entities that are on — hidden automatically at 0/off/empty/unavailable),
+  popup submenus that grow out of the button that opened them, tap/hold/
+  double-tap actions with Home Assistant's haptic event, and separate desktop
+  and mobile layouts.
 
-- **Room card: `door_entities`** — contacts counted apart from the windows, with
-  a chip of their own. A door standing open and a window standing open are
-  different facts, and a room card that adds them together answers neither. It
-  has to be an explicit list because Home Assistant labels almost every contact
-  sensor `door` whatever it is fitted to, so the distinction cannot be
-  discovered. An entity listed here never counts in the window chip as well.
+  The desktop/mobile switch measures the card's **own** box through a
+  ResizeObserver rather than the window through a media query: a card in a
+  narrow column on a wide screen is narrow, and a media query would get that
+  wrong.
 
-- **Room card: `power_entities`** — several power sensors added together, chosen
-  from an entity picker in the editor. A room's consumption is usually the sum
-  of its plugs, and the card could previously only name one sensor: discovery
-  picked the first in the area, which in a hallway holding a mains channel meant
-  a chip reporting the whole phase as if it were that room. Unavailable readings
-  are skipped rather than counted as zero.
+  `name`, `icon`, `color`, `hidden`, `disabled` and the badge accept Jinja2 and
+  subscribe to it — Home Assistant pushes a new value whenever anything the
+  template reads changes. Only fields that actually contain `{{` or `{%` open a
+  subscription, and identical templates share one.
 
-- **Room card editor: each nested card opens its own editor.** Not a hand-picked
-  handful of fields — the card class is asked for its editor, the same contract
-  Home Assistant uses, so a nested button card offers exactly what it offers
-  anywhere else: state colours, inverted colours, the lot. It follows any card
-  in the suite, and cannot fall behind when one of them grows an option. The
-  picker builds button, light, cover, media and compact climate cards from an
-  entity; anything else added by hand gets its editor just the same.
+  The sheet is dragged, and the interesting part is not the drag but the
+  conflict with the content scrolling inside it: the content scrolls normally,
+  and the sheet only takes over when the content is already at the top and the
+  finger is going down. A release goes to the nearest snap point unless it was a
+  flick, which goes the way it was thrown whatever position the sheet was in.
+  In edit mode the sheet renders inline and pinned open, because a drawer docked
+  to the screen covers the card the editor is trying to show, and only the first
+  sheet on a view docks itself.
 
-- **Room card editor: the cards are editable in the UI.** Entities can be added
-  as tiles from a picker, reordered, removed, and each one opens to its entity,
-  name, icon and tap action — so a card that should open the details rather than
-  switch something off by accident is a dropdown, not a YAML edit. Card types
-  the picker does not create keep their order and removal controls and say they
-  are edited in YAML.
-
-- **Every colour field can take the theme's colour, and now says so.** A card's
-  colour has always accepted `primary`, which resolves to the theme's accent —
-  under Material You, the tone generated from the wallpaper. It was a token you
-  had to know to type into a free-text field. Each colour row now carries a
-  palette button that sets it, and shows itself as pressed while a colour is the
-  theme's. One shared row, so all 36 cards gained it at once.
-
-- **Room card: `mode` and `cards`.** A room card can now hold Lovelace cards of
-  its own. `auto` is what it has always done — discover the area's devices and
-  draw a tile per category — and `manual` draws none of that, leaving the body
-  to the cards you list. Either way `cards` renders inside the folding area, so
-  a collapsible room card holding that room's sockets is a few lines of config
-  rather than a heading card and a hand-built section.
-
-- **Button card: `icon_fill: solid`** — turns the active pairing inside out. The
-  well takes the accent and the glyph is darkened against it, rather than a pale
-  wash of the accent carrying an accent-coloured glyph. The bolder of the two,
-  and the one that reads first from across a room.
-
-- **Button card: `icon_off`** — a second icon for while the entity is off. Many
-  symbols have a struck-through twin, and that reads as "not on" before any
-  colour does. Falls back to `icon` when unset, which is most cards.
-
-- **Button card: `shape_by_state`** — the outline follows the entity, the way a
-  phone's quick settings do it: a capsule while it is off, the configured corner
-  radius while it is on, and the icon well going from a circle to a rounded
-  square alongside. Animated, and off by default. It puts the state in a second
-  channel, so a glance from across the room reads the shape before the colour.
-  The on-state radius defaults to 16px rather than the card's usual 28px, since
-  28px on a card one grid row tall is half its height and therefore a capsule
-  already — both states computed correctly and looked identical. An explicit
-  `radius` still wins.
+  `preload_views` is accepted and stored but does nothing: Home Assistant gives
+  a custom card no way to warm another view, and the only workaround would
+  flicker and leave a bogus history entry. Kept as a reserved key so a future
+  version can implement it without a breaking config change. Card-wide
+  visibility by user, device or screen size is likewise **not** reimplemented —
+  Home Assistant's own `visibility` feature already does that for every card,
+  and the card's `hidden` is scoped to what only a template can answer.
 
 - **Nav card: the default colour follows the theme.** It was a fixed blue from
   the suite's palette, which under a Material You theme made the bar the one
@@ -152,116 +112,124 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   device's safe area rather than replacing it, so no value can push the bar
   onto a phone's gesture bar.
 
+- **Button card: `icon_fill: solid`** — turns the active pairing inside out. The
+  well takes the accent and the glyph is darkened against it, rather than a pale
+  wash of the accent carrying an accent-coloured glyph. The bolder of the two,
+  and the one that reads first from across a room.
+
+- **Button card: `icon_off`** — a second icon for while the entity is off. Many
+  symbols have a struck-through twin, and that reads as "not on" before any
+  colour does. Falls back to `icon` when unset, which is most cards.
+
+- **Button card: `shape_by_state`** — the outline follows the entity, the way a
+  phone's quick settings do it: a capsule while it is off, the configured corner
+  radius while it is on, and the icon well going from a circle to a rounded
+  square alongside. Animated, and off by default. It puts the state in a second
+  channel, so a glance from across the room reads the shape before the colour.
+  The on-state radius defaults to 16px rather than the card's usual 28px, since
+  28px on a card one grid row tall is half its height and therefore a capsule
+  already — both states computed correctly and looked identical. An explicit
+  `radius` still wins.
+
+- **Room card: `scroll_on_expand` and `scroll_duration`** — brings the card into
+  view after it unfolds. A collapsed card near the bottom of a view opens
+  downwards, past the edge of the screen, so the thing you just asked to see is
+  the thing you cannot see. It moves by the least it can, not at all when the
+  card is already fully visible, and it leaves room for anything docked over the
+  bottom of the window — a navigation bar from this suite included, found
+  wherever in the shadow DOM it happens to live. `scroll_duration` sets how long
+  that takes; the default of 240 ms is deliberately shorter than the browser's
+  own smooth scroll, which picks its pace from the distance and reads as the
+  page taking its time about a tap it has already answered.
+
+- **Room card: `collapse_memory`** — how long a fold is remembered. It was
+  always kept on the device, so a card left open stayed open for good; that
+  suits a dashboard someone arranged once and gets in the way of one that should
+  open on its overview every time. `session` keeps the fold only while the app
+  is running: it still follows you around the dashboard, and the next start
+  finds every card folded again. A configured `collapse_state_entity` still
+  wins, since a helper is a deliberate answer to the same question.
+
+- **Room card: `door_entities`** — contacts counted apart from the windows, with
+  a chip of their own. A door standing open and a window standing open are
+  different facts, and a room card that adds them together answers neither. It
+  has to be an explicit list because Home Assistant labels almost every contact
+  sensor `door` whatever it is fitted to, so the distinction cannot be
+  discovered. An entity listed here never counts in the window chip as well.
+
+- **Room card: `power_entities`** — several power sensors added together, chosen
+  from an entity picker in the editor. A room's consumption is usually the sum
+  of its plugs, and the card could previously only name one sensor: discovery
+  picked the first in the area, which in a hallway holding a mains channel meant
+  a chip reporting the whole phase as if it were that room. Unavailable readings
+  are skipped rather than counted as zero.
+
+- **Room card editor: each nested card opens its own editor.** Not a hand-picked
+  handful of fields — the card class is asked for its editor, the same contract
+  Home Assistant uses, so a nested button card offers exactly what it offers
+  anywhere else: state colours, inverted colours, the lot. It follows any card
+  in the suite, and cannot fall behind when one of them grows an option. The
+  picker builds button, light, cover, media and compact climate cards from an
+  entity; anything else added by hand gets its editor just the same.
+
+- **Room card editor: the cards are editable in the UI.** Entities can be added
+  as tiles from a picker, reordered, removed, and each one opens to its entity,
+  name, icon and tap action — so a card that should open the details rather than
+  switch something off by accident is a dropdown, not a YAML edit. Card types
+  the picker does not create keep their order and removal controls and say they
+  are edited in YAML.
+
+- **Room card: `mode` and `cards`.** A room card can now hold Lovelace cards of
+  its own. `auto` is what it has always done — discover the area's devices and
+  draw a tile per category — and `manual` draws none of that, leaving the body
+  to the cards you list. Either way `cards` renders inside the folding area, so
+  a collapsible room card holding that room's sockets is a few lines of config
+  rather than a heading card and a hand-built section.
+
+- **Every colour field can take the theme's colour, and now says so.** A card's
+  colour has always accepted `primary`, which resolves to the theme's accent —
+  under Material You, the tone generated from the wallpaper. It was a token you
+  had to know to type into a free-text field. Each colour row now carries a
+  palette button that sets it, and shows itself as pressed while a colour is the
+  theme's. One shared row, so all 36 cards gained it at once.
+
+- **`src/shared/template-sub.ts`** — the `render_template` websocket
+  subscription manager: one subscription per unique template, ref-counted and
+  shared between fields, closed together when the card leaves the page. This is
+  the live, pushed subscription, not the one-shot evaluator an automation uses;
+  the two are easy to confuse and have different capabilities.
+
+- **`src/shared/sheet-gesture.ts`** — pointer drag with a velocity estimate and
+  snap-point resolution, plus the scroll-versus-sheet rule above. Nothing in the
+  suite tracked pointer velocity before; the light card's sliders are position-
+  follows-finger with no notion of a throw.
+
+- **`src/shared/tap-hold.ts`** — tap, hold and double-tap told apart from each
+  other and from a drag. `shared/actions.ts` has said since it was written that
+  the next card needing this should not write a third copy; this is that module.
+  The button card is deliberately left on its own copy for now — it is the
+  most-used card in the suite and gains nothing from the change today.
+
+- **`src/shared/card-helpers.ts`** — `loadCardHelpers()` / `createCardElement()`
+  for hosting arbitrary Lovelace cards, with the two lifecycle rules that are
+  easy to get wrong: build on a config change and never in the render path, and
+  push a fresh `hass` into every nested card on every tick.
+
+### Changed
+
+- The suite registers **36 cards**.
+
 ### Fixed
-
-- **Energy card: a water or gas meter's month was off by a factor of a
-  thousand.** Statistics were always requested in m³ for the volume device
-  classes, while the value was labelled with the entity's own unit — so a litre
-  meter's month read a thousandth of the truth: 57 L of watering appeared as
-  "0.06 L". The daily chart was right, because that path asks for no unit at
-  all, which made the two views of the same entity disagree. The unit asked for
-  is now the one the number is printed with. Multiple sources in mixed units
-  still add up: they normalize to the first entity's unit instead of to m³.
-
-- **Room card: a manual room always read "all off".** The summary line counted
-  the area registry's entities, but manual mode exists precisely for rooms whose
-  devices the registry does not know about — so a card showing six sockets, half
-  of them on, said nothing was running. It now counts what it actually shows,
-  nested stacks included, and re-renders when any of those entities changes.
-
-- **Room card: the scroll into view came to rest under a docked bar.** Two
-  faults, one symptom. The search for whatever covers the bottom of the window
-  asked the point what was under it, and `elementsFromPoint` hands back a shadow
-  host rather than what is inside it, so following it down one branch walked
-  into the card being scrolled and never reached the navigation bar two sections
-  away; the tree is now walked instead. And the plausibility check that rejects
-  a "bar" taller than half the screen ran on the largest match rather than on
-  each candidate, so a viewport-sized fixed layer — a dashboard has several —
-  took the real bar down with it.
-
-- **Room card: the scroll waited for the fold instead of running with it.** The
-  furthest the page can be scrolled was worked out once, at the moment of the
-  tap — when the card is still folded and that distance barely exists. The first
-  movement was therefore whatever little room happened to be there, and the real
-  travel only followed afterwards, once the card had finished growing: two
-  movements, one after the other, for what should be a single gesture. The
-  destination is now re-asked every frame, so the scroll follows the page as it
-  grows and the two land together.
-
-- **Room card: scrolling into view did nothing with animations switched off.**
-  The path that skips the fold animation returned before the scroll, so a card
-  opening past the bottom of the screen stayed there. A card without animations
-  still has to be visible.
-
-- **Room card: scrolling a card into view was late and stopped too low.** It
-  waited for the fold to finish and then scrolled, which reads as two movements
-  with a pause between them — the destination is known before the box grows into
-  it, so the two run together now. And it scrolled flush to the bottom of the
-  window, which on a dashboard with a docked navigation bar leaves the card's
-  last row underneath it. Anything pinned across the bottom edge is measured and
-  kept clear.
-
-- **Room card editor: the window list was a text field.** Entity ids nobody
-  types from memory were asked for as comma-separated text. It is the same
-  picker the power list uses now, filtered to window, door and opening sensors.
-
-- **Button card: `static_color` made the tile look switched off.** It works by
-  rendering the card as inactive, which was only ever about colour — but the new
-  off icon and state shape read that same flag, so a fridge that was running
-  showed a crossed-out icon and the off outline. Those two follow the entity
-  now; `static_color` keeps meaning what its name says.
-
-- **Room card editor: one card type showed its translation key.** The label was
-  derived from the type by string surgery, and `climate-card-mini` came out as a
-  key that does not exist — with a cast in the way that stopped the compiler
-  from saying so. Each type now carries its own key, checked at build time.
-
-- **Room card editor: the category section showed in manual mode.** It
-  configures tiles that manual mode does not draw, so it was a section of
-  switches with no effect — including a list of discovered categories that
-  looked active but governed nothing.
-
-- **Room card: a fixed blue accent.** A room is a place, not a kind of data with
-  a colour of its own, so it follows the dashboard's accent now — which under a
-  Material You theme is the wallpaper's tone rather than the one thing on the
-  screen that had not been told about the theme.
-
-- **Button card editor: it had its own copy of the colour row.** Nearly the same
-  as the shared one, but with a better swatch fallback — and it missed the new
-  theme button entirely. The improvement moved into the shared row and the copy
-  is gone.
-
-- **Button card editor: `icon_off` showed empty even when set.** The field was
-  in the form's schema but not in the data handed to it, so a configured off
-  icon was invisible to the editor.
 
 - **Nav card editor: the page transition sat under Appearance.** What happens
   when the page changes is behaviour; only the marker's own movement is about
   how the bar looks. Its length now appears only once a transition is chosen,
   instead of asking for a number that governs nothing.
 
-- **Button card editor: the shape and fill switches sat under Content.** Both
-  decide how the tile looks — one of them decides which way round the accent
-  and the glyph are used — so they belong beside the colours.
-
 - **Nav card: the warning for a second drawer on one view was never shown.** The
   card has always rendered the second one inline rather than docking it; the
   text explaining why existed but nothing displayed it. It now appears in the
   card's edit frame, where the situation actually arises.
-
-- **Button card: the tile's corners barely moved until the end.** The off state
-  asked for a 999px radius, the idiom for a capsule. A browser clamps that when
-  it paints — to half the height — but interpolates the number it was given, so
-  a change to 16px spent 98% of its time above the clamp: the outline sat still
-  and then squared off at the last moment, while the icon well moved the whole
-  way. The off radius is now measured from the card, half its actual height, so
-  both shapes travel a comparable distance and arrive together.
-
-- **Button card: the icon well changed shape before the tile did.** The well
-  transitions everything it has over 0.25s on an ease curve; the tile's corners
-  were given 0.3s on Material's. The inner shape therefore arrived first and the
-  two read as changing for separate reasons. Both corner changes now run on the
-  same clock, while the well's colours keep their own.
 
 - **Nav card editor: the round button was filed under Behaviour.** It is a
   visible part of the bar, and someone looking for a button to add or remove
@@ -392,93 +360,151 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   whole card, because nothing it draws is ever a request to change the view by
   swiping.
 
+- **Button card: `static_color` made the tile look switched off.** It works by
+  rendering the card as inactive, which was only ever about colour — but the new
+  off icon and state shape read that same flag, so a fridge that was running
+  showed a crossed-out icon and the off outline. Those two follow the entity
+  now; `static_color` keeps meaning what its name says.
+
+- **Button card editor: it had its own copy of the colour row.** Nearly the same
+  as the shared one, but with a better swatch fallback — and it missed the new
+  theme button entirely. The improvement moved into the shared row and the copy
+  is gone.
+
+- **Button card editor: `icon_off` showed empty even when set.** The field was
+  in the form's schema but not in the data handed to it, so a configured off
+  icon was invisible to the editor.
+
+- **Button card editor: the shape and fill switches sat under Content.** Both
+  decide how the tile looks — one of them decides which way round the accent
+  and the glyph are used — so they belong beside the colours.
+
+- **Button card: the tile's corners barely moved until the end.** The off state
+  asked for a 999px radius, the idiom for a capsule. A browser clamps that when
+  it paints — to half the height — but interpolates the number it was given, so
+  a change to 16px spent 98% of its time above the clamp: the outline sat still
+  and then squared off at the last moment, while the icon well moved the whole
+  way. The off radius is now measured from the card, half its actual height, so
+  both shapes travel a comparable distance and arrive together.
+
+- **Button card: the icon well changed shape before the tile did.** The well
+  transitions everything it has over 0.25s on an ease curve; the tile's corners
+  were given 0.3s on Material's. The inner shape therefore arrived first and the
+  two read as changing for separate reasons. Both corner changes now run on the
+  same clock, while the well's colours keep their own.
+
+- **Room card: a manual room always read "all off".** The summary line counted
+  the area registry's entities, but manual mode exists precisely for rooms whose
+  devices the registry does not know about — so a card showing six sockets, half
+  of them on, said nothing was running. It now counts what it actually shows,
+  nested stacks included, and re-renders when any of those entities changes.
+
+- **Room card: the scroll into view came to rest under a docked bar.** Two
+  faults, one symptom. The search for whatever covers the bottom of the window
+  asked the point what was under it, and `elementsFromPoint` hands back a shadow
+  host rather than what is inside it, so following it down one branch walked
+  into the card being scrolled and never reached the navigation bar two sections
+  away; the tree is now walked instead. And the plausibility check that rejects
+  a "bar" taller than half the screen ran on the largest match rather than on
+  each candidate, so a viewport-sized fixed layer — a dashboard has several —
+  took the real bar down with it.
+
+- **Room card: the scroll waited for the fold instead of running with it.** The
+  furthest the page can be scrolled was worked out once, at the moment of the
+  tap — when the card is still folded and that distance barely exists. The first
+  movement was therefore whatever little room happened to be there, and the real
+  travel only followed afterwards, once the card had finished growing: two
+  movements, one after the other, for what should be a single gesture. The
+  destination is now re-asked every frame, so the scroll follows the page as it
+  grows and the two land together.
+
+- **Room card: scrolling into view did nothing with animations switched off.**
+  The path that skips the fold animation returned before the scroll, so a card
+  opening past the bottom of the screen stayed there. A card without animations
+  still has to be visible.
+
+- **Room card: scrolling a card into view was late and stopped too low.** It
+  waited for the fold to finish and then scrolled, which reads as two movements
+  with a pause between them — the destination is known before the box grows into
+  it, so the two run together now. And it scrolled flush to the bottom of the
+  window, which on a dashboard with a docked navigation bar leaves the card's
+  last row underneath it. Anything pinned across the bottom edge is measured and
+  kept clear.
+
+- **Room card editor: the window list was a text field.** Entity ids nobody
+  types from memory were asked for as comma-separated text. It is the same
+  picker the power list uses now, filtered to window, door and opening sensors.
+
+- **Room card editor: one card type showed its translation key.** The label was
+  derived from the type by string surgery, and `climate-card-mini` came out as a
+  key that does not exist — with a cast in the way that stopped the compiler
+  from saying so. Each type now carries its own key, checked at build time.
+
+- **Room card editor: the category section showed in manual mode.** It
+  configures tiles that manual mode does not draw, so it was a section of
+  switches with no effect — including a list of discovered categories that
+  looked active but governed nothing.
+
+- **Room card: a fixed blue accent.** A room is a place, not a kind of data with
+  a colour of its own, so it follows the dashboard's accent now — which under a
+  Material You theme is the wallpaper's tone rather than the one thing on the
+  screen that had not been told about the theme.
+
+- **Energy card: a water or gas meter's month was off by a factor of a
+  thousand.** Statistics were always requested in m³ for the volume device
+  classes, while the value was labelled with the entity's own unit — so a litre
+  meter's month read a thousandth of the truth: 57 L of watering appeared as
+  "0.06 L". The daily chart was right, because that path asks for no unit at
+  all, which made the two views of the same entity disagree. The unit asked for
+  is now the one the number is printed with. Multiple sources in mixed units
+  still add up: they normalize to the first entity's unit instead of to m³.
+
 ### Hinzugefügt
 
-- **Raumkarte: `scroll_on_expand` und `scroll_duration`** — holt die Karte nach
-  dem Aufklappen ins Sichtfeld. Eine eingeklappte Karte am unteren Rand öffnet
-  sich nach unten aus dem Bild heraus; ausgerechnet das, was man sehen wollte,
-  sieht man dann nicht. Gescrollt wird so wenig wie möglich, gar nicht, wenn die
-  Karte ohnehin ganz zu sehen ist, und mit Platz für alles, was unten am
-  Fensterrand klebt — auch für eine Navigationsleiste aus dieser Sammlung, egal
-  wie tief im Shadow DOM sie sitzt. `scroll_duration` bestimmt, wie lange das
-  dauert; die voreingestellten 240 ms sind bewusst kürzer als das weiche
-  Scrollen des Browsers, das sein Tempo aus der Entfernung ableitet und so
-  wirkt, als ließe sich die Seite Zeit mit einem längst beantworteten Tippen.
+- **M3 Nav-Karte** (`m3-nav-card`) — das Hauptstück dieser Version: eine
+  Navigationsleiste fürs Dashboard, in fünf Varianten. `header` und `footer`
+  docken an einen Bildschirmrand, `segmented` ist eine Pillengruppe im Fluss der
+  Seite, `floating` löst sich zu einer abgerundeten Leiste, und `sheet` ergänzt
+  eine Schublade, die sich über die Ansicht ziehen lässt. Die vier angedockten
+  Varianten belegen keine Zeile im Raster: ihr Platz fällt zusammen, sie stellen
+  sich selbst an den Bildschirm.
 
-- **Raumkarte: `collapse_memory`** — wie lange ein Auf- oder Zugeklappt gemerkt
-  wird. Bisher immer auf dem Gerät, eine offen gelassene Karte blieb also für
-  immer offen; das passt zu einem einmal eingerichteten Dashboard und steht
-  einem im Weg, das jedes Mal mit der Übersicht beginnen soll. `session` merkt
-  sich den Zustand nur, solange die App läuft: er folgt dir weiterhin durchs
-  Dashboard, und beim nächsten Start ist wieder alles eingeklappt. Ein
-  eingetragenes `collapse_state_entity` sticht das weiterhin, denn ein Helfer
-  ist eine bewusste Antwort auf dieselbe Frage.
+  Einstellbar bis auf das Niveau der Navbar Card aus der Community, aber in der
+  Designsprache dieser Sammlung: Abzeichen je Eintrag — eine Vorlage, der
+  Zustand einer Entität oder die Anzahl eingeschalteter Entitäten, bei 0, aus,
+  leer oder nicht verfügbar automatisch ausgeblendet —, Aufklappmenüs, die aus
+  dem Knopf wachsen, der sie geöffnet hat, Aktionen für Tippen, Halten und
+  Doppeltippen samt haptischer Rückmeldung von Home Assistant, und getrennte
+  Layouts für Desktop und Handy.
 
-- **Raumkarte: `door_entities`** — Kontakte, die getrennt von den Fenstern zählen,
-  mit eigenem Chip. Eine offene Tür und ein offenes Fenster sind verschiedene
-  Tatsachen, und eine Raumkarte, die beides zusammenzählt, beantwortet keine von
-  beiden. Es muss eine ausdrückliche Liste sein, weil Home Assistant fast jeden
-  Kontaktsensor als `door` führt, woran er auch hängt — die Unterscheidung ist
-  nicht erkennbar. Was hier steht, zählt nie zusätzlich bei den Fenstern.
+  Ob Desktop oder Handy, misst ein ResizeObserver an der **eigenen** Box der
+  Karte statt am Fenster per Media Query: eine Karte in einer schmalen Spalte
+  auf einem breiten Bildschirm ist schmal, und eine Media Query läge da falsch.
 
-- **Raumkarte: `power_entities`** — mehrere Leistungssensoren, die zusammengezählt
-  werden, im Editor über einen Entitätswähler auszuwählen. Der Verbrauch eines
-  Raums ist meist die Summe seiner Steckdosen, und die Karte konnte bisher nur
-  einen Sensor benennen: die automatische Suche nahm den ersten im Bereich, was
-  in einem Flur mit Hausanschlusszähler einen Chip ergab, der die ganze Phase als
-  Raumverbrauch auswies. Nicht verfügbare Messwerte werden übersprungen statt als
-  Null gezählt.
+  `name`, `icon`, `color`, `hidden`, `disabled` und das Abzeichen nehmen Jinja2
+  und abonnieren es — Home Assistant schickt einen neuen Wert, sobald sich
+  irgendetwas ändert, das die Vorlage liest. Nur Felder, die tatsächlich `{{`
+  oder `{%` enthalten, öffnen ein Abonnement, und gleiche Vorlagen teilen sich
+  eines.
 
-- **Raumkarten-Editor: Jede eingebettete Karte öffnet ihren eigenen Editor.**
-  Keine handverlesene Auswahl an Feldern — die Karte wird nach ihrem Editor
-  gefragt, über denselben Vertrag, den Home Assistant selbst nutzt. Eine
-  eingebettete Button-Karte bietet damit genau das, was sie überall sonst bietet:
-  Zustandsfarben, invertierte Farben, alles. Das gilt für jede Karte der Sammlung
-  und kann nicht veralten, wenn eine davon eine Option dazubekommt. Der Wähler
-  legt Button-, Licht-, Rollladen-, Medien- und kompakte Klima-Karten aus einer
-  Entität an; alles andere von Hand eingetragene bekommt seinen Editor ebenso.
+  Die Schublade wird gezogen, und das Interessante daran ist nicht das Ziehen,
+  sondern der Konflikt mit dem Scrollen ihres Inhalts: der Inhalt scrollt ganz
+  normal, und die Schublade übernimmt erst, wenn er schon oben steht und der
+  Finger nach unten geht. Beim Loslassen springt sie zum nächsten Rastpunkt —
+  außer beim Schnippen, dann fliegt sie in die geworfene Richtung, gleich wo sie
+  gerade stand. Im Bearbeitungsmodus wird sie eingebettet und offen gezeichnet,
+  weil eine am Bildschirm angedockte Schublade genau die Karte verdeckt, die der
+  Editor zeigen will; und nur die erste Schublade einer Ansicht dockt sich an.
 
-- **Raumkarten-Editor: Die Karten sind in der Oberfläche bearbeitbar.** Entitäten
-  lassen sich als Kacheln hinzufügen, sortieren, entfernen, und jede klappt zu
-  Entität, Name, Icon und Tipp-Aktion auf — eine Kachel, die lieber die Details
-  öffnet als versehentlich etwas abzuschalten, ist damit ein Auswahlfeld statt
-  einer YAML-Änderung. Kartentypen, die der Wähler nicht anlegt, behalten
-  Sortierung und Entfernen und sagen, dass sie im YAML bearbeitet werden.
-
-- **Jedes Farbfeld kann die Themefarbe übernehmen — und sagt das jetzt auch.**
-  Die Farbe einer Karte akzeptiert seit jeher `primary`, was den Akzent des
-  Themes bedeutet: unter Material You der aus dem Hintergrundbild erzeugte Ton.
-  Nur musste man dieses Wort kennen und in ein Freitextfeld tippen. Jede
-  Farbzeile hat jetzt einen Palettenknopf, der das setzt, und zeigt sich
-  gedrückt, solange eine Farbe die des Themes ist. Eine geteilte Zeile — alle 36
-  Karten haben es damit auf einen Schlag.
-
-- **Raumkarte: `mode` und `cards`.** Eine Raumkarte kann jetzt eigene
-  Lovelace-Karten aufnehmen. `auto` ist, was sie immer getan hat — die Geräte des
-  Bereichs erkennen und je Gerätetyp eine Kachel zeichnen — und `manual`
-  zeichnet davon nichts, sondern überlässt den Inhalt den eingetragenen Karten.
-  In beiden Fällen stehen sie im aufklappbaren Bereich; eine zusammenklappbare
-  Raumkarte mit den Steckdosen dieses Raums sind damit ein paar Zeilen
-  Konfiguration statt einer Heading-Karte mit handgebauter Sektion.
-
-- **Button-Karte: `icon_fill: solid`** — dreht das aktive Paar um. Die Fläche
-  bekommt die Akzentfarbe, die Glyphe wird dagegen abgedunkelt, statt einer
-  zarten Akzentfläche mit akzentfarbener Glyphe. Die kräftigere der beiden
-  Varianten, und die, die man aus einigen Metern zuerst liest.
-
-- **Button-Karte: `icon_off`** — ein zweites Icon für den Aus-Zustand. Viele
-  Symbole haben ein durchgestrichenes Gegenstück, und das liest sich schneller
-  als „nicht an" als jede Farbe. Ohne Angabe gilt weiterhin `icon`.
-
-- **Button-Karte: `shape_by_state`** — der Umriss folgt der Entität, so wie es
-  die Schnelleinstellungen eines Handys machen: Kapsel im Aus, der konfigurierte
-  Eckenradius im An, und das Icon-Feld wandert dabei vom Kreis zum abgerundeten
-  Quadrat. Animiert, standardmäßig aus. Der Zustand steht damit in einem zweiten
-  Kanal: aus einiger Entfernung liest man die Form vor der Farbe. Der Radius im
-  Ein-Zustand ist standardmäßig 16px statt der sonst üblichen 28px — 28px sind
-  auf einer Kachel von einer Rasterzeile Höhe die halbe Höhe und damit bereits
-  eine Kapsel, beide Zustände wurden also richtig berechnet und sahen doch gleich
-  aus. Ein ausdrücklich gesetzter `radius` gilt weiterhin.
+  `preload_views` wird angenommen und gespeichert, tut aber nichts: Home
+  Assistant gibt einer eigenen Karte keine Möglichkeit, eine andere Ansicht
+  vorzuwärmen, und der einzige Behelf würde flackern und einen falschen
+  Verlaufseintrag hinterlassen. Der Schlüssel bleibt reserviert, damit eine
+  spätere Fassung ihn umsetzen kann, ohne bestehende Konfigurationen zu brechen.
+  Sichtbarkeit der ganzen Karte nach Benutzer, Gerät oder Bildschirmgröße wird
+  ebenfalls **nicht** nachgebaut — Home Assistants eigenes `visibility` kann das
+  längst für jede Karte, und `hidden` bleibt auf das beschränkt, was nur eine
+  Vorlage beantworten kann.
 
 - **Nav-Karte: Die Standardfarbe folgt dem Theme.** Sie war ein festes Blau aus
   der Palette der Sammlung — unter einem Material-You-Theme also das einzige auf
@@ -546,123 +572,133 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   zusätzlich zur Safe Area des Geräts, nicht statt ihr; kein Wert kann die
   Leiste also auf die Gestenleiste des Handys schieben.
 
+- **Button-Karte: `icon_fill: solid`** — dreht das aktive Paar um. Die Fläche
+  bekommt die Akzentfarbe, die Glyphe wird dagegen abgedunkelt, statt einer
+  zarten Akzentfläche mit akzentfarbener Glyphe. Die kräftigere der beiden
+  Varianten, und die, die man aus einigen Metern zuerst liest.
+
+- **Button-Karte: `icon_off`** — ein zweites Icon für den Aus-Zustand. Viele
+  Symbole haben ein durchgestrichenes Gegenstück, und das liest sich schneller
+  als „nicht an" als jede Farbe. Ohne Angabe gilt weiterhin `icon`.
+
+- **Button-Karte: `shape_by_state`** — der Umriss folgt der Entität, so wie es
+  die Schnelleinstellungen eines Handys machen: Kapsel im Aus, der konfigurierte
+  Eckenradius im An, und das Icon-Feld wandert dabei vom Kreis zum abgerundeten
+  Quadrat. Animiert, standardmäßig aus. Der Zustand steht damit in einem zweiten
+  Kanal: aus einiger Entfernung liest man die Form vor der Farbe. Der Radius im
+  Ein-Zustand ist standardmäßig 16px statt der sonst üblichen 28px — 28px sind
+  auf einer Kachel von einer Rasterzeile Höhe die halbe Höhe und damit bereits
+  eine Kapsel, beide Zustände wurden also richtig berechnet und sahen doch gleich
+  aus. Ein ausdrücklich gesetzter `radius` gilt weiterhin.
+
+- **Raumkarte: `scroll_on_expand` und `scroll_duration`** — holt die Karte nach
+  dem Aufklappen ins Sichtfeld. Eine eingeklappte Karte am unteren Rand öffnet
+  sich nach unten aus dem Bild heraus; ausgerechnet das, was man sehen wollte,
+  sieht man dann nicht. Gescrollt wird so wenig wie möglich, gar nicht, wenn die
+  Karte ohnehin ganz zu sehen ist, und mit Platz für alles, was unten am
+  Fensterrand klebt — auch für eine Navigationsleiste aus dieser Sammlung, egal
+  wie tief im Shadow DOM sie sitzt. `scroll_duration` bestimmt, wie lange das
+  dauert; die voreingestellten 240 ms sind bewusst kürzer als das weiche
+  Scrollen des Browsers, das sein Tempo aus der Entfernung ableitet und so
+  wirkt, als ließe sich die Seite Zeit mit einem längst beantworteten Tippen.
+
+- **Raumkarte: `collapse_memory`** — wie lange ein Auf- oder Zugeklappt gemerkt
+  wird. Bisher immer auf dem Gerät, eine offen gelassene Karte blieb also für
+  immer offen; das passt zu einem einmal eingerichteten Dashboard und steht
+  einem im Weg, das jedes Mal mit der Übersicht beginnen soll. `session` merkt
+  sich den Zustand nur, solange die App läuft: er folgt dir weiterhin durchs
+  Dashboard, und beim nächsten Start ist wieder alles eingeklappt. Ein
+  eingetragenes `collapse_state_entity` sticht das weiterhin, denn ein Helfer
+  ist eine bewusste Antwort auf dieselbe Frage.
+
+- **Raumkarte: `door_entities`** — Kontakte, die getrennt von den Fenstern zählen,
+  mit eigenem Chip. Eine offene Tür und ein offenes Fenster sind verschiedene
+  Tatsachen, und eine Raumkarte, die beides zusammenzählt, beantwortet keine von
+  beiden. Es muss eine ausdrückliche Liste sein, weil Home Assistant fast jeden
+  Kontaktsensor als `door` führt, woran er auch hängt — die Unterscheidung ist
+  nicht erkennbar. Was hier steht, zählt nie zusätzlich bei den Fenstern.
+
+- **Raumkarte: `power_entities`** — mehrere Leistungssensoren, die zusammengezählt
+  werden, im Editor über einen Entitätswähler auszuwählen. Der Verbrauch eines
+  Raums ist meist die Summe seiner Steckdosen, und die Karte konnte bisher nur
+  einen Sensor benennen: die automatische Suche nahm den ersten im Bereich, was
+  in einem Flur mit Hausanschlusszähler einen Chip ergab, der die ganze Phase als
+  Raumverbrauch auswies. Nicht verfügbare Messwerte werden übersprungen statt als
+  Null gezählt.
+
+- **Raumkarten-Editor: Jede eingebettete Karte öffnet ihren eigenen Editor.**
+  Keine handverlesene Auswahl an Feldern — die Karte wird nach ihrem Editor
+  gefragt, über denselben Vertrag, den Home Assistant selbst nutzt. Eine
+  eingebettete Button-Karte bietet damit genau das, was sie überall sonst bietet:
+  Zustandsfarben, invertierte Farben, alles. Das gilt für jede Karte der Sammlung
+  und kann nicht veralten, wenn eine davon eine Option dazubekommt. Der Wähler
+  legt Button-, Licht-, Rollladen-, Medien- und kompakte Klima-Karten aus einer
+  Entität an; alles andere von Hand eingetragene bekommt seinen Editor ebenso.
+
+- **Raumkarten-Editor: Die Karten sind in der Oberfläche bearbeitbar.** Entitäten
+  lassen sich als Kacheln hinzufügen, sortieren, entfernen, und jede klappt zu
+  Entität, Name, Icon und Tipp-Aktion auf — eine Kachel, die lieber die Details
+  öffnet als versehentlich etwas abzuschalten, ist damit ein Auswahlfeld statt
+  einer YAML-Änderung. Kartentypen, die der Wähler nicht anlegt, behalten
+  Sortierung und Entfernen und sagen, dass sie im YAML bearbeitet werden.
+
+- **Raumkarte: `mode` und `cards`.** Eine Raumkarte kann jetzt eigene
+  Lovelace-Karten aufnehmen. `auto` ist, was sie immer getan hat — die Geräte des
+  Bereichs erkennen und je Gerätetyp eine Kachel zeichnen — und `manual`
+  zeichnet davon nichts, sondern überlässt den Inhalt den eingetragenen Karten.
+  In beiden Fällen stehen sie im aufklappbaren Bereich; eine zusammenklappbare
+  Raumkarte mit den Steckdosen dieses Raums sind damit ein paar Zeilen
+  Konfiguration statt einer Heading-Karte mit handgebauter Sektion.
+
+- **Jedes Farbfeld kann die Themefarbe übernehmen — und sagt das jetzt auch.**
+  Die Farbe einer Karte akzeptiert seit jeher `primary`, was den Akzent des
+  Themes bedeutet: unter Material You der aus dem Hintergrundbild erzeugte Ton.
+  Nur musste man dieses Wort kennen und in ein Freitextfeld tippen. Jede
+  Farbzeile hat jetzt einen Palettenknopf, der das setzt, und zeigt sich
+  gedrückt, solange eine Farbe die des Themes ist. Eine geteilte Zeile — alle 36
+  Karten haben es damit auf einen Schlag.
+
+- **`src/shared/template-sub.ts`** — die Verwaltung der
+  `render_template`-Abonnements über die Websocket-Verbindung: ein Abonnement je
+  eindeutiger Vorlage, mit Referenzzählung, von mehreren Feldern geteilt und
+  gemeinsam geschlossen, wenn die Karte die Seite verlässt. Das ist das lebende,
+  geschobene Abonnement, nicht der einmalige Auswerter, den eine Automatisierung
+  benutzt; die beiden werden leicht verwechselt und können Unterschiedliches.
+
+- **`src/shared/sheet-gesture.ts`** — Zeigerbewegung mit Geschwindigkeits-
+  schätzung und Auflösung der Rastpunkte, dazu die oben beschriebene Regel für
+  Scrollen gegen Schublade. Vorher hat in der Sammlung nichts die Geschwindigkeit
+  eines Zeigers verfolgt; die Schieber der Licht-Karte folgen dem Finger und
+  kennen keinen Wurf.
+
+- **`src/shared/tap-hold.ts`** — Tippen, Halten und Doppeltippen voneinander und
+  vom Ziehen unterschieden. In `shared/actions.ts` steht seit seiner Entstehung,
+  dass die nächste Karte, die das braucht, keine dritte Kopie schreiben soll;
+  das ist dieses Modul. Die Button-Karte bleibt bewusst noch bei ihrer eigenen
+  Kopie — sie ist die meistgenutzte Karte der Sammlung und gewinnt heute nichts
+  durch den Umbau.
+
+- **`src/shared/card-helpers.ts`** — `loadCardHelpers()` / `createCardElement()`
+  zum Einbetten beliebiger Lovelace-Karten, mit den beiden Lebenszyklus-Regeln,
+  die man leicht falsch macht: bei einer Konfigurationsänderung bauen und
+  niemals im Render-Pfad, und in jedem Tick ein frisches `hass` in jede
+  eingebettete Karte schieben.
+
+### Geändert
+
+- Die Sammlung registriert **36 Karten**.
+
 ### Behoben
-
-- **Energiekarte: Der Monatswert eines Wasser- oder Gaszählers lag um den
-  Faktor tausend daneben.** Für die Volumen-Geräteklassen wurde die Statistik
-  immer in m³ angefordert, beschriftet wurde der Wert aber mit der Einheit der
-  Entität — ein Literzähler zeigte im Monat also ein Tausendstel: aus 57 L
-  Gießwasser wurden „0,06 L". Die Tagesansicht stimmte, weil dieser Weg gar
-  keine Einheit anfordert; dieselbe Entität widersprach sich also selbst.
-  Angefordert wird jetzt die Einheit, in der die Zahl auch ausgegeben wird.
-  Mehrere Quellen in gemischten Einheiten addieren sich weiterhin korrekt: sie
-  werden auf die Einheit der ersten Entität normalisiert statt auf m³.
-
-- **Raumkarte: Ein manueller Raum meldete immer „Alles aus".** Die Zusammen-
-  fassung zählte die Entitäten aus der Bereichsverwaltung — den manuellen Modus
-  gibt es aber gerade für Räume, deren Geräte dort nicht eingetragen sind. Eine
-  Karte mit sechs Steckdosen, halb davon an, behauptete also, es laufe nichts.
-  Gezählt wird jetzt, was tatsächlich angezeigt wird, verschachtelte Stapel
-  eingeschlossen; und die Karte zeichnet neu, sobald sich eine davon ändert.
-
-- **Raumkarte: Das Scrollen endete unter einer angedockten Leiste.** Zwei Fehler,
-  ein Symptom. Die Suche nach dem, was den unteren Fensterrand verdeckt, fragte
-  den Punkt — und `elementsFromPoint` liefert den Shadow-Host statt dessen
-  Inhalt, sodass der Abstieg entlang eines Zweigs in der gerade gescrollten
-  Karte landete und die Navigationsleiste zwei Abschnitte weiter nie erreichte;
-  jetzt wird der Baum durchlaufen. Und die Plausibilitätsgrenze, die eine
-  „Leiste" von mehr als halber Bildschirmhöhe verwirft, prüfte den größten
-  Treffer statt jeden einzelnen — eine bildschirmhohe fixierte Ebene, und davon
-  hat ein Dashboard mehrere, riss die echte Leiste mit sich.
-
-- **Raumkarte: Das Scrollen wartete auf das Aufklappen, statt mitzulaufen.** Wie
-  weit die Seite überhaupt gescrollt werden kann, wurde einmal ermittelt — im
-  Moment des Tippens, wenn die Karte noch eingeklappt ist und es diese Strecke
-  praktisch nicht gibt. Die erste Bewegung war deshalb nur der Rest an Platz,
-  der zufällig da war, und der eigentliche Weg kam erst danach, als die Karte
-  fertig gewachsen war: zwei Bewegungen nacheinander für das, was eine einzige
-  Geste sein sollte. Das Ziel wird jetzt in jedem Frame neu erfragt, sodass das
-  Scrollen der wachsenden Seite folgt und beides gemeinsam ankommt.
-
-- **Raumkarte: Ohne Animationen wurde gar nicht ins Sichtfeld gescrollt.** Der
-  Zweig, der die Faltanimation überspringt, kehrte vor dem Scrollen zurück — eine
-  Karte, die sich unter den Bildrand öffnet, blieb also dort. Auch ohne
-  Animationen muss sie zu sehen sein.
-
-- **Raumkarte: Das Ins-Bild-Holen kam zu spät und hörte zu tief auf.** Es wartete
-  das Aufklappen ab und scrollte dann — das wirkt wie zwei Bewegungen mit einer
-  Pause dazwischen. Das Ziel steht schon fest, bevor die Karte hineinwächst, also
-  laufen beide jetzt gemeinsam. Und es scrollte bündig zum Fensterrand, womit auf
-  einem Dashboard mit angedockter Navigationsleiste die letzte Zeile darunter
-  verschwand. Was über den unteren Rand gelegt ist, wird jetzt gemessen und
-  freigehalten.
-
-- **Raumkarten-Editor: Die Fensterliste war ein Textfeld.** Entitäts-IDs, die
-  niemand auswendig tippt, wurden als kommagetrennter Text verlangt. Jetzt
-  derselbe Wähler wie bei der Leistungsliste, gefiltert auf Fenster-, Tür- und
-  Öffnungssensoren.
-
-- **Button-Karte: `static_color` ließ die Kachel ausgeschaltet aussehen.** Die
-  Option arbeitet, indem sie die Karte als inaktiv zeichnet — was immer nur die
-  Farbe betraf. Das neue Aus-Icon und die Zustandsform lasen aber dasselbe
-  Merkmal, ein laufender Kühlschrank zeigte also durchgestrichenes Icon und
-  Aus-Umriss. Diese beiden folgen jetzt der Entität; `static_color` bedeutet
-  weiterhin, was sein Name sagt.
-
-- **Raumkarten-Editor: Ein Kartentyp zeigte seinen Übersetzungsschlüssel.** Die
-  Beschriftung wurde per Zeichenkettenoperation aus dem Typ abgeleitet, und aus
-  `climate-card-mini` wurde ein Schlüssel, den es nicht gibt — mit einem Cast
-  davor, der den Compiler daran hinderte, das zu sagen. Jeder Typ trägt jetzt
-  seinen eigenen Schlüssel, zur Bauzeit geprüft.
-
-- **Raumkarten-Editor: Der Kategorien-Bereich erschien auch im manuellen Modus.**
-  Er konfiguriert Kacheln, die in diesem Modus niemand zeichnet — ein Abschnitt
-  voller wirkungsloser Schalter, samt einer Liste erkannter Kategorien, die
-  aktiv aussah und nichts steuerte.
-
-- **Raumkarte: ein festes Blau als Akzent.** Ein Raum ist ein Ort und keine
-  Datenart mit eigener Farbe; er folgt jetzt dem Akzent des Dashboards — unter
-  einem Material-You-Theme also dem Ton des Hintergrundbilds statt als einziges
-  Element auf dem Bildschirm nichts vom Theme zu wissen.
-
-- **Button-Karten-Editor: eine eigene Kopie der Farbzeile.** Fast dieselbe wie
-  die geteilte, aber mit besserer Swatch-Auflösung — und ohne den neuen
-  Themefarben-Knopf. Die Verbesserung ist in die geteilte Zeile gewandert, die
-  Kopie ist weg.
-
-- **Button-Karten-Editor: `icon_off` blieb leer, obwohl gesetzt.** Das Feld
-  stand im Schema des Formulars, aber nicht in den Daten, die es bekommt — ein
-  konfiguriertes Aus-Icon war für den Editor damit unsichtbar.
 
 - **Nav-Karten-Editor: Der Seitenübergang lag unter Darstellung.** Was beim
   Seitenwechsel passiert, ist Verhalten; nur die Bewegung der Markierung
   betrifft das Aussehen der Leiste. Die Dauer erscheint jetzt erst, wenn ein
   Übergang gewählt ist, statt nach einer Zahl zu fragen, die nichts steuert.
 
-- **Button-Karten-Editor: Form- und Füllungsschalter lagen unter Inhalt.** Beide
-  entscheiden über das Aussehen der Kachel — einer davon, herum welche Farbe
-  Fläche und Glyphe tragen — und gehören damit zu den Farben.
-
 - **Nav-Karte: Die Warnung bei einer zweiten Schublade auf einer Ansicht wurde
   nie angezeigt.** Die Karte zeichnet die zweite seit jeher im Kartenfluss statt
   angedockt; der erklärende Text existierte, nur zeigte ihn nichts an. Er steht
   jetzt im Bearbeitungsrahmen der Karte, wo der Fall auftritt.
-
-- **Button-Karte: Die Ecken der Kachel bewegten sich erst ganz am Ende.** Der
-  Aus-Zustand verlangte 999px, die übliche Schreibweise für eine Kapsel. Ein
-  Browser kappt das beim Zeichnen auf die halbe Höhe, interpoliert aber die
-  angegebene Zahl — ein Wechsel auf 16px verbrachte also 98% seiner Zeit
-  oberhalb der Kappung: der Umriss stand still und klappte zum Schluss um,
-  während das Icon-Feld die ganze Strecke zurücklegte. Der Aus-Radius wird
-  jetzt an der Kachel gemessen, als deren halbe tatsächliche Höhe, damit beide
-  Formen eine vergleichbare Strecke laufen und gemeinsam ankommen.
-
-- **Button-Karte: Das Icon-Feld hat seine Form vor der Kachel geändert.** Das
-  Feld überblendet alles, was es hat, in 0,25 s auf einer Ease-Kurve; die Ecken
-  der Kachel bekamen 0,3 s auf Materials Kurve. Die innere Form war damit zuerst
-  fertig, und die beiden wirkten, als änderten sie sich aus verschiedenen
-  Gründen. Beide Formwechsel laufen jetzt auf derselben Uhr, die Farben des
-  Feldes behalten ihre eigene.
 
 - **Nav-Karten-Editor: Der runde Knopf lag unter Verhalten.** Er ist ein
   sichtbarer Teil der Leiste, und wer einen Knopf hinzufügen oder entfernen will,
@@ -805,71 +841,111 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   die Schieberegler der Light-Card längst tun (`shared/swipe.ts`) — über die
   ganze Karte, weil nichts, was sie zeichnet, je ein Wisch-Seitenwechsel ist.
 
-### Added
+- **Button-Karte: `static_color` ließ die Kachel ausgeschaltet aussehen.** Die
+  Option arbeitet, indem sie die Karte als inaktiv zeichnet — was immer nur die
+  Farbe betraf. Das neue Aus-Icon und die Zustandsform lasen aber dasselbe
+  Merkmal, ein laufender Kühlschrank zeigte also durchgestrichenes Icon und
+  Aus-Umriss. Diese beiden folgen jetzt der Entität; `static_color` bedeutet
+  weiterhin, was sein Name sagt.
 
-- **M3 Nav Card** (`m3-nav-card`) — a navigation bar for the dashboard, in five
-  variants: `header` and `footer` dock to an edge, `segmented` is an inline pill
-  group that scrolls with the page, `floating` detaches into a rounded bar, and
-  `sheet` adds a drawer that pulls up over the view. The four docked variants
-  take no row of the grid: their slot collapses and they position themselves
-  against the screen.
+- **Button-Karten-Editor: eine eigene Kopie der Farbzeile.** Fast dieselbe wie
+  die geteilte, aber mit besserer Swatch-Auflösung — und ohne den neuen
+  Themefarben-Knopf. Die Verbesserung ist in die geteilte Zeile gewandert, die
+  Kopie ist weg.
 
-  Configurable to the level of the community's Navbar Card, in this suite's own
-  design language: per-entry badges (a template, an entity's state, or a count
-  of entities that are on — hidden automatically at 0/off/empty/unavailable),
-  popup submenus that grow out of the button that opened them, tap/hold/
-  double-tap actions with Home Assistant's haptic event, and separate desktop
-  and mobile layouts.
+- **Button-Karten-Editor: `icon_off` blieb leer, obwohl gesetzt.** Das Feld
+  stand im Schema des Formulars, aber nicht in den Daten, die es bekommt — ein
+  konfiguriertes Aus-Icon war für den Editor damit unsichtbar.
 
-  The desktop/mobile switch measures the card's **own** box through a
-  ResizeObserver rather than the window through a media query: a card in a
-  narrow column on a wide screen is narrow, and a media query would get that
-  wrong.
+- **Button-Karten-Editor: Form- und Füllungsschalter lagen unter Inhalt.** Beide
+  entscheiden über das Aussehen der Kachel — einer davon, herum welche Farbe
+  Fläche und Glyphe tragen — und gehören damit zu den Farben.
 
-  `name`, `icon`, `color`, `hidden`, `disabled` and the badge accept Jinja2 and
-  subscribe to it — Home Assistant pushes a new value whenever anything the
-  template reads changes. Only fields that actually contain `{{` or `{%` open a
-  subscription, and identical templates share one.
+- **Button-Karte: Die Ecken der Kachel bewegten sich erst ganz am Ende.** Der
+  Aus-Zustand verlangte 999px, die übliche Schreibweise für eine Kapsel. Ein
+  Browser kappt das beim Zeichnen auf die halbe Höhe, interpoliert aber die
+  angegebene Zahl — ein Wechsel auf 16px verbrachte also 98% seiner Zeit
+  oberhalb der Kappung: der Umriss stand still und klappte zum Schluss um,
+  während das Icon-Feld die ganze Strecke zurücklegte. Der Aus-Radius wird
+  jetzt an der Kachel gemessen, als deren halbe tatsächliche Höhe, damit beide
+  Formen eine vergleichbare Strecke laufen und gemeinsam ankommen.
 
-  The sheet is dragged, and the interesting part is not the drag but the
-  conflict with the content scrolling inside it: the content scrolls normally,
-  and the sheet only takes over when the content is already at the top and the
-  finger is going down. A release goes to the nearest snap point unless it was a
-  flick, which goes the way it was thrown whatever position the sheet was in.
-  In edit mode the sheet renders inline and pinned open, because a drawer docked
-  to the screen covers the card the editor is trying to show, and only the first
-  sheet on a view docks itself.
+- **Button-Karte: Das Icon-Feld hat seine Form vor der Kachel geändert.** Das
+  Feld überblendet alles, was es hat, in 0,25 s auf einer Ease-Kurve; die Ecken
+  der Kachel bekamen 0,3 s auf Materials Kurve. Die innere Form war damit zuerst
+  fertig, und die beiden wirkten, als änderten sie sich aus verschiedenen
+  Gründen. Beide Formwechsel laufen jetzt auf derselben Uhr, die Farben des
+  Feldes behalten ihre eigene.
 
-  `preload_views` is accepted and stored but does nothing: Home Assistant gives
-  a custom card no way to warm another view, and the only workaround would
-  flicker and leave a bogus history entry. Kept as a reserved key so a future
-  version can implement it without a breaking config change. Card-wide
-  visibility by user, device or screen size is likewise **not** reimplemented —
-  Home Assistant's own `visibility` feature already does that for every card,
-  and the card's `hidden` is scoped to what only a template can answer.
+- **Raumkarte: Ein manueller Raum meldete immer „Alles aus".** Die Zusammen-
+  fassung zählte die Entitäten aus der Bereichsverwaltung — den manuellen Modus
+  gibt es aber gerade für Räume, deren Geräte dort nicht eingetragen sind. Eine
+  Karte mit sechs Steckdosen, halb davon an, behauptete also, es laufe nichts.
+  Gezählt wird jetzt, was tatsächlich angezeigt wird, verschachtelte Stapel
+  eingeschlossen; und die Karte zeichnet neu, sobald sich eine davon ändert.
 
-- **`src/shared/template-sub.ts`** — the `render_template` websocket
-  subscription manager: one subscription per unique template, ref-counted and
-  shared between fields, closed together when the card leaves the page. This is
-  the live, pushed subscription, not the one-shot evaluator an automation uses;
-  the two are easy to confuse and have different capabilities.
-- **`src/shared/sheet-gesture.ts`** — pointer drag with a velocity estimate and
-  snap-point resolution, plus the scroll-versus-sheet rule above. Nothing in the
-  suite tracked pointer velocity before; the light card's sliders are position-
-  follows-finger with no notion of a throw.
-- **`src/shared/tap-hold.ts`** — tap, hold and double-tap told apart from each
-  other and from a drag. `shared/actions.ts` has said since it was written that
-  the next card needing this should not write a third copy; this is that module.
-  The button card is deliberately left on its own copy for now — it is the
-  most-used card in the suite and gains nothing from the change today.
-- **`src/shared/card-helpers.ts`** — `loadCardHelpers()` / `createCardElement()`
-  for hosting arbitrary Lovelace cards, with the two lifecycle rules that are
-  easy to get wrong: build on a config change and never in the render path, and
-  push a fresh `hass` into every nested card on every tick.
+- **Raumkarte: Das Scrollen endete unter einer angedockten Leiste.** Zwei Fehler,
+  ein Symptom. Die Suche nach dem, was den unteren Fensterrand verdeckt, fragte
+  den Punkt — und `elementsFromPoint` liefert den Shadow-Host statt dessen
+  Inhalt, sodass der Abstieg entlang eines Zweigs in der gerade gescrollten
+  Karte landete und die Navigationsleiste zwei Abschnitte weiter nie erreichte;
+  jetzt wird der Baum durchlaufen. Und die Plausibilitätsgrenze, die eine
+  „Leiste" von mehr als halber Bildschirmhöhe verwirft, prüfte den größten
+  Treffer statt jeden einzelnen — eine bildschirmhohe fixierte Ebene, und davon
+  hat ein Dashboard mehrere, riss die echte Leiste mit sich.
 
-### Changed
+- **Raumkarte: Das Scrollen wartete auf das Aufklappen, statt mitzulaufen.** Wie
+  weit die Seite überhaupt gescrollt werden kann, wurde einmal ermittelt — im
+  Moment des Tippens, wenn die Karte noch eingeklappt ist und es diese Strecke
+  praktisch nicht gibt. Die erste Bewegung war deshalb nur der Rest an Platz,
+  der zufällig da war, und der eigentliche Weg kam erst danach, als die Karte
+  fertig gewachsen war: zwei Bewegungen nacheinander für das, was eine einzige
+  Geste sein sollte. Das Ziel wird jetzt in jedem Frame neu erfragt, sodass das
+  Scrollen der wachsenden Seite folgt und beides gemeinsam ankommt.
 
-- The suite registers **36 cards**.
+- **Raumkarte: Ohne Animationen wurde gar nicht ins Sichtfeld gescrollt.** Der
+  Zweig, der die Faltanimation überspringt, kehrte vor dem Scrollen zurück — eine
+  Karte, die sich unter den Bildrand öffnet, blieb also dort. Auch ohne
+  Animationen muss sie zu sehen sein.
+
+- **Raumkarte: Das Ins-Bild-Holen kam zu spät und hörte zu tief auf.** Es wartete
+  das Aufklappen ab und scrollte dann — das wirkt wie zwei Bewegungen mit einer
+  Pause dazwischen. Das Ziel steht schon fest, bevor die Karte hineinwächst, also
+  laufen beide jetzt gemeinsam. Und es scrollte bündig zum Fensterrand, womit auf
+  einem Dashboard mit angedockter Navigationsleiste die letzte Zeile darunter
+  verschwand. Was über den unteren Rand gelegt ist, wird jetzt gemessen und
+  freigehalten.
+
+- **Raumkarten-Editor: Die Fensterliste war ein Textfeld.** Entitäts-IDs, die
+  niemand auswendig tippt, wurden als kommagetrennter Text verlangt. Jetzt
+  derselbe Wähler wie bei der Leistungsliste, gefiltert auf Fenster-, Tür- und
+  Öffnungssensoren.
+
+- **Raumkarten-Editor: Ein Kartentyp zeigte seinen Übersetzungsschlüssel.** Die
+  Beschriftung wurde per Zeichenkettenoperation aus dem Typ abgeleitet, und aus
+  `climate-card-mini` wurde ein Schlüssel, den es nicht gibt — mit einem Cast
+  davor, der den Compiler daran hinderte, das zu sagen. Jeder Typ trägt jetzt
+  seinen eigenen Schlüssel, zur Bauzeit geprüft.
+
+- **Raumkarten-Editor: Der Kategorien-Bereich erschien auch im manuellen Modus.**
+  Er konfiguriert Kacheln, die in diesem Modus niemand zeichnet — ein Abschnitt
+  voller wirkungsloser Schalter, samt einer Liste erkannter Kategorien, die
+  aktiv aussah und nichts steuerte.
+
+- **Raumkarte: ein festes Blau als Akzent.** Ein Raum ist ein Ort und keine
+  Datenart mit eigener Farbe; er folgt jetzt dem Akzent des Dashboards — unter
+  einem Material-You-Theme also dem Ton des Hintergrundbilds statt als einziges
+  Element auf dem Bildschirm nichts vom Theme zu wissen.
+
+- **Energiekarte: Der Monatswert eines Wasser- oder Gaszählers lag um den
+  Faktor tausend daneben.** Für die Volumen-Geräteklassen wurde die Statistik
+  immer in m³ angefordert, beschriftet wurde der Wert aber mit der Einheit der
+  Entität — ein Literzähler zeigte im Monat also ein Tausendstel: aus 57 L
+  Gießwasser wurden „0,06 L". Die Tagesansicht stimmte, weil dieser Weg gar
+  keine Einheit anfordert; dieselbe Entität widersprach sich also selbst.
+  Angefordert wird jetzt die Einheit, in der die Zahl auch ausgegeben wird.
+  Mehrere Quellen in gemischten Einheiten addieren sich weiterhin korrekt: sie
+  werden auf die Einheit der ersten Entität normalisiert statt auf m³.
 
 ## [2.2.0]
 
