@@ -748,3 +748,11 @@ kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.
 2. Jede der 36 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
+4. Die Kartenzahl an allen fünf Stellen abgleichen, an denen sie steht: beide
+   READMEs, `package.json`, die Punkte 1 und 2 dieser Liste — und die
+   **Beschreibung des GitHub-Repos**, die in keiner Datei liegt und deshalb bei
+   jedem Release übersehen wird. Sie stand bei 2.3 noch auf 29, sieben Karten
+   und vier Releases zu spät:
+   `gh repo edit j0sp0r/m3-cards --description "…"`
+5. `CARD_VERSION` in `src/const.ts` und `version` in `package.json` auf die neue
+   Nummer setzen. Beides passiert erst zum Release, nicht während der Arbeit.
