@@ -22,6 +22,7 @@ export function chipButtonSchema(): SchemaEntry[] {
     { name: "color", selector: { text: {} } },
     { name: "inactive_color", selector: { text: {} } },
     { name: "use_entity_color", selector: { boolean: {} } },
+    { name: "show_name", selector: { boolean: {} } },
     { name: "show_state", selector: { boolean: {} } },
     { name: "static_color", selector: { boolean: {} } },
     { name: "interactive", selector: { boolean: {} } },
@@ -38,6 +39,7 @@ export const chipButtonLabelMap: Record<string, TranslationKey> = {
   color: "editor_chip_buttons_color",
   inactive_color: "editor_chip_buttons_inactive_color",
   use_entity_color: "editor_chip_buttons_use_entity_color",
+  show_name: "editor_chip_buttons_show_name",
   show_state: "editor_show_state",
   static_color: "editor_static_color",
   interactive: "editor_chip_buttons_interactive",
@@ -47,7 +49,7 @@ export const chipButtonLabelMap: Record<string, TranslationKey> = {
 };
 
 // ha-form shows an unset boolean field as unchecked, but shared/chip-buttons.ts
-// treats an unset show_state/interactive as "on" (only an explicit `false`
+// treats an unset show_name/show_state/interactive as "on" (only an explicit `false`
 // turns them off). Without resolving that here the switch renders "off" for
 // a brand-new chip while the chip itself still shows the text/stays
 // tappable, and toggling it once just writes the "true" it already implied —
@@ -55,6 +57,7 @@ export const chipButtonLabelMap: Record<string, TranslationKey> = {
 function chipButtonFormData(item: ChipButtonConfig): ChipButtonConfig {
   return {
     ...item,
+    show_name: item.show_name ?? true,
     show_state: item.show_state ?? true,
     static_color: item.static_color ?? false,
     use_entity_color: item.use_entity_color ?? false,

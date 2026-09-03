@@ -393,7 +393,7 @@ hold_action:
 | `icon_tap_action` | Action | `more-info` | Its own tap action for just the icon/icon circle, independent of `tap_action` — same as the native tile card |
 | `icon_hold_action` | Action | `none` | Action on long-press on the icon |
 | `icon_double_tap_action` | Action | `none` | Action on double-tap on the icon |
-| `chip_buttons` | list | `[]` | An embedded row of [chip buttons](#m3-chip-buttons-card) — same fields as the Chip Buttons Card's `buttons[]` (`entity`, `name`, `icon`, `color`, `inactive_color`, `show_state`, `static_color`, `interactive`, `tap_action`, `hold_action`, `double_tap_action`) |
+| `chip_buttons` | list | `[]` | An embedded row of [chip buttons](#m3-chip-buttons-card) — same fields as the Chip Buttons Card's `buttons[]` (`entity`, `name`, `icon`, `color`, `inactive_color`, `show_name`, `show_state`, `static_color`, `interactive`, `tap_action`, `hold_action`, `double_tap_action`) |
 | `chip_buttons_justify` | `start` \| `center` \| `end` | `end` | Alignment of the chip row — only takes effect once the card is resized taller than a normal row (see below); at normal height the chips are always right-aligned |
 
 Active states (`on`, `open`, `home`, `playing`, ...) color the icon and
@@ -504,6 +504,7 @@ radius: 28
 | `buttons[].icon` | string | entity icon, otherwise a generic icon | Icon |
 | `buttons[].color` | string | `primary` | HA color name or any CSS color for the chip in its **active** state |
 | `buttons[].inactive_color` | string | – (default theme grey) | Color for the chip in its **inactive** state |
+| `buttons[].show_name` | boolean | `true` | `false` hides the name label, leaving an icon-only chip (combine with `show_state` to also hide the state text) |
 | `buttons[].show_state` | boolean | `true` | Show the entity state next to the name |
 | `buttons[].static_color` | boolean | `false` | Always render the chip as "active", regardless of the entity's actual state (e.g. for a status chip that should always stand out) |
 | `buttons[].interactive` | boolean | `true` | `false` turns the chip into a read-only display — no tap/hold handlers, not keyboard-focusable |

@@ -390,7 +390,7 @@ hold_action:
 | `icon_tap_action` | Action | `more-info` | Eigene Tap-Aktion nur für das Icon/den Icon-Kreis, unabhängig von `tap_action` — wie bei der nativen Tile-Karte |
 | `icon_hold_action` | Action | `none` | Aktion bei langem Drücken auf das Icon |
 | `icon_double_tap_action` | Action | `none` | Aktion bei Doppeltipp auf das Icon |
-| `chip_buttons` | list | `[]` | Eine eingebettete Zeile [Chip Buttons](#m3-chip-buttons-card) — gleiche Felder wie `buttons[]` der Chip Buttons Card (`entity`, `name`, `icon`, `color`, `inactive_color`, `show_state`, `static_color`, `interactive`, `tap_action`, `hold_action`, `double_tap_action`) |
+| `chip_buttons` | list | `[]` | Eine eingebettete Zeile [Chip Buttons](#m3-chip-buttons-card) — gleiche Felder wie `buttons[]` der Chip Buttons Card (`entity`, `name`, `icon`, `color`, `inactive_color`, `show_name`, `show_state`, `static_color`, `interactive`, `tap_action`, `hold_action`, `double_tap_action`) |
 | `chip_buttons_justify` | `start` \| `center` \| `end` | `end` | Ausrichtung der Chip-Zeile — greift nur, wenn die Karte höher als eine normale Zeile ist (siehe unten); bei normaler Höhe sind die Chips immer rechtsbündig |
 
 Aktive Zustände (`on`, `open`, `home`, `playing`, ...) färben Icon und
@@ -501,6 +501,7 @@ radius: 28
 | `buttons[].icon` | string | Entity-Icon, sonst ein generisches Icon | Icon |
 | `buttons[].color` | string | `primary` | HA-Farbname oder beliebige CSS-Farbe für den Chip im **aktiven** Zustand |
 | `buttons[].inactive_color` | string | – (Standard-Theme-Grau) | Farbe für den Chip im **inaktiven** Zustand |
+| `buttons[].show_name` | boolean | `true` | `false` blendet das Namens-Label aus — nur noch ein Icon-Chip (zusammen mit `show_state` lässt sich auch der Statustext ausblenden) |
 | `buttons[].show_state` | boolean | `true` | Entity-Zustand neben dem Namen anzeigen |
 | `buttons[].static_color` | boolean | `false` | Chip immer als „aktiv" darstellen, unabhängig vom tatsächlichen Entity-Zustand (z.B. für einen Status-Chip, der immer hervorstechen soll) |
 | `buttons[].interactive` | boolean | `true` | `false` macht aus dem Chip eine reine Anzeige — keine Tap-/Hold-Handler, nicht per Tastatur fokussierbar |

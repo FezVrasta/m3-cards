@@ -1753,6 +1753,8 @@ export interface ChipButtonConfig {
   /** Active-state color (theme token, hex, or any CSS color). */
   color?: string;
   inactive_color?: string;
+  /** false = hide the name label entirely (icon-only chip). */
+  show_name?: boolean;
   show_state?: boolean;
   /** Always render as "active", regardless of the entity's own state. */
   static_color?: boolean;

@@ -92,10 +92,14 @@ function renderChipButton(
   const bg = tintOn(host, color, undefined, active ? 20 : 8);
   const ink = foregroundOn(color, bg, 3, host);
   const name = button.name || entity?.attributes.friendly_name || button.entity || "";
+  const showName = button.show_name !== false;
   const stateText =
     button.show_state !== false && entity && !unavailable
       ? (hass.formatEntityState?.(entity) ?? entity.state)
       : "";
+  const label = showName || stateText
+    ? html`<span class="label">${showName ? name : nothing}${stateText ? html`<span class="state"> ${stateText}</span>` : nothing}</span>`
+    : nothing;
   const cssVars = `--m3cb-bg: ${bg}; --m3cb-ink: ${ink};`;
   const icon = button.icon || "mdi:gesture-tap-button";
 
@@ -107,7 +111,7 @@ function renderChipButton(
         ${entity
           ? html`<ha-state-icon .hass=${hass} .icon=${button.icon} .stateObj=${entity}></ha-state-icon>`
           : html`<ha-icon icon=${icon}></ha-icon>`}
-        <span class="label">${name}${stateText ? html`<span class="state"> ${stateText}</span>` : nothing}</span>
+        ${label}
       </div>
     `;
   }
@@ -143,7 +147,7 @@ function renderChipButton(
       ${entity
         ? html`<ha-state-icon .hass=${hass} .icon=${button.icon} .stateObj=${entity}></ha-state-icon>`
         : html`<ha-icon icon=${icon}></ha-icon>`}
-      <span class="label">${name}${stateText ? html`<span class="state"> ${stateText}</span>` : nothing}</span>
+      ${label}
     </div>
   `;
 }

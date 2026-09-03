@@ -29,7 +29,8 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   idea, flatter configuration — one form per chip instead of several nested
   panels, explicit Up/Down buttons to reorder instead of a dropdown menu. A
   chip can be non-interactive (`interactive: false`) to act as a read-only
-  info readout (e.g. temperature/humidity).
+  info readout (e.g. temperature/humidity). `show_name: false` hides a
+  chip's name label for an icon-only chip.
 - **M3 Button Card can now embed its own row of chip buttons** via the new
   `chip_buttons` option, reusing the same editor and rendering as the
   standalone Chip Buttons Card. Layout adapts to the card's height: at a
