@@ -1,6 +1,6 @@
 {
   "name": "m3-cards",
-  "version": "2.3.2",
+  "version": "0.1.0",
   "description": "Material 3 style Lovelace cards for Home Assistant \u2014 38 cards across energy, climate, light and media, household and safety \u2014 built natively with Lit, with no button-card or card-mod dependency.",
   "type": "module",
   "scripts": {
@@ -21,13 +21,13 @@
     "climate"
   ],
   "license": "MIT",
-  "author": "j0sp0r",
+  "author": "UHaFnir",
   "repository": {
     "type": "git",
-    "url": "https://github.com/j0sp0r/m3-cards.git"
+    "url": "https://github.com/UHaFnir/m3-cards.git"
   },
-  "homepage": "https://github.com/j0sp0r/m3-cards",
-  "bugs": "https://github.com/j0sp0r/m3-cards/issues",
+  "homepage": "https://github.com/UHaFnir/m3-cards",
+  "bugs": "https://github.com/UHaFnir/m3-cards/issues",
   "dependencies": {
     "lit": "^3.2.1"
   },

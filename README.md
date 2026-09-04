@@ -127,7 +127,7 @@ the image — everything else is live data.</sub>
 
 ### HACS (recommended)
 
-[![Open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=j0sp0r&repository=m3-cards&category=plugin)
+[![Open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=UHaFnir&repository=m3-cards&category=plugin)
 
 The button opens the repository straight in your own Home Assistant — press
 *Download* and you are done. To add it by hand instead:

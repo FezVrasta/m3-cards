@@ -8,6 +8,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Changed
 
+- **Versioning reset to 0.x** — this fork's version numbers (previously up
+  to `2.3.2`) overlapped with upstream (`j0sp0r/m3-cards`), which had its own
+  unrelated `2.3.0` in progress. Numbers now start over at `0.1.0` on an
+  independent line so the two projects can no longer be confused in issue
+  reports. Existing users on `v2.3.x` of this fork will need to reinstall or
+  manually pin, since HACS won't offer `0.1.0` as an update over a higher
+  version number.
+- **HACS repository link fixed** — the "Open in HACS" badge in the README
+  pointed at `j0sp0r/m3-cards` (a leftover from the fork) instead of this
+  repository, sending installers to the upstream 36-card project instead of
+  this one's 38 cards.
+
 - **Documentation restructured, German README dropped** — the per-card
   documentation now lives in one small file per card
   (`docs/cards/<slug>.md`), mechanically assembled into `README.md` via
