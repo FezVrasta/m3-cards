@@ -522,6 +522,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       area: "editor_room_area",
       name: "editor_name",
       icon: "editor_icon",
+      tap_action: "editor_tap_action",
       detail_path: "editor_room_detail_path",
       mode: "editor_room_mode",
       cards_columns: "editor_room_cards_columns",

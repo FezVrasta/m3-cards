@@ -955,6 +955,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       show_labels: "editor_nav_show_labels",
       name: "editor_nav_item_name",
       icon: "editor_nav_item_icon",
+      color: "editor_nav_item_color",
+      badge_source: "editor_nav_badge_source",
       path: "editor_nav_item_path",
       match: "editor_nav_item_match",
       disabled: "editor_nav_item_disabled",

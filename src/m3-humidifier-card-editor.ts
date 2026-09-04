@@ -301,6 +301,7 @@ export class M3HumidifierCardEditor extends LitElement implements LovelaceCardEd
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const map: Record<string, TranslationKey> = {
+      animation: "editor_progress_animation",
       entity: "editor_humidifier_entity",
       name: "editor_humidifier_name",
       icon: "editor_humidifier_icon",
