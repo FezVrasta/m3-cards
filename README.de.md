@@ -1473,8 +1473,27 @@ auto_discover: true
 - **`auto_discover: false`**: nur die explizit in `entities` gelistete
   Auswahl (`person.*` oder `device_tracker.*`).
 
-Tippen öffnet die More-Info-Ansicht der Entity; langes Drücken (500ms) löst
-optional `hold_action` aus (z.B. Navigation zu einer Karten-Ansicht).
+### Interaktion
+
+Ein Tap auf eine Person öffnet deren More-Info-Ansicht; langes Drücken (500ms)
+löst optional `hold_action` aus (z.B. Navigation zu einer Karten-Ansicht).
+
+`tap_action` ersetzt das More-Info beim Tap durch eine beliebige übliche
+Home-Assistant-Aktion — `navigate`, `url`, `perform-action`, `toggle`,
+`more-info` oder `none`. Wie `hold_action` gilt sie für die ganze Karte, und
+Ziel ist die tatsächlich angetippte Person: `more-info`, `toggle` und ein
+Dienstaufruf ohne eigenes Ziel landen alle auf deren `entity_id`.
+
+```yaml
+type: custom:m3-presence-card
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/personen
+hold_action:
+  action: more-info
+```
+
+Ohne `tap_action` öffnet ein Tap weiterhin die More-Info-Ansicht.
 
 ### Konfigurationsoptionen
 
@@ -1491,7 +1510,8 @@ optional `hold_action` aus (z.B. Navigation zu einer Karten-Ansicht).
 | `sort` | `home_first` \| `name` | `home_first` | Sortierung: zuhause zuerst oder alphabetisch |
 | `home_color` / `not_home_color` / `zone_color` / `unknown_color` | string | Grün/Blau/Lila/Grau | Status-Ring-Farben |
 | `zone_colors` | Objekt (Zonenname → Farbe) | – | Override je benannter Zone |
-| `hold_action` | Aktionsobjekt | – | Aktion bei langem Drücken (500ms) auf einen Avatar |
+| `tap_action` | Aktionsobjekt | more-info | Aktion bei einem Tap auf einen Avatar, mit dieser Person als Ziel. Ohne Eintrag öffnet ein Tap deren More-Info-Ansicht |
+| `hold_action` | Aktionsobjekt | – | Aktion bei langem Drücken (500ms) auf einen Avatar, mit dieser Person als Ziel |
 | `text_color` / `secondary_text_color` | string | Theme-Standard | Namen bzw. Statuszeile |
 | `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
 | `animation` | `auto` \| `on` \| `off` | `auto` | Statuswechsel-Animation; `auto`/`on` respektieren `prefers-reduced-motion` |
