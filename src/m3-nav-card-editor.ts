@@ -236,6 +236,20 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
    * removing the whole block — which is not something anyone should have to
    * work out by clearing an icon field.
    */
+  /**
+   * Whether this variant has a round action button to configure.
+   *
+   * Only the detached pills carry one. For the others the section is hidden
+   * rather than shown and ignored, because it is not part of how those bars
+   * are drawn — and what it would have held ends up in the bar itself, as
+   * ordinary entries. A configured button stays in the config and reappears
+   * with the variant it belongs to.
+   */
+  private get _bubbleFits(): boolean {
+    const style = this._config?.style ?? "footer";
+    return style === "floating" || style === "sheet";
+  }
+
   private get _hasActionButton(): boolean {
     return !!this._config?.action_button?.icon;
   }
@@ -1455,88 +1469,92 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
               ),
             )}
 
-            <div class="block">
-              <div class="block-title">${this._t("editor_nav_action_button")}</div>
-              <ha-form
-                .hass=${this.hass}
-                .data=${{ action_button_on: this._hasActionButton }}
-                .schema=${[{ name: "action_button_on", selector: { boolean: {} } }]}
-                .computeLabel=${this._computeLabel}
-                @value-changed=${(ev: CustomEvent) =>
-                  this._actionButtonToggled(
-                    (ev.detail.value as { action_button_on: boolean })
-                      .action_button_on === true,
-                  )}
-              ></ha-form>
-              ${this._hasActionButton
-                ? html`<ha-form
-                .hass=${this.hass}
-                .data=${cfg.action_button ?? {}}
-                .schema=${[
-                  { name: "icon", selector: { icon: {} } },
-                  { name: "color", selector: { text: {} } },
-                  ...(this._actionMenu.length
-                    ? [{ name: "close_icon", selector: { icon: {} } }]
-                    : [{ name: "tap_action", selector: { ui_action: {} } }]),
-                ]}
-                .computeLabel=${this._computeLabel}
-                @value-changed=${(ev: CustomEvent) => {
-                  const patch = ev.detail.value as Record<string, unknown>;
-                  const button = this._clean({ ...cfg.action_button, ...patch });
-                  const next = { ...cfg };
-                  if (Object.keys(button).length) {
-                    next.action_button = button as M3NavCardConfig["action_button"];
-                  } else {
-                    delete next.action_button;
-                  }
-                  this._emit(next);
-                }}
-                    ></ha-form>`
-                : nothing}
-              <div class="hint">${this._t("editor_nav_action_button_hint")}</div>
-
-              ${this._hasActionButton
-                ? html`<div class="block">
-                <div class="block-title">${this._t("editor_nav_action_menu")}</div>
-                <div class="hint">${this._t("editor_nav_action_menu_hint")}</div>
-                ${this._actionMenu.map(
-                  (entry, index) => html`
-                    <div class="block">
-                      <div class="tile-head">
-                        <span class="tile-name"
-                          >${entry.name || entry.path || "#" + (index + 1)}</span
+            ${this._bubbleFits
+              ? html`
+              <div class="block">
+                <div class="block-title">${this._t("editor_nav_action_button")}</div>
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{ action_button_on: this._hasActionButton }}
+                  .schema=${[{ name: "action_button_on", selector: { boolean: {} } }]}
+                  .computeLabel=${this._computeLabel}
+                  @value-changed=${(ev: CustomEvent) =>
+                    this._actionButtonToggled(
+                      (ev.detail.value as { action_button_on: boolean })
+                        .action_button_on === true,
+                    )}
+                ></ha-form>
+                ${this._hasActionButton
+                  ? html`<ha-form
+                  .hass=${this.hass}
+                  .data=${cfg.action_button ?? {}}
+                  .schema=${[
+                    { name: "icon", selector: { icon: {} } },
+                    { name: "color", selector: { text: {} } },
+                    ...(this._actionMenu.length
+                      ? [{ name: "close_icon", selector: { icon: {} } }]
+                      : [{ name: "tap_action", selector: { ui_action: {} } }]),
+                  ]}
+                  .computeLabel=${this._computeLabel}
+                  @value-changed=${(ev: CustomEvent) => {
+                    const patch = ev.detail.value as Record<string, unknown>;
+                    const button = this._clean({ ...cfg.action_button, ...patch });
+                    const next = { ...cfg };
+                    if (Object.keys(button).length) {
+                      next.action_button = button as M3NavCardConfig["action_button"];
+                    } else {
+                      delete next.action_button;
+                    }
+                    this._emit(next);
+                  }}
+                      ></ha-form>`
+                  : nothing}
+                <div class="hint">${this._t("editor_nav_action_button_hint")}</div>
+  
+                ${this._hasActionButton
+                  ? html`<div class="block">
+                  <div class="block-title">${this._t("editor_nav_action_menu")}</div>
+                  <div class="hint">${this._t("editor_nav_action_menu_hint")}</div>
+                  ${this._actionMenu.map(
+                    (entry, index) => html`
+                      <div class="block">
+                        <div class="tile-head">
+                          <span class="tile-name"
+                            >${entry.name || entry.path || "#" + (index + 1)}</span
+                          >
+                          <span class="reorder">
+                            ${this._renderReorder(index, this._actionMenu.length, (from, to) =>
+                              this._moveActionMenuEntry(from, to),
+                            )}
+                          </span>
+                        </div>
+                        <ha-form
+                          .hass=${this.hass}
+                          .data=${entry}
+                          .schema=${this._actionMenuSchema()}
+                          .computeLabel=${this._computeLabel}
+                          @value-changed=${(ev: CustomEvent) =>
+                            this._actionMenuChanged(index, ev)}
+                        ></ha-form>
+                        <ha-button
+                          class="remove"
+                          @click=${() =>
+                            this._setActionMenu(
+                              this._actionMenu.filter((_, i) => i !== index),
+                            )}
+                          >${this._t("editor_nav_remove_item")}</ha-button
                         >
-                        <span class="reorder">
-                          ${this._renderReorder(index, this._actionMenu.length, (from, to) =>
-                            this._moveActionMenuEntry(from, to),
-                          )}
-                        </span>
                       </div>
-                      <ha-form
-                        .hass=${this.hass}
-                        .data=${entry}
-                        .schema=${this._actionMenuSchema()}
-                        .computeLabel=${this._computeLabel}
-                        @value-changed=${(ev: CustomEvent) =>
-                          this._actionMenuChanged(index, ev)}
-                      ></ha-form>
-                      <ha-button
-                        class="remove"
-                        @click=${() =>
-                          this._setActionMenu(
-                            this._actionMenu.filter((_, i) => i !== index),
-                          )}
-                        >${this._t("editor_nav_remove_item")}</ha-button
-                      >
-                    </div>
-                  `,
-                )}
-                <ha-button @click=${() => this._setActionMenu([...this._actionMenu, {}])}
-                  >${this._t("editor_nav_add_action_menu_entry")}</ha-button
-                >
-              </div>`
-                : nothing}
-            </div>
+                    `,
+                  )}
+                  <ha-button @click=${() => this._setActionMenu([...this._actionMenu, {}])}
+                    >${this._t("editor_nav_add_action_menu_entry")}</ha-button
+                  >
+                </div>`
+                  : nothing}
+              </div>
+                `
+              : nothing}
 
             <ha-expansion-panel outlined .header=${this._t("editor_nav_advanced")}>
               <div class="panel-content">

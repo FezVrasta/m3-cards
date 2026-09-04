@@ -1170,13 +1170,36 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     };
   }
 
+  /**
+   * Whether this variant carries the round action button.
+   *
+   * It is a companion to a detached pill: `floating` and `sheet` lie over the
+   * page, and a circle beside one reads as part of the same object. `header`
+   * and `footer` span a screen edge and `segmented` runs in the content flow —
+   * beside those the circle is a stray dot that fell off the bar, and it is
+   * not part of how those variants are drawn.
+   */
+  private get _bubbleFits(): boolean {
+    return this._variant === "floating" || this._variant === "sheet";
+  }
+
   private get _resolvedItems(): ResolvedItem[] {
     const cfg = this._config;
     if (!cfg?.items?.length) return [];
     const accent = resolveThemeColor(cfg.accent_color ?? DEFAULT_NAV_COLOR);
 
+    // A variant without a round button still has somewhere to put what the
+    // button would have held: the bar itself. The entries become ordinary ones
+    // at the end of it rather than disappearing, and a bar that outgrows the
+    // screen already scrolls instead of clipping its last entry. The config is
+    // untouched either way, so switching to a floating bar puts them back
+    // behind the button.
+    const quelle: NavItemConfig[] = this._bubbleFits
+      ? cfg.items
+      : [...cfg.items, ...(cfg.action_button?.menu ?? [])];
+
     const out: ResolvedItem[] = [];
-    cfg.items.forEach((item, index) => {
+    quelle.forEach((item, index) => {
       if (this._resolveBool(item.hidden)) return;
       const color = resolveThemeColor(this._resolve(item.color) || accent);
       out.push({
@@ -2160,7 +2183,15 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       .join(" ");
 
     const animated = shouldAnimate(cfg.animation);
-    const bubble = cfg.action_button?.icon
+    // The round button belongs to the detached variants alone. `floating` and
+    // `sheet` are pills lying over the page, and a circle beside one reads as
+    // its companion. `header` and `footer` span a screen edge and `segmented`
+    // runs in the content flow — beside those the same circle is a stray dot
+    // that fell off the bar, so those variants do not carry one at all. The
+    // editor hides the section to match, and a config that still names an
+    // action button keeps it: switching back to a floating bar brings it out
+    // again rather than losing what was configured.
+    const bubble = this._bubbleFits && cfg.action_button?.icon
       ? (() => {
           const color = resolveThemeColor(
             cfg.action_button?.color ?? cfg.accent_color ?? DEFAULT_NAV_COLOR,
