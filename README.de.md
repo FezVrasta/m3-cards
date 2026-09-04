@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **39 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **40 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
@@ -66,6 +66,7 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Status](#m3-status-card) | `m3-status-card` | Große Zahlen, Texte und Ja/Nein-Zustände, mit einer Regelliste dahinter |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Abschnitts-Überschriften zwischen den Karten: schlicht, mit Status, als Trenner oder aufklappbar |
 | [Nav](#m3-nav-card) | `m3-nav-card` | Eine Navigationsleiste fürs Dashboard, in fünf Varianten, mit ausziehbarer Schublade |
+| [Suche](#m3-search-card) | `m3-search-card` | Eine Material-3-Suchleiste, die HAs eigene Suche und Assist öffnet |
 | [Group](#m3-group-card) | `m3-group-card` | Mehrere Karten auf einer gemeinsamen Fläche, damit sie als ein Block gelesen werden |
 | [Room](#m3-room-card) | `m3-room-card` | Eine Karte je Bereich: alle gefundenen Gerätetypen, Klimawerte und Präsenz |
 | [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Zielfeuchte, Modus, Lüfterstufe und Zusatzfunktionen — auch ohne humidifier-Entität |
@@ -3954,6 +3955,106 @@ cards:
 | `corners` | object | – | Optionaler Override je Ecke, wie bei jeder anderen Karte |
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `card_background` | string | – | Hintergrundfarbe überschreiben |
+
+</details>
+
+## M3 Search Card
+
+Eine Material-3-Suchleiste auf dem Dashboard selbst. Sie sieht aus wie die
+M3-Suchleiste im Ruhezustand — eine 56 px hohe Pille, führendes Such-Icon,
+Platzhaltertext, optional ein Assist-Knopf am rechten Rand — und ein Tipp
+öffnet Home Assistants eigene Schnellsuche, denselben Dialog wie die Taste
+`E`.
+
+Es gibt sie, weil Home Assistants eigener Einstieg in die Suche in der
+Kopfzeile sitzt und der Such-Knopf dort **auf schmalen Bildschirmen gar nicht
+gezeichnet wird**. Auf einem Telefon oder einem Wandtablet führt vom Dashboard
+aus also kein Weg zur Entitätssuche außer über eine Tastatur, die diese Geräte
+nicht haben. Für den Assist-Knopf der Kopfzeile gilt dasselbe — deshalb kann
+diese Karte einen mitbringen.
+
+Zum Funktionieren muss nichts eingerichtet werden: die Karte liest keine
+Entität und braucht keine Konfiguration.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
+```yaml
+type: custom:m3-search-card
+```
+
+Eine Leiste, die stattdessen die Befehlssuche öffnet, mit eigenem Text und
+ohne Assist-Knopf:
+
+```yaml
+type: custom:m3-search-card
+mode: command
+placeholder: Befehl ausführen
+icon: mdi:console
+show_assist: false
+accent_color: primary
+radius: 28
+```
+
+Oder eine, die die Suche gar nicht anfasst und stattdessen navigiert —
+`tap_action` ersetzt das eingebaute Verhalten, es läuft nicht daneben:
+
+```yaml
+type: custom:m3-search-card
+placeholder: Alles im Haus
+icon: mdi:home-search
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/all
+```
+
+### Wie der Dialog geöffnet wird
+
+`ha-quick-bar` liegt nicht im Hauptbundle des Frontends, sondern in einem
+eigenen Chunk, und hereingeholt wird es einzig von Home Assistants eigenem
+Aufrufer, der dem Dialog-Manager neben dem Tag auch einen `import()`-Callback
+mitgibt. Eine als eigene Lovelace-Ressource geladene Karte kann diesen
+Modulpfad nicht benennen; ein bloßes `show-dialog`-Event landet deshalb auf
+einem nie definierten Custom Element und scheitert mit *„Unknown dialog type
+loaded"*.
+
+Also fragt die Karte den Dialog so an, wie eine Tastatur es täte: Sie schickt
+das `keydown`, auf das Home Assistant ohnehin hört, und dessen eigener Handler
+erledigt den Nachlade-Import und öffnet, was er gebaut hat. Damit hängt die
+Karte am Tastenkürzel — sichtbar für alle, aufgeführt in HAs eigenem
+`Shift+?`-Dialog — statt an einem internen Modulpfad.
+
+Drei Dinge können diese Kürzel wegnehmen, und die Karte prüft alle drei,
+statt einen Knopf zu zeichnen, der stillschweigend nichts tut:
+
+- **Tastenkürzel** lassen sich je Benutzer unter *Profil → Tastenkürzel*
+  abschalten. Die Leiste wird dann blass und sagt es.
+- **Die Befehlssuche (`C`) registriert HA nur für Administratoren.** Ohne
+  Admin-Rechte öffnet `mode: command` stattdessen die Entitätssuche — immerhin
+  eine Suche; der Editor weist ebenfalls darauf hin.
+- **Assist braucht die Integration `conversation`.** Sie steckt in
+  `default_config` und ist damit normalerweise da; fehlt sie, entfällt der
+  Knopf.
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `placeholder` | string | `Home Assistant durchsuchen`, im Befehlsmodus `Befehl ausführen` | Der Text in der Leiste |
+| `label` | string | – | Alias für `placeholder`, passend zu den Karten, die ihren einen Text `label` nennen. Sind beide gesetzt, gewinnt `placeholder` |
+| `icon` | string | `mdi:magnify` | Führendes Icon |
+| `mode` | `entity` \| `command` | `entity` | Welche Schnellsuche ein Tipp öffnet. `command` braucht ein Admin-Konto |
+| `show_assist` | boolean | `true` | Assist-Knopf am rechten Rand. Wird nur gezeichnet, wenn Assist tatsächlich erreichbar ist |
+| `assist_icon` | string | `mdi:microphone` | Icon des Assist-Knopfs |
+| `tap_action` | Action | – | Übliche Home-Assistant-Aktionskonfiguration. Einmal gesetzt, **ersetzt** sie das Öffnen der Suche |
+| `accent_color` | string | – (neutral, wie die M3-Suchleiste selbst) | Färbt das führende Icon und die Fläche des Assist-Knopfs |
+| `text_color` | string | – | Textfarbe überschreiben |
+| `secondary_text_color` | string | – | Farbe des Platzhaltertexts überschreiben |
+| `card_background` | string | – | Hintergrundfarbe überschreiben |
+| `radius` | number (px) | `28` | Eckenradius der Karte — 28 ist die Hälfte der 56 px hohen Leiste, also eine volle Pille |
+| `corners` | object | – | Optionaler Override je Ecke, wie bei jeder anderen Karte |
+| `glass_background` | boolean | `true` | Milchiger Glashintergrund |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Das Druck-Feedback (ein Morph des Eckenradius); `auto` respektiert `prefers-reduced-motion` |
 
 </details>
 
