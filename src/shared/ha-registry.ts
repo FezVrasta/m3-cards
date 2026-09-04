@@ -1,4 +1,5 @@
 import type { HomeAssistant } from "../types";
+import { buildEntityFilterPredicate, type EntityFilterConfig } from "./entity-filter";
 
 interface EntityRegistryEntry {
   entity_id: string;
@@ -12,6 +13,7 @@ interface DeviceRegistryEntry {
   area_id?: string | null;
   name?: string | null;
   name_by_user?: string | null;
+  labels?: string[];
 }
 
 interface AreaRegistryEntry {
@@ -634,4 +636,119 @@ export function listAreas(hass: HomeAssistant): AreaInfo[] {
     .map((id) => areaInfo(hass, id))
     .filter((a): a is AreaInfo => !!a)
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ---- Lights overview ------------------------------------------------------------
+
+export type LightGroupHandling = "all" | "prefer_groups" | "prefer_members";
+
+export interface DiscoverLightRoomsOptions {
+  filter?: EntityFilterConfig;
+  groupHandling?: LightGroupHandling;
+  /** Defaults to `filter` — pass a narrower one when what's shown and what a
+   * tap actually switches should differ. */
+  toggleFilter?: EntityFilterConfig;
+  toggleGroupHandling?: LightGroupHandling;
+}
+
+export interface DiscoveredLightRoom {
+  areaId: string;
+  name: string;
+  icon?: string;
+  /** Lights shown on this room's tile, after the display filter. */
+  entities: string[];
+  /** Subset a tap actually switches, after the (separate) toggle filter. */
+  toggleEntities: string[];
+}
+
+// Groups light.* entities into rooms by Home Assistant area — unlike
+// discoverClimateRooms/discoverOccupancyRooms, a light with no area to switch
+// as a group isn't useful here, so device-only and area-less lights are
+// dropped rather than falling back to a solo room.
+//
+// Two independent EntityFilterConfig predicates decide, per light, whether
+// it's *shown* on the tile and whether it's *switched* by tapping it — a
+// caller that only needs one filter passes the same config for both (the
+// default). groupHandling/toggleGroupHandling additionally drop one side of a
+// `light.group` + its members when set, so a group and its members aren't
+// both counted as separate lights in the same room.
+//
+// Deliberately state-blind: include_state/exclude_state are not applied
+// here. A light's state changes far more often than its area/label
+// assignment, and this result is only recomputed when the filter key
+// changes — baking state in would mean a light that turns off stays shown
+// until the next unrelated re-discovery. Callers apply EntityFilterConfig's
+// state predicate themselves, live, on every render.
+export async function discoverLightRooms(
+  hass: HomeAssistant,
+  opts: DiscoverLightRoomsOptions,
+): Promise<DiscoveredLightRoom[]> {
+  const lightIds = Object.keys(hass.states).filter((id) => id.startsWith("light."));
+  if (lightIds.length === 0) return [];
+
+  const showEntity = buildEntityFilterPredicate(opts.filter);
+  const toggleFilter = opts.toggleFilter ?? opts.filter;
+  const toggleEntity = buildEntityFilterPredicate(toggleFilter);
+
+  const groupHandling = opts.groupHandling ?? "all";
+  const toggleGroupHandling = opts.toggleGroupHandling ?? groupHandling;
+
+  // A light group exposes its members via `entity_id` on its own state
+  // attributes — cheaper than a second registry round-trip, and the
+  // attribute is already loaded in hass.states for every card.
+  const groupIds = new Set<string>();
+  const memberIds = new Set<string>();
+  if (groupHandling !== "all" || toggleGroupHandling !== "all") {
+    for (const id of lightIds) {
+      const members = hass.states[id]?.attributes.entity_id;
+      if (Array.isArray(members) && members.length > 0) {
+        groupIds.add(id);
+        for (const member of members) if (typeof member === "string") memberIds.add(member);
+      }
+    }
+  }
+  const passesGrouping = (id: string, handling: LightGroupHandling): boolean => {
+    if (handling === "prefer_groups") return !memberIds.has(id);
+    if (handling === "prefer_members") return !groupIds.has(id);
+    return true;
+  };
+
+  const { entryByEntityId, deviceById, areaById } = await getRegistries(hass);
+
+  const buckets = new Map<string, { shown: string[]; switchable: string[] }>();
+
+  for (const id of lightIds) {
+    const entry = entryByEntityId.get(id);
+    const device = entry?.device_id ? deviceById.get(entry.device_id) : undefined;
+    const areaId = entry?.area_id ?? device?.area_id ?? undefined;
+    if (!areaId) continue;
+
+    const labels = [...(entry?.labels ?? []), ...(device?.labels ?? [])];
+    const ctx = { entityId: id, areaId, labels };
+    const shown = passesGrouping(id, groupHandling) && showEntity(ctx);
+    const switchable = passesGrouping(id, toggleGroupHandling) && toggleEntity(ctx);
+    if (!shown && !switchable) continue;
+
+    let bucket = buckets.get(areaId);
+    if (!bucket) {
+      bucket = { shown: [], switchable: [] };
+      buckets.set(areaId, bucket);
+    }
+    if (shown) bucket.shown.push(id);
+    if (switchable) bucket.switchable.push(id);
+  }
+
+  const rooms: DiscoveredLightRoom[] = [];
+  for (const [areaId, bucket] of buckets) {
+    if (bucket.shown.length === 0) continue;
+    const area = areaById.get(areaId);
+    rooms.push({
+      areaId,
+      name: area?.name ?? areaId,
+      icon: area?.icon ?? undefined,
+      entities: bucket.shown.sort(),
+      toggleEntities: bucket.switchable.sort(),
+    });
+  }
+  return rooms;
 }
