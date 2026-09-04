@@ -4,6 +4,8 @@ import type {
   HomeAssistant,
   M3ClimateOverviewCardConfig,
   ClimateOverviewTempThresholds,
+  ClimateOverviewPopupMode,
+  HaActionConfig,
   LovelaceCard,
   LovelaceCardEditor,
   LovelaceGridOptions,
@@ -54,8 +56,22 @@ import {
 import { fetchValueHoursAgo } from "./shared/ha-statistics";
 import { formatNumber } from "./shared/formatting";
 import { guessRoomIcon } from "./shared/room-icons";
+import { buildStatePredicate, mergeEntityFilters, type EntityFilterConfig } from "./shared/entity-filter";
+import { TapHoldGesture } from "./shared/gestures";
+import { runHaAction, navigateTo } from "./shared/actions";
+import {
+  syncPopupCardElement,
+  syncDialogOpenState,
+  renderPopupDialog,
+  popupCardStyles,
+  shouldCloseOnBackdropClick,
+  type PopupCardHandle,
+} from "./shared/popup-card";
+import { DetailCardController } from "./shared/detail-card";
+import type { CardTemplateTokens } from "./shared/card-template";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { CompareScaleTrack, renderCompareScale, compareScaleStyles } from "./shared/compare-scale";
 
 console.info(
   `%c M3-CLIMATE-OVERVIEW-CARD %c v${CARD_VERSION} `,
@@ -63,15 +79,22 @@ console.info(
   "color: #6ba7dc; background: #222; font-weight: 700; border-radius: 0 4px 4px 0;",
 );
 
-const EASING = unsafeCSS(STANDARD_EASING);
-
 type TempStage = "cold" | "cool" | "comfortable" | "warm" | "hot";
+type ActionKind = "tap" | "hold" | "double_tap";
+
+const EASING = unsafeCSS(STANDARD_EASING);
 
 interface ClimateOverviewTile {
   key: string;
   name: string;
   icon: string;
   entity: string;
+  /** Entity a tap opens more-info on — the thermostat in thermostat modes,
+   * otherwise the same as `entity`. */
+  tapEntity: string;
+  humidityEntity?: string;
+  areaId?: string;
+  deviceId?: string;
   temperature?: number;
   temperatureUnavailable: boolean;
   humidity?: number;
@@ -82,6 +105,22 @@ interface ClimateOverviewTile {
   climateEntity?: string;
 }
 
+// The subset every EntityFilterConfig consumer wants, pulled off the card
+// config once — kept separate from the full config so the discovery dedup
+// key (below) doesn't change on every unrelated edit (a color tweak, an
+// action change), which would trigger a needless re-discovery.
+export function configFilter(config: M3ClimateOverviewCardConfig): EntityFilterConfig {
+  return {
+    include_area: config.include_area,
+    exclude_area: config.exclude_area,
+    include_entities: config.include_entities,
+    exclude_entities: config.exclude_entities,
+    include_labels: config.include_labels,
+    exclude_labels: config.exclude_labels,
+    include_state: config.include_state,
+    exclude_state: config.exclude_state,
+  };
+}
 
 @customElement("m3-climate-overview-card")
 export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
@@ -98,12 +137,20 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
   private _thermostatTimer?: number;
   private _miniCard?: HTMLElement;
   private _miniEntity?: string;
+  @state() private _popupTile?: ClimateOverviewTile;
+  @state() private _pressedKey?: string;
+  @state() private _detailCardEl?: HTMLElement & PopupCardHandle;
 
   private _lastDiscoverKey?: string;
   private _discoverInFlight = false;
   private _trendLastKey?: string;
   private _trendInFlight = false;
   private _trendRefreshTimer?: number;
+  private _gestures = new TapHoldGesture();
+  private _popupOpenedAt = 0;
+  private _popupCardEl?: HTMLElement & PopupCardHandle;
+  private _popupCardKey?: string;
+  private _detailCard = new DetailCardController();
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-climate-overview-card-editor");
@@ -158,13 +205,9 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
       window.clearInterval(this._trendRefreshTimer);
       this._trendRefreshTimer = undefined;
     }
-    this._trackObserver?.disconnect();
-    this._trackObserver = undefined;
-    this._observedTrack = undefined;
-    if (this._remeasureTimer !== undefined) {
-      window.clearTimeout(this._remeasureTimer);
-      this._remeasureTimer = undefined;
-    }
+    this._compareTrack.disconnect();
+    this._gestures.cancel();
+    this._closePopup();
   }
 
   private get _language(): string {
@@ -179,7 +222,18 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     super.updated(changed);
     this._maybeDiscover();
     this._maybeFetchTrend();
-    if (this._config?.show_scale !== false) this._observeTrack();
+    if (this._config?.show_scale !== false) {
+      const track = this.renderRoot?.querySelector(".compare-track-wrap") as HTMLElement | null;
+      this._compareTrack.observe(track, (w) => {
+        this._trackWidth = w;
+      });
+    }
+    if (this._popupCardEl && this.hass) this._popupCardEl.hass = this.hass;
+    this._maybeSyncDetailCard();
+    if (changed.has("_popupTile")) {
+      const dialog = this.renderRoot?.querySelector("dialog") as HTMLDialogElement | null;
+      syncDialogOpenState(dialog, !!this._popupTile);
+    }
   }
 
   private _maybeFetchTrend(): void {
@@ -226,17 +280,16 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     ) {
       return;
     }
+    const filter = configFilter(this._config);
     const key = JSON.stringify({
-      area: this._config.include_area ?? [],
-      excl: this._config.exclude_entities ?? [],
+      filter,
       strip: this._config.name_strip ?? DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
     });
     if (key === this._lastDiscoverKey) return;
     this._lastDiscoverKey = key;
     this._discoverInFlight = true;
     discoverClimateRooms(this.hass, {
-      includeAreas: this._config.include_area,
-      excludeEntities: this._config.exclude_entities,
+      filter,
       nameStrip: this._config.name_strip ?? DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
     })
       .then((rooms) => {
@@ -288,61 +341,120 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     }
   }
 
+  // Reads either an entity's state or one of its attributes as a number.
+  // Anything unavailable, missing or non-numeric comes back undefined.
+  private _readNumber(entityId: string | undefined, attribute?: string): number | undefined {
+    if (!entityId || !this.hass) return undefined;
+    const st = this.hass.states[entityId];
+    if (!st || st.state === "unavailable" || st.state === "unknown") return undefined;
+    const raw = attribute ? st.attributes[attribute] : st.state;
+    if (raw === undefined || raw === null || raw === "") return undefined;
+    const parsed = parseFloat(String(raw));
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
   private _buildTiles(): ClimateOverviewTile[] {
     if (!this.hass || !this._config) return [];
+    const mode = this._config.mode ?? "temperature";
 
-    const source = this._config.rooms?.length
+    interface RoomSource {
+      key: string;
+      name: string;
+      icon?: string;
+      areaId?: string;
+      deviceId?: string;
+      color?: string;
+      tempEntity?: string;
+      tempAttribute?: string;
+      humidityEntity?: string;
+      humidityAttribute?: string;
+      tapEntity?: string;
+      /** The room's thermostat, independent of `tapEntity` — `tapEntity`
+       * follows `mode` (it's the temperature sensor in "temperature" mode),
+       * but the thermostat sheet (`tile_tap_action: thermostat`) needs the
+       * actual climate entity regardless of mode. */
+      climateEntity?: string;
+    }
+
+    const source: RoomSource[] = this._config.rooms?.length
       ? this._config.rooms.map((r, i) => ({
           key: `manual:${i}`,
           name: r.name,
           icon: r.icon,
+          color: r.color,
           tempEntity: r.temperature_entity,
           humidityEntity: r.humidity_entity,
+          tapEntity: r.climate_entity,
           climateEntity: r.climate_entity,
-          areaId: undefined as string | undefined,
-          deviceId: undefined as string | undefined,
-          color: r.color,
         }))
-      : this._discovered.map((r) => ({
-          key: r.key,
-          name: r.name,
-          icon: r.icon,
-          tempEntity: r.temperatureEntity,
-          humidityEntity: r.humidityEntity,
-          climateEntity: undefined as string | undefined,
-          areaId: r.areaId,
-          deviceId: r.deviceId,
-          color: undefined as string | undefined,
-        }));
+      : this._discovered.flatMap((room): RoomSource[] => {
+          const climateEntity = room.climateEntity;
+          const tempEntity = room.temperatureEntity;
+          // Auto-discovery always finds both kinds of entity; `mode` decides
+          // which rooms actually make the cut and which entity represents
+          // each — this is the only place that filters on it.
+          if (mode === "thermostat_only" && !climateEntity) return [];
+          if (mode === "temperature" && !tempEntity) return [];
+          if (!climateEntity && !tempEntity) return [];
+          // A thermostat becomes the room's reading when there is no
+          // dedicated sensor to fall back to, or when it fronts several
+          // real devices ("group" tier) and so is more representative than
+          // any single sensor.
+          const useClimateAsTemp =
+            mode === "thermostat_only" ? !!climateEntity : !tempEntity || room.climateTier === "group";
+          return [
+            {
+              key: room.key,
+              name: room.name,
+              icon: room.icon,
+              areaId: room.areaId,
+              deviceId: room.deviceId,
+              tempEntity: useClimateAsTemp ? climateEntity : tempEntity,
+              tempAttribute: useClimateAsTemp ? "current_temperature" : undefined,
+              humidityEntity: room.humidityEntity ?? climateEntity,
+              humidityAttribute: room.humidityEntity ? undefined : "current_humidity",
+              tapEntity: mode === "temperature" ? tempEntity : (climateEntity ?? tempEntity),
+              climateEntity,
+            },
+          ];
+        });
 
-    return source.map((room): ClimateOverviewTile => {
-      const tempSt = this.hass!.states[room.tempEntity];
-      const tempUnavailable = !tempSt || tempSt.state === "unavailable" || tempSt.state === "unknown";
-      const tempParsed = tempUnavailable ? NaN : parseFloat(tempSt!.state);
-      const temperature = Number.isNaN(tempParsed) ? undefined : tempParsed;
+    // State changes far more often than area/label assignment, so unlike the
+    // area filter this is re-evaluated live here rather than baked into
+    // discovery — see discoverClimateRooms' doc comment.
+    const showState = buildStatePredicate(this.hass, configFilter(this._config));
 
-      const humiditySt = room.humidityEntity ? this.hass!.states[room.humidityEntity] : undefined;
-      const humidityUnavailable =
-        !room.humidityEntity || !humiditySt || humiditySt.state === "unavailable" || humiditySt.state === "unknown";
-      const humidityParsed = humidityUnavailable ? NaN : parseFloat(humiditySt!.state);
-      const humidity = Number.isNaN(humidityParsed) ? undefined : humidityParsed;
+    return source
+      .filter((room) => showState(room.tempEntity ?? room.tapEntity ?? ""))
+      .flatMap((room): ClimateOverviewTile[] => {
+        const entity = room.tempEntity ?? room.tapEntity;
+        const tapCandidate = room.tapEntity ?? room.tempEntity;
+        if (!entity || !tapCandidate) return [];
 
-      const stage = temperature !== undefined ? this._tempStage(temperature) : "comfortable";
+        const temperature = this._readNumber(room.tempEntity, room.tempAttribute);
+        const humidity = this._readNumber(room.humidityEntity, room.humidityAttribute);
+        const stage = temperature !== undefined ? this._tempStage(temperature) : "comfortable";
 
-      return {
-        key: room.key,
-        name: room.name,
-        icon: room.icon || guessRoomIcon(room.name),
-        entity: room.tempEntity,
-        temperature,
-        temperatureUnavailable: tempUnavailable,
-        humidity,
-        humidityUnavailable,
-        hasHumidity: !!room.humidityEntity,
-        tempColor: room.color ? resolveThemeColor(room.color) : this._tempColor(stage),
-        climateEntity: this._climateFor(room.areaId, room.deviceId, room.climateEntity),
-      };
-    });
+        return [
+          {
+            key: room.key,
+            name: room.name,
+            icon: room.icon || guessRoomIcon(room.name),
+            entity,
+            tapEntity: this.hass!.states[tapCandidate] ? tapCandidate : entity,
+            humidityEntity: room.humidityEntity,
+            areaId: room.areaId,
+            deviceId: room.deviceId,
+            temperature,
+            temperatureUnavailable: !!room.tempEntity && temperature === undefined,
+            humidity,
+            humidityUnavailable: !!room.humidityEntity && humidity === undefined,
+            hasHumidity: humidity !== undefined || (!!room.humidityEntity && !room.humidityAttribute),
+            tempColor: room.color ? resolveThemeColor(room.color) : this._tempColor(stage),
+            climateEntity: this._climateFor(room.areaId, room.deviceId, room.climateEntity),
+          },
+        ];
+      });
   }
 
   private _sortTiles(tiles: ClimateOverviewTile[]): ClimateOverviewTile[] {
@@ -410,23 +522,17 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     return undefined;
   }
 
-  private _onTileTap(tile: ClimateOverviewTile): () => void {
-    return () => {
-      if (this._config?.tile_tap_action !== "thermostat") {
-        fireEvent(this, "hass-more-info", { entityId: tile.entity });
-        return;
-      }
-      // A tap that opens nothing is worse than one that opens the graph, so a
-      // room with no thermostat keeps the old behaviour rather than going dead.
-      if (!tile.climateEntity) {
-        fireEvent(this, "hass-more-info", { entityId: tile.entity });
-        return;
-      }
-      window.clearTimeout(this._thermostatTimer);
-      this._thermostatClosing = false;
-      this._thermostat = tile.climateEntity;
-      this._thermostatName = tile.name;
-    };
+  // A tap that opens nothing is worse than one that opens the graph, so a
+  // room with no thermostat keeps the old behaviour rather than going dead.
+  private _openThermostat(tile: ClimateOverviewTile): void {
+    if (!tile.climateEntity) {
+      fireEvent(this, "hass-more-info", { entityId: tile.tapEntity });
+      return;
+    }
+    window.clearTimeout(this._thermostatTimer);
+    this._thermostatClosing = false;
+    this._thermostat = tile.climateEntity;
+    this._thermostatName = tile.name;
   }
 
   private _closeThermostat = (): void => {
@@ -488,6 +594,158 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _defaultAction(kind: ActionKind): HaActionConfig {
+    if (kind === "hold") return { action: "popup" };
+    if (kind === "double_tap") return { action: "none" };
+    return { action: "more-info" };
+  }
+
+  private _resolveAction(kind: ActionKind): HaActionConfig {
+    const cfg = this._config;
+    const configured =
+      kind === "tap" ? cfg?.tap_action : kind === "hold" ? cfg?.hold_action : cfg?.double_tap_action;
+    return configured ?? this._defaultAction(kind);
+  }
+
+  private _runAction(tile: ClimateOverviewTile, kind: ActionKind): void {
+    if (!this.hass) return;
+    // tile_tap_action: "thermostat" is the older, narrower per-card knob for
+    // "tap opens the room's thermostat sheet" — it only drives the *default*
+    // tap; an explicit tap_action (the newer, more general mechanism) wins.
+    if (kind === "tap" && !this._config?.tap_action && this._config?.tile_tap_action === "thermostat") {
+      this._openThermostat(tile);
+      return;
+    }
+    runHaAction(this.hass, this._resolveAction(kind), {
+      entityId: tile.tapEntity,
+      openPopup: () => this._openPopup(tile),
+      fireMoreInfo: (entityId) => fireEvent(this, "hass-more-info", { entityId }),
+      navigate: (path) => navigateTo(this, path),
+    });
+  }
+
+  private _closePopup(): void {
+    this._popupTile = undefined;
+    this._popupCardEl = undefined;
+    this._popupCardKey = undefined;
+    this._detailCardEl = undefined;
+    this._detailCard.reset();
+  }
+
+  private _popupMode(): ClimateOverviewPopupMode {
+    return this._config?.popup?.mode ?? "default-grid";
+  }
+
+  private _openPopup(tile: ClimateOverviewTile): void {
+    // "default-detail" isn't a card popup at all — it's HA's own more-info
+    // dialog for whatever the tile taps, so the internal <dialog> never opens.
+    if (this._popupMode() === "default-detail") {
+      fireEvent(this, "hass-more-info", { entityId: tile.tapEntity });
+      return;
+    }
+    this._popupOpenedAt = Date.now();
+    this._popupTile = tile;
+  }
+
+  /** Context handed to a configured `popup.card` skeleton's `[[token]]`
+   * placeholders — see shared/card-template.ts. */
+  private _tileTokens(tile: ClimateOverviewTile): CardTemplateTokens {
+    return {
+      area_id: tile.areaId,
+      device_id: tile.deviceId,
+      entity_id: tile.tapEntity,
+      temperature_entity: tile.entity,
+      humidity_entity: tile.humidityEntity,
+      name: tile.name,
+    };
+  }
+
+  // Drives the async `popup.card` build/reuse cycle — called from updated()
+  // since createCardElement() is async and render() must stay synchronous.
+  private _maybeSyncDetailCard(): void {
+    const tile = this._popupTile;
+    const skeleton = this._popupMode() === "custom" ? this._config?.popup?.card : undefined;
+    if (!tile || !this.hass || !skeleton) {
+      this._detailCard.reset();
+      return;
+    }
+    this._detailCard.sync({
+      skeleton,
+      tokens: this._tileTokens(tile),
+      hass: this.hass,
+      onChange: (el) => {
+        this._detailCardEl = el;
+      },
+    });
+  }
+
+  /**
+   * The popup is this same card again, scoped to what was pressed. A
+   * discovered tile scopes by area; a manually configured room has no area,
+   * so it scopes by its explicit entity list instead — same filter
+   * vocabulary either way.
+   */
+  private _popupConfig(tile: ClimateOverviewTile): M3ClimateOverviewCardConfig | undefined {
+    const cfg = this._config;
+    if (!cfg) return undefined;
+    const popup = cfg.popup ?? {};
+    const merged = mergeEntityFilters(configFilter(cfg), popup, popup.inherit_filters ?? true);
+    const scope: EntityFilterConfig = tile.areaId
+      ? { include_area: [tile.areaId] }
+      : { include_entities: [tile.entity, tile.tapEntity, tile.humidityEntity].filter((id): id is string => !!id) };
+    return {
+      ...cfg,
+      ...merged,
+      ...scope,
+      rooms: undefined,
+      auto_discover: true,
+      sort: popup.sort ?? "name",
+      // The popup's header carries the room name, so it stays unless the
+      // popup config says otherwise — inheriting a hidden header would leave
+      // the dialog with nothing identifying it.
+      show_header: popup.show_header ?? true,
+      name: popup.title || tile.name,
+      // A popup inside a popup would be a trap with no way out.
+      hold_action: { action: "more-info" },
+      double_tap_action: undefined,
+      popup: undefined,
+      glass_background: false,
+      type: "custom:m3-climate-overview-card",
+    };
+  }
+
+  private _syncScopedPopupCard(tile: ClimateOverviewTile): HTMLElement | undefined {
+    const { el, key } = syncPopupCardElement<M3ClimateOverviewCardConfig>({
+      tagName: "m3-climate-overview-card",
+      config: this._popupConfig(tile),
+      hass: this.hass,
+      existingEl: this._popupCardEl,
+      existingKey: this._popupCardKey,
+    });
+    this._popupCardEl = el;
+    this._popupCardKey = key;
+    return this._popupCardEl;
+  }
+
+  private _renderPopup() {
+    const tile = this._popupTile;
+    if (!tile) {
+      this._popupCardEl = undefined;
+      this._popupCardKey = undefined;
+      return nothing;
+    }
+    const content = this._popupMode() === "custom" ? this._detailCardEl : this._syncScopedPopupCard(tile);
+
+    return renderPopupDialog({
+      content,
+      onClose: () => this._closePopup(),
+      onBackdropClick: (e) => {
+        if (shouldCloseOnBackdropClick(e, this._popupOpenedAt)) this._closePopup();
+      },
+      closeLabel: this._t("dialog_close"),
+    });
+  }
+
   // The single most conspicuous room: whichever tile deviates furthest
   // outside the "comfortable" band (below the cool threshold, or at/above
   // the comfortable threshold) — coldest wins on the cold side, warmest on
@@ -511,170 +769,46 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
   }
 
   /**
-   * Width of the comparison track in px. Label collision has to be decided in
-   * pixels — two rooms 0.1 °C apart sit at nearly the same percentage, but
-   * whether their names overlap depends on how wide the card actually is.
+   * Width of the comparison track in px, needed for the label-collision math
+   * in shared/compare-scale.ts — a change written by CompareScaleTrack's
+   * onChange callback, so Lit's normal @state reactivity re-renders it.
    */
   @state() private _trackWidth = 0;
-  private _trackObserver?: ResizeObserver;
-  private _observedTrack?: HTMLElement;
-  private _remeasureTimer?: number;
-
-  private _setTrackWidth(w: number): void {
-    if (w > 0 && Math.abs(w - this._trackWidth) > 1) this._trackWidth = w;
-  }
-
-  private _observeTrack(): void {
-    const track = this.renderRoot?.querySelector(".compare-track-wrap") as HTMLElement | null;
-    if (!track) return;
-
-    // Lit replaces this node on re-render, so the observer is re-attached only
-    // when it actually changed — disconnecting on every update would drop the
-    // observer's initial callback before it ever fires.
-    if (this._observedTrack !== track) {
-      this._trackObserver?.disconnect();
-      this._trackObserver ??= new ResizeObserver((entries) =>
-        this._setTrackWidth(entries[0]?.contentRect.width ?? 0),
-      );
-      this._trackObserver.observe(track);
-      this._observedTrack = track;
-    }
-
-    const w = track.getBoundingClientRect().width;
-    if (w > 0) {
-      this._setTrackWidth(w);
-      return;
-    }
-    // Freshly attached cards have no layout yet. A timer rather than
-    // requestAnimationFrame: a card rendered in a background tab would
-    // otherwise never get its width, because animation frames and
-    // ResizeObserver callbacks are both suspended while the tab is hidden.
-    if (this._remeasureTimer === undefined) {
-      this._remeasureTimer = window.setTimeout(() => {
-        this._remeasureTimer = undefined;
-        const el = this.renderRoot?.querySelector(".compare-track-wrap") as HTMLElement | null;
-        if (el) this._setTrackWidth(el.getBoundingClientRect().width);
-      }, 0);
-    }
-  }
-
-  private _scaleRange(tiles: ClimateOverviewTile[]): [number, number] {
-    const temps = tiles.filter((t) => t.temperature !== undefined).map((t) => t.temperature!);
-    let autoMin = temps.length ? Math.floor(Math.min(...temps)) : 16;
-    let autoMax = temps.length ? Math.ceil(Math.max(...temps)) : 26;
-    if (autoMax - autoMin < CLIMATE_OVERVIEW_SCALE_MIN_SPAN) {
-      const mid = (autoMin + autoMax) / 2;
-      autoMin = Math.floor(mid - CLIMATE_OVERVIEW_SCALE_MIN_SPAN / 2);
-      autoMax = Math.ceil(mid + CLIMATE_OVERVIEW_SCALE_MIN_SPAN / 2);
-    }
-    const min = this._config?.scale_min ?? autoMin;
-    const max = this._config?.scale_max ?? autoMax;
-    return max > min ? [min, max] : [min, min + CLIMATE_OVERVIEW_SCALE_MIN_SPAN];
-  }
-
-  /**
-   * Decides which names fit without overlapping. Labels are placed greedily
-   * into the two rows above and below the track, coldest and warmest first so
-   * the ends of the scale — the interesting ones — never lose their name.
-   * Anything that still collides is left off; the dot keeps its tooltip.
-   */
-  private _placeLabels(
-    points: { pct: number; name: string }[],
-  ): Map<number, { row: "above" | "below"; shiftPx: number }> {
-    const placed = new Map<number, { row: "above" | "below"; shiftPx: number }>();
-    const width = this._trackWidth;
-    if (!width) return placed; // not measured yet — first paint draws dots only
-
-    const rows: Record<"above" | "below", { from: number; to: number }[]> = { above: [], below: [] };
-    // Priority: the two extremes, then the rest left to right. The ends of the
-    // scale are the ones worth naming, so they must never lose to a neighbour.
-    const order = [...points.keys()].sort((a, b) => {
-      const extreme = (i: number) => (i === 0 || i === points.length - 1 ? 0 : 1);
-      return extreme(a) - extreme(b) || a - b;
-    });
-
-    for (const i of order) {
-      const p = points[i];
-      const halfPx = Math.min(p.name.length * CLIMATE_OVERVIEW_LABEL_CHAR_PX, CLIMATE_OVERVIEW_LABEL_MAX_PX) / 2;
-      const centre = (p.pct / 100) * width;
-      // A label centred on a dot at 0 % or 100 % would hang off the card, so
-      // it is nudged inwards and the collision test uses the nudged position.
-      const shiftPx = Math.max(0, halfPx - centre) - Math.max(0, centre + halfPx - width);
-      const from = centre + shiftPx - halfPx - CLIMATE_OVERVIEW_LABEL_GAP_PX / 2;
-      const to = centre + shiftPx + halfPx + CLIMATE_OVERVIEW_LABEL_GAP_PX / 2;
-      const row = (["above", "below"] as const).find((r) =>
-        rows[r].every((s) => to <= s.from || from >= s.to),
-      );
-      if (!row) continue;
-      rows[row].push({ from, to });
-      placed.set(i, { row, shiftPx });
-    }
-    return placed;
-  }
+  private _compareTrack = new CompareScaleTrack();
 
   private _renderCompareScale(tiles: ClimateOverviewTile[]) {
-    const withTemp = tiles.filter((t) => t.temperature !== undefined);
-    if (withTemp.length < 2) return nothing;
-
-    const [min, max] = this._scaleRange(tiles);
-    const span = max - min;
-    const unit = this._tempUnit();
-    const sorted = [...withTemp].sort((a, b) => a.temperature! - b.temperature!);
-    const points = sorted.map((t) => ({
-      pct: Math.max(0, Math.min(100, ((t.temperature! - min) / span) * 100)),
-      name: t.name,
-    }));
-    const labelRows = this._config?.show_scale_labels === false ? new Map() : this._placeLabels(points);
-
-    return html`
-      <div class="compare-section">
-        <div class="compare-title">${this._t("climate_overview_compare")}</div>
-        <div class="compare-track-wrap">
-          <div
-            class="compare-track"
-            style=${`background: linear-gradient(to right, ${CLIMATE_OVERVIEW_COLOR_COLD}, ${CLIMATE_OVERVIEW_COLOR_COOL}, ${CLIMATE_OVERVIEW_COLOR_COMFORTABLE}, ${CLIMATE_OVERVIEW_COLOR_WARM}, ${CLIMATE_OVERVIEW_COLOR_HOT});`}
-          ></div>
-          ${sorted.map((t, i) => {
-            const pct = points[i].pct;
-            const row = labelRows.get(i);
-            return html`
-              ${row
-                ? html`
-                    <div
-                      class="compare-label ${row.row}"
-                      style=${`left: ${pct}%; transform: translateX(calc(-50% + ${Math.round(row.shiftPx)}px));`}
-                    >
-                      ${t.name}
-                    </div>
-                  `
-                : nothing}
-              <div
-                class="compare-dot"
-                style=${`left: ${pct}%; background: ${t.tempColor};`}
-                title="${t.name}: ${this._formatTempValue(t.temperature!)} ${unit}"
-                role="button"
-                tabindex="0"
-                aria-label=${t.name}
-                @click=${this._moreInfo(t.entity)}
-                @keydown=${activateOnKey(this._moreInfo(t.entity))}
-              ></div>
-            `;
-          })}
-        </div>
-        <div class="compare-minmax">
-          <span>${this._formatTempValue(min)} ${unit}</span>
-          <span>${this._formatTempValue(max)} ${unit}</span>
-        </div>
-      </div>
-    `;
+    return renderCompareScale({
+      tiles: tiles.map((t) => ({ key: t.key, name: t.name, value: t.temperature, color: t.tempColor, entity: t.tapEntity })),
+      trackWidthPx: this._trackWidth,
+      configMin: this._config?.scale_min,
+      configMax: this._config?.scale_max,
+      minSpan: CLIMATE_OVERVIEW_SCALE_MIN_SPAN,
+      fallbackMin: 16,
+      fallbackMax: 26,
+      unit: this._tempUnit(),
+      formatValue: (v) => this._formatTempValue(v),
+      title: this._t("climate_overview_compare"),
+      showLabels: this._config?.show_scale_labels !== false,
+      charPx: CLIMATE_OVERVIEW_LABEL_CHAR_PX,
+      maxLabelPx: CLIMATE_OVERVIEW_LABEL_MAX_PX,
+      gapPx: CLIMATE_OVERVIEW_LABEL_GAP_PX,
+      gradientColors: [
+        CLIMATE_OVERVIEW_COLOR_COLD,
+        CLIMATE_OVERVIEW_COLOR_COOL,
+        CLIMATE_OVERVIEW_COLOR_COMFORTABLE,
+        CLIMATE_OVERVIEW_COLOR_WARM,
+        CLIMATE_OVERVIEW_COLOR_HOT,
+      ],
+      onActivate: (t) => this._moreInfo(t.entity)(),
+    });
   }
 
   private _watchedEntities(): (string | undefined)[] {
     const cfg = this._config;
     if (!cfg) return [];
     return cfg.rooms?.length
-      ? cfg.rooms.flatMap((r) => [r.temperature_entity, r.humidity_entity])
-      : this._discovered.flatMap((r) => [r.temperatureEntity, r.humidityEntity]);
+      ? cfg.rooms.flatMap((r) => [r.temperature_entity, r.humidity_entity, r.climate_entity])
+      : this._discovered.flatMap((r) => [r.temperatureEntity, r.humidityEntity, r.climateEntity]);
   }
 
   protected shouldUpdate(changed: PropertyValues): boolean {
@@ -733,27 +867,29 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius};${cardBackgroundCss ? ` background: ${cardBackgroundCss};` : ""}`}
         >
-          ${renderCardHeader({
-            icon,
-            name,
-            subtitle,
-            right: outlier
-              ? html`
-                  <div
-                    class="outlier-chip"
-                    style=${`background: ${tintOn(this, outlier.tile.tempColor, this._config.tile_tint_opacity, 18)}; color: ${tintInk(this, outlier.tile.tempColor, this._config.tile_tint_opacity, 18)};`}
-                    role="button"
-                    tabindex="0"
-                    aria-label=${outlier.tile.name}
-                    @click=${this._moreInfo(outlier.tile.entity)}
-                    @keydown=${activateOnKey(this._moreInfo(outlier.tile.entity))}
-                  >
-                    <ha-icon icon=${outlier.direction === "cold" ? "mdi:snowflake" : "mdi:fire"}></ha-icon>
-                    <span>${outlier.tile.name} ${this._formatTempValue(outlier.tile.temperature!)}°</span>
-                  </div>
-                `
-              : undefined,
-          })}
+          ${this._config.show_header === false
+            ? nothing
+            : renderCardHeader({
+                icon,
+                name,
+                subtitle,
+                right: outlier
+                  ? html`
+                      <div
+                        class="outlier-chip"
+                        style=${`background: ${tintOn(this, outlier.tile.tempColor, this._config.tile_tint_opacity, 18)}; color: ${tintInk(this, outlier.tile.tempColor, this._config.tile_tint_opacity, 18)};`}
+                        role="button"
+                        tabindex="0"
+                        aria-label=${outlier.tile.name}
+                        @click=${this._moreInfo(outlier.tile.tapEntity)}
+                        @keydown=${activateOnKey(this._moreInfo(outlier.tile.tapEntity))}
+                      >
+                        <ha-icon icon=${outlier.direction === "cold" ? "mdi:snowflake" : "mdi:fire"}></ha-icon>
+                        <span>${outlier.tile.name} ${this._formatTempValue(outlier.tile.temperature!)}°</span>
+                      </div>
+                    `
+                  : undefined,
+              })}
 
           ${tiles.length === 0
             ? html`<div class="empty-state">${this._t("climate_overview_empty")}</div>`
@@ -783,6 +919,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
           ${this._config.show_scale !== false ? this._renderCompareScale(tiles) : nothing}
           ${this._renderThermostatSheet()}
         </div>
+        ${this._renderPopup()}
       </ha-card>
     `;
   }
@@ -791,16 +928,32 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
     const humidity = this._humidityDisplay(tile);
     const trendDelta = this._trendDelta(tile);
     const moldRisk = this._moldRisk(tile);
+    const holdAction = this._resolveAction("hold");
+    const hasDoubleTap = (this._config?.double_tap_action?.action ?? "none") !== "none";
+    const listeners = this._gestures.listeners({
+      onTap: () => this._runAction(tile, "tap"),
+      onHold: holdAction.action === "none" ? undefined : () => this._runAction(tile, "hold"),
+      onDoubleTap: hasDoubleTap ? () => this._runAction(tile, "double_tap") : undefined,
+      onPressChange: (pressed) => {
+        this._pressedKey = pressed ? tile.key : undefined;
+      },
+    });
     return html`
       <div
-        class="room-tile ${tile.temperatureUnavailable ? "unavailable" : ""}"
+        class="room-tile ${tile.temperatureUnavailable ? "unavailable" : ""} ${this._pressedKey === tile.key
+          ? "pressed"
+          : ""}"
         style=${`--tile-color: ${tile.tempColor}; --tile-ink: ${tintInk(this, tile.tempColor, this._config?.tile_tint_opacity, 12)}; background: ${tintOn(this, tile.tempColor, this._config?.tile_tint_opacity, 12)};`}
         role="button"
         tabindex="0"
         aria-label=${tile.name}
         title=${tile.name}
-        @click=${this._onTileTap(tile)}
-        @keydown=${activateOnKey(this._onTileTap(tile))}
+        @pointerdown=${listeners["@pointerdown"]}
+        @pointermove=${listeners["@pointermove"]}
+        @pointerup=${listeners["@pointerup"]}
+        @pointercancel=${listeners["@pointercancel"]}
+        @contextmenu=${listeners["@contextmenu"]}
+        @keydown=${listeners["@keydown"]}
       >
         <div class="tile-header">
           <ha-icon icon=${tile.icon}></ha-icon>
@@ -846,6 +999,7 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
   static styles = [
     glassCardStyles,
     cardHeaderStyles,
+    popupCardStyles,
     css`
       .room-grid {
         display: grid;
@@ -861,6 +1015,23 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         flex-direction: column;
         gap: 4px;
         box-sizing: border-box;
+        /* iOS would otherwise answer a long press with the text-selection
+           magnifier and its own share/copy callout. */
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 120ms ease-out;
+      }
+
+      /* Without this the hold is invisible until the popup appears, which
+         reads as an unresponsive tile. */
+      .room-tile.pressed {
+        transform: scale(0.96);
+      }
+
+      .no-animations .room-tile {
+        transition: none;
       }
 
       .room-tile:focus-visible {
@@ -972,83 +1143,6 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         padding: 16px 0;
         color: var(--m3p-secondary-text);
       }
-
-      .compare-section {
-        margin-top: 4px;
-      }
-
-      .compare-title {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--m3p-text);
-        margin-bottom: 8px;
-      }
-
-      .compare-track-wrap {
-        position: relative;
-        height: 56px;
-      }
-
-      .compare-track {
-        position: absolute;
-        top: 24px;
-        left: 0;
-        right: 0;
-        height: 8px;
-        border-radius: 4px;
-        opacity: 0.35;
-      }
-
-      .compare-dot {
-        position: absolute;
-        top: ${24 + 4 - CLIMATE_OVERVIEW_DOT_SIZE / 2}px;
-        width: ${CLIMATE_OVERVIEW_DOT_SIZE}px;
-        height: ${CLIMATE_OVERVIEW_DOT_SIZE}px;
-        border-radius: ${CLIMATE_OVERVIEW_DOT_RADIUS}px;
-        border: 2px solid var(--card-background-color, #1c1c1e);
-        box-sizing: border-box;
-        transform: translateX(-50%);
-        cursor: pointer;
-        transition: left ${CLIMATE_OVERVIEW_DOT_TRANSITION_MS}ms ${EASING};
-      }
-
-      .compare-dot:focus-visible {
-        outline: 2px solid var(--m3p-text);
-        outline-offset: 2px;
-      }
-
-      .card-inner.no-animations .compare-dot {
-        transition: none;
-      }
-
-      .compare-label {
-        position: absolute;
-        font-size: 9px;
-        color: var(--m3p-secondary-text);
-        white-space: nowrap;
-        transform: translateX(-50%);
-        max-width: 70px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .compare-label.above {
-        top: 0;
-      }
-
-      .compare-label.below {
-        top: 40px;
-      }
-
-      .compare-minmax {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11px;
-        opacity: 0.55;
-        color: var(--m3p-secondary-text);
-        margin-top: 2px;
-      }
-    
 
       .rooms-toggle {
         width: 100%;
@@ -1207,6 +1301,12 @@ export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
         transition: none;
       }
 `,
+    compareScaleStyles({
+      dotSizePx: CLIMATE_OVERVIEW_DOT_SIZE,
+      dotRadiusPx: CLIMATE_OVERVIEW_DOT_RADIUS,
+      dotTransitionMs: CLIMATE_OVERVIEW_DOT_TRANSITION_MS,
+      easing: STANDARD_EASING,
+    }),
   ];
 }
 

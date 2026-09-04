@@ -800,6 +800,7 @@ export interface M3MediaCardConfig {
 }
 
 export type ClimateOverviewSort = "area" | "temp_desc" | "temp_asc" | "name";
+export type ClimateOverviewMode = "temperature" | "thermostat" | "thermostat_only";
 
 export interface ClimateOverviewTempThresholds {
   cold?: number;
@@ -813,23 +814,50 @@ export interface ClimateOverviewRoomConfig {
   icon?: string;
   temperature_entity: string;
   humidity_entity?: string;
-  /** The room's thermostat, for `tile_tap_action: thermostat`. Discovered from
-   *  the room's area when unset. */
+  /** The room's thermostat, for `tile_tap_action: thermostat` or `mode`
+   *  thermostat discovery. Discovered from the room's area when unset. */
   climate_entity?: string;
   color?: string;
 }
 
 export type ClimateOverviewNotifyMode = "daily" | "weekly";
 
-export interface M3ClimateOverviewCardConfig extends NotifyConfigBase {
+// A popup only needs to narrow (never widen) the card it's scoped from, so
+// this is the same filter vocabulary rather than a separate schema — see
+// LightsOverviewPopupConfig.
+// "default-detail" — HA's own more-info dialog for the tapped entity, no
+// card of ours involved at all.
+// "default-grid" — today's original behaviour: this same card again,
+// re-scoped to the tapped tile's area/entities (the fields below).
+// "custom" — an arbitrary Lovelace card built from `card`.
+export type ClimateOverviewPopupMode = "default-detail" | "default-grid" | "custom";
+
+export interface ClimateOverviewPopupConfig extends EntityFilterConfig {
+  mode?: ClimateOverviewPopupMode;
+  title?: string;
+  inherit_filters?: boolean;
+  sort?: ClimateOverviewSort;
+  show_header?: boolean;
+  /** Only used when `mode` is "custom" — an arbitrary Lovelace card config
+   * skeleton that replaces the popup entirely. Any string value inside may
+   * reference `[[area_id]]`, `[[device_id]]`, `[[entity_id]]`, `[[name]]`,
+   * `[[temperature_entity]]`, `[[humidity_entity]]`, resolved against the
+   * tapped tile before the card is built — see shared/card-template.ts. */
+  card?: Record<string, unknown>;
+}
+
+export interface M3ClimateOverviewCardConfig extends NotifyConfigBase, EntityFilterConfig {
   type: string;
   auto_discover?: boolean;
-  include_area?: string[];
-  exclude_entities?: string[];
+  /** Which entities auto-discovery reports on: dedicated temperature
+   * sensors, thermostats (falling back to sensors where a room has no
+   * thermostat), or thermostats only. Defaults to "temperature". */
+  mode?: ClimateOverviewMode;
   rooms?: ClimateOverviewRoomConfig[];
   name_strip?: string[];
   name?: string;
   icon?: string;
+  show_header?: boolean;
   sort?: ClimateOverviewSort;
   /**
    * Show only this many rooms, the rest behind a toggle. 0 or unset shows all.
@@ -873,6 +901,10 @@ export interface M3ClimateOverviewCardConfig extends NotifyConfigBase {
   radius?: number;
   corners?: CornerRadiusConfig;
   card_version?: string;
+  tap_action?: HaActionConfig;
+  hold_action?: HaActionConfig;
+  double_tap_action?: HaActionConfig;
+  popup?: ClimateOverviewPopupConfig;
 }
 
 export interface AquariumDeviceConfig {

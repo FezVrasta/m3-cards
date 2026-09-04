@@ -1576,16 +1576,29 @@ auto_discover: true
 ### Entity source and room grouping
 
 - **`auto_discover: true`** (default): finds every `sensor` entity with
-  `device_class: temperature` or `humidity`. Sensors assigned to a Home
-  Assistant **area** are grouped into that area's tile (using the area's
+  `device_class: temperature` or `humidity`, plus every `climate` entity —
+  which ones actually make a tile depends on `mode`. Sensors assigned to a
+  Home Assistant **area** are grouped into that area's tile (using the area's
   own name/icon); sensors without an area but sharing a **device** (e.g. a
   combo temp+humidity sensor) are grouped by device instead; anything left
   over becomes its own tile, named from its (cleaned-up) entity name.
-  Rooms without a temperature sensor are skipped — humidity alone doesn't
-  make a room. Filter with `include_area` / `exclude_entities`.
+  Rooms without a temperature sensor or thermostat are skipped — humidity
+  alone doesn't make a room. Filter with `include_area` / `exclude_area` /
+  `include_entities` / `exclude_entities` / `include_labels` /
+  `exclude_labels` / `include_state` / `exclude_state`.
+- **`mode`**: which entities `auto_discover` reports on and reads from.
+  `temperature` (default) is today's behaviour — dedicated sensors only,
+  rooms with none are skipped. `thermostat` reads a room's thermostat when it
+  has no dedicated sensor (or when the thermostat is a "group" tier device —
+  see below — fronting several real ones), falling back to the sensor
+  otherwise. `thermostat_only` keeps only rooms that have a thermostat at
+  all, always reading from it. A thermostat found this way is also what
+  `tile_tap_action: thermostat` and `popup`'s default tap open — set per-room
+  with `climate_entity` under `rooms`, or discovered automatically as the
+  first `climate` entity in the room's own area (see below).
 - **`rooms`**: a manual list (`name`, `icon`, `temperature_entity`,
-  `humidity_entity`) instead of auto-discovery — set this to build the
-  overview by hand.
+  `humidity_entity`, `climate_entity`) instead of auto-discovery — set this
+  to build the overview by hand.
 
 `name_strip` cleans up names picked up from a device/entity rather than an
 area (default strips "Temperature"/"Temperatur" suffixes and
@@ -1638,17 +1651,42 @@ rooms:
 A room with no thermostat keeps the old behaviour and opens the graph. A tap
 that opens nothing would be worse than one that opens the wrong thing.
 
+### Tap, hold and the popup
+
+`tap_action` (default `more-info`) / `hold_action` (default `popup`) /
+`double_tap_action` (default `none`) replace `tile_tap_action` with the same
+general action system every other card uses, and add a `popup` action kind.
+`tile_tap_action: thermostat` still works as the narrower, older knob for the
+default tap specifically — an explicit `tap_action` overrides it.
+
+`popup.mode` chooses what the `popup` action opens: **`default-grid`**
+(default) — this same card again, scoped to the tapped room's area (or its
+entities, for a manually configured room); **`default-detail`** — HA's own
+more-info dialog for the tapped entity, no card of ours involved; or
+**`custom`** — an arbitrary Lovelace card built from `popup.card`, with
+`[[area_id]]`, `[[device_id]]`, `[[entity_id]]`, `[[name]]`,
+`[[temperature_entity]]`, `[[humidity_entity]]` placeholders resolved against
+the tapped room before the card is built. `popup.inherit_filters` (default
+`true`) narrows the card's own filter with the popup's rather than replacing
+it outright.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `auto_discover` | boolean | `true` | Automatic discovery of temperature/humidity sensors |
-| `include_area` | list\<string\> | – | Filter for auto-discovery |
-| `exclude_entities` | list\<string\> | – | Entities excluded from auto-discovery |
-| `rooms` | list (`name`, `icon`, `temperature_entity`, `humidity_entity`) | – | Manual room list instead of auto-discovery |
+| `mode` | `temperature` \| `thermostat` \| `thermostat_only` | `temperature` | Which entities auto-discovery reports on — see above |
+| `include_area` / `exclude_area` | list\<string\> | – | Area filter for auto-discovery |
+| `include_entities` / `exclude_entities` | list\<string\> | – | Entity filter for auto-discovery |
+| `include_labels` / `exclude_labels` | list\<string\> | – | Label filter for auto-discovery |
+| `include_state` / `exclude_state` | list\<string\> | – | State filter (`unavailable`/`unknown`, or a custom value) |
+| `rooms` | list (`name`, `icon`, `temperature_entity`, `humidity_entity`, `climate_entity`) | – | Manual room list instead of auto-discovery |
 | `name_strip` | list\<string\> | see above | Name suffixes/prefixes to remove from auto-discovered names |
 | `name` / `icon` | string | "Climate" / `mdi:thermometer` | Header |
-| `tile_tap_action` | `history` \| `thermostat` | `history` | What a tap on a room opens |
+| `show_header` | boolean | `true` | Card header |
+| `tile_tap_action` | `history` \| `thermostat` | `history` | Narrower legacy knob for the default tap — an explicit `tap_action` overrides it |
+| `tap_action` / `hold_action` / `double_tap_action` | action config | more-info / popup / none | Tap/hold/double-tap actions; adds a `popup` action kind |
+| `popup` | object (`mode`, `title`, `inherit_filters`, `sort`, `show_header`, `card`, filter fields) | – | Popup shown by the `popup` action — see above |
 | `sort` | `area` \| `temp_desc` \| `temp_asc` \| `name` | `area` | Tile order |
 | `show_scale` | boolean | `true` | Comparison scale below the tile grid |
 | `show_outlier_chip` | boolean | `true` | Header chip for the most conspicuous room |
