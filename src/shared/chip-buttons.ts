@@ -1,0 +1,224 @@
+import { html, css, nothing, type TemplateResult } from "lit";
+import type { HomeAssistant, HassEntity, ChipButtonConfig, ChipButtonsRowConfig } from "../types";
+import { STATELESS_DOMAINS, ACTIVE_STATES, CHIP_BUTTON_HEIGHT, CHIP_BUTTON_ICON_SIZE } from "../const";
+import { RADIUS } from "./tokens";
+import { resolveThemeColor, tintOn, foregroundOn } from "./color-config";
+import { runHaAction, navigateTo, type RunActionContext } from "./actions";
+import type { TapHoldGesture } from "./gestures";
+
+// Renders a horizontal row of tappable "chip button" chips — the M3 answer to
+// Bubble Card's sub-buttons feature (see .claude/docs/NOTES.md). Lives in
+// shared/ rather than only on m3-chip-buttons-card so any card can embed a
+// chip row later, matching this project's "gemeinsame Logik IMMER hier"
+// convention (CLAUDE.md).
+
+export interface ChipButtonsRenderState {
+  /** Key of the chip currently mid-press, for the `.pressed` scale cue. */
+  pressedKey?: string;
+  /** Owned by the consuming card; one instance shared across every chip. */
+  gestures: TapHoldGesture;
+  onPressChange: (key: string | undefined) => void;
+}
+
+function fireMoreInfo(host: EventTarget, entityId?: string): void {
+  if (!entityId) return;
+  host.dispatchEvent(
+    new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId } }),
+  );
+}
+
+function isActive(entity: HassEntity | undefined, domain: string): boolean {
+  if (!entity) return false;
+  if (STATELESS_DOMAINS.has(domain)) return true;
+  return ACTIVE_STATES.has(entity.state);
+}
+
+function chipKey(button: ChipButtonConfig, index: number): string {
+  return button.entity ?? `#${index}`;
+}
+
+// The color HA's own frontend theme assigns this domain/state pair — the
+// same `--state-<domain>-<state>-color` custom properties the native tile
+// card colors itself with. Falls back through the domain-only var, then the
+// generic active color, then the theme accent, so an undefined var never
+// leaves the chip transparent.
+function entityStateColorVar(domain: string, entityState: string): string {
+  return `var(--state-${domain}-${entityState}-color, var(--state-${domain}-color, var(--state-active-color, var(--primary-color))))`;
+}
+
+const INACTIVE_ENTITY_COLOR_VAR =
+  "var(--state-inactive-color, var(--disabled-text-color, var(--primary-text-color)))";
+
+export function renderChipButtons(
+  host: HTMLElement,
+  hass: HomeAssistant,
+  config: ChipButtonsRowConfig,
+  state: ChipButtonsRenderState,
+): TemplateResult {
+  const buttons = config.buttons ?? [];
+  const layoutClass = config.stretch ? "stretch" : config.wrap ? "wrap" : "scroll";
+  return html`
+    <div
+      class="m3-chip-buttons ${layoutClass}"
+      style=${`justify-content: ${config.justify ?? "start"};`}
+    >
+      ${buttons.map((button, index) =>
+        renderChipButton(host, hass, button, chipKey(button, index), state),
+      )}
+    </div>
+  `;
+}
+
+function renderChipButton(
+  host: HTMLElement,
+  hass: HomeAssistant,
+  button: ChipButtonConfig,
+  key: string,
+  state: ChipButtonsRenderState,
+): TemplateResult {
+  const entity = button.entity ? hass.states[button.entity] : undefined;
+  const domain = button.entity?.split(".")[0] ?? "";
+  const unavailable = entity?.state === "unavailable";
+  const active = button.static_color === true || (!unavailable && isActive(entity, domain));
+  const activeColor = button.use_entity_color
+    ? entityStateColorVar(domain || "state", entity?.state ?? "on")
+    : resolveThemeColor(button.color || "primary");
+  const inactiveColor = button.use_entity_color
+    ? INACTIVE_ENTITY_COLOR_VAR
+    : button.inactive_color
+      ? resolveThemeColor(button.inactive_color)
+      : "var(--primary-text-color)";
+  const color = active ? activeColor : inactiveColor;
+  const bg = tintOn(host, color, undefined, active ? 20 : 8);
+  const ink = foregroundOn(color, bg, 3, host);
+  const name = button.name || entity?.attributes.friendly_name || button.entity || "";
+  const stateText =
+    button.show_state !== false && entity && !unavailable
+      ? (hass.formatEntityState?.(entity) ?? entity.state)
+      : "";
+  const cssVars = `--m3cb-bg: ${bg}; --m3cb-ink: ${ink};`;
+  const icon = button.icon || "mdi:gesture-tap-button";
+
+  // A pure display chip (Bubble Card's info-row equivalent): no pointer/
+  // keyboard handlers, no button role — it isn't tappable.
+  if (button.interactive === false) {
+    return html`
+      <div class="m3-chip-button static" style=${cssVars}>
+        ${entity
+          ? html`<ha-state-icon .hass=${hass} .icon=${button.icon} .stateObj=${entity}></ha-state-icon>`
+          : html`<ha-icon icon=${icon}></ha-icon>`}
+        <span class="label">${name}${stateText ? html`<span class="state"> ${stateText}</span>` : nothing}</span>
+      </div>
+    `;
+  }
+
+  const hasHold = (button.hold_action?.action ?? "none") !== "none";
+  const hasDoubleTap = (button.double_tap_action?.action ?? "none") !== "none";
+  const ctx: RunActionContext = {
+    entityId: button.entity,
+    fireMoreInfo: (entityId) => fireMoreInfo(host, entityId),
+    navigate: (path) => navigateTo(host, path),
+  };
+  const listeners = state.gestures.listeners({
+    onTap: () => runHaAction(hass, button.tap_action, ctx),
+    onHold: hasHold ? () => runHaAction(hass, button.hold_action, ctx) : undefined,
+    onDoubleTap: hasDoubleTap ? () => runHaAction(hass, button.double_tap_action, ctx) : undefined,
+    onPressChange: (pressed) => state.onPressChange(pressed ? key : undefined),
+  });
+
+  return html`
+    <div
+      class="m3-chip-button ${state.pressedKey === key ? "pressed" : ""}"
+      style=${cssVars}
+      role="button"
+      tabindex="0"
+      aria-label=${name}
+      @pointerdown=${listeners["@pointerdown"]}
+      @pointermove=${listeners["@pointermove"]}
+      @pointerup=${listeners["@pointerup"]}
+      @pointercancel=${listeners["@pointercancel"]}
+      @contextmenu=${listeners["@contextmenu"]}
+      @keydown=${listeners["@keydown"]}
+    >
+      ${entity
+        ? html`<ha-state-icon .hass=${hass} .icon=${button.icon} .stateObj=${entity}></ha-state-icon>`
+        : html`<ha-icon icon=${icon}></ha-icon>`}
+      <span class="label">${name}${stateText ? html`<span class="state"> ${stateText}</span>` : nothing}</span>
+    </div>
+  `;
+}
+
+export const chipButtonsStyles = css`
+  .m3-chip-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .m3-chip-buttons.scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .m3-chip-buttons.scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .m3-chip-buttons.wrap {
+    flex-wrap: wrap;
+  }
+
+  .m3-chip-buttons.stretch {
+    flex-wrap: nowrap;
+  }
+
+  .m3-chip-buttons.stretch .m3-chip-button {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .m3-chip-button {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    height: ${CHIP_BUTTON_HEIGHT}px;
+    border-radius: ${RADIUS.chip}px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--m3cb-bg);
+    color: var(--m3cb-ink);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --mdc-icon-size: ${CHIP_BUTTON_ICON_SIZE}px;
+  }
+
+  .m3-chip-button.static {
+    cursor: default;
+  }
+
+  .m3-chip-button.pressed {
+    transform: scale(0.94);
+  }
+
+  .m3-chip-button:focus-visible {
+    outline: 2px solid var(--m3cb-ink);
+    outline-offset: 2px;
+  }
+
+  .m3-chip-button .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .m3-chip-button .state {
+    opacity: 0.75;
+    font-weight: 500;
+  }
+`;

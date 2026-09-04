@@ -7,7 +7,7 @@
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
 `button-card`, `card-mod`, `mod-card`, or `stack-in-card`. A single bundle
-(`m3-cards.js`) registers **36 cards**, all sharing one design language.
+(`m3-cards.js`) registers **39 cards**, all sharing one design language.
 
 New here? Start with the category that matches what you want to show — every
 card links to its full documentation further down.
@@ -3329,6 +3329,222 @@ An open drawer also closes on a tap anywhere outside it. The surface that
 catches that tap is invisible and swallows it, so nothing behind the drawer
 reacts to being tapped away.
 | `preload_views` | `false` | Reserved; currently does nothing |
+
+## M3 Lights Overview Card
+
+A room-by-room light overview, on the same pattern as Climate Overview above
+(the two are meant to sit stacked on a dashboard): one tile per room with its
+on/off state and count, or a flat list of every light. A tap toggles the
+room's lights; hold opens a popup.
+
+<details>
+<summary>Configuration, examples & options</summary>
+
+<img src="docs/images/lights-overview-card.png" alt="Lights Overview Card" width="440">
+<img src="docs/images/lights-overview-card-popup.png" alt="Lights Overview Card, popup" width="440">
+
+```yaml
+type: custom:m3-lights-overview-card
+auto_discover: true
+```
+
+### Entity source and room grouping
+
+- **`auto_discover: true`** (default): finds every `light` entity assigned to
+  a Home Assistant **area** and groups it into that area's tile. Unlike
+  Climate Overview, a light with no area is dropped rather than becoming its
+  own tile — a room-by-room overview has nothing useful to show for a light
+  it can't group. Filter with `include_area` / `exclude_entities` /
+  `include_labels` / `exclude_labels` / `include_state` / `exclude_state`.
+- **`rooms`**: a manual list (`name`, `icon`, `entities`, `toggle_entities`)
+  instead of auto-discovery.
+- **`view`**: `rooms` (default, one tile per room) or `entities` (one tile
+  per light, with the room name as a caption).
+- **`group_handling`**: when a `light.group` and its members would otherwise
+  both count as separate lights in the same room, drop one side —
+  `prefer_groups` counts only the group, `prefer_members` only the members.
+  Default `all` counts both.
+
+### What's shown vs. what a tap switches
+
+A tile's on/off state and count reflect every light the display filter above
+lets through. What a **tap** actually switches can be narrower: set
+`toggle_filter` (same vocabulary as the display filter) to switch only a
+subset, or `exclude_toggle_entities` as a shorthand for "show it, but don't
+switch it" on specific entities — useful for a light on a schedule or a
+scene-only fixture that should be visible but not part of the room-wide
+toggle. `toggle_inherit_filters: false` makes `toggle_filter` stand alone
+instead of narrowing the display filter. A manual room's `toggle_entities`
+defaults to its `entities`.
+
+### Tap, hold and the popup
+
+Same action system as Climate Overview: `tap_action` (default `toggle`) /
+`hold_action` (default `popup`, or `more-info` in `entities` view) /
+`double_tap_action`, with `popup.mode` choosing what hold opens —
+**`default-grid`** (this same card again, scoped to the tapped room),
+**`default-detail`** (HA's more-info dialog), or **`custom`** (an arbitrary
+Lovelace card built from `popup.card`, with `[[area_id]]`, `[[entity_id]]`,
+`[[name]]` placeholders resolved against the tapped room).
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `auto_discover` | boolean | `true` | Automatic discovery of lights by area |
+| `include_area` / `exclude_area` | list\<string\> | – | Filter for auto-discovery |
+| `include_entities` / `exclude_entities` | list\<string\> | – | Entity filter for auto-discovery |
+| `include_labels` / `exclude_labels` | list\<string\> | – | Label filter for auto-discovery |
+| `include_state` / `exclude_state` | list\<string\> | – | State filter (`on`/`off`/`unavailable`/`unknown`, or a custom value) |
+| `group_handling` | `all` \| `prefer_groups` \| `prefer_members` | `all` | How a `light.group` and its members are counted |
+| `rooms` | list (`name`, `icon`, `entities`, `toggle_entities`) | – | Manual room list instead of auto-discovery |
+| `name` / `icon` | string | "Lights" / `mdi:lightbulb-group` | Header |
+| `view` | `rooms` \| `entities` | `rooms` | Tile per room, or a flat per-light list |
+| `sort` | `name` \| `area` \| `on_first` | `name` | Tile order |
+| `show_header` | boolean | `true` | Card header |
+| `show_count` | boolean | `true` | "N/total on" on a multi-light tile |
+| `show_area` | boolean | `true` | Room name caption in `entities` view |
+| `hide_empty_rooms` | boolean | `false` | Drop rooms with no matching lights |
+| `toggle_filter` | object (same fields as the display filter) | – | Narrower filter for what a tap actually switches |
+| `exclude_toggle_entities` | list\<string\> | – | Shorthand: show these, but never toggle them |
+| `toggle_inherit_filters` | boolean | `true` | Whether `toggle_filter` narrows the display filter or stands alone |
+| `toggle_group_handling` | `all` \| `prefer_groups` \| `prefer_members` | `group_handling` | `group_handling`, applied to the toggle set instead |
+| `tap_action` / `hold_action` / `double_tap_action` | action config | toggle / popup / none | Tap/hold/double-tap actions; adds a `popup` action kind |
+| `popup` | object (`mode`, `title`, `view`, `sort`, `show_area`, `show_header`, `card`, filter fields) | – | Popup shown by the `popup` action — see above |
+| `on_color` / `off_color` | string | theme default | Tile color by state |
+| `accent_color` / `accent_opacity` | string / number | theme default / `12` | Header icon accent |
+| `tile_tint_opacity` | number | – | Tile background tint strength |
+| `text_color` / `secondary_text_color` | string | theme default | Room names/values vs. secondary text |
+| `card_background` | string | glass/solid background | Card background |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Respects `prefers-reduced-motion` |
+| `glass_background` | boolean | `true` | Frosted glass background |
+| `radius` / `corners` | number / object | `28` | Corner radius, optional per corner |
+
+</details>
+
+## M3 Chip Buttons Card
+
+A horizontal row of tappable pill-shaped chips — one per entity — with
+tap/hold/double-tap actions. This is the M3 answer to Bubble Card's
+"sub-buttons only" card: same core idea (a row of icon chips), but flatter
+configuration — one form per chip instead of several nested panels, and
+explicit Up/Down buttons to reorder instead of a dropdown menu.
+
+A chip can also be non-interactive (`interactive: false`), which turns it
+into a read-only info readout (e.g. a temperature or humidity chip) — the M3
+equivalent of Bubble Card's separate second row, without a second
+positioning system to configure.
+
+<details>
+<summary>Configuration, examples & options</summary>
+
+<img src="docs/images/chip-buttons-card.png" alt="Chip Buttons Card" width="700">
+
+```yaml
+type: custom:m3-chip-buttons-card
+wrap: false
+justify: start
+buttons:
+  - entity: input_select.home_mode
+    name: Home
+    icon: mdi:home
+    tap_action:
+      action: more-info
+  - entity: lock.front_door
+    name: Locked
+    color: blue
+    tap_action:
+      action: toggle
+    hold_action:
+      action: more-info
+  - icon: mdi:magnify
+    name: Search
+    interactive: false
+    tap_action:
+      action: none
+  - entity: sensor.living_room_temperature
+    interactive: false
+    show_state: true
+glass_background: true
+radius: 28
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `buttons` | list | `[]` | The chips, in display order. Each entry supports the fields below |
+| `buttons[].entity` | string | – (optional) | Any entity. Can be left empty for a pure action/display chip |
+| `buttons[].name` | string | entity `friendly_name` | Displayed name |
+| `buttons[].icon` | string | entity icon, otherwise a generic icon | Icon |
+| `buttons[].color` | string | `primary` | HA color name or any CSS color for the chip in its **active** state |
+| `buttons[].inactive_color` | string | – (default theme grey) | Color for the chip in its **inactive** state |
+| `buttons[].show_state` | boolean | `true` | Show the entity state next to the name |
+| `buttons[].static_color` | boolean | `false` | Always render the chip as "active", regardless of the entity's actual state (e.g. for a status chip that should always stand out) |
+| `buttons[].interactive` | boolean | `true` | `false` turns the chip into a read-only display — no tap/hold handlers, not keyboard-focusable |
+| `buttons[].tap_action` | Action | `more-info` | Tap action, same action picker as every other card |
+| `buttons[].hold_action` | Action | `none` | Long-press action |
+| `buttons[].double_tap_action` | Action | `none` | Double-tap action |
+| `wrap` | boolean | `false` | Wrap chips onto multiple lines instead of scrolling horizontally |
+| `justify` | `start` \| `center` \| `end` \| `space-between` | `start` | Horizontal alignment of the chip row |
+| `radius` | number (px) | `28` | Card corner radius |
+| `corners` | object | – | Optional per-corner override, same as every other card |
+| `glass_background` | boolean | `true` | Frosted glass background |
+| `card_background` | string | – | Override background color |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Press animation; `auto` respects `prefers-reduced-motion` |
+
+</details>
+
+## M3 Group Card
+
+Wraps other cards — M3 ones or otherwise — in one shared frame, so a stack of
+several small cards (e.g. two or three chip-button rows) reads as a single
+card instead of a pile of separately bordered boxes. The group draws the
+outer border/background itself; every nested card that shares this suite's
+frame styling automatically drops its own border, background and padding
+while inside a group, with no configuration needed on the nested card —
+`gap` alone controls the space between rows, so `gap: 0` makes them touch
+edge to edge.
+
+Cards are added, edited and reordered through the same visual pickers Home
+Assistant's own `vertical-stack` editor uses — including search, favorites
+and paste-from-clipboard when adding a card.
+
+<details>
+<summary>Configuration, examples & options</summary>
+
+<img src="docs/images/group-card.png" alt="Group Card" width="500">
+
+```yaml
+type: custom:m3-group-card
+gap: 4
+cards:
+  - type: custom:m3-chip-buttons-card
+    buttons:
+      - entity: lock.front_door
+        name: Front door
+      - entity: binary_sensor.front_door
+        name: Front door
+  - type: custom:m3-chip-buttons-card
+    buttons:
+      - entity: lock.back_door
+        name: Back door
+      - entity: binary_sensor.back_door
+        name: Back door
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `cards` | list | `[]` | The nested cards, in display order. Any Lovelace card — M3 or otherwise |
+| `gap` | number (px) | `8` | Space between rows. `0` makes them touch |
+| `radius` | number (px) | `16` | Card corner radius |
+| `corners` | object | – | Optional per-corner override, same as every other card |
+| `glass_background` | boolean | `true` | Frosted glass background |
+| `card_background` | string | – | Override background color |
+
+</details>
 
 ## License
 

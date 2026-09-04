@@ -1894,3 +1894,34 @@ export const NAV_VELOCITY_SAMPLES = 5;
 export const NAV_VELOCITY_WINDOW_MS = 100;
 /** One transform write per frame is enough while a finger is down. */
 export const NAV_DRAG_THROTTLE_MS = 16;
+
+// ---- Chip Buttons, Lights Overview, Group -----------------------------------
+// From UHaFnir/m3-cards, written against this file's own scale rather than
+// copied with their literals: the fork derives the same three radii from
+// RADIUS.card and the overview grid from the climate overview's, which is the
+// point — a row of chips and a lights tile should measure like their siblings.
+
+export const DEFAULT_CHIP_BUTTONS_RADIUS = RADIUS.card;
+export const CHIP_BUTTON_HEIGHT = 34;
+export const CHIP_BUTTON_ICON_SIZE = 18;
+
+export const DEFAULT_LIGHTS_OVERVIEW_RADIUS = RADIUS.card;
+export const DEFAULT_LIGHTS_OVERVIEW_ICON = "mdi:lightbulb-group";
+export const LIGHTS_OVERVIEW_GRID_GAP = CLIMATE_OVERVIEW_GRID_GAP;
+export const LIGHTS_OVERVIEW_GRID_MIN_COL = CLIMATE_OVERVIEW_GRID_MIN_COL;
+// Wider than the room grid above it: this one holds individual lights with
+// their names, not a room's summary.
+export const LIGHTS_OVERVIEW_ENTITY_GRID_MIN_COL = 140;
+export const LIGHTS_OVERVIEW_TILE_RADIUS = CLIMATE_OVERVIEW_TILE_RADIUS;
+export const LIGHTS_OVERVIEW_COLOR_ON = PALETTE.light;
+export const LIGHTS_OVERVIEW_COLOR_OFF = PALETTE.off;
+
+export const DEFAULT_GROUP_RADIUS = RADIUS.card;
+export const DEFAULT_GROUP_GAP = 8;
+
+// Weather card: how wide an hour slot and its label need to be before the
+// strip starts skipping hours, and the strides it is allowed to skip by —
+// only divisors that keep the labels on a round clock.
+export const WEATHER_HOUR_LABEL_MIN_WIDTH_PX = 44;
+export const WEATHER_HOURLY_SLOT_MIN_WIDTH_PX = 28;
+export const WEATHER_NICE_HOUR_STRIDES = [1, 2, 3, 4, 6, 8, 12, 24];

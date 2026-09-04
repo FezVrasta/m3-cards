@@ -8,6 +8,37 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Three cards from the fork** (`m3-lights-overview-card`,
+  `m3-chip-buttons-card`, `m3-group-card`), built by
+  [UHaFnir](https://github.com/UHaFnir/m3-cards) and adopted here with the
+  suite's own conventions applied.
+
+  **Lights Overview** groups every `light.*` entity by Home Assistant area and
+  gives each room a tile that switches it — or, in `view: entities`, drops the
+  grouping and lists the lights themselves, optionally with the ones that are
+  on sorted first. Two independent filters decide what a room *shows* and what
+  a tap actually *switches*, so a room can display a light it does not toggle.
+  `group_handling` drops one side of a `light.group` and its members, so a
+  group and the lights inside it are not counted twice. A tap can open a popup
+  scoped to that one room instead of HA's more-info dialog.
+
+  **Chip Buttons** is a row of compact pills, each bound to an entity, that
+  wraps rather than scrolls. A chip can show its state, take its colour from
+  the entity's own state colour, hold a static colour regardless of state, or
+  be marked read-only so it renders as a label rather than a button.
+
+  **Group Card** puts several cards in one surface with a shared background and
+  corner radius, so a set of related cards reads as one block instead of as
+  separate tiles with gaps between them.
+
+- **Weather card: the header and the chart switch independently.**
+  `show_current` and `show_chart` were one decision before; a card can now be
+  just the current conditions, just the forecast chart, or both. The hourly
+  strip gained `show_hourly_icons`, `show_hourly_temperatures`,
+  `show_hour_labels` and a `show_temp_axis`, and it now thins its labels to a
+  round stride — every 2nd, 3rd, 4th hour — rather than crowding them when the
+  card is narrow. Also from UHaFnir's fork.
+
 - **M3 Nav Card** (`m3-nav-card`) — the headline of this release: a navigation
   bar for the dashboard, in five variants: `header` and `footer` dock to an
   edge, `segmented` is an inline pill group that scrolls with the page,
@@ -558,6 +589,40 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   still add up: they normalize to the first entity's unit instead of to m³.
 
 ### Hinzugefügt
+
+- **Drei Karten aus dem Fork** (`m3-lights-overview-card`,
+  `m3-chip-buttons-card`, `m3-group-card`), gebaut von
+  [UHaFnir](https://github.com/UHaFnir/m3-cards) und hier nach den
+  Gepflogenheiten dieser Sammlung übernommen.
+
+  **Lights Overview** fasst alle `light.*`-Entitäten nach Home-Assistant-Bereich
+  zusammen und gibt jedem Raum eine Kachel, die ihn schaltet — oder listet in
+  `view: entities` die Lichter einzeln auf, auf Wunsch die eingeschalteten
+  zuerst. Zwei getrennte Filter entscheiden, was ein Raum *zeigt* und was ein
+  Tippen tatsächlich *schaltet*; ein Raum kann also ein Licht anzeigen, das er
+  nicht mitschaltet. `group_handling` lässt entweder eine `light.group` oder
+  ihre Mitglieder weg, damit eine Gruppe und die Lichter darin nicht doppelt
+  zählen. Ein Tippen kann statt HA's more-info-Dialog ein Popup öffnen, das nur
+  diesen einen Raum zeigt.
+
+  **Chip Buttons** ist eine Reihe kompakter Pillen, jede an eine Entität
+  gebunden, die umbricht statt zu scrollen. Eine Pille kann ihren Zustand
+  anzeigen, ihre Farbe aus der Zustandsfarbe der Entität nehmen, unabhängig vom
+  Zustand eine feste Farbe tragen oder als reine Anzeige markiert werden — dann
+  ist sie eine Beschriftung, kein Knopf.
+
+  **Group Card** legt mehrere Karten auf eine gemeinsame Fläche mit einem
+  Hintergrund und einer Eckenrundung, damit zusammengehörige Karten als ein
+  Block gelesen werden statt als einzelne Kacheln mit Lücken dazwischen.
+
+- **Wetterkarte: Kopfbereich und Diagramm schalten unabhängig voneinander.**
+  `show_current` und `show_chart` waren vorher eine Entscheidung; eine Karte
+  kann jetzt nur die aktuellen Werte zeigen, nur das Vorhersagediagramm oder
+  beides. Die Stundenleiste hat `show_hourly_icons`,
+  `show_hourly_temperatures`, `show_hour_labels` und eine `show_temp_axis`
+  bekommen, und sie dünnt ihre Beschriftungen jetzt auf einen runden Takt aus —
+  jede 2., 3., 4. Stunde — statt sie auf einer schmalen Karte zu drängen.
+  Ebenfalls aus UHaFnirs Fork.
 
 - **M3 Nav-Karte** (`m3-nav-card`) — das Hauptstück dieser Version: eine
   Navigationsleiste fürs Dashboard, in fünf Varianten. `header` und `footer`
