@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **M3 Presence Card — `tap_action`.** A plain tap on a person row now runs a
+  configurable action — `navigate`, `perform-action`, `url`, and so on —
+  targeting that person's `entity_id`, through the same shared
+  `handleAction()` helper the rest of the suite uses. Left unset, a tap keeps
+  opening Home Assistant's own more-info dialog exactly as before. Also added
+  a `hold_action`/`tap_action` "Interactions" panel to the visual editor —
+  `hold_action` previously only worked from YAML.
+
 ## [2.3.2]
 
 ### Added

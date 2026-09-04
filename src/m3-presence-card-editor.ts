@@ -72,6 +72,13 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
     ];
   }
 
+  private _interactionsSchema(): SchemaEntry[] {
+    return [
+      { name: "tap_action", selector: { ui_action: {} } },
+      { name: "hold_action", selector: { ui_action: {} } },
+    ];
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -103,6 +110,8 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
       show_since: "editor_presence_show_since",
       show_map: "editor_presence_show_map",
       sort: "editor_presence_sort",
+      tap_action: "editor_tap_action",
+      hold_action: "editor_hold_action",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -233,6 +242,10 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
       show_map: this._config.show_map ?? false,
       sort: this._config.sort ?? "home_first",
     };
+    const interactionsData = {
+      tap_action: this._config.tap_action,
+      hold_action: this._config.hold_action,
+    };
     const animationData = { animation: this._config.animation ?? "auto" };
 
     return html`
@@ -261,6 +274,20 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${contentData.show_map ? html`<div class="hint">${this._t("editor_presence_show_map_helper")}</div>` : nothing}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_interactions")}>
+          <ha-icon slot="leading-icon" icon="mdi:gesture-tap"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${interactionsData}
+              .schema=${this._interactionsSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_presence_tap_action_hint")}</div>
           </div>
         </ha-expansion-panel>
 

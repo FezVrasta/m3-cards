@@ -30,7 +30,7 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { discoverPersonEntities } from "./shared/ha-registry";
-import { fireEvent } from "./shared/editor-helpers";
+import { handleAction } from "./shared/actions";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { discoveryChangeMatters } from "./shared/should-update";
@@ -260,8 +260,13 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
     return this._t("since_days").replace("{n}", String(days));
   }
 
-  private _fireMoreInfo(entityId: string): () => void {
-    return () => fireEvent(this, "hass-more-info", { entityId });
+  // Unset tap_action keeps the card's original, hardcoded behaviour: HA's own
+  // more-info dialog for the tapped person. handleAction() already defaults
+  // an undefined action to "more-info", so this is that default made
+  // overridable rather than a new default of its own.
+  private _runTapAction(entityId: string): void {
+    if (!this.hass) return;
+    handleAction(this, this.hass, this._config?.tap_action, entityId);
   }
 
   private _handlePointerDown(_row: PersonRow): (e: PointerEvent) => void {
@@ -281,7 +286,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
         window.clearTimeout(this._holdTimer);
         this._holdTimer = undefined;
       }
-      if (!this._holdFired) this._fireMoreInfo(row.entityId)();
+      if (!this._holdFired) this._runTapAction(row.entityId);
     };
   }
 
@@ -390,7 +395,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
             this._holdTimer = undefined;
           }
         }}
-        @keydown=${activateOnKey(this._fireMoreInfo(row.entityId))}
+        @keydown=${activateOnKey(() => this._runTapAction(row.entityId))}
       >
         <div class="avatar-wrap">
           <div class="avatar" style=${picture ? `background-image: url(${picture});` : ""}>

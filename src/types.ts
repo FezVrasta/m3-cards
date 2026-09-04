@@ -738,6 +738,11 @@ export interface M3PresenceCardConfig {
   unknown_color?: string;
   zone_colors?: Record<string, string>;
   presence_tint_opacity?: number;
+  /**
+   * Runs on a plain tap of a person row, targeting that person's entity_id.
+   * Leave unset to keep the existing default: HA's own more-info dialog.
+   */
+  tap_action?: HaActionConfig;
   hold_action?: HaActionConfig;
   text_color?: string;
   secondary_text_color?: string;

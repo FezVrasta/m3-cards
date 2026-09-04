@@ -1526,8 +1526,18 @@ auto_discover: true
 - **`auto_discover: false`**: only the selection explicitly listed in
   `entities` (`person.*` or `device_tracker.*`).
 
-Tapping opens the entity's more-info dialog; a long press (500ms)
-optionally triggers `hold_action` (e.g. navigating to a dashboard view).
+Tapping a person row runs `tap_action` — any standard action, targeting that
+person's `entity_id` — and defaults to HA's own more-info dialog when unset,
+exactly as before. A long press (500ms) optionally triggers `hold_action`
+(e.g. navigating to a dashboard view).
+
+```yaml
+type: custom:m3-presence-card
+auto_discover: true
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/family
+```
 
 ### Configuration options
 
@@ -1544,6 +1554,7 @@ optionally triggers `hold_action` (e.g. navigating to a dashboard view).
 | `sort` | `home_first` \| `name` | `home_first` | Sort order: home first or alphabetical |
 | `home_color` / `not_home_color` / `zone_color` / `unknown_color` | string | green/blue/purple/gray | Status ring colors |
 | `zone_colors` | object (zone name → color) | – | Override per named zone |
+| `tap_action` | action object | – | Action on a plain tap of a person row; defaults to more-info |
 | `hold_action` | action object | – | Action on a long press (500ms) on an avatar |
 | `text_color` / `secondary_text_color` | string | theme default | Names vs. status line |
 | `card_background` | string | glass/solid background | Card background |

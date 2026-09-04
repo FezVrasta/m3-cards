@@ -1530,8 +1530,18 @@ auto_discover: true
 - **`auto_discover: false`**: nur die explizit in `entities` gelistete
   Auswahl (`person.*` oder `device_tracker.*`).
 
-Tippen öffnet die More-Info-Ansicht der Entity; langes Drücken (500ms) löst
+Ein Tap auf eine Personenzeile führt `tap_action` aus — jede Standard-Aktion,
+bezogen auf die `entity_id` der Person — und öffnet ohne Konfiguration wie
+bisher Home Assistants eigene More-Info-Ansicht. Langes Drücken (500ms) löst
 optional `hold_action` aus (z.B. Navigation zu einer Karten-Ansicht).
+
+```yaml
+type: custom:m3-presence-card
+auto_discover: true
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/familie
+```
 
 ### Konfigurationsoptionen
 
@@ -1548,6 +1558,7 @@ optional `hold_action` aus (z.B. Navigation zu einer Karten-Ansicht).
 | `sort` | `home_first` \| `name` | `home_first` | Sortierung: zuhause zuerst oder alphabetisch |
 | `home_color` / `not_home_color` / `zone_color` / `unknown_color` | string | Grün/Blau/Lila/Grau | Status-Ring-Farben |
 | `zone_colors` | Objekt (Zonenname → Farbe) | – | Override je benannter Zone |
+| `tap_action` | Aktionsobjekt | – | Aktion bei einem einfachen Tap auf eine Personenzeile; Standard ist More-Info |
 | `hold_action` | Aktionsobjekt | – | Aktion bei langem Drücken (500ms) auf einen Avatar |
 | `text_color` / `secondary_text_color` | string | Theme-Standard | Namen bzw. Statuszeile |
 | `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
