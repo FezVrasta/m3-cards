@@ -3052,11 +3052,21 @@ export class M3NavCard extends LitElement implements LovelaceCard {
        entries and centres, exactly like the floating variant; opening it lets
        the drawer take the width its tiles need. The width is transitioned so
        the two states grow into each other rather than snapping. */
-    .sheet.sheet-shut {
+    /* The drawer is exactly as wide as the bar, open or shut: it is the same
+       object, and a drawer that jumps to the full screen on the way up reads
+       as a different one. The bar alone decides that width — the panel below
+       is laid out at zero and then stretched to whatever the bar settled on,
+       so its tiles never widen the sheet to fit themselves. */
+    .sheet {
       width: fit-content;
       max-width: calc(100% - 2 * var(--nav-edge, ${NAV_FLOAT_INSET}px));
       margin-left: auto;
       margin-right: auto;
+    }
+
+    .sheet .sheet-panel {
+      width: 0;
+      min-width: 100%;
     }
 
     .sheet {

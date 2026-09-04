@@ -1871,6 +1871,7 @@ export const NAV_SHEET_HANDLE_OPACITY = 0.35;
  */
 export const NAV_SHEET_HANDLE_PADDING = 2;
 export const NAV_SHEET_DEFAULT_MAX_VH = 60;
+
 /** A phone in landscape: 60vh of drawer would leave nothing of the view. */
 export const NAV_SHORT_VIEWPORT_PX = 600;
 export const NAV_SHORT_VIEWPORT_MAX_VH = 50;
