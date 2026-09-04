@@ -30,6 +30,11 @@ before releases.
   per-card `animation` override.
 - Each card writes its own `card_version` into the config so future config
   migrations can be detected reliably (`src/shared/config-migration.ts`).
+- Every card class is declared as
+  `extends TemplatedCard(LitElement) implements LovelaceCard`
+  (`src/shared/templated-card.ts`). That is what gives its config fields Jinja2
+  support; a new card gets it by using the same declaration, and needs nothing
+  else — it goes on reading `this._config`, which arrives resolved.
 
 ## Pull requests
 

@@ -51,6 +51,7 @@ import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-COST-CARD %c v${CARD_VERSION} `,
@@ -128,7 +129,7 @@ function bucketize(dayMap: Map<string, number>, window: PeriodWindow): number[] 
 }
 
 @customElement("m3-cost-card")
-export class M3CostCard extends LitElement implements LovelaceCard {
+export class M3CostCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3CostCardConfig;

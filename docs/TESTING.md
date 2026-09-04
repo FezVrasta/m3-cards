@@ -76,6 +76,9 @@ implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichze
 | C13 | Sprachumschaltung | HA-Profil-Sprache zwischen Deutsch und Englisch wechseln | Alle Karten-Texte (inkl. Editor-Labels) wechseln vollständig, keine deutschen Reste im Englischen oder umgekehrt |
 | C14 | Grid-Optionen (Sections-Dashboard) | Karte auf einem Sections-Dashboard platzieren, Größe ändern | Karte skaliert sinnvoll, `getGridOptions` liefert plausible Min/Max-Werte |
 | C15 | Konsole sauber | Nach jedem der obigen Schritte | `read_console_messages`/DevTools zeigen keine Fehler mit `m3-cards.js` als Quelle |
+| C16 | Jinja2-Template in einem Feld | `name: "{{ states('sensor.x') }}"` (o. ä. Textfeld) setzen, dann `sensor.x` in den Dev-Tools ändern | Feld zeigt den gerenderten Wert und aktualisiert sich beim Zustandswechsel ohne Reload; kein Abo-Aufbau bei jedem State-Tick (Netzwerk-Tab: eine `render_template`-Nachricht pro unterschiedlichem Template) |
+| C17 | Template in verschachtelter Karte | In `cards:` (bzw. Popup-Inhalt) eine `custom:mushroom-template-card` mit eigenem Template legen | Die innere Karte rendert ihr Template weiterhin selbst und folgt ihrem Sensor — der Wert friert nicht auf dem Stand beim Laden ein |
+| C18 | Karte ohne Templates | Beliebige Karte ohne `{{`/`{%` in der Config laden | Verhalten unverändert; im Netzwerk-Tab kein `render_template` für diese Karte |
 
 ## M3 Climate Card
 

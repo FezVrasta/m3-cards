@@ -43,6 +43,7 @@ import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-NAS-CARD %c v${CARD_VERSION} `,
@@ -171,7 +172,7 @@ export function prettyMount(mount: string): string {
 }
 
 @customElement("m3-nas-card")
-export class M3NasCard extends LitElement implements LovelaceCard {
+export class M3NasCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() protected _config?: M3NasCardConfig;

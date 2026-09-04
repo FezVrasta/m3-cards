@@ -57,6 +57,7 @@ import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters, listEntities } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-SUPPLY-CARD %c v${CARD_VERSION} `,
@@ -87,7 +88,7 @@ interface SupplyEntry {
 }
 
 @customElement("m3-supply-card")
-export class M3SupplyCard extends LitElement implements LovelaceCard {
+export class M3SupplyCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3SupplyCardConfig;

@@ -11,6 +11,7 @@ import { DEFAULT_GROUP_RADIUS, DEFAULT_GROUP_GAP, resolveCornerRadius } from "./
 import { resolveThemeColor } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { GroupChildrenController } from "./shared/group-children";
+import { TemplatedCard } from "./shared/templated-card";
 
 // Wraps arbitrary Lovelace cards in one shared frame instead of each keeping
 // its own. The frame suppression itself lives in shared/glass-card.ts (a
@@ -19,7 +20,7 @@ import { GroupChildrenController } from "./shared/group-children";
 // build/host the child card elements and lay them out.
 
 @customElement("m3-group-card")
-export class M3GroupCard extends LitElement implements LovelaceCard {
+export class M3GroupCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3GroupCardConfig;

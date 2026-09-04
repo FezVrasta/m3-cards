@@ -8,6 +8,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Added
 
+- **Jinja2 templates in every card's own string fields.** A field containing
+  `{{` or `{%` — a name, an icon, a colour, whatever that card reads out of its
+  config — is now subscribed over Home Assistant's `render_template` websocket
+  and pushed a new value whenever anything it reads changes. Until now a card
+  could show a fixed string or one entity's raw state and nothing else, so a
+  composed label meant a template-sensor helper in `configuration.yaml` for
+  every card that wanted one, and a dashboard moved over from mushroom lost
+  every templated label, icon and colour it had.
+
+  Templates inside a **nested** card config — `cards:`, a popup action's
+  content, a mushroom card in a slot — are deliberately left alone and handed
+  to that card verbatim. It renders them itself, and it renders them live;
+  resolving them here would freeze the field at whatever it said when the outer
+  card was configured. The walk stops at any nested object carrying its own
+  `type`.
+
+  Nothing changes for a card that uses no templates, and it costs nothing: no
+  walk, no subscription, no copy of its config. The nav card keeps its own
+  per-entry templates, including the boolean `hidden` / `disabled` fields.
+
 - **The room card's header can run an action**, via a card-level `tap_action`.
   Until now the header either folded the card or did nothing, and the only
   action the card offered was `detail_path` on a long press of a category tile
@@ -61,6 +81,28 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   and the two kinds that already worked are unchanged.
 
 ### Hinzugefügt
+
+- **Jinja2-Templates in allen eigenen Textfeldern jeder Karte.** Ein Feld mit
+  `{{` oder `{%` — Name, Icon, Farbe, was die Karte eben aus ihrer
+  Konfiguration liest — wird jetzt über den `render_template`-Websocket von Home
+  Assistant abonniert und bekommt einen neuen Wert gepusht, sobald sich etwas
+  ändert, das das Template liest. Bisher konnte eine Karte einen festen Text
+  oder den rohen Zustand einer Entität zeigen und sonst nichts: Für jede
+  zusammengesetzte Beschriftung brauchte es einen Template-Sensor-Helfer in der
+  `configuration.yaml`, und ein von Mushroom übernommenes Dashboard verlor jede
+  getemplatete Beschriftung, jedes Icon und jede Farbe.
+
+  Templates in **verschachtelten** Karten-Konfigurationen — `cards:`, der Inhalt
+  eines Popup-Actions, eine Mushroom-Karte in einem Slot — bleiben bewusst
+  unangetastet und gehen unverändert an diese Karte. Sie rendert sie selbst, und
+  zwar live; würden sie hier aufgelöst, fröre das Feld auf dem Wert ein, den es
+  beim Konfigurieren der äußeren Karte hatte. Der Durchlauf stoppt an jedem
+  verschachtelten Objekt mit eigenem `type`.
+
+  Für Karten ohne Templates ändert sich nichts, und es kostet nichts: kein
+  Durchlauf, kein Abo, keine Kopie der Konfiguration. Die Nav-Karte behält ihre
+  eigenen Templates pro Eintrag, samt der Wahrheitswert-Felder `hidden` /
+  `disabled`.
 
 - **Die Kopfzeile der Raumkarte kann eine Aktion ausführen**, über eine
   `tap_action` auf Kartenebene. Bisher klappte die Kopfzeile die Karte ein oder

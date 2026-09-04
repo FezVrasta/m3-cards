@@ -28,6 +28,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { buildWavePath } from "./shared/wave";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters, listEntities } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-COVER-CARD %c v${CARD_VERSION} `,
@@ -56,7 +57,7 @@ interface CoverModel {
 }
 
 @customElement("m3-cover-card")
-export class M3CoverCard extends LitElement implements LovelaceCard {
+export class M3CoverCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3CoverCardConfig;

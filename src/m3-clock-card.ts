@@ -102,6 +102,7 @@ import {
   sharedFittedRadius,
 } from "./shared/shapes";
 import { VisibleTicker } from "./shared/visible-ticker";
+import { TemplatedCard } from "./shared/templated-card";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
@@ -120,7 +121,7 @@ interface ClockParts {
 }
 
 @customElement("m3-clock-card")
-export class M3ClockCard extends LitElement implements LovelaceCard {
+export class M3ClockCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ClockCardConfig;

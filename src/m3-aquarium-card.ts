@@ -64,6 +64,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { formatNumber } from "./shared/formatting";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-AQUARIUM-CARD %c v${CARD_VERSION} `,
@@ -132,7 +133,7 @@ interface AquariumTile {
 }
 
 @customElement("m3-aquarium-card")
-export class M3AquariumCard extends LitElement implements LovelaceCard {
+export class M3AquariumCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3AquariumCardConfig;

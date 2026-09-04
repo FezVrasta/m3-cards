@@ -32,6 +32,7 @@ import { shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-GAUGE-CARD %c v${CARD_VERSION} `,
@@ -62,7 +63,7 @@ function arcPath(tStart: number, tEnd: number): string {
 }
 
 @customElement("m3-gauge-card")
-export class M3GaugeCard extends LitElement implements LovelaceCard {
+export class M3GaugeCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3GaugeCardConfig;

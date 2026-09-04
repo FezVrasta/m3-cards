@@ -118,6 +118,8 @@ Live-Werte.</sub>
   `animation: auto | on | off` erzwingbar
 - Alte Configs (z.B. `animations: true/false`) werden beim Laden automatisch
   auf das aktuelle Schema migriert — kein manuelles Nachpflegen nötig
+- [Jinja2-Templates](#templates) in allen eigenen Textfeldern jeder Karte, live
+  über den Websocket — kein Template-Sensor-Helfer pro Karte mehr
 
 ## Installation
 
@@ -142,6 +144,70 @@ dort auf *Herunterladen* drücken, fertig. Von Hand geht es so:
    *Einstellungen → Dashboards → Ressourcen → Ressource hinzufügen*
    - URL: `/local/m3-cards.js`
    - Typ: JavaScript-Modul
+
+## Templates
+
+Jede Karte akzeptiert Jinja2 in **ihren eigenen Textfeldern** — Name, Icon,
+Farbe, Einheit, was die jeweilige Karte eben aus ihrer Konfiguration liest. Ein
+Feld gilt als Template, sobald es `{{` oder `{%` enthält; alles andere bleibt
+unangetastet.
+
+```yaml
+type: custom:m3-button-card
+entity: light.kitchen
+name: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"
+icon: >-
+  {{ 'mdi:lightbulb-on' if is_state('light.kitchen', 'on') else 'mdi:lightbulb' }}
+```
+
+Vorher konnte ein Feld nur ein fester Text oder der rohe Zustand einer Entität
+sein. Für jede zusammengesetzte Beschriftung brauchte es einen
+Template-Sensor-Helfer in der `configuration.yaml` — und ein Icon, das von einer
+Entität abhängt, ließ sich überhaupt nicht ausdrücken:
+
+```yaml
+# configuration.yaml — einer davon pro Karte, jetzt nicht mehr nötig
+template:
+  - sensor:
+      - name: Kitchen label
+        state: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"
+```
+
+Die Werte werden **gepusht**, nicht gepollt: Die Karte abonniert das Template
+über den Websocket, und Home Assistant rendert es neu, sobald sich irgendetwas
+ändert, das das Template liest. Ein Abo pro unterschiedlichem Template — zwei
+Felder mit derselben Zeichenkette teilen sich eines —, und alle werden
+geschlossen, sobald die Karte die Seite verlässt.
+
+Eine Karte ohne Templates verhält sich exakt wie bisher und zahlt nichts dafür:
+Es wird nichts durchlaufen, abonniert oder kopiert.
+
+### Verschachtelte Karten bleiben unangetastet
+
+Karten-Konfigurationen können andere Karten enthalten: `cards:` bei Gruppen- und
+Raumkarte, der Inhalt eines Popup-Actions, eine Mushroom-Karte in einem Slot.
+**Templates darin werden hier nicht gerendert** — sie gehen unverändert an die
+Karte, der sie gehören.
+
+```yaml
+type: custom:m3-room-card
+area: kitchen
+name: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"   # hier gerendert
+cards:
+  - type: custom:mushroom-template-card
+    primary: "{{ states('sensor.kitchen_humidity') }} %"           # bleibt Mushroom
+```
+
+Der Grund: Die innere Karte rendert ihre Templates selbst, und zwar *live*.
+Würde `primary` oben hier aufgelöst, bekäme Mushroom genau die eine Zeichenkette,
+die zum Zeitpunkt der Konfiguration herauskam — das Feld würde auf diesem Wert
+einfrieren und dem Sensor nie wieder folgen. Die Regel ist mechanisch: Der Durchlauf
+stoppt an jedem verschachtelten Objekt mit eigenem `type`, denn so sieht eine
+Karten-Konfiguration aus, egal für welche Karte.
+
+Die Nav-Karte ist die Ausnahme in die andere Richtung: Ihre Einträge hatten
+Templates schon vorher, mit `hidden` / `disabled` als Wahrheitswerte, und sie
+funktionieren wie unter [M3 Nav Card](#m3-nav-card) beschrieben.
 
 ## M3 Climate Card
 

@@ -52,6 +52,7 @@ import { fetchTodoItems, todoSupports, TODO_FEATURE, type TodoItem } from "./sha
 import { collectSupplyChips } from "./shared/supply-chips";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-TODO-CARD %c v${CARD_VERSION} `,
@@ -71,7 +72,7 @@ function stripCategory(summary: string, label?: string): string {
 }
 
 @customElement("m3-todo-card")
-export class M3TodoCard extends LitElement implements LovelaceCard {
+export class M3TodoCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3TodoCardConfig;

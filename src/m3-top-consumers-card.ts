@@ -47,6 +47,7 @@ import { resolveEffectivePrice, formatCurrency } from "./shared/pricing";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-TOP-CONSUMERS-CARD %c v${CARD_VERSION} `,
@@ -100,7 +101,7 @@ function cleanName(raw: string, patterns: string[]): string {
 }
 
 @customElement("m3-top-consumers-card")
-export class M3TopConsumersCard extends LitElement implements LovelaceCard {
+export class M3TopConsumersCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3TopConsumersCardConfig;

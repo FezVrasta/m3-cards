@@ -35,6 +35,7 @@ import { handleAction, isActionable } from "./shared/actions";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-PRESENCE-CARD %c v${CARD_VERSION} `,
@@ -55,7 +56,7 @@ interface PersonRow {
 }
 
 @customElement("m3-presence-card")
-export class M3PresenceCard extends LitElement implements LovelaceCard {
+export class M3PresenceCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3PresenceCardConfig;

@@ -48,6 +48,7 @@ import { DetailCardController } from "./shared/detail-card";
 import type { CardTemplateTokens } from "./shared/card-template";
 import { discoveryChangeMatters } from "./shared/should-update";
 import { localize, type TranslationKey } from "./localize";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-LIGHTS-OVERVIEW-CARD %c v${CARD_VERSION} `,
@@ -90,7 +91,7 @@ function configFilter(config: M3LightsOverviewCardConfig): EntityFilterConfig {
 }
 
 @customElement("m3-lights-overview-card")
-export class M3LightsOverviewCard extends LitElement implements LovelaceCard {
+export class M3LightsOverviewCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3LightsOverviewCardConfig;
