@@ -28,7 +28,7 @@ import {
   OCCUPANCY_PULSE_MS,
   OCCUPANCY_TINT_OCCUPIED,
   OCCUPANCY_TINT_FREE,
-  OCCUPANCY_TINT_SEGMENT,
+  OCCUPANCY_TINT_ON_ROW,
   OCCUPANCY_TOGGLE_HEIGHT,
   OCCUPANCY_TOGGLE_RADIUS,
   OCCUPANCY_CHIP_RADIUS,
@@ -686,7 +686,9 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         align-items: center;
         justify-content: center;
         color: var(--m3o-secondary-text);
-        background: color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)));
+        /* On the row, like the segments — 7% over the card left it two points
+           from a row tinted 5% over the same card, which is no edge at all. */
+        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_ON_ROW}%, var(--m3o-row, var(--ha-card-background, var(--card-background-color))));
       }
 
       .row.occupied .row-icon {
@@ -768,7 +770,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         min-width: 0;
         height: ${OCCUPANCY_SEGMENT_HEIGHT}px;
         border-radius: ${OCCUPANCY_SEGMENT_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_SEGMENT}%, var(--m3o-row, var(--ha-card-background, var(--card-background-color))));
+        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_ON_ROW}%, var(--m3o-row, var(--ha-card-background, var(--card-background-color))));
       }
 
       .segment.on {
