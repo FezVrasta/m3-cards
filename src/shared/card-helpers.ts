@@ -19,13 +19,18 @@ import type { HomeAssistant } from "../types";
 //      `hass` property set on it from outside; a nested card that never gets a
 //      fresh one renders the state it was born with, forever.
 
-interface CardHelpers {
+// The one declaration of this global in the suite. `createCardElement` returns
+// the element synchronously — only `loadCardHelpers()` itself is async — so a
+// caller that awaits the result still works, but the type says what HA does.
+export interface CardHelpers {
   createCardElement: (config: Record<string, unknown>) => HTMLElement;
 }
 
-type WindowWithHelpers = Window & {
-  loadCardHelpers?: () => Promise<CardHelpers>;
-};
+declare global {
+  interface Window {
+    loadCardHelpers?: () => Promise<CardHelpers>;
+  }
+}
 
 /**
  * Builds one element per config.
@@ -38,7 +43,7 @@ export async function createCards(
   configs: Record<string, unknown>[],
   hass: HomeAssistant | undefined,
 ): Promise<HTMLElement[]> {
-  const loader = (window as WindowWithHelpers).loadCardHelpers;
+  const loader = window.loadCardHelpers;
   if (!loader || !configs.length) return [];
   let helpers: CardHelpers;
   try {

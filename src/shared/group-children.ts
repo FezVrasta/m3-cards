@@ -68,7 +68,7 @@ export class GroupChildrenController {
       if (this._building.has(index)) return;
       this._building.add(index);
       loadHelpers()
-        .then((helpers) => helpers.createCardElement(config))
+        .then((helpers) => helpers.createCardElement(config) as HTMLElement & { hass?: unknown })
         .then((el) => {
           el.hass = hass;
           this._entries[index] = { el, type, key };

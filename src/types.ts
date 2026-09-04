@@ -1,4 +1,6 @@
 import type { NotifyConfigBase } from "./shared/notify-editor";
+import type { EntityFilterConfig } from "./shared/entity-filter";
+import type { LightGroupHandling } from "./shared/ha-registry";
 
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
@@ -153,6 +155,9 @@ export interface HaActionConfig {
     | "navigate"
     | "url"
     | "assist"
+    // A card-defined popup rather than HA's own more-info dialog —
+    // see shared/actions.ts and shared/popup-card.ts.
+    | "popup"
     | "none";
   service?: string;
   perform_action?: string;
@@ -713,8 +718,15 @@ export interface M3WeatherCardConfig {
   hours?: number;
   days?: number;
   chips?: WeatherChipType[];
+  show_current?: boolean;
+  show_chart?: boolean;
   show_sun?: boolean;
   show_days_toggle?: boolean;
+  show_hour_labels?: boolean;
+  group_hourly_conditions?: boolean;
+  show_hourly_icons?: boolean;
+  show_hourly_temperatures?: boolean;
+  show_temp_axis?: boolean;
   accent_color?: string;
   accent_opacity?: number;
   precipitation_color?: string;
@@ -2146,5 +2158,143 @@ export interface M3NavCardConfig {
   animation?: "auto" | "on" | "off";
   radius?: number;
   corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+// ---- Lights Overview, Chip Buttons, Group Card ----------------------------
+// Config shapes from UHaFnir/m3-cards (MIT), for the three cards adopted
+// from that fork.
+
+/** An arbitrary Lovelace card config — the group's own cards, but also any
+ * other custom or built-in card a user nests inside it. */
+export interface LovelaceCardConfig {
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface ChipButtonConfig {
+  entity?: string;
+  name?: string;
+  icon?: string;
+  /** Active-state color (theme token, hex, or any CSS color). */
+  color?: string;
+  inactive_color?: string;
+  show_state?: boolean;
+  /** Always render as "active", regardless of the entity's own state. */
+  static_color?: boolean;
+  /** Pull the color from the entity's own HA state color instead of `color`/`inactive_color`. */
+  use_entity_color?: boolean;
+  /** false = read-only chip (no tap/hold handlers, not a button role). */
+  interactive?: boolean;
+  tap_action?: HaActionConfig;
+  hold_action?: HaActionConfig;
+  double_tap_action?: HaActionConfig;
+}
+
+export interface ChipButtonsRowConfig {
+  buttons: ChipButtonConfig[];
+  /** Default wraps to a new line; unset scrolls horizontally instead. */
+  wrap?: boolean;
+  justify?: "start" | "center" | "end" | "space-between";
+  /** Chips grow to equally fill the row's width instead of sizing to content. */
+  stretch?: boolean;
+}
+
+export interface M3ChipButtonsCardConfig extends ChipButtonsRowConfig {
+  type: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_background?: string;
+  card_version?: string;
+}
+
+export type LightsOverviewView = "rooms" | "entities";
+export type LightsOverviewSort = "name" | "area" | "on_first";
+
+export interface LightsOverviewManualRoomConfig {
+  name: string;
+  icon?: string;
+  entities?: string[];
+  /** Defaults to `entities` — set only when a subset of the shown lights
+   * should actually be switched by a tap. */
+  toggle_entities?: string[];
+  exclude_toggle_entities?: string[];
+}
+
+// A popup only needs to narrow (never widen) the card it's scoped from, so
+// this is the same filter vocabulary rather than a separate schema — see
+// ClimateOverviewPopupConfig.
+// "default-detail" — HA's own more-info dialog for the tapped tile's first
+// entity, no card of ours involved at all.
+// "default-grid" — today's original behaviour: this same card again,
+// re-scoped to the tapped tile's area/entities (the fields below).
+// "custom" — an arbitrary Lovelace card built from `card`.
+export type LightsOverviewPopupMode = "default-detail" | "default-grid" | "custom";
+
+export interface LightsOverviewPopupConfig extends EntityFilterConfig {
+  mode?: LightsOverviewPopupMode;
+  title?: string;
+  inherit_filters?: boolean;
+  view?: LightsOverviewView;
+  sort?: LightsOverviewSort;
+  show_area?: boolean;
+  show_header?: boolean;
+  group_handling?: LightGroupHandling;
+  toggle_group_handling?: LightGroupHandling;
+  /** Only used when `mode` is "custom" — an arbitrary Lovelace card config
+   * skeleton that replaces the popup entirely. Any string value inside may
+   * reference `[[area_id]]`, `[[entity_id]]`, `[[name]]`, resolved against
+   * the tapped tile before the card is built — see shared/card-template.ts. */
+  card?: Record<string, unknown>;
+}
+
+export interface M3LightsOverviewCardConfig extends EntityFilterConfig {
+  type: string;
+  auto_discover?: boolean;
+  rooms?: LightsOverviewManualRoomConfig[];
+  view?: LightsOverviewView;
+  sort?: LightsOverviewSort;
+  name?: string;
+  icon?: string;
+  show_header?: boolean;
+  show_count?: boolean;
+  show_area?: boolean;
+  hide_empty_rooms?: boolean;
+  group_handling?: LightGroupHandling;
+  /** What a tap actually switches — defaults to the display filter above.
+   * exclude_toggle_entities is a shorthand folded into this at read time. */
+  toggle_filter?: EntityFilterConfig;
+  exclude_toggle_entities?: string[];
+  toggle_inherit_filters?: boolean;
+  toggle_group_handling?: LightGroupHandling;
+  tap_action?: HaActionConfig;
+  hold_action?: HaActionConfig;
+  double_tap_action?: HaActionConfig;
+  popup?: LightsOverviewPopupConfig;
+  on_color?: string;
+  off_color?: string;
+  accent_color?: string;
+  accent_opacity?: number;
+  tile_tint_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  animation?: "auto" | "on" | "off";
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+
+export interface M3GroupCardConfig {
+  type: string;
+  cards: LovelaceCardConfig[];
+  gap?: number;
+  glass_background?: boolean;
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_background?: string;
   card_version?: string;
 }

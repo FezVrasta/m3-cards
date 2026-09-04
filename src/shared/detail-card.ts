@@ -1,19 +1,13 @@
 import { resolveCardTemplate, type CardTemplateTokens } from "./card-template";
 import type { PopupCardHandle } from "./popup-card";
+import "./card-helpers";
 
 // `loadCardHelpers` is a global HA's own frontend attaches to `window` at
 // runtime (the same public API `auto-entities` uses to instantiate arbitrary
 // card types) — no npm dependency needed, and unavailable outside a running
-// HA frontend (e.g. in tests), hence optional.
-export interface CardHelpers {
-  createCardElement(config: Record<string, unknown>): Promise<HTMLElement & PopupCardHandle>;
-}
+// HA frontend (e.g. in tests), hence optional. Declared once, in
+// ./card-helpers, which the nav card's sheet uses for the same global.
 
-declare global {
-  interface Window {
-    loadCardHelpers?: () => Promise<CardHelpers>;
-  }
-}
 
 /**
  * Builds (and reuses) a Lovelace card element from a user-configured card
@@ -81,7 +75,7 @@ export class DetailCardController {
     this._building = true;
     this._skeletonKey = key;
     loadHelpers()
-      .then((helpers) => helpers.createCardElement(resolved))
+      .then((helpers) => helpers.createCardElement(resolved) as HTMLElement & PopupCardHandle)
       .then((el) => {
         el.hass = hass;
         this._el = el;
