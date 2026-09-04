@@ -408,12 +408,33 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   }
 
   protected shouldUpdate(changed: PropertyValues): boolean {
+    // Leaving edit mode has to reach the card, and nothing tells it.
+    //
+    // `_editing` is read from the dashboard around us, not from a property, so
+    // when the editor is saved and the view goes back to normal there is no
+    // change for Lit to notice: updated() never runs again and the drag
+    // handlers are never attached. The drawer then refuses to pull up until the
+    // page is reloaded, which is exactly what it did.
+    //
+    // hass arrives constantly, so that is where the flag is compared. Only for
+    // the one variant that has anything to attach.
+    if (this._variant === "sheet") {
+      const editing = this._editing;
+      if (editing !== this._wasEditing) {
+        this._wasEditing = editing;
+        return true;
+      }
+    }
+
     // Templated fields arrive as a pushed value and call requestUpdate
     // themselves, so only the entity-backed reads have to be declared here.
     // `themes` is covered by hassChangeMatters — a hand-written filter that
     // forgets it keeps the old theme's colours when the card is off screen.
     return hassChangeMatters(changed, this.hass, this._watchedEntities());
   }
+
+  /** Last seen edit-mode state, so shouldUpdate can spot the transition. */
+  private _wasEditing = false;
 
   public connectedCallback(): void {
     super.connectedCallback();

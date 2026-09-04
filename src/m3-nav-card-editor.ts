@@ -16,7 +16,7 @@ import {
   NAV_SIZE_MAX,
   NAV_SIZE_MIN,
 } from "./const";
-import { viewPath, type LovelaceViewLike } from "./shared/dashboard-views";
+import { dashboardViews, viewPath, type LovelaceViewLike } from "./shared/dashboard-views";
 import { localize, type TranslationKey } from "./localize";
 import {
   colorRow,
@@ -320,6 +320,28 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
    * Wrapped because the shape is Home Assistant's private business: anything
    * unexpected just means the button offers nothing, never a broken editor.
    */
+  /**
+   * The dashboard's views, for the target-page picker.
+   *
+   * Walking up the DOM works while the card sits in the view, but the card
+   * editor runs in a dialog at the top of the document, where there is no
+   * Lovelace root above it to ask — the walk came back empty and the picker
+   * quietly fell back to a plain text field, which is what it was supposed to
+   * replace. So when the walk finds nothing, the same websocket call
+   * getStubConfig uses fills this in instead.
+   */
+  @state() private _fetchedViews: LovelaceViewLike[] = [];
+
+  private _viewsRequested = false;
+
+  private _ensureViews(): void {
+    if (this._viewsRequested || !this.hass) return;
+    this._viewsRequested = true;
+    void dashboardViews(this.hass).then((views) => {
+      this._fetchedViews = views;
+    });
+  }
+
   private _dashboardViews(): LovelaceViewLike[] {
     let node: (Node & { lovelace?: { config?: { views?: LovelaceViewLike[] } } }) | null =
       this;
@@ -335,7 +357,8 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         ? (parent as ShadowRoot).host
         : parent) as typeof node;
     }
-    return [];
+    this._ensureViews();
+    return this._fetchedViews;
   }
 
   /**
