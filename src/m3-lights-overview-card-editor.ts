@@ -95,14 +95,35 @@ export class M3LightsOverviewCardEditor extends LitElement implements LovelaceCa
   }
 
   private _discoverySchema(): SchemaEntry[] {
+    // The entity pickers follow the chosen domains: with `switch` added they
+    // have to offer switches, or the filters cannot name the very entities
+    // discovery just found.
+    const domains = this._config?.include_domains?.length
+      ? this._config.include_domains
+      : ["light"];
     return [
       { name: "auto_discover", selector: { boolean: {} } },
+      {
+        name: "include_domains",
+        selector: {
+          select: {
+            multiple: true,
+            mode: "dropdown",
+            options: [
+              { value: "light", label: this._t("editor_lights_domain_light") },
+              { value: "switch", label: this._t("editor_lights_domain_switch") },
+              { value: "fan", label: this._t("editor_lights_domain_fan") },
+              { value: "input_boolean", label: this._t("editor_lights_domain_input_boolean") },
+            ],
+          },
+        },
+      },
       { name: "include_area", selector: { area: { multiple: true } } },
       { name: "exclude_area", selector: { area: { multiple: true } } },
       { name: "include_labels", selector: { label: { multiple: true } } },
       { name: "exclude_labels", selector: { label: { multiple: true } } },
-      { name: "include_entities", selector: { entity: { domain: "light", multiple: true } } },
-      { name: "exclude_entities", selector: { entity: { domain: "light", multiple: true } } },
+      { name: "include_entities", selector: { entity: { domain: domains, multiple: true } } },
+      { name: "exclude_entities", selector: { entity: { domain: domains, multiple: true } } },
       { name: "include_state", selector: this._stateSelector() },
       { name: "exclude_state", selector: this._stateSelector() },
       { name: "group_handling", selector: this._groupHandlingSelector() },
@@ -215,6 +236,7 @@ export class M3LightsOverviewCardEditor extends LitElement implements LovelaceCa
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       auto_discover: "editor_lights_auto_discover",
+      include_domains: "editor_lights_include_domains",
       include_area: "editor_lights_include_area",
       exclude_area: "editor_lights_exclude_area",
       include_labels: "editor_lights_include_labels",
@@ -405,6 +427,7 @@ export class M3LightsOverviewCardEditor extends LitElement implements LovelaceCa
 
     const discoveryData = {
       auto_discover: cfg.auto_discover ?? true,
+      include_domains: cfg.include_domains ?? ["light"],
       include_area: cfg.include_area ?? [],
       exclude_area: cfg.exclude_area ?? [],
       include_labels: cfg.include_labels ?? [],

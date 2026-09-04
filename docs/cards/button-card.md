@@ -44,6 +44,9 @@ hold_action:
 | `entity` | string | – (optional) | Any entity — including `automation.*`, `script.*`, `scene.*`. Can be left empty for a pure action button without an entity state (see below) |
 | `name` | string | entity `friendly_name` | Displayed name |
 | `icon` | string | entity icon, otherwise HA's default icon for the domain/`device_class` | Icon. Without an explicit value, the same default icon HA computes for the native tile card is used (e.g. a thermometer for `device_class: temperature`), not just an icon explicitly set on the entity |
+| `icon_off` | string | – (falls back to `icon`) | Separate icon shown while the entity is off — e.g. a struck-through variant, so the off state reads from the shape, not just the color |
+| `icon_fill` | `tint` \| `solid` | `tint` | How the icon well is filled in the **on** state: `tint` is a soft wash of the accent color with a colored glyph, `solid` fills the well with the accent color and darkens the glyph — bolder, reads first from a distance |
+| `shape_by_state` | boolean | `false` | The button's shape follows the entity state: a capsule while off, the configured `radius` while on, with the icon well morphing between a circle and a rounded square. Animated |
 | `color` | string | `primary` (uses HA's theme accent color) | HA color name (`red`, `dark-grey`, `deep-orange`, ...) **or** any CSS color (`#hex`, `rgb(...)`) for the icon/background in the **on/active** state |
 | `inactive_color` | string | – (default theme grey) | Color for the icon/background in the **off/inactive** state, same format as `color`. Also used when `static_color: true` is set |
 | `invert_colors` | boolean | `false` | Swaps `color` and `inactive_color` (or their defaults) without needing custom colors — e.g. to quickly flip "light in the off state, accent color in the on state" into "accent color in the off state, light in the on state" |

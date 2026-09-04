@@ -6,7 +6,37 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Added
+
+- **Nav Card** — new bottom/side navigation bar (bar, segmented, floating,
+  sheet variants), synced from upstream.
+- **Button Card** — `icon_off`, `icon_fill` (`tint`/`solid`), and
+  `shape_by_state` (capsule-when-off → rounded-square-when-on morph),
+  alongside the existing `chip_buttons` embedding.
+- **Lights Overview** — `include_domains` to discover `switch`/`fan`/
+  `input_boolean` entities alongside `light`; room toggling now uses the
+  generic `homeassistant.turn_on`/`turn_off` service so non-light domains
+  work too.
+- **Room Card** — `mode: manual` to embed arbitrary Lovelace cards instead
+  of auto-discovering an area, plus `power_entities`, `door_entities`,
+  scroll-into-view behavior, and remembering expanded/collapsed state.
+- **Chip Buttons** — scroll rows now fade at whichever edge has content
+  hidden behind it, instead of a bare cut-off.
+
 ### Changed
+
+- **Build pipeline switched from esbuild to Vite** — `npm run build`/`dev`
+  behave the same from the outside (same dev-server on port 5173, same
+  `dist/m3-cards.js` output, same deploy hash workflow); only the
+  underlying bundler changed.
+
+### Removed
+
+- **Weather Card: `group_hourly_conditions` removed** — the hourly strip
+  now always thins itself to fit the card's width (previously opt-in via
+  this flag). If your dashboard sets `group_hourly_conditions: true`, it's
+  simply ignored now — the behavior it enabled is the default. Also,
+  `show_hour_labels` now defaults to `true` instead of `false`.
 
 - **Versioning reset to 0.x** — this fork's version numbers (previously up
   to `2.3.2`) overlapped with upstream (`j0sp0r/m3-cards`), which had its own

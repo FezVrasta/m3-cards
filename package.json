@@ -1,11 +1,11 @@
 {
   "name": "m3-cards",
   "version": "0.1.0",
-  "description": "Material 3 style Lovelace cards for Home Assistant \u2014 38 cards across energy, climate, light and media, household and safety \u2014 built natively with Lit, with no button-card or card-mod dependency.",
+  "description": "Material 3 style Lovelace cards for Home Assistant — 39 cards across energy, climate, light and media, household and safety — built natively with Lit, with no button-card or card-mod dependency.",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
-    "build": "node scripts/build.mjs",
+    "build": "vite build",
     "docs": "node scripts/build-readme.mjs",
     "deploy": "npm run build && bash scripts/deploy.sh",
     "check": "tsc --noEmit && eslint src",
@@ -32,10 +32,11 @@
     "lit": "^3.2.1"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
     "esbuild": "^0.25.0",
     "eslint": "^9.15.0",
+    "typescript": "^5.7.0",
     "typescript-eslint": "^8.15.0",
+    "vite": "^5.4.21",
     "vitest": "^3.0.0"
   }
 }

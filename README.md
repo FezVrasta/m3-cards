@@ -7,7 +7,7 @@
 Material 3–inspired, native Lovelace cards for Home Assistant — built with
 TypeScript + [Lit](https://lit.dev), **without** any dependency on
 `button-card`, `card-mod`, `mod-card`, or `stack-in-card`. A single bundle
-(`m3-cards.js`) registers **38 cards**, all sharing one design language.
+(`m3-cards.js`) registers **39 cards**, all sharing one design language.
 
 New here? Start with the category that matches what you want to show — every
 card links to its full documentation further down.
@@ -89,6 +89,7 @@ card links to its full documentation further down.
 | Card | Type | What it does |
 | --- | --- | --- |
 | [Group](#m3-group-card) | `m3-group-card` | Wraps other cards in one shared frame, so they read as a single card |
+| [Nav](#m3-nav-card) | `m3-nav-card` | A bottom or top navigation bar for the dashboard, in five variants |
 
 *All cards at a glance:*
 
@@ -386,6 +387,9 @@ hold_action:
 | `entity` | string | – (optional) | Any entity — including `automation.*`, `script.*`, `scene.*`. Can be left empty for a pure action button without an entity state (see below) |
 | `name` | string | entity `friendly_name` | Displayed name |
 | `icon` | string | entity icon, otherwise HA's default icon for the domain/`device_class` | Icon. Without an explicit value, the same default icon HA computes for the native tile card is used (e.g. a thermometer for `device_class: temperature`), not just an icon explicitly set on the entity |
+| `icon_off` | string | – (falls back to `icon`) | Separate icon shown while the entity is off — e.g. a struck-through variant, so the off state reads from the shape, not just the color |
+| `icon_fill` | `tint` \| `solid` | `tint` | How the icon well is filled in the **on** state: `tint` is a soft wash of the accent color with a colored glyph, `solid` fills the well with the accent color and darkens the glyph — bolder, reads first from a distance |
+| `shape_by_state` | boolean | `false` | The button's shape follows the entity state: a capsule while off, the configured `radius` while on, with the icon well morphing between a circle and a rounded square. Animated |
 | `color` | string | `primary` (uses HA's theme accent color) | HA color name (`red`, `dark-grey`, `deep-orange`, ...) **or** any CSS color (`#hex`, `rgb(...)`) for the icon/background in the **on/active** state |
 | `inactive_color` | string | – (default theme grey) | Color for the icon/background in the **off/inactive** state, same format as `color`. Also used when `static_color: true` is set |
 | `invert_colors` | boolean | `false` | Swaps `color` and `inactive_color` (or their defaults) without needing custom colors — e.g. to quickly flip "light in the off state, accent color in the on state" into "accent color in the off state, light in the on state" |
@@ -1400,9 +1404,10 @@ temperature curve with gradient fill, hourly precipitation bars, sunrise/
 sunset markers on the curve, and an optional daily overview. The header and
 chart can be toggled independently (`show_current` / `show_chart`), so the
 same card can be trimmed down for a compact mobile layout. At higher `hours`
-counts, the icon/temperature strip above the curve can be set to fit the
-card's actual width (`group_hourly_conditions`) instead of packing in every
-hour.
+counts, the icon/temperature strip above the curve automatically thins out
+to whichever regular interval (every 2nd, 3rd, ... hour) fits the card's
+actual width, keeping hour labels, icons and temperatures aligned to the
+same columns.
 
 <details>
 <summary>Configuration, examples & options</summary>
@@ -1452,8 +1457,7 @@ daily list collapses by default and expands via a button.
 | `show_days_toggle` | boolean | `true` | Collapsible from 4 days on with a "Show N more" button; `false` = always show all configured days directly |
 | `chips` | list (`apparent_temperature`\|`wind_speed`\|`humidity`\|`pressure`\|`uv_index`\|`visibility`) | apparent temp, wind, humidity | Header chips shown |
 | `show_sun` | boolean | `true` | Sunrise/sunset markers on the curve (from `sun.sun`) |
-| `show_hour_labels` | boolean | `false` | Hour-axis labels above the curve |
-| `group_hourly_conditions` | boolean | `false` | Fit the icon/temperature strip to the card's actual width instead of packing in every hour, sampling icons and temperatures at the same regular interval (e.g. every 3rd hour) |
+| `show_hour_labels` | boolean | `true` | Hour-axis labels above the curve |
 | `show_hourly_icons` | boolean | `true` | Weather icons in the hourly strip |
 | `show_hourly_temperatures` | boolean | `true` | Temperatures in the hourly strip |
 | `show_temp_axis` | boolean | `false` | Overlay temperature y-axis on the curve |
@@ -3359,6 +3363,62 @@ heading that already says Today the badge would say nothing.
 | `show_next_chip` | `false` | Header chip with the next event and how far off it is |
 | `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
 | `navigation_path` | `/calendar` | Where `navigate` goes, and the dialog's button |
+
+</details>
+
+## M3 Nav Card
+
+A navigation bar rather than a data card: it links to the views of the
+dashboard it lives on. Five variants cover the usual places a bar goes —
+`header`/`footer` dock to the top or bottom of the view, `segmented` sits
+inline in the card flow as a pill group, `floating` detaches into a rounded
+bar over the content, and `sheet` is `floating` plus a drawer that pulls up
+over it for extra shortcuts.
+
+Adding the card with no configuration fills it in from the dashboard it was
+added to: the first few views become entries, a few more go behind an
+optional round action button, and the rest are left for the editor.
+
+<details>
+<summary>Configuration, examples & options</summary>
+
+<img src="docs/images/nav-card.png" alt="Nav Card" width="500">
+<img src="docs/images/nav-card-sheet-list.png" alt="Nav Card sheet, list style" width="500">
+<img src="docs/images/nav-card-sheet-grid.png" alt="Nav Card sheet, grid style" width="500">
+
+```yaml
+type: custom:m3-nav-card
+style: footer
+items:
+  - path: /lovelace/home
+    icon: mdi:home
+    name: Home
+  - path: /lovelace/climate
+    icon: mdi:thermostat
+    name: Climate
+  - path: /lovelace/lights
+    icon: mdi:lightbulb-group
+    name: Lights
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `style` | string | `footer` | `header`, `footer`, `segmented`, `floating`, or `sheet` |
+| `position` | string | `bottom` | Which edge a docked variant attaches to (ignored by `segmented`) |
+| `items` | list | – | The bar's entries — each with `path`, `icon`, `name`, and optional actions, badge and submenu |
+| `desktop` / `mobile` | object | – | Override style, width and labels separately per width, split at `breakpoint` |
+| `sheet_items`, `sheet_cards` | list | – | Shortcut tiles and/or nested Lovelace cards inside the drawer (`style: sheet` only) |
+| `label_visibility` | string | `always` | `always`, `active_only`, `inactive_only`, or `never` |
+| `label_position` | string | `below` | Text relative to the icon: `below`, `above`, `left`, `right` |
+| `active_style` | string | – | How the current entry's marker is drawn |
+| `action_button` | object | – | A round button beside the bar, with its own tap action or a speed-dial menu |
+| `size` | number | `1` | Proportional scale for every measurement, `0.7`–`1.5` |
+| `accent_color` | string | dashboard accent | Chrome color; a data-card hue would fight the bar's role as pure navigation frame |
+
+The full option list — badges, submenus, page transitions, gestures, glass
+background — is exposed through the visual editor.
 
 </details>
 

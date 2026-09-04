@@ -10,13 +10,37 @@ import type { HomeAssistant } from "../types";
 // survives a different browser, syncs between phone and tablet, and an
 // automation can fold a section away. Without one the browser remembers it,
 // which is per-device and good enough for a display preference.
+//
+// How long the browser remembers is a real choice, not a detail. Kept on the
+// device, a section left open stays open for good — which is what someone who
+// arranged the dashboard once wants, and a nuisance for someone who wants the
+// overview back every time they come to it. Kept for the session, the fold
+// follows you around the dashboard and is gone when the app is next started.
+
+/** Where a fold is remembered when no helper entity holds it. */
+export type CollapseMemory = "device" | "session";
 
 export interface CollapseTarget {
-  /** An `input_boolean` holding the state, or nothing for localStorage. */
+  /** An `input_boolean` holding the state, or nothing for browser storage. */
   entity?: string;
-  /** Identifies this collapsible in localStorage. */
+  /** Identifies this collapsible in browser storage. */
   storageKey: string;
   defaultCollapsed?: boolean;
+  /** Defaults to `device`, which is what every card did before the choice. */
+  memory?: CollapseMemory;
+}
+
+/**
+ * Reading `sessionStorage` can throw outright rather than return null — a
+ * browser set to block site data does that — so even choosing the store is
+ * guarded.
+ */
+function storeFor(memory: CollapseMemory | undefined): Storage | null {
+  try {
+    return memory === "session" ? window.sessionStorage : window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function readCollapsed(
@@ -32,8 +56,8 @@ export function readCollapsed(
     return target.defaultCollapsed ?? false;
   }
   try {
-    const stored = window.localStorage.getItem(target.storageKey);
-    if (stored !== null) return stored === "1";
+    const stored = storeFor(target.memory)?.getItem(target.storageKey);
+    if (stored != null) return stored === "1";
   } catch {
     // Private mode, or storage disabled. The default is still correct.
   }
@@ -52,7 +76,7 @@ export function writeCollapsed(
     return;
   }
   try {
-    window.localStorage.setItem(target.storageKey, value ? "1" : "0");
+    storeFor(target.memory)?.setItem(target.storageKey, value ? "1" : "0");
   } catch {
     // Not being able to remember is survivable; not being able to fold would
     // not be.
