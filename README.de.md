@@ -42,6 +42,8 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Media](#m3-media-card) | `m3-media-card` | Media-Player mit Cover-Farben, Wellen-Slidern und Bibliotheks-Browser |
 | [Button](#m3-button-card) | `m3-button-card` | Generische Button-/Entity-Karte für jede Domain |
 | [Cover](#m3-cover-card) | `m3-cover-card` | Rollläden/Jalousien, die sich den Gerätefähigkeiten anpassen, plus Gruppenmodus |
+| [Lights Overview](#m3-lights-overview-card) | `m3-lights-overview-card` | Alle Leuchten nach Bereich gruppiert, mit getrennten Filtern für Anzeige und Schalten |
+| [Chip Buttons](#m3-chip-buttons-card) | `m3-chip-buttons-card` | Eine Reihe kompakter Entitäts-Pillen, jede mit eigenen Aktionen |
 
 ### 🚪 Präsenz & Sicherheit
 
@@ -64,6 +66,7 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Status](#m3-status-card) | `m3-status-card` | Große Zahlen, Texte und Ja/Nein-Zustände, mit einer Regelliste dahinter |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Abschnitts-Überschriften zwischen den Karten: schlicht, mit Status, als Trenner oder aufklappbar |
 | [Nav](#m3-nav-card) | `m3-nav-card` | Eine Navigationsleiste fürs Dashboard, in fünf Varianten, mit ausziehbarer Schublade |
+| [Group](#m3-group-card) | `m3-group-card` | Mehrere Karten auf einer gemeinsamen Fläche, damit sie als ein Block gelesen werden |
 | [Room](#m3-room-card) | `m3-room-card` | Eine Karte je Bereich: alle gefundenen Gerätetypen, Klimawerte und Präsenz |
 | [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Zielfeuchte, Modus, Lüfterstufe und Zusatzfunktionen — auch ohne humidifier-Entität |
 | [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda und Monatsraster für beliebig viele Kalender |
@@ -2543,18 +2546,6 @@ entity: input_datetime.weckzeit
 
 </details>
 
-## Entwicklung
-
-```bash
-npm install
-npm run dev     # Watch-Build nach dist/m3-cards.js
-npm run build    # Produktions-Build
-npm run lint     # Typecheck
-```
-
-Zum lokalen Testen `dist/m3-cards.js` nach `config/www/` kopieren und als
-Lovelace-Ressource (`/local/m3-cards.js`, Typ „JavaScript-Modul“) einbinden.
-
 ## M3 Clock Card
 
 Eine Uhr in fünf Stilen, alle in derselben Designsprache. Sie liest **keine
@@ -3817,6 +3808,18 @@ cards:
 | `card_background` | string | – | Hintergrundfarbe überschreiben |
 
 </details>
+
+## Entwicklung
+
+```bash
+npm install
+npm run dev     # Watch-Build nach dist/m3-cards.js
+npm run build    # Produktions-Build
+npm run lint     # Typecheck
+```
+
+Zum lokalen Testen `dist/m3-cards.js` nach `config/www/` kopieren und als
+Lovelace-Ressource (`/local/m3-cards.js`, Typ „JavaScript-Modul“) einbinden.
 
 ## Dank
 

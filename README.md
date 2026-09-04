@@ -42,6 +42,8 @@ card links to its full documentation further down.
 | [Media](#m3-media-card) | `m3-media-card` | Media player with artwork colors, wave sliders and a library browser |
 | [Button](#m3-button-card) | `m3-button-card` | Generic button/entity card for any domain |
 | [Cover](#m3-cover-card) | `m3-cover-card` | Blinds/shutters that adapt to the device's capabilities, plus a group mode |
+| [Lights Overview](#m3-lights-overview-card) | `m3-lights-overview-card` | Every light grouped by area, with separate display and toggle filters |
+| [Chip Buttons](#m3-chip-buttons-card) | `m3-chip-buttons-card` | A row of compact entity pills, each with its own actions |
 
 ### 🚪 Presence & safety
 
@@ -64,6 +66,7 @@ card links to its full documentation further down.
 | [Status](#m3-status-card) | `m3-status-card` | Big numbers, text and yes/no states, with a rule list behind them |
 | [Heading](#m3-heading-card) | `m3-heading-card` | Section headings between the cards: simple, with status, a divider, or collapsible |
 | [Nav](#m3-nav-card) | `m3-nav-card` | A navigation bar for the dashboard, in five variants, with a pull-up drawer |
+| [Group](#m3-group-card) | `m3-group-card` | Several cards on one shared surface, so they read as a single block |
 | [Room](#m3-room-card) | `m3-room-card` | One card per area: every device type it finds, climate readings and presence |
 | [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Target humidity, mode, fan speed and extras — and it need not be a humidifier entity |
 | [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda and month grid for any number of calendars |
@@ -2490,19 +2493,6 @@ entity: input_datetime.wake_up
 
 </details>
 
-## Development
-
-```bash
-npm install
-npm run dev     # watch build to dist/m3-cards.js
-npm run build    # production build
-npm run lint     # typecheck
-```
-
-For local testing, copy `dist/m3-cards.js` to `config/www/` and add
-it as a Lovelace resource (`/local/m3-cards.js`, type "JavaScript
-module").
-
 ## M3 Clock Card
 
 A clock in five styles, all sharing the same design language. It reads no
@@ -3732,6 +3722,19 @@ cards:
 | `card_background` | string | – | Override background color |
 
 </details>
+
+## Development
+
+```bash
+npm install
+npm run dev     # watch build to dist/m3-cards.js
+npm run build    # production build
+npm run lint     # typecheck
+```
+
+For local testing, copy `dist/m3-cards.js` to `config/www/` and add
+it as a Lovelace resource (`/local/m3-cards.js`, type "JavaScript
+module").
 
 ## Credits
 
