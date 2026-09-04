@@ -417,8 +417,16 @@ export class M3CostCard extends LitElement implements LovelaceCard {
       return { percent, overBudget: percent > 100 };
     })();
 
-    const maxBucket = Math.max(...this._bucketValues, 0.01);
     const avgPerBucket = elapsed > 0 ? this._totalSoFar / elapsed : 0;
+    // The average has to be in the scale, because the future bars are drawn
+    // with it. Taking the maximum over the recorded days alone left whatever is
+    // drawn from the average unbounded — and while the period is being switched
+    // the two disagree for a moment: the new month's days are already empty, so
+    // the maximum falls to the floor below, while the average still belongs to
+    // the old one — one month's total divided by the other month's elapsed days.
+    // Nothing bounded the result, so the dashed bars shot up over the amount and
+    // the comparison chip for a frame before the next render put them right.
+    const maxBucket = Math.max(...this._bucketValues, avgPerBucket, 0.01);
     const showBars = period !== "day";
 
     return html`
@@ -570,7 +578,14 @@ export class M3CostCard extends LitElement implements LovelaceCard {
     const isCurrent = index === elapsed - 1;
     const isFuture = index >= elapsed;
     const barValue = isFuture ? avgPerBucket : value;
-    const heightPx = Math.max(COST_BAR_MIN_HEIGHT, (barValue / maxBucket) * COST_BAR_HEIGHT);
+    // Clamped as well as scaled. The scale above already covers everything that
+    // is drawn, so this changes nothing in normal use — it is here so that no
+    // future arithmetic slip can put a bar outside the chart again. The row
+    // cannot simply clip, because the value bubble deliberately sits above it.
+    const heightPx = Math.max(
+      COST_BAR_MIN_HEIGHT,
+      Math.min(1, barValue / maxBucket) * COST_BAR_HEIGHT,
+    );
     const active = this._activeBarIndex === index;
     const currency = this._config?.currency || DEFAULT_COST_CURRENCY;
     const { number, symbol } = formatCurrencyParts(barValue, currency, this._language);

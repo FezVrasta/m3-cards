@@ -49,6 +49,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Home Assistant's own `visibility` feature already does that for every card,
   and the card's `hidden` is scoped to what only a template can answer.
 
+- **Cost card: the projected bars shot off the top of the card when the month
+  was changed.** For one frame the elapsed-day count already belonged to the new
+  period while the total still belonged to the old one, so the daily average —
+  one month's total over the other month's days — came out several times too
+  large. That average is what the dashed future bars are drawn with, and it was
+  the one value the scale did not take into account: the maximum was over the
+  recorded days alone. The bars ran up over the amount and the comparison chip
+  until the next render corrected them. The average is now part of the scale,
+  and a bar's height is clamped to the chart on top of that. The row itself
+  cannot clip, because the value bubble deliberately sits above it.
+
 - **Nav card: a tap outside an open drawer shuts it.** Every sheet behaves this
   way and this one did not: the only way back was the grip or a drag. It is a
   surface of its own rather than a listener on the document, because the tap has
@@ -550,6 +561,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   ebenfalls **nicht** nachgebaut — Home Assistants eigenes `visibility` kann das
   längst für jede Karte, und `hidden` bleibt auf das beschränkt, was nur eine
   Vorlage beantworten kann.
+
+- **Kostenkarte: Beim Monatswechsel schossen die Prognosebalken oben aus der
+  Karte heraus.** Für einen Frame gehörte die Zahl der vergangenen Tage schon
+  zur neuen Periode, die Summe aber noch zur alten — der Tagesdurchschnitt war
+  damit die Summe des einen Monats geteilt durch die Tage des anderen und um ein
+  Vielfaches zu groß. Genau mit diesem Durchschnitt werden die gestrichelten
+  Balken gezeichnet, und er war der einzige Wert, den die Skala nicht kannte:
+  Das Maximum lief nur über die erfassten Tage. Die Balken liefen über Betrag
+  und Vergleichs-Chip, bis der nächste Frame es richtigstellte. Der Durchschnitt
+  gehört jetzt zur Skala, und zusätzlich wird die Balkenhöhe auf das Diagramm
+  begrenzt. Die Reihe selbst kann nicht abschneiden, weil die Wertblase
+  absichtlich über ihr sitzt.
 
 - **Nav-Karte: Ein Tipp außerhalb schließt die geöffnete Schublade.** Jedes
   Sheet macht das, dieses nicht: zurück kam man nur über den Griff oder durch
