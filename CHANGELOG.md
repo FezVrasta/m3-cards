@@ -38,13 +38,13 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   simply ignored now — the behavior it enabled is the default. Also,
   `show_hour_labels` now defaults to `true` instead of `false`.
 
-- **Versioning reset to 0.x** — this fork's version numbers (previously up
-  to `2.3.2`) overlapped with upstream (`j0sp0r/m3-cards`), which had its own
-  unrelated `2.3.0` in progress. Numbers now start over at `0.1.0` on an
-  independent line so the two projects can no longer be confused in issue
-  reports. Existing users on `v2.3.x` of this fork will need to reinstall or
-  manually pin, since HACS won't offer `0.1.0` as an update over a higher
-  version number.
+- **Versions now carry a `-uhafnir.N` suffix** — this fork's numbers
+  (previously plain, up to `2.3.2`) overlapped with upstream
+  (`j0sp0r/m3-cards`), which had its own unrelated `2.3.0` in progress.
+  Releases continue from the same line but append `-uhafnir.N` (e.g.
+  `2.4.0-uhafnir.1`), so a version can no longer be confused with an
+  upstream release of the same number while still comparing higher than
+  `2.3.2`, meaning HACS keeps offering updates as usual.
 - **HACS repository link fixed** — the "Open in HACS" badge in the README
   pointed at `j0sp0r/m3-cards` (a leftover from the fork) instead of this
   repository, sending installers to the upstream 36-card project instead of
