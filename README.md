@@ -196,6 +196,9 @@ collapsible: true
 default_collapsed: true
 ```
 
+Setting a header `tap_action` hands the header to that action and hides the
+chevron, since the header no longer folds anything — see "Tapping the header".
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -2894,6 +2897,34 @@ otherwise more-info for the first entity. Vacuums and locks have no meaningful
 toggle, so a tap opens more-info instead of the card guessing at something a
 person would rather decide.
 
+### Tapping the header
+
+The header is the card's title bar, and by default it either folds the card
+(with `collapsible: true`) or does nothing at all. `tap_action` gives it a
+normal Home Assistant action instead — most usefully `navigate`, so the room
+card on an overview becomes the way into that room's own view.
+
+```yaml
+type: custom:m3-room-card
+area: living_room
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/living-room
+```
+
+Any action works: `navigate`, `url`, `perform-action`, `more-info`, `toggle`,
+or `none` to make the header deliberately inert.
+
+A tap cannot both fold the card and open a view, so `tap_action` takes the
+header over from the fold, and the chevron goes with it — it promises a fold
+the header no longer performs. The rest of `collapsible` is untouched: the
+stored state is still read and applied, so `collapse_state_entity` and an
+automation can still fold the card while its header navigates.
+
+Note this is card-level and separate from `categories[].tap_action`, which
+governs a tap on one category tile inside the body, and from `detail_path`,
+which opens on a hold of a tile.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -2903,6 +2934,7 @@ person would rather decide.
 | `cards` | list | – | Lovelace cards drawn inside the folding body — below the tiles in `auto`, on their own in `manual`. Written as in a view |
 | `cards_columns` | number | `2` | How many of those cards sit side by side |
 | `name` / `icon` | string | the area's own | The icon falls back to a guess from the room name |
+| `tap_action` | action | – | What a tap on the header does. Unset, it folds the card when `collapsible` is on. Set, it takes the header over from the fold and the chevron goes |
 | `detail_path` | string | – | Opened on hold |
 | `extra_domains` | list | – | Domains beyond the built-in nine |
 | `category_order` | list | – | Domains in the order you want them; the rest follow behind |

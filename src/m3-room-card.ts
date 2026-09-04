@@ -65,7 +65,7 @@ import {
 import { localize, type TranslationKey } from "./localize";
 import { STANDARD_EASING, shouldAnimate } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
-import { handleAction } from "./shared/actions";
+import { handleAction, isActionable } from "./shared/actions";
 import {
   buildCssVars,
   fillColor,
@@ -304,6 +304,28 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     e.stopPropagation();
     this._folded = !this._folded;
     writeCollapsed(this.hass, this._foldTarget, this._folded);
+  };
+
+  /**
+   * The header's tap. With no `tap_action` configured this is the fold toggle
+   * and nothing else, which is what the header has always done; with one it is
+   * that action instead.
+   *
+   * A tap cannot both fold the card and open a view, so the two do not share
+   * the header — the explicit action wins over the implicit fold. `collapsible`
+   * is otherwise untouched: the stored fold state is still read and applied on
+   * update, so a card folded by its `collapse_state_entity` or by another
+   * dashboard still opens and closes; only this header stops toggling it.
+   */
+  private _onHeaderTap = (e: Event): void => {
+    const action = this._config?.tap_action;
+    if (!action) {
+      this._toggleFold(e);
+      return;
+    }
+    e.stopPropagation();
+    if (!isActionable(action)) return;
+    handleAction(this, this.hass, action);
   };
 
   public getCardSize(): number {
@@ -1401,6 +1423,17 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     });
     const radius = resolveCornerRadius(cfg.radius ?? DEFAULT_ROOM_RADIUS, cfg.corners);
 
+    // A configured `tap_action` takes the header over from the fold. It is the
+    // presence of the option that decides, not whether it does anything:
+    // `action: none` is how you say the header should be inert, and it would
+    // not be inert if an unusable action quietly handed the fold back.
+    const headerAction = cfg.tap_action;
+    const headerTappable = headerAction ? isActionable(headerAction) : !!cfg.collapsible;
+    // The chevron is a promise that the header folds the card. Once an action
+    // is bound to the header that stops being true, so the chevron goes rather
+    // than sitting there pointing at something that no longer happens.
+    const showFoldArrow = !!cfg.collapsible && !headerAction;
+
     return html`
       <ha-card style=${`${cssVars} border-radius: ${radius};`}>
         <div
@@ -1410,12 +1443,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           style=${`border-radius: ${radius};${painted ? ` background: ${painted};` : ""}`}
         >
           <div
-            class="header ${cfg.collapsible ? "tappable" : ""}"
-            role=${cfg.collapsible ? "button" : nothing}
-            tabindex=${cfg.collapsible ? "0" : nothing}
-            aria-expanded=${cfg.collapsible ? String(!this._folded) : nothing}
-            @click=${cfg.collapsible ? this._toggleFold : nothing}
-            @keydown=${cfg.collapsible ? activateOnKey(this._toggleFold) : nothing}
+            class="header ${headerTappable ? "tappable" : ""}"
+            role=${headerTappable ? "button" : nothing}
+            tabindex=${headerTappable ? "0" : nothing}
+            aria-expanded=${showFoldArrow ? String(!this._folded) : nothing}
+            @click=${headerTappable ? this._onHeaderTap : nothing}
+            @keydown=${headerTappable ? activateOnKey(this._onHeaderTap) : nothing}
           >
             <div
               class="room-icon"
@@ -1428,7 +1461,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
               <div class="name" title=${name}>${name}</div>
               <div class="subtitle">${subtitle}</div>
             </div>
-            ${cfg.collapsible ? this._renderFoldArrow(accent) : nothing}
+            ${showFoldArrow ? this._renderFoldArrow(accent) : nothing}
           </div>
           <div class="body">
             <div class="body-inner">

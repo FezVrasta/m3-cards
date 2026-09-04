@@ -193,6 +193,10 @@ collapsible: true
 default_collapsed: true
 ```
 
+Eine `tap_action` auf der Kopfzeile übergibt diese der Aktion und blendet den
+Pfeil aus, da die Kopfzeile dann nichts mehr einklappt — siehe „Die Kopfzeile
+antippen".
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -2959,6 +2963,36 @@ Ergebnis zu dem passt, was die Kachel angezeigt hat. Ein langer Druck öffnet
 haben kein sinnvolles Umschalten, dort öffnet ein Tap die Detailansicht, statt
 dass die Karte etwas rät, das man lieber selbst entscheidet.
 
+### Die Kopfzeile antippen
+
+Die Kopfzeile ist die Titelleiste der Karte und klappt sie standardmäßig
+entweder ein (mit `collapsible: true`) oder tut gar nichts. `tap_action` legt
+stattdessen eine gewöhnliche Home-Assistant-Aktion darauf — am nützlichsten
+`navigate`, womit die Raumkarte auf einer Übersicht zum Weg in die eigene
+Ansicht dieses Raums wird.
+
+```yaml
+type: custom:m3-room-card
+area: wohnzimmer
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/wohnzimmer
+```
+
+Jede Aktion ist möglich: `navigate`, `url`, `perform-action`, `more-info`,
+`toggle`, oder `none`, um die Kopfzeile bewusst untätig zu lassen.
+
+Ein Tap kann nicht zugleich einklappen und eine Ansicht öffnen, deshalb
+übernimmt `tap_action` die Kopfzeile vom Einklappen — und der Pfeil geht mit,
+denn er verspricht ein Einklappen, das die Kopfzeile nicht mehr ausführt. Der
+Rest von `collapsible` bleibt unberührt: der gespeicherte Zustand wird weiter
+gelesen und angewendet, `collapse_state_entity` und eine Automatisierung können
+die Karte also weiterhin einklappen, während ihre Kopfzeile navigiert.
+
+Das gilt für die ganze Karte und ist etwas anderes als `categories[].tap_action`
+für einen Tap auf eine einzelne Kategorie-Kachel im Inhalt, und als
+`detail_path`, das bei langem Druck auf eine Kachel öffnet.
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -2968,6 +3002,7 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `cards` | Liste | – | Lovelace-Karten im aufklappbaren Bereich — unter den Kacheln bei `auto`, allein bei `manual`. Schreibweise wie in einer Ansicht |
 | `cards_columns` | number | `2` | Wie viele dieser Karten nebeneinander stehen |
 | `name` / `icon` | string | aus dem Bereich | Das Icon wird sonst aus dem Raumnamen geraten |
+| `tap_action` | Aktion | – | Was ein Tap auf die Kopfzeile tut. Ohne Eintrag klappt sie die Karte ein, sofern `collapsible` aktiv ist. Mit Eintrag übernimmt die Aktion die Kopfzeile und der Pfeil entfällt |
 | `detail_path` | string | – | Öffnet sich bei langem Druck |
 | `extra_domains` | Liste | – | Domains über die neun eingebauten hinaus |
 | `category_order` | Liste | – | Domains in gewünschter Reihenfolge, der Rest folgt dahinter |

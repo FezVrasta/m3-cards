@@ -327,6 +327,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       },
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
+      { name: "tap_action", selector: { ui_action: {} } },
       { name: "detail_path", selector: { text: {} } },
       {
         name: "cards_columns",
@@ -462,6 +463,11 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     ]) {
       if (next[key] === "") delete next[key];
     }
+    // `ui_action` clears to undefined rather than "", and an absent key is not
+    // the same as one explicitly set to undefined once the config is written
+    // back out — the card reads the presence of `tap_action` to decide whether
+    // the header still folds.
+    if (next.tap_action === undefined) delete next.tap_action;
     this._emit(next as unknown as M3RoomCardConfig);
   }
 
@@ -513,9 +519,14 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: px } });
   }
 
-  /** The one choice that changes what the rest of the editor is for. */
-  private _computeHelper = (schema: SchemaEntry): string | undefined =>
-    schema.name === "mode" ? this._t("editor_room_mode_helper") : undefined;
+  /** `mode` changes what the rest of the editor is for; `tap_action` changes
+   * what the header does, which is worth saying before someone sets it and
+   * wonders where the fold arrow went. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined => {
+    if (schema.name === "mode") return this._t("editor_room_mode_helper");
+    if (schema.name === "tap_action") return this._t("editor_room_tap_action_helper");
+    return undefined;
+  };
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
@@ -578,6 +589,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                 mode: cfg.mode ?? "auto",
                 name: cfg.name ?? "",
                 icon: cfg.icon ?? "",
+                tap_action: cfg.tap_action,
                 detail_path: cfg.detail_path ?? "",
                 cards_columns: cfg.cards_columns ?? 2,
               }}

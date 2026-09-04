@@ -1599,6 +1599,13 @@ export interface M3RoomCardConfig {
   cards_columns?: number;
   name?: string;
   icon?: string;
+  /**
+   * What a tap on the card's header does. Unset, the header toggles the fold
+   * when `collapsible` is on and does nothing otherwise — the behaviour the
+   * card has always had. Set, it runs the action instead, and the fold chevron
+   * goes away because the header no longer folds anything.
+   */
+  tap_action?: HaActionConfig;
   /** Opened on hold; falls back to more-info of the category's first entity. */
   detail_path?: string;
   /** Domains beyond the built-in nine, e.g. ["water_heater"]. */

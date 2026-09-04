@@ -4,6 +4,54 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **The room card's header can run an action**, via a card-level `tap_action`.
+  Until now the header either folded the card or did nothing, and the only
+  action the card offered was `detail_path` on a long press of a category tile
+  — so a room card on an overview had no way to be the door into that room's
+  own view. `tap_action` takes the standard Home Assistant action config and
+  goes through the same handler the heading and status cards use, so
+  `navigate`, `url`, `perform-action`, `more-info` and `toggle` all behave as
+  they do elsewhere.
+
+  A tap cannot both fold the card and open a view, so a configured
+  `tap_action` takes the header over from the fold and the chevron goes with
+  it — it promises a fold the header no longer performs. Everything else about
+  `collapsible` is untouched: the stored state is still read and applied, so
+  `collapse_state_entity` and an automation can still fold a card whose header
+  navigates. Leaving `tap_action` unset changes nothing at all.
+
+  ```yaml
+  type: custom:m3-room-card
+  area: living_room
+  tap_action:
+    action: navigate
+    navigation_path: /lovelace/living-room
+  ```
+
+### Hinzugefügt
+
+- **Die Kopfzeile der Raumkarte kann eine Aktion ausführen**, über eine
+  `tap_action` auf Kartenebene. Bisher klappte die Kopfzeile die Karte ein oder
+  tat nichts, und die einzige Aktion der Karte war `detail_path` bei langem
+  Druck auf eine Kategorie-Kachel — eine Raumkarte auf einer Übersicht konnte
+  also nicht die Tür in die eigene Ansicht dieses Raums sein. `tap_action`
+  nimmt die übliche Home-Assistant-Aktionskonfiguration und läuft über
+  denselben Handler wie bei der Überschriften- und der Status-Karte, `navigate`,
+  `url`, `perform-action`, `more-info` und `toggle` verhalten sich also wie
+  überall sonst.
+
+  Ein Tap kann nicht zugleich einklappen und eine Ansicht öffnen, deshalb
+  übernimmt eine gesetzte `tap_action` die Kopfzeile vom Einklappen, und der
+  Pfeil geht mit — er verspricht ein Einklappen, das die Kopfzeile nicht mehr
+  ausführt. Alles Übrige an `collapsible` bleibt unberührt: der gespeicherte
+  Zustand wird weiter gelesen und angewendet, `collapse_state_entity` und eine
+  Automatisierung können eine Karte also weiterhin einklappen, deren Kopfzeile
+  navigiert. Ohne `tap_action` ändert sich nichts.
+
 ## [2.3.2]
 
 Editor tidying for the nav card, following 2.3.1.
