@@ -70,6 +70,7 @@ export class M3ClimateCardEditor
     return [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
+      { name: "show_header_status", selector: { boolean: {} } },
       { name: "show_presets", selector: { boolean: {} } },
       {
         name: "preset_style",
@@ -83,6 +84,7 @@ export class M3ClimateCardEditor
           },
         },
       },
+      { name: "show_control_labels", selector: { boolean: {} } },
       { name: "show_sensors", selector: { boolean: {} } },
       {
         name: "hidden_modes",
@@ -158,6 +160,7 @@ export class M3ClimateCardEditor
   private _behaviorSchema(): SchemaEntry[] {
     return [
       { name: "animations", selector: { boolean: {} } },
+      { name: "show_action_glow", selector: { boolean: {} } },
       {
         name: "unavailable_style",
         selector: {
@@ -194,6 +197,7 @@ export class M3ClimateCardEditor
       entity: "editor_entity",
       name: "editor_name",
       icon: "editor_icon",
+      show_header_status: "editor_show_header_status",
       show_presets: "editor_show_presets",
       show_sensors: "editor_show_sensors",
       temperature_sensor: "editor_temperature_sensor",
@@ -203,10 +207,12 @@ export class M3ClimateCardEditor
       battery_threshold: "editor_battery_threshold",
       glass_background: "editor_glass_background",
       preset_style: "editor_preset_style",
+      show_control_labels: "editor_show_control_labels",
       hidden_modes: "editor_hidden_modes",
       temperature_chip_placement: "editor_temperature_chip_placement",
       height: "editor_height",
       animations: "editor_animations",
+      show_action_glow: "editor_show_action_glow",
       unavailable_style: "editor_unavailable_style",
       ...radiusLabelMap,
     };
@@ -308,8 +314,10 @@ export class M3ClimateCardEditor
     const contentData = {
       name: this._config.name,
       icon: this._config.icon,
+      show_header_status: this._config.show_header_status ?? true,
       show_presets: this._config.show_presets ?? true,
       preset_style: this._config.preset_style ?? "chip",
+      show_control_labels: this._config.show_control_labels ?? true,
       show_sensors: this._config.show_sensors ?? true,
       hidden_modes: this._config.hidden_modes ?? [],
     };
@@ -327,6 +335,7 @@ export class M3ClimateCardEditor
 
     const behaviorData = {
       animations: this._config.animations ?? true,
+      show_action_glow: this._config.show_action_glow ?? true,
       unavailable_style: this._config.unavailable_style ?? "dimmed",
       height: this._config.height,
     };
@@ -440,6 +449,7 @@ export class M3ClimateCardEditor
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_show_action_glow_helper")}</div>
           </div>
         </ha-expansion-panel>
 

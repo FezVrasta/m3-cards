@@ -104,6 +104,9 @@ export interface M3ClimateCardConfig {
   minus_opacity?: number;
   glass_background?: boolean;
   preset_style?: "chip" | "pill";
+  /** Show the text labels on the mode / preset buttons in the control row.
+   *  `false` leaves both as icon-only circles. */
+  show_control_labels?: boolean;
   temperature_chip_placement?: "info_row" | "header";
   hidden_modes?: string[];
   height?: number;
@@ -113,6 +116,8 @@ export interface M3ClimateCardConfig {
   /** @deprecated use `animation` — kept for old-config migration only. */
   animations?: boolean;
   unavailable_style?: "dimmed" | "normal" | "hidden";
+  show_action_glow?: boolean;
+  show_header_status?: boolean;
   card_version?: string;
 }
 
@@ -143,6 +148,7 @@ export interface M3ClimateCardMiniConfig {
   /** @deprecated use `animation` — kept for old-config migration only. */
   animations?: boolean;
   unavailable_style?: "dimmed" | "normal" | "hidden";
+  show_action_glow?: boolean;
   card_version?: string;
 }
 

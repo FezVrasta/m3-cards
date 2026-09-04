@@ -152,6 +152,17 @@ The button opens the repository straight in your own Home Assistant — press
 
 ## M3 Climate Card
 
+Both climate cards draw an **action-glow frame** around their outer edge in the
+heat/cool accent colour, so a wall of thermostats tells you at a glance which
+rooms are calling for heat. It has two strengths: full while the entity's
+`hvac_action` reports `heating`/`cooling`, and dimmed while `heat`/`cool` is the
+selected mode but the equipment is idle. That second level exists because many
+integrations derive `hvac_action` from the physical valve — Homematic's
+eTRV/HEATING devices, for instance, report `idle` for entire seasons, and a
+frame that only ever lit on `heating` would be invisible there. Entities that
+expose no `hvac_action` at all get the full frame from their mode alone. Turn it
+off per card with `show_action_glow: false`.
+
 Add the card via the dashboard editor (search for "M3 Climate Card") or via
 YAML:
 
@@ -159,7 +170,7 @@ YAML:
 <summary>Configuration, examples & options</summary>
 
 <img src="docs/images/climate-card.png" alt="Climate Card" width="440">
-<img src="docs/images/climate-card-heating.png" alt="Climate Card (heating thermostat)" width="440">
+<img src="docs/images/climate-card-heating.png" alt="Climate Card on a heat-only thermostat, showing the dimmed action-glow frame" width="440">
 
 ```yaml
 type: custom:m3-climate-card
@@ -167,6 +178,7 @@ entity: climate.living_room
 name: Living Room
 show_presets: true
 preset_style: chip # chip | pill
+show_control_labels: true
 show_sensors: true
 temperature_chip_placement: info_row # info_row | header
 temperature_sensor: sensor.living_room_temperature
@@ -208,9 +220,10 @@ default_collapsed: true
 | `name` | string | entity `friendly_name` | Displayed name |
 | `icon` | string | `mdi:radiator` (heating only) / `mdi:air-conditioner` | Header icon |
 | `show_presets` | boolean | `true` | Show preset selector (if the entity supports `preset_modes`) |
-| `preset_style` | `chip` \| `pill` | `chip` | Preset as its own wide row (`chip`) or as an extra pill in the mode row (`pill`) |
-| `show_sensors` | boolean | `true` | Show sensor chips (temperature/humidity) |
-| `temperature_chip_placement` | `info_row` \| `header` | `info_row` | Current temperature in the sensor row or as a chip top-right in the header |
+| `preset_style` | `chip` \| `pill` | `chip` | Preset button with its name (`chip`) or icon-only (`pill`). It shares one row with the mode button either way |
+| `show_control_labels` | boolean | `true` | Show the text labels on the mode and preset buttons. `false` leaves both as icon-only circles |
+| `show_sensors` | boolean | `true` | Show the large current-temperature figure and the humidity line above the setpoint row |
+| `temperature_chip_placement` | `info_row` \| `header` | `info_row` | Current temperature as the card's large centre figure (`info_row`) or as a small chip top-right in the header (`header`), which drops the large figure |
 | `temperature_sensor` | string | – | External temperature sensor, overrides `current_temperature` |
 | `humidity_sensor` | string | – | External humidity sensor, overrides `current_humidity` |
 | `window_sensor` | string | – | `binary_sensor`, shows an "Open" chip when `state: "on"` |
@@ -219,6 +232,7 @@ default_collapsed: true
 | `hidden_modes` | string[] | `[]` | HVAC modes that are hidden as a pill despite entity support |
 | `glass_background` | boolean | `true` | Frosted glass background (off for solid themes) |
 | `animations` | boolean | `true` | Shape-morph/press animations; `false` disables all transitions |
+| `show_action_glow` | boolean | `true` | Squared-off glow frame around the card: full strength while `hvac_action` reports heating (warm) or cooling (blue), dimmed while `heat`/`cool` is selected but the equipment is idle. Entities that report no `hvac_action` get the full frame from their mode alone |
 | `unavailable_style` | `dimmed` \| `normal` \| `hidden` | `dimmed` | Display when the entity is `unavailable`/`unknown`: `dimmed` (greyed out, not tappable, as before), `normal` (normal display, mode pills/stepper stay tappable), or `hidden` (card is fully hidden) |
 | `height` | number (px) | – (automatic) | Fixed minimum card height. See [Equal-height tiles](#equal-height-tiles) |
 | `radius` | number (px) | `32` | Card corner radius (editor offers Square/Slightly rounded/Round/Custom) |
@@ -275,15 +289,18 @@ based on its own content. Two options:
 ## M3 Climate Card Mini
 
 A compact companion card to the full climate card: icon tile + on/off
-button on top, name + "current temperature · mode" below that, a
-minus/target-temperature/plus stepper at the bottom. No preset, sensor, or
+button on top, name + "current temperature · mode" below that, and a
+minus/setpoint/plus stepper at the bottom whose middle segment carries the
+target temperature in the active mode's colour. No preset, sensor, or
 mode-row support — in exchange, two tiles comfortably fit side by side on a
-phone screen.
+phone screen. It carries the same two-strength action-glow frame as the full
+card (see above), which reads especially well at this size: a row of minis
+shows which rooms are heating without any of them spelling it out in text.
 
 <details>
 <summary>Configuration, examples & options</summary>
 
-<img src="docs/images/climate-card-mini.png" alt="Climate Card Mini" width="440">
+<img src="docs/images/climate-card-mini.png" alt="Climate Card Mini showing the dimmed action-glow frame" width="440">
 
 ```yaml
 type: custom:m3-climate-card-mini
@@ -303,6 +320,7 @@ mode_colors:
 | `name` | string | entity `friendly_name` | Displayed name |
 | `icon` | string | `mdi:radiator` (heating only) / `mdi:air-conditioner` | Icon in the icon tile |
 | `glass_background` | boolean | `true` | Frosted glass background (off for solid themes) |
+| `show_action_glow` | boolean | `true` | Squared-off glow frame around the card: full strength while `hvac_action` reports heating (warm) or cooling (blue), dimmed while `heat`/`cool` is selected but the equipment is idle. Entities that report no `hvac_action` get the full frame from their mode alone |
 | `animations` | boolean | `true` | Transitions for icon tile/on-off button/stepper; `false` disables them |
 | `unavailable_style` | `dimmed` \| `normal` \| `hidden` | `dimmed` | Display when the entity is `unavailable`/`unknown` |
 | `radius` | number (px) | `28` | Card corner radius (editor offers Square/Slightly rounded/Round/Custom) |

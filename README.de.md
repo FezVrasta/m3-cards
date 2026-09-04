@@ -149,6 +149,17 @@ dort auf *Herunterladen* drücken, fertig. Von Hand geht es so:
 
 ## M3 Climate Card
 
+Beide Klimakarten zeichnen einen **Heiz-/Kühl-Rahmen** um ihre Außenkante in der
+Akzentfarbe des Modus — eine Wand voller Thermostate zeigt so auf einen Blick,
+welche Räume gerade Wärme anfordern. Der Rahmen hat zwei Stufen: kräftig,
+solange `hvac_action` der Entität `heating`/`cooling` meldet, und gedämpft, wenn
+`heat`/`cool` gewählt ist, gerade aber nichts läuft. Die zweite Stufe gibt es,
+weil viele Integrationen `hvac_action` aus der tatsächlichen Ventilstellung
+ableiten — Homematics eTRV-/HEATING-Geräte etwa melden ganze Jahreszeiten lang
+`idle`, ein Rahmen nur bei `heating` bliebe dort unsichtbar. Entitäten ganz ohne
+`hvac_action` bekommen den vollen Rahmen allein aus dem Modus. Pro Karte
+abschaltbar über `show_action_glow: false`.
+
 Karte über den Dashboard-Editor hinzufügen (Suche nach „M3 Climate Card“) oder
 per YAML:
 
@@ -156,7 +167,7 @@ per YAML:
 <summary>Konfiguration, Beispiele & Optionen</summary>
 
 <img src="docs/images/climate-card.png" alt="Climate Card" width="440">
-<img src="docs/images/climate-card-heating.png" alt="Klima-Karte (reiner Heizthermostat)" width="440">
+<img src="docs/images/climate-card-heating.png" alt="Klima-Karte an einem reinen Heizthermostat, mit gedämpftem Heizrahmen" width="440">
 
 ```yaml
 type: custom:m3-climate-card
@@ -164,6 +175,7 @@ entity: climate.wohnzimmer
 name: Wohnzimmer
 show_presets: true
 preset_style: chip # chip | pill
+show_control_labels: true
 show_sensors: true
 temperature_chip_placement: info_row # info_row | header
 temperature_sensor: sensor.wohnzimmer_temperatur
@@ -205,9 +217,10 @@ default_collapsed: true
 | `name` | string | `friendly_name` der Entity | Angezeigter Name |
 | `icon` | string | `mdi:radiator` (nur Heizen) / `mdi:air-conditioner` | Header-Icon |
 | `show_presets` | boolean | `true` | Preset-Auswahl anzeigen (falls Entity `preset_modes` unterstützt) |
-| `preset_style` | `chip` \| `pill` | `chip` | Preset als eigene breite Zeile (`chip`) oder als zusätzlicher Button in der Modus-Zeile (`pill`) |
-| `show_sensors` | boolean | `true` | Sensor-Chips (Temperatur/Feuchte) anzeigen |
-| `temperature_chip_placement` | `info_row` \| `header` | `info_row` | Ist-Temperatur in der Sensor-Zeile oder als Chip oben rechts im Header |
+| `preset_style` | `chip` \| `pill` | `chip` | Preset-Button mit Namen (`chip`) oder nur als Icon (`pill`). Er steht in beiden Fällen in derselben Zeile wie der Modus-Button |
+| `show_control_labels` | boolean | `true` | Beschriftung an Modus- und Preset-Button anzeigen. `false` lässt beide als reine Icon-Kreise stehen |
+| `show_sensors` | boolean | `true` | Große Ist-Temperatur und Feuchte-Zeile über der Sollwert-Reihe anzeigen |
+| `temperature_chip_placement` | `info_row` \| `header` | `info_row` | Ist-Temperatur als große Zahl in der Kartenmitte (`info_row`) oder als kleiner Chip oben rechts im Header (`header`) — dann entfällt die große Zahl |
 | `temperature_sensor` | string | – | Externer Temperatursensor, überschreibt `current_temperature` |
 | `humidity_sensor` | string | – | Externer Feuchtesensor, überschreibt `current_humidity` |
 | `window_sensor` | string | – | `binary_sensor`, zeigt „Offen“-Chip bei `state: "on"` |
@@ -216,6 +229,7 @@ default_collapsed: true
 | `hidden_modes` | string[] | `[]` | HVAC-Modi, die trotz Entity-Unterstützung nicht als Pill angezeigt werden |
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund (aus für solide Themes) |
 | `animations` | boolean | `true` | Shape-Morph/Press-Animationen; `false` deaktiviert alle Übergänge |
+| `show_action_glow` | boolean | `true` | Eckiger Leuchtrahmen um die Karte: kräftig, solange `hvac_action` heizt (warm) oder kühlt (blau), gedämpft, wenn `heat`/`cool` gewählt ist, gerade aber nichts läuft. Entitäten ohne `hvac_action` bekommen den vollen Rahmen allein aus dem Modus |
 | `unavailable_style` | `dimmed` \| `normal` \| `hidden` | `dimmed` | Anzeige, wenn die Entity im Zustand `unavailable`/`unknown` ist: `dimmed` (ausgegraut, nicht antippbar, wie bisher), `normal` (normale Darstellung, Modus-Pills/Stepper bleiben antippbar) oder `hidden` (Karte wird komplett ausgeblendet) |
 | `height` | number (px) | – (automatisch) | Feste Mindesthöhe der Karte. Siehe [Gleich hohe Kacheln](#gleich-hohe-kacheln) |
 | `radius` | number (px) | `32` | Eckenradius der Karte (Editor bietet Eckig/Leicht rund/Rund/Benutzerdefiniert) |
@@ -272,14 +286,18 @@ hoch. Zwei Optionen:
 ## M3 Climate Card Mini
 
 Kompakte Companion-Karte zur großen Klimakarte: Icon-Kachel + Ein/Aus-Button
-oben, Name + „Ist-Temperatur · Modus“ darunter, Minus/Zieltemperatur/Plus-Stepper
-unten. Kein Preset-, Sensor- oder Modus-Zeilen-Support — dafür passen zwei
-Kacheln bequem nebeneinander auf ein Handydisplay.
+oben, Name + „Ist-Temperatur · Modus“ darunter, Minus/Sollwert/Plus-Stepper
+unten — dessen mittleres Segment trägt die Zieltemperatur in der Farbe des
+aktiven Modus. Kein Preset-, Sensor- oder Modus-Zeilen-Support — dafür passen
+zwei Kacheln bequem nebeneinander auf ein Handydisplay. Den zweistufigen
+Heiz-/Kühl-Rahmen der großen Karte (siehe oben) hat sie ebenfalls, und in dieser
+Größe wirkt er besonders gut: Eine Reihe Mini-Kacheln zeigt die heizenden Räume,
+ohne dass eine davon es ausschreiben müsste.
 
 <details>
 <summary>Konfiguration, Beispiele & Optionen</summary>
 
-<img src="docs/images/climate-card-mini.png" alt="Climate Card Mini" width="440">
+<img src="docs/images/climate-card-mini.png" alt="Climate Card Mini mit gedämpftem Heizrahmen" width="440">
 
 ```yaml
 type: custom:m3-climate-card-mini
@@ -299,6 +317,7 @@ mode_colors:
 | `name` | string | `friendly_name` der Entity | Angezeigter Name |
 | `icon` | string | `mdi:radiator` (nur Heizen) / `mdi:air-conditioner` | Icon in der Icon-Kachel |
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund (aus für solide Themes) |
+| `show_action_glow` | boolean | `true` | Eckiger Leuchtrahmen um die Karte: kräftig, solange `hvac_action` heizt (warm) oder kühlt (blau), gedämpft, wenn `heat`/`cool` gewählt ist, gerade aber nichts läuft. Entitäten ohne `hvac_action` bekommen den vollen Rahmen allein aus dem Modus |
 | `animations` | boolean | `true` | Übergänge für Icon-Kachel/Ein-Aus-Button/Stepper; `false` deaktiviert sie |
 | `unavailable_style` | `dimmed` \| `normal` \| `hidden` | `dimmed` | Anzeige, wenn die Entity im Zustand `unavailable`/`unknown` ist |
 | `radius` | number (px) | `28` | Eckenradius der Karte (Editor bietet Eckig/Leicht rund/Rund/Benutzerdefiniert) |

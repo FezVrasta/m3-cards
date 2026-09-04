@@ -78,6 +78,7 @@ export class M3ClimateCardMiniEditor
   private _appearanceSchema(): SchemaEntry[] {
     return [
       { name: "glass_background", selector: { boolean: {} } },
+      { name: "show_action_glow", selector: { boolean: {} } },
       {
         name: "animation",
         selector: {
@@ -122,6 +123,7 @@ export class M3ClimateCardMiniEditor
       name: "editor_name",
       icon: "editor_icon",
       glass_background: "editor_glass_background",
+      show_action_glow: "editor_show_action_glow",
       radius: "editor_radius",
       radius_preset: "editor_radius_preset",
       animation: "editor_progress_animation",
@@ -270,6 +272,7 @@ export class M3ClimateCardMiniEditor
 
     const appearanceData = {
       glass_background: this._config.glass_background ?? true,
+      show_action_glow: this._config.show_action_glow ?? true,
       animation: this._config.animation ?? "auto",
       unavailable_style: this._config.unavailable_style ?? "dimmed",
     };
@@ -307,6 +310,7 @@ export class M3ClimateCardMiniEditor
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_show_action_glow_helper")}</div>
             ${renderRadiusCornerFields({
               hass: this.hass,
               language: this._language,

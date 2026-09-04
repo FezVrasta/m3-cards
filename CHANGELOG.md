@@ -4,6 +4,96 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **Action-glow frame for M3 Climate Card / M3 Climate Card Mini** — both
+  climate cards now draw a squared-off glow around their outer edge while the
+  thermostat is actually heating (warm) or cooling (blue), inspired by the
+  ecosee reference card's equipment glow but rendered as layered `box-shadow`
+  falloffs on the existing rounded-rect card shape instead of an SVG
+  silhouette, so it stays crisp and Material-3-flavored rather than
+  superellipse-rounded. The frame has two strengths: full while the entity's
+  `hvac_action` reports `heating`/`cooling`, dimmed while `heat`/`cool` is the
+  selected mode but the equipment is idle. That second level matters for
+  integrations that derive `hvac_action` from the physical valve — Homematic's
+  eTRV/HEATING devices, for instance, sit at `idle` for entire seasons, and a
+  frame that only ever lit on `heating` would be invisible there. Entities that
+  expose no `hvac_action` at all get the full frame from their mode alone. New
+  optional `show_action_glow` config field (default `true`) turns it off per
+  card.
+
+### Changed
+
+- **M3 Climate Card — the current temperature is now the card's dominant
+  figure.** Following the ecosee reference card's Home Screen, the card leads
+  with one large, thin, tightly tracked current-temperature figure (with a
+  faint sheen that fades toward the card background, so it behaves on light
+  and dark themes alike) and a small humidity line above it. The target
+  temperature moves out of its square tile into a stadium-shaped **setpoint
+  pill** between the − / + buttons: the mode's colour as a hairline outline
+  over a faint same-colour wash, with the mode's glyph beside the value.
+
+  **Migration note:** nothing to change in your YAML, but two options now
+  describe a bigger element than they used to — `show_sensors: false` hides
+  the large figure along with the humidity line, and
+  `temperature_chip_placement: header` moves the reading into the header chip
+  *instead of* rendering it large. Both are documented in the README table.
+
+- **M3 Climate Card — mode and preset now share one row.** The operating mode
+  and the comfort preset are the card's two "what is it set to" controls and
+  sit side by side instead of on separate bands above and below the setpoint,
+  which also gives the card back a row of height. New optional
+  `show_control_labels` config field (default `true`); `false` leaves both as
+  icon-only circles. `preset_style: pill` still drops the preset's label on
+  its own, as before.
+
+- **M3 Climate Card — the setpoint pill and the ± buttons stepped back.** The
+  pill lost a size (44px tall, 21px numeral instead of 52/26), its wash went
+  from 14% to 9%, and its outline is now the mode colour mixed a third of the
+  way against the surface rather than at full strength — it was outshouting
+  the current-temperature figure it sits under. The ± buttons lost their
+  rings and grounds entirely: a circle around a control that carries neither
+  a value nor a state just gave the eye two more shapes to land on before it
+  reached the number between them. The 40px tap target is unchanged, it is
+  simply no longer painted, and the glyphs are `mdi:minus` / `mdi:plus` now
+  instead of typographic characters, so they match every other icon on the
+  card.
+
+- **M3 Climate Card / M3 Climate Card Mini — one voice for heat and cool.**
+  The reference card reserves its amber/blue language for setpoints and
+  equipment status and never paints a solid block of it; these cards now do
+  the same. The full card's mode button dropped its saturated fill for the
+  same outline-and-wash treatment at a lighter tint, the preset pill went
+  fully neutral, and both cards' ± buttons default to no fill at all — a
+  hairline ring is enough for a control that carries no value. The mini card
+  puts the mode colour on its middle stepper segment instead, so the target
+  temperature is the coloured thing in that row rather than the plus button,
+  and its icon well recedes further. `mode_colors`, `plus_opacity`,
+  `minus_opacity` and friends all still apply exactly where they did; an
+  explicitly configured tint keeps its full strength.
+
+  The shared recipe behind both cards lives in `src/shared/climate-surface.ts`
+  so the full card's pill and the mini card's segment cannot drift apart.
+
+### Fixed
+
+- **M3 Climate Card — the mode and preset dropdowns work again and now open
+  over the cards around them.** They were rendered inside the card, where the
+  glass surface's `backdrop-filter` traps them: `ha-card` clipped the menu at
+  its own edge and no `z-index` could lift it above the next card in the
+  dashboard. The picker now opens in the browser's *top layer* (a modal
+  `<dialog>` portalled to `document.body`), so it overlaps every neighbouring
+  card, flips above the button when there's no room below, clamps itself into
+  the viewport, and closes on Escape or an outside tap. Its surface is
+  deliberately opaque — layered over the dashboard's own background — because
+  a translucent menu sitting on a foreign card made the labels unreadable.
+
+  The picker lives in `src/shared/dropdown-menu.ts` (`openDropdownMenu()`) as
+  a reusable control for every card that needs a "pick one of these" menu,
+  not as climate-card-private markup.
+
 ## [2.3.2]
 
 ### Added

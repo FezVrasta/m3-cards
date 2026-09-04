@@ -45,6 +45,10 @@ export const glassCardStyles = css`
   .card-inner {
     box-sizing: border-box;
     height: 100%;
+    /* Positioned so a card's own absolutely positioned overlay (e.g. the
+       climate cards' action-glow frame) anchors to this surface via
+       inset: 0 rather than to whatever ancestor happens to be positioned. */
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 12px;

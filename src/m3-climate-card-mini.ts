@@ -11,13 +11,17 @@ import type {
 import {
   CARD_VERSION,
   DEFAULT_MODE_COLORS,
+  MODE_ICONS,
   DEFAULT_TEMP_STEP,
   DEFAULT_MINI_RADIUS,
+  SETPOINT_LINE_PERCENT,
+  SETPOINT_WASH_PERCENT,
   resolveCornerRadius,
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
+import { resolveActionGlow, renderActionGlow, actionGlowStyles } from "./shared/action-glow";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
@@ -25,6 +29,10 @@ import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { tintOn, foregroundOn } from "./shared/color-config";
+import {
+  resolveSetpointSurface,
+  setpointSurfaceStyles,
+} from "./shared/climate-surface";
 
 console.info(
   `%c M3-CLIMATE-CARD-MINI %c v${CARD_VERSION} `,
@@ -104,6 +112,10 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     return THEME_COLOR_TOKENS[resolved] ?? resolved;
   }
 
+  private _modeIcon(mode: string): string {
+    return MODE_ICONS[mode as HvacMode] ?? "mdi:thermostat";
+  }
+
   private _resolveColor(value: string): string {
     return THEME_COLOR_TOKENS[value] ?? value;
   }
@@ -137,6 +149,15 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     this.hass.callService("homeassistant", "toggle", {
       entity_id: this._config.entity,
     });
+  }
+
+  // Mirrors the full card: a ± segment carries no value, so it gets a
+  // neutral ground unless the user explicitly asked for a tint.
+  private _stepperFill(color: string, opacity: number | undefined): string {
+    if (opacity === undefined) {
+      return "color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)))";
+    }
+    return tintOn(this, color, opacity, 0);
   }
 
   private _handleStep(
@@ -213,23 +234,44 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       this._config.icon_inactive_opacity,
       14,
     );
-    const iconActiveBg = tintOn(this, 
+    const iconActiveBg = tintOn(this,
       iconActiveColor,
       this._config.icon_active_opacity,
-      22,
+      // Was 22, then 18 — down to a whisper now that the setpoint segment
+      // below carries the mode colour as an outlined value. Three
+      // mode-coloured blocks (icon well, power button, setpoint) is one more
+      // than the reference card would ever put on one surface; the power
+      // button stays filled because it is the on/off affordance, and this
+      // one recedes.
+      12,
     );
     const powerInactiveBg = tintOn(this, 
       powerInactiveColor,
       this._config.power_inactive_opacity,
       14,
     );
-    const powerActiveBg = tintOn(this, 
+    const powerActiveBg = tintOn(this,
       powerActiveColor,
       this._config.power_active_opacity,
-      30,
+      // Was 30 — see iconActiveBg above.
+      24,
     );
-    const minusBg = tintOn(this, minusColor, this._config.minus_opacity, 8);
-    const plusBg = tintOn(this, plusColor, this._config.plus_opacity, 20);
+    // The ± segments default to a neutral ground rather than a mode tint:
+    // the mode colour now lives on the setpoint segment between them, where
+    // it labels an actual value instead of a button. Explicit
+    // minus_opacity / plus_opacity still tint them as before.
+    const minusBg = this._stepperFill(minusColor, this._config.minus_opacity);
+    const plusBg = this._stepperFill(plusColor, this._config.plus_opacity);
+
+    // The setpoint segment wears the reference card's oval language: the
+    // mode colour as a thin outline over a faint same-colour wash.
+    const setpoint = resolveSetpointSurface(
+      this,
+      modeColor,
+      undefined,
+      SETPOINT_WASH_PERCENT,
+      SETPOINT_LINE_PERCENT,
+    );
 
     const hvacModesRaw: string[] = Array.isArray(attrs.hvac_modes)
       ? attrs.hvac_modes
@@ -246,10 +288,13 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     const modeLabel = unavailable
       ? this._t("unavailable")
       : (this._t(currentMode as TranslationKey) ?? currentMode);
-    const statusText =
+    // Split rather than one string: the current reading is what you glance
+    // at, the mode label is context. Same two-level hierarchy the full
+    // card's hero figure gets, at mini scale.
+    const statusTemp =
       !unavailable && currentTemperature !== undefined
-        ? `${this._formatNumber(currentTemperature)} ${tempUnit} · ${modeLabel}`
-        : modeLabel;
+        ? `${this._formatNumber(currentTemperature)} ${tempUnit}`
+        : undefined;
 
     const targetTemp: number | undefined =
       typeof attrs.temperature === "number" ? attrs.temperature : undefined;
@@ -261,16 +306,18 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       this._config.corners,
     );
     const animClass = shouldAnimate(this._config.animation) ? "" : "no-animations";
+    const glow = resolveActionGlow(attrs, currentMode, unavailable);
 
     return html`
       <ha-card
-        style=${`--m3-mode-color: ${modeColor}; --m3-icon-active-color: ${foregroundOn(iconActiveColor, iconActiveBg)}; --m3-icon-inactive-color: ${foregroundOn(iconInactiveColor, iconInactiveBg)}; --m3-power-active-color: ${foregroundOn(powerActiveColor, powerActiveBg)}; --m3-power-inactive-color: ${foregroundOn(powerInactiveColor, powerInactiveBg)}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-inactive-bg: ${iconInactiveBg}; --m3-icon-active-bg: ${iconActiveBg}; --m3-power-inactive-bg: ${powerInactiveBg}; --m3-power-active-bg: ${powerActiveBg}; --m3-minus-bg: ${minusBg}; --m3-plus-bg: ${plusBg}; border-radius: ${radius};`}
+        style=${`--m3-mode-color: ${modeColor}; --m3-icon-active-color: ${foregroundOn(iconActiveColor, iconActiveBg)}; --m3-icon-inactive-color: ${foregroundOn(iconInactiveColor, iconInactiveBg)}; --m3-power-active-color: ${foregroundOn(powerActiveColor, powerActiveBg)}; --m3-power-inactive-color: ${foregroundOn(powerInactiveColor, powerInactiveBg)}; --m3-plus-color: ${plusColor}; --m3-minus-color: ${minusColor}; --m3-icon-inactive-bg: ${iconInactiveBg}; --m3-icon-active-bg: ${iconActiveBg}; --m3-power-inactive-bg: ${powerInactiveBg}; --m3-power-active-bg: ${powerActiveBg}; --m3-minus-bg: ${minusBg}; --m3-plus-bg: ${plusBg}; --m3-setpoint-bg: ${setpoint.bg}; --m3-setpoint-ink: ${setpoint.ink}; --m3-setpoint-line: ${setpoint.line}; border-radius: ${radius};`}
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
           class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius};`}
         >
+          ${renderActionGlow(glow, this._config.show_action_glow)}
           <div class="header">
             <div
               class="icon-swatch ${active ? "active" : ""}"
@@ -295,7 +342,13 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
               )}
             >
               <div class="name">${name}</div>
-              <div class="status">${statusText}</div>
+              <div class="status">
+                ${statusTemp !== undefined
+                  ? html`<span class="status-temp">${statusTemp}</span
+                      ><span class="status-sep">·</span>`
+                  : nothing}
+                <span class="status-mode">${modeLabel}</span>
+              </div>
             </div>
             <button
               class="power-btn ${active ? "active" : ""}"
@@ -325,7 +378,7 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
               −
             </button>
             <div
-              class="stepper-value"
+              class="stepper-value setpoint-surface"
               role="button"
               tabindex="0"
               aria-label=${this._t("target_temperature")}
@@ -334,9 +387,14 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
                 this._fireMoreInfo(this._config?.entity),
               )}
             >
-              ${unavailable || targetTemp === undefined
-                ? "–"
-                : `${this._formatNumber(targetTemp)}°`}
+              ${active
+                ? html`<ha-icon icon=${this._modeIcon(currentMode)}></ha-icon>`
+                : nothing}
+              <span
+                >${unavailable || targetTemp === undefined
+                  ? "–"
+                  : `${this._formatNumber(targetTemp)}°`}</span
+              >
             </div>
             <button
               class="stepper-btn plus"
@@ -362,6 +420,8 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
 
   static styles = css`
     ${glassCardStyles}
+    ${actionGlowStyles}
+    ${setpointSurfaceStyles}
 
     /* See the note in m3-button-card: ha-card is a size container, so a
        percentage height that does not resolve leaves it at 0. This card had no
@@ -502,12 +562,32 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
     }
 
     .status {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      min-width: 0;
       font-size: 13px;
-      opacity: 0.7;
       overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--primary-text-color);
+    }
+
+    /* The reading carries more weight than the mode word beside it. */
+    .status-temp {
+      font-weight: 600;
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+
+    .status-sep {
+      opacity: 0.35;
+      flex-shrink: 0;
+    }
+
+    .status-mode {
+      opacity: 0.6;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .stepper-row {
@@ -523,8 +603,10 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       border: none;
       font-size: 18px;
       font-weight: 500;
-      color: var(--primary-text-color);
-      background: color-mix(in srgb, var(--primary-text-color) 8%, var(--ha-card-background, var(--card-background-color)));
+      /* See the full card: dim the glyph, not the segment, so a configured
+         plus_opacity / minus_opacity tint keeps its strength. */
+      color: color-mix(in srgb, var(--primary-text-color) 75%, transparent);
+      background: var(--m3-minus-bg);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -554,22 +636,33 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       background: var(--m3-plus-bg);
     }
 
+    /* The setpoint segment. Colour/outline/ink come from .setpoint-surface
+       (shared/climate-surface.ts), the same recipe the full card's setpoint
+       oval uses, so the two cards can't drift apart. It is the only
+       mode-coloured shape in this row — the ± segments beside it went
+       neutral in the same pass. */
     .stepper-value {
-      flex: 1.3;
+      flex: 1.4;
       min-width: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 5px;
       border-radius: 8px;
-      background: color-mix(in srgb, var(--primary-text-color) 4%, var(--ha-card-background, var(--card-background-color)));
       text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--primary-text-color);
+      /* Lighter than the previous 800: it is now carried by its own tinted,
+         outlined shape rather than by sheer weight. */
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
       cursor: pointer;
       overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .stepper-value ha-icon {
+      --mdc-icon-size: 15px;
+      flex-shrink: 0;
     }
 
     @container (max-height: 150px) {
@@ -596,6 +689,15 @@ export class M3ClimateCardMini extends LitElement implements LovelaceCard {
       }
 
       .icon-swatch {
+        display: none;
+      }
+    }
+
+    /* Narrow tile: the segment is barely wider than the number itself, and
+       the mode glyph would push it into an ellipsis. The tint and outline
+       still say heat/cool, so nothing is lost by dropping it. */
+    @container (max-width: 230px) {
+      .stepper-value ha-icon {
         display: none;
       }
     }
