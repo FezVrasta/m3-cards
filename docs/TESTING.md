@@ -669,6 +669,7 @@ einer entscheidet, was ein Raum **zeigt**, der andere, was ein Tippen
 | Anzeigen ≠ Schalten | `toggle_filter` enger als der Anzeigefilter setzen | Der Raum zeigt weiterhin alle Lichter, ein Tippen schaltet aber nur die des `toggle_filter` |
 | Gruppen nicht doppelt | Eine `light.group` und ihre Mitglieder im selben Bereich, `group_handling` auf `prefer_groups` bzw. `prefer_members` | Einmal zählt nur die Gruppe, einmal nur die Mitglieder — nie beide |
 | Zustand wirkt sofort | Ein Licht per Schalter außerhalb der Karte anschalten | Kachel färbt sich sofort um; die Erkennung läuft dabei **nicht** neu (Zustände sind bewusst nicht Teil des Erkennungsschlüssels) |
+| Steckdosen als Licht | `include_domains: [light, switch]`, dann mit `include_entities` eingrenzen — oder die Entitäten je Raum unter `rooms` aufzählen | Die Steckdose erscheint in ihrer Raumkachel, zeigt ihren Zustand und **schaltet beim Tippen wirklich** (der Aufruf geht an `homeassistant`, nicht an `light`) |
 | Popup | `popup` konfigurieren, eine Raumkachel antippen | Popup zeigt nur diesen Raum; Tippen darin öffnet **kein** zweites Popup |
 | Leerer Zustand | Filter so setzen, dass nichts übrig bleibt | Hinweistext statt leerem Raster |
 

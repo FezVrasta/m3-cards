@@ -1329,6 +1329,12 @@ daily list collapses by default and expands via a button.
 | `show_days_toggle` | boolean | `true` | Collapsible from 4 days on with a "Show N more" button; `false` = always show all configured days directly |
 | `chips` | list (`apparent_temperature`\|`wind_speed`\|`humidity`\|`pressure`\|`uv_index`\|`visibility`) | apparent temp, wind, humidity | Header chips shown |
 | `show_sun` | boolean | `true` | Sunrise/sunset markers on the curve (from `sun.sun`) |
+| `show_current` | boolean | `true` | The header row: icon, temperature, condition and chips |
+| `show_chart` | boolean | `true` | The temperature curve with its precipitation bars |
+| `show_hourly_icons` | boolean | `true` | Condition icon per shown hour |
+| `show_hourly_temperatures` | boolean | `true` | Temperature per shown hour |
+| `show_hour_labels` | boolean | `true` | The hour under each column. Without it the temperatures say nothing about when they apply |
+| `show_temp_axis` | boolean | `false` | Min/mid/max temperature marks along the curve |
 | `accent_color` | string | solar yellow | Curve color |
 | `precipitation_color` | string | `#6ba7dc` | Precipitation bar color |
 | `gradient_color` | string | same as `accent_color` | Gradient fill under the curve |
@@ -1337,6 +1343,14 @@ daily list collapses by default and expands via a button.
 | `animation` | `auto` \| `on` \| `off` | `auto` | Curve draw-in animation; `auto`/`on` respect `prefers-reduced-motion` |
 | `glass_background` | boolean | `true` | Frosted glass background |
 | `radius` / `corners` | number / object | `28` | Corner radius, optional per corner |
+
+Icons, temperatures and hours share one rhythm: the card measures its own
+width, decides how many columns fit, and then draws every 2nd, 3rd or 4th
+hour — never a crowded row. A regular rhythm and a strip that ends flush at
+both edges only both hold when that step divides the row evenly, so the row
+is cut back to where it does. Ask for twelve hours in a narrow card and
+eleven are drawn; the curve, the rain bars and the sun markers are cut to
+the same length so nothing drifts apart.
 
 ## M3 Presence Card
 
@@ -3392,6 +3406,7 @@ Lovelace card built from `popup.card`, with `[[area_id]]`, `[[entity_id]]`,
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `auto_discover` | boolean | `true` | Automatic discovery of lights by area |
+| `include_domains` | list | `["light"]` | Which domains auto-discovery sweeps. A lamp on a smart plug is a `switch`, and nothing in Home Assistant says which switches are lighting — add `switch` and narrow the result with the include/exclude filters, or list the entities per room under `rooms` instead |
 | `include_area` / `exclude_area` | list\<string\> | – | Filter for auto-discovery |
 | `include_entities` / `exclude_entities` | list\<string\> | – | Entity filter for auto-discovery |
 | `include_labels` / `exclude_labels` | list\<string\> | – | Label filter for auto-discovery |

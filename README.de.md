@@ -1346,6 +1346,12 @@ eingeklappt und ist über einen Button aufklappbar.
 | `show_days_toggle` | boolean | `true` | Ab 4 Tagen einklappbar mit "N weitere anzeigen"-Button; `false` = immer alle konfigurierten Tage direkt anzeigen |
 | `chips` | Liste (`apparent_temperature`\|`wind_speed`\|`humidity`\|`pressure`\|`uv_index`\|`visibility`) | gefühlte Temp., Wind, Luftfeuchtigkeit | Angezeigte Header-Chips |
 | `show_sun` | boolean | `true` | Sonnenauf-/-untergangsmarker in der Kurve (aus `sun.sun`) |
+| `show_current` | boolean | `true` | Die Kopfzeile: Icon, Temperatur, Zustand und Chips |
+| `show_chart` | boolean | `true` | Die Temperaturkurve mit ihren Niederschlagsbalken |
+| `show_hourly_icons` | boolean | `true` | Zustands-Icon je gezeigter Stunde |
+| `show_hourly_temperatures` | boolean | `true` | Temperatur je gezeigter Stunde |
+| `show_hour_labels` | boolean | `true` | Die Uhrzeit unter jeder Spalte. Ohne sie sagen die Temperaturen nicht, wann sie gelten |
+| `show_temp_axis` | boolean | `false` | Marken für Min/Mitte/Max entlang der Kurve |
 | `accent_color` | string | Solar-Gelb | Kurvenfarbe |
 | `precipitation_color` | string | `#6ba7dc` | Farbe der Niederschlagsbalken |
 | `gradient_color` | string | wie `accent_color` | Verlaufsfüllung unter der Kurve |
@@ -1354,6 +1360,15 @@ eingeklappt und ist über einen Button aufklappbar.
 | `animation` | `auto` \| `on` \| `off` | `auto` | Kurven-Einzeichenanimation; `auto`/`on` respektieren `prefers-reduced-motion` |
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
+
+Icons, Temperaturen und Uhrzeiten teilen sich einen Takt: Die Karte misst
+ihre eigene Breite, entscheidet, wie viele Spalten hineinpassen, und zeichnet
+dann jede 2., 3. oder 4. Stunde — nie eine gedrängte Reihe. Ein gleichmäßiger
+Takt und eine Leiste, die links wie rechts bündig endet, gehen nur zusammen,
+wenn dieser Schritt in der Reihe aufgeht; deshalb wird die Reihe so weit
+gekürzt, bis er das tut. Wer in einer schmalen Karte zwölf Stunden anfordert,
+bekommt elf gezeichnet — Kurve, Regenbalken und Sonnenmarker werden auf
+dieselbe Länge gekürzt, damit nichts auseinanderläuft.
 
 ## M3 Presence Card
 
@@ -3474,6 +3489,7 @@ Raum).
 | Option | Typ | Standard | Beschreibung |
 |---|---|---|---|
 | `auto_discover` | boolean | `true` | Automatische Erkennung von Lichtern nach Bereich |
+| `include_domains` | Liste | `["light"]` | Welche Domänen die Erkennung durchsucht. Eine Lampe an einer Funksteckdose ist ein `switch`, und nichts in Home Assistant sagt, welche Schalter Licht sind — `switch` ergänzen und mit den Include/Exclude-Filtern eingrenzen, oder die Entitäten stattdessen je Raum unter `rooms` aufzählen |
 | `include_area` / `exclude_area` | list\<string\> | – | Filter für Auto-Discovery |
 | `include_entities` / `exclude_entities` | list\<string\> | – | Entity-Filter für Auto-Discovery |
 | `include_labels` / `exclude_labels` | list\<string\> | – | Label-Filter für Auto-Discovery |
