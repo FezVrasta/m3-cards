@@ -1565,6 +1565,20 @@ hold_action:
 
 Ohne `tap_action` öffnet ein Tap weiterhin die More-Info-Ansicht.
 
+Ein Dienst, der kein `entity_id` verträgt, braucht ein leeres `target` als
+Ansage — sonst wird die angetippte Person mitgegeben und der Aufruf schlägt
+fehl:
+
+```yaml
+hold_action:
+  action: perform-action
+  perform_action: persistent_notification.create
+  target: {}
+  data:
+    message: Jemand hat eine Kachel gedrückt
+```
+
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -3065,8 +3079,14 @@ tap_action:
   navigation_path: /lovelace/wohnzimmer
 ```
 
-Jede Aktion ist möglich: `navigate`, `url`, `perform-action`, `more-info`,
-`toggle`, oder `none`, um die Kopfzeile bewusst untätig zu lassen.
+`navigate` und `url` verhalten sich wie überall, und `none` lässt die
+Kopfzeile bewusst untätig. `perform-action` funktioniert, sofern die Aktion ihr
+`target` selbst benennt.
+
+`more-info` und `toggle` funktionieren hier **nicht**, und das gehört deutlich
+gesagt: Eine Raumkarte ist ein Bereich, keine Entität, hat also kein
+mitzugebendes Ziel — und beide tun ohne eines wortlos nichts. Dafür ist
+`categories[].tap_action` einer Kachel da, hinter der eine Entität steht.
 
 Ein Tap kann nicht zugleich einklappen und eine Ansicht öffnen, deshalb
 übernimmt `tap_action` die Kopfzeile vom Einklappen — und der Pfeil geht mit,

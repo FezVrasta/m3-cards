@@ -34,8 +34,10 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   — so a room card on an overview had no way to be the door into that room's
   own view. `tap_action` takes the standard Home Assistant action config and
   goes through the same handler the heading and status cards use, so
-  `navigate`, `url`, `perform-action`, `more-info` and `toggle` all behave as
-  they do elsewhere.
+  `navigate` and `url` behave as they do elsewhere, and `perform-action` does
+  too when it names its own `target`. `more-info` and `toggle` cannot work
+  here: a room is an area, not an entity, so there is no implied target to
+  hand them, and both do nothing without one.
 
   A tap cannot both fold the card and open a view, so a configured
   `tap_action` takes the header over from the fold and the chevron goes with
@@ -110,9 +112,11 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Druck auf eine Kategorie-Kachel — eine Raumkarte auf einer Übersicht konnte
   also nicht die Tür in die eigene Ansicht dieses Raums sein. `tap_action`
   nimmt die übliche Home-Assistant-Aktionskonfiguration und läuft über
-  denselben Handler wie bei der Überschriften- und der Status-Karte, `navigate`,
-  `url`, `perform-action`, `more-info` und `toggle` verhalten sich also wie
-  überall sonst.
+  denselben Handler wie bei der Überschriften- und der Status-Karte: `navigate`
+  und `url` verhalten sich wie überall sonst, `perform-action` ebenfalls, sofern
+  es sein `target` selbst benennt. `more-info` und `toggle` können hier nicht
+  greifen — ein Raum ist ein Bereich, keine Entität, es gibt also kein
+  mitzugebendes Ziel, und ohne eines tun beide nichts.
 
   Ein Tap kann nicht zugleich einklappen und eine Ansicht öffnen, deshalb
   übernimmt eine gesetzte `tap_action` die Kopfzeile vom Einklappen, und der

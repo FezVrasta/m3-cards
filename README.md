@@ -1545,6 +1545,19 @@ hold_action:
 
 Leaving `tap_action` unset keeps the more-info dialog a tap has always opened.
 
+A service that takes no `entity_id` needs an empty `target` to say so —
+otherwise the tapped person is passed along and the service call fails:
+
+```yaml
+hold_action:
+  action: perform-action
+  perform_action: persistent_notification.create
+  target: {}
+  data:
+    message: Someone held a tile
+```
+
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -2997,8 +3010,14 @@ tap_action:
   navigation_path: /lovelace/living-room
 ```
 
-Any action works: `navigate`, `url`, `perform-action`, `more-info`, `toggle`,
-or `none` to make the header deliberately inert.
+`navigate` and `url` work as they do everywhere, and `none` makes the header
+deliberately inert. `perform-action` works as long as the action names its own
+`target`.
+
+`more-info` and `toggle` do **not** work here, and it is worth saying plainly:
+a room card is an area, not an entity, so it has no implied target to hand
+them, and both quietly do nothing without one. Point them at a tile's
+`categories[].tap_action` instead, which does have an entity behind it.
 
 A tap cannot both fold the card and open a view, so `tap_action` takes the
 header over from the fold, and the chevron goes with it — it promises a fold
