@@ -203,6 +203,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "detail_path", selector: { text: {} } },
+      { name: "tap_action", selector: { ui_action: {} } },
     ];
   }
 
@@ -361,6 +362,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       name: "editor_name",
       icon: "editor_icon",
       detail_path: "editor_room_detail_path",
+      tap_action: "editor_tap_action",
       show_sensors: "editor_room_show_sensors",
       show_windows: "editor_room_show_windows",
       temperature_entity: "editor_room_temperature",
@@ -400,11 +402,13 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
                 name: cfg.name ?? "",
                 icon: cfg.icon ?? "",
                 detail_path: cfg.detail_path ?? "",
+                tap_action: cfg.tap_action,
               }}
               .schema=${this._roomSchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_room_tap_action_hint")}</div>
           </div>
         </ha-expansion-panel>
 

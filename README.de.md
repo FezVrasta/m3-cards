@@ -3198,6 +3198,24 @@ Ergebnis zu dem passt, was die Kachel angezeigt hat. Ein langer Druck öffnet
 haben kein sinnvolles Umschalten, dort öffnet ein Tap die Detailansicht, statt
 dass die Karte etwas rät, das man lieber selbst entscheidet.
 
+Die Kopfzeile (Icon + Name + Untertitel) lässt sich unabhängig vom Kachelraster
+ebenfalls antippbar machen. `tap_action` akzeptiert jede Standard-Aktion —
+`navigate` zu einer Dashboard-Ansicht, `perform-action`, `url` und so weiter:
+
+```yaml
+type: custom:m3-room-card
+area: wohnzimmer
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/wohnzimmer
+```
+
+`tap_action` hat Vorrang vor `collapsible`: Sind beide gesetzt, führt ein Tap
+auf die Kopfzeile die Aktion aus statt zu falten, und der Falt-Pfeil entfällt,
+weil er sonst einen Zustand anzeigen würde, den die Kopfzeile nicht mehr
+umschalten kann. Bleibt `tap_action` leer, verhält sich `collapsible` genau
+wie bisher.
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -3205,6 +3223,7 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 | `area` | string | – | Die Bereichs-ID aus HA. Pflicht |
 | `name` / `icon` | string | aus dem Bereich | Das Icon wird sonst aus dem Raumnamen geraten |
 | `detail_path` | string | – | Öffnet sich bei langem Druck |
+| `tap_action` | Aktionsobjekt | – | Läuft bei einem Tap auf die Kopfzeile statt des Falt-Umschalters; hat Vorrang vor `collapsible` |
 | `extra_domains` | Liste | – | Domains über die neun eingebauten hinaus |
 | `category_order` | Liste | – | Domains in gewünschter Reihenfolge, der Rest folgt dahinter |
 | `hidden_categories` | Liste | – | |

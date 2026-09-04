@@ -4,6 +4,17 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **M3 Room Card — `tap_action`.** The header (icon, name, subtitle) can now
+  run any standard action — `navigate`, `perform-action`, `url`, and so on —
+  on tap, independently of the tile grid below it. It wins over `collapsible`
+  when both are set: the header runs the action instead of folding, and the
+  fold arrow is dropped since it would otherwise show a state the header can
+  no longer toggle. Unset, `collapsible` behaves exactly as before.
+
 ## [2.3.2]
 
 ### Added

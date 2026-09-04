@@ -1692,6 +1692,12 @@ export interface M3RoomCardConfig {
   icon?: string;
   /** Opened on hold; falls back to more-info of the category's first entity. */
   detail_path?: string;
+  /**
+   * Runs on a header tap instead of the fold toggle — wins even when
+   * `collapsible` is also set. Leave unset to keep the existing behaviour
+   * (fold toggle when `collapsible`, nothing otherwise).
+   */
+  tap_action?: HaActionConfig;
   /** Domains beyond the built-in nine, e.g. ["water_heater"]. */
   extra_domains?: string[];
   /** Domains in the order they should appear; the rest follow in default order. */

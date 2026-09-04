@@ -3142,6 +3142,23 @@ otherwise more-info for the first entity. Vacuums and locks have no meaningful
 toggle, so a tap opens more-info instead of the card guessing at something a
 person would rather decide.
 
+The header (icon + name + subtitle) can be made tappable too, independently
+of the tile grid below it. Set `tap_action` to any standard action — `navigate`
+to a dashboard view, `perform-action`, `url`, and so on:
+
+```yaml
+type: custom:m3-room-card
+area: living_room
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/living-room
+```
+
+`tap_action` wins over `collapsible`: if both are set, tapping the header runs
+the action instead of folding, and the fold arrow is dropped since it would
+otherwise show a state the header can no longer toggle. Leave `tap_action`
+unset and `collapsible` behaves exactly as before.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -3149,6 +3166,7 @@ person would rather decide.
 | `area` | string | – | The HA area id. Required |
 | `name` / `icon` | string | the area's own | The icon falls back to a guess from the room name |
 | `detail_path` | string | – | Opened on hold |
+| `tap_action` | action object | – | Runs on a header tap instead of the fold toggle; wins over `collapsible` |
 | `extra_domains` | list | – | Domains beyond the built-in nine |
 | `category_order` | list | – | Domains in the order you want them; the rest follow behind |
 | `hidden_categories` | list | – | |

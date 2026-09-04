@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing, unsafeCSS } from "lit";
 import type { PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
+  HaActionConfig,
   HassEntity,
   HomeAssistant,
   LovelaceCard,
@@ -162,6 +163,25 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
     e.stopPropagation();
     this._folded = !this._folded;
     writeCollapsed(this.hass, this._foldTarget, this._folded);
+  };
+
+  // ha-form always returns every configured field, including ones the user
+  // set to "Nichts" (action: "none"), so a raw truthiness check on the
+  // config alone can't tell "unset" from "explicitly disabled" — both must
+  // fall back to the fold toggle (or to nothing, when not collapsible).
+  private _headerTapAction(): HaActionConfig | undefined {
+    const action = this._config?.tap_action;
+    return action && action.action !== "none" ? action : undefined;
+  }
+
+  private _onHeaderTap = (e: Event): void => {
+    const action = this._headerTapAction();
+    if (action) {
+      e.stopPropagation();
+      handleAction(this, this.hass, action);
+      return;
+    }
+    this._toggleFold(e);
   };
 
   public getCardSize(): number {
@@ -1035,6 +1055,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         : undefined,
     });
     const radius = resolveCornerRadius(cfg.radius ?? DEFAULT_ROOM_RADIUS, cfg.corners);
+    const headerAction = this._headerTapAction();
+    // A configured tap_action takes over the header outright, so the fold
+    // arrow — a control for a gesture the header no longer performs — is
+    // dropped rather than left showing a state it can no longer change.
+    const foldableHeader = !!cfg.collapsible && !headerAction;
+    const headerInteractive = foldableHeader || !!headerAction;
 
     return html`
       <ha-card style=${`${cssVars} border-radius: ${radius};`}>
@@ -1045,12 +1071,12 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
           style=${`border-radius: ${radius};${painted ? ` background: ${painted};` : ""}`}
         >
           <div
-            class="header ${cfg.collapsible ? "tappable" : ""}"
-            role=${cfg.collapsible ? "button" : nothing}
-            tabindex=${cfg.collapsible ? "0" : nothing}
-            aria-expanded=${cfg.collapsible ? String(!this._folded) : nothing}
-            @click=${cfg.collapsible ? this._toggleFold : nothing}
-            @keydown=${cfg.collapsible ? activateOnKey(this._toggleFold) : nothing}
+            class="header ${headerInteractive ? "tappable" : ""}"
+            role=${headerInteractive ? "button" : nothing}
+            tabindex=${headerInteractive ? "0" : nothing}
+            aria-expanded=${foldableHeader ? String(!this._folded) : nothing}
+            @click=${headerInteractive ? this._onHeaderTap : nothing}
+            @keydown=${headerInteractive ? activateOnKey(this._onHeaderTap) : nothing}
           >
             <div
               class="room-icon"
@@ -1063,7 +1089,7 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
               <div class="name" title=${name}>${name}</div>
               <div class="subtitle">${subtitle}</div>
             </div>
-            ${cfg.collapsible ? this._renderFoldArrow(accent) : nothing}
+            ${foldableHeader ? this._renderFoldArrow(accent) : nothing}
           </div>
           <div class="body">
             <div class="body-inner">
