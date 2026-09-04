@@ -57,6 +57,7 @@ import { shouldAnimate } from "./shared/animation";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-ENERGY-CARD %c v${CARD_VERSION} `,
@@ -79,7 +80,7 @@ interface BarValue {
 }
 
 @customElement("m3-energy-card")
-export class M3EnergyCard extends LitElement implements LovelaceCard {
+export class M3EnergyCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3EnergyCardConfig;

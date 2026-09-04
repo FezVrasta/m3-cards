@@ -53,6 +53,7 @@ import { discoverOccupancyRooms, type DiscoveredOccupancyRoom } from "./shared/h
 import { fetchOccupancySegments } from "./shared/occupancy-history";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-OCCUPANCY-CARD %c v${CARD_VERSION} `,
@@ -78,7 +79,7 @@ interface OccupancyRow {
 }
 
 @customElement("m3-occupancy-card")
-export class M3OccupancyCard extends LitElement implements LovelaceCard {
+export class M3OccupancyCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3OccupancyCardConfig;

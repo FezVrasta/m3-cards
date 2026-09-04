@@ -85,6 +85,7 @@ import {
 } from "./shared/ha-calendar";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters, listEntities } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-CALENDAR-CARD %c v${CARD_VERSION} `,
@@ -109,7 +110,7 @@ interface DayGroup {
 }
 
 @customElement("m3-calendar-card")
-export class M3CalendarCard extends LitElement implements LovelaceCard {
+export class M3CalendarCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3CalendarCardConfig;

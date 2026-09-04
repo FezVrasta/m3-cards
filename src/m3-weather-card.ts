@@ -46,6 +46,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-WEATHER-CARD %c v${CARD_VERSION} `,
@@ -158,7 +159,7 @@ function smoothCurvePath(points: { x: number; y: number }[]): string {
 }
 
 @customElement("m3-weather-card")
-export class M3WeatherCard extends LitElement implements LovelaceCard {
+export class M3WeatherCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3WeatherCardConfig;

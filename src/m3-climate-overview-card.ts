@@ -56,6 +56,7 @@ import { formatNumber } from "./shared/formatting";
 import { guessRoomIcon } from "./shared/room-icons";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-CLIMATE-OVERVIEW-CARD %c v${CARD_VERSION} `,
@@ -84,7 +85,7 @@ interface ClimateOverviewTile {
 
 
 @customElement("m3-climate-overview-card")
-export class M3ClimateOverviewCard extends LitElement implements LovelaceCard {
+export class M3ClimateOverviewCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ClimateOverviewCardConfig;

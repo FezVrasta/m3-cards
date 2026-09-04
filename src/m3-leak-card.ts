@@ -38,6 +38,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { discoverLeakSensors } from "./shared/ha-registry";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-LEAK-CARD %c v${CARD_VERSION} `,
@@ -58,7 +59,7 @@ interface LeakRow {
 }
 
 @customElement("m3-leak-card")
-export class M3LeakCard extends LitElement implements LovelaceCard {
+export class M3LeakCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3LeakCardConfig;

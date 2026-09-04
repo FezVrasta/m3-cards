@@ -71,6 +71,7 @@ import {
 } from "./shared/ha-time";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-TIME-CARD %c v${CARD_VERSION} `,
@@ -99,7 +100,7 @@ function to12HourOrRaw(hours: number, twelveHour: boolean): number {
 }
 
 @customElement("m3-time-card")
-export class M3TimeCard extends LitElement implements LovelaceCard {
+export class M3TimeCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3TimeCardConfig;

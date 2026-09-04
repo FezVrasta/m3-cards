@@ -82,6 +82,7 @@ import { guessRoomIcon } from "./shared/room-icons";
 import { readCollapsed, writeCollapsed, type CollapseTarget } from "./shared/collapse-state";
 import { hassChangeMatters } from "./shared/should-update";
 import { createCards, updateCardsHass } from "./shared/card-helpers";
+import { TemplatedCard } from "./shared/templated-card";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
@@ -207,7 +208,7 @@ interface Chip {
 }
 
 @customElement("m3-room-card")
-export class M3RoomCard extends LitElement implements LovelaceCard {
+export class M3RoomCard extends TemplatedCard(LitElement) implements LovelaceCard {
   /**
    * A plain property would leave the cards inside the room card starved: they
    * take their data from a `hass` pushed onto them from outside, and the render

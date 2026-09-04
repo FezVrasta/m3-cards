@@ -25,6 +25,7 @@ import { shouldAnimate } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
 import { tintOn, foregroundOn } from "./shared/color-config";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-CLIMATE-CARD-MINI %c v${CARD_VERSION} `,
@@ -33,7 +34,7 @@ console.info(
 );
 
 @customElement("m3-climate-card-mini")
-export class M3ClimateCardMini extends LitElement implements LovelaceCard {
+export class M3ClimateCardMini extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ClimateCardMiniConfig;

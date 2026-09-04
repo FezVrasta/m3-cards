@@ -45,6 +45,7 @@ import { getEnergyDashboardEntities, fetchTodayChangeSum } from "./shared/ha-ene
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-ENERGY-FLOW-CARD %c v${CARD_VERSION} `,
@@ -93,7 +94,7 @@ function straightPath(x1: number, y1: number, x2: number, y2: number): string {
 }
 
 @customElement("m3-energy-flow-card")
-export class M3EnergyFlowCard extends LitElement implements LovelaceCard {
+export class M3EnergyFlowCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3EnergyFlowCardConfig;

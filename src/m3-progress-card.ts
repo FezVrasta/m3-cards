@@ -29,6 +29,7 @@ import { hassChangeMatters } from "./shared/should-update";
 import { buildWavePath } from "./shared/wave";
 import { resolveCommonColors, tintOn, foregroundOn } from "./shared/color-config";
 import { glassCardStyles, glassCardClass, renderMissingEntity } from "./shared/glass-card";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-PROGRESS-CARD %c v${CARD_VERSION} `,
@@ -43,7 +44,7 @@ const AMPLITUDE_LERP = 0.12;
 const DEFAULT_BAR_WIDTH = 220;
 
 @customElement("m3-progress-card")
-export class M3ProgressCard extends LitElement implements LovelaceCard {
+export class M3ProgressCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ProgressCardConfig;

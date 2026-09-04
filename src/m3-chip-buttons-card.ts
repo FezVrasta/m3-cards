@@ -14,9 +14,10 @@ import { resolveThemeColor } from "./shared/color-config";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { chipButtonsStyles, renderChipButtons } from "./shared/chip-buttons";
 import { TapHoldGesture } from "./shared/gestures";
+import { TemplatedCard } from "./shared/templated-card";
 
 @customElement("m3-chip-buttons-card")
-export class M3ChipButtonsCard extends LitElement implements LovelaceCard {
+export class M3ChipButtonsCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ChipButtonsCardConfig;

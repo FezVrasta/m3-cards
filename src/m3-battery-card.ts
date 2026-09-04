@@ -52,6 +52,7 @@ import { discoverBatteryEntities } from "./shared/ha-registry";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-BATTERY-CARD %c v${CARD_VERSION} `,
@@ -83,7 +84,7 @@ const STAGE_ORDER: Record<BatteryStage, number> = {
 };
 
 @customElement("m3-battery-card")
-export class M3BatteryCard extends LitElement implements LovelaceCard {
+export class M3BatteryCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3BatteryCardConfig;

@@ -424,6 +424,9 @@ export interface M3CounterCardConfig {
   card_version?: string;
 }
 
+// One of the two places this project uses `type` for something that is not a
+// card type. `NON_CARD_TYPES` in shared/config-templates.ts lists these so the
+// template walk does not mistake such an entry for a nested card config.
 export type PowerEntryType = "consumer" | "producer";
 
 export interface PowerListEntity {

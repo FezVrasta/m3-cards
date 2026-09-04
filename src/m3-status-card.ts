@@ -73,6 +73,7 @@ import { glassCardClass, glassCardStyles } from "./shared/glass-card";
 import { formatNumber } from "./shared/formatting";
 import { fetchValueHoursAgo } from "./shared/ha-statistics";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
@@ -157,7 +158,7 @@ const PRESETS: Record<StatusPreset, StatusRule[]> = {
 const UNAVAILABLE_STATES = new Set(["unavailable", "unknown", "none", ""]);
 
 @customElement("m3-status-card")
-export class M3StatusCard extends LitElement implements LovelaceCard {
+export class M3StatusCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3StatusCardConfig;

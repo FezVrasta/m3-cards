@@ -40,6 +40,7 @@ import { shouldAnimate } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-POWER-SUMMARY-CARD %c v${CARD_VERSION} `,
@@ -50,7 +51,7 @@ console.info(
 type Direction = "export" | "import" | "neutral";
 
 @customElement("m3-power-summary-card")
-export class M3PowerSummaryCard extends LitElement implements LovelaceCard {
+export class M3PowerSummaryCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3PowerSummaryCardConfig;

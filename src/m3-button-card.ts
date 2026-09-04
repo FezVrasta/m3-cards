@@ -35,6 +35,7 @@ import {
   fillColor,
   inkOn,
 } from "./shared/color-config";
+import { TemplatedCard } from "./shared/templated-card";
 
 const HOLD_DURATION_MS = 500;
 const DOUBLE_TAP_WINDOW_MS = 250;
@@ -55,7 +56,7 @@ function _isNotDisabled(action?: HaActionConfig): boolean {
 }
 
 @customElement("m3-button-card")
-export class M3ButtonCard extends LitElement implements LovelaceCard {
+export class M3ButtonCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ButtonCardConfig;

@@ -120,6 +120,8 @@ the image — everything else is live data.</sub>
   per card via `animation: auto | on | off`
 - Old configs (e.g. `animations: true/false`) are migrated to the current
   schema automatically on load — no manual dashboard edits needed
+- [Jinja2 templates](#templates) in every card's own string fields, live over
+  the websocket — no template-sensor helper per card
 
 ## Installation
 
@@ -145,6 +147,69 @@ The button opens the repository straight in your own Home Assistant — press
    *Settings → Dashboards → Resources → Add resource*
    - URL: `/local/m3-cards.js`
    - Type: JavaScript module
+
+## Templates
+
+Every card accepts Jinja2 in **its own string fields** — name, icon, colour,
+unit, whatever that card reads out of its config. A field is treated as a
+template as soon as it contains `{{` or `{%`; everything else is left alone.
+
+```yaml
+type: custom:m3-button-card
+entity: light.kitchen
+name: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"
+icon: >-
+  {{ 'mdi:lightbulb-on' if is_state('light.kitchen', 'on') else 'mdi:lightbulb' }}
+```
+
+Before, a field could only be a fixed string or one entity's raw state. A
+composed label meant a template-sensor helper in `configuration.yaml` for every
+card that wanted one — and an icon that depends on an entity had no way to be
+expressed at all:
+
+```yaml
+# configuration.yaml — one of these per card, no longer needed
+template:
+  - sensor:
+      - name: Kitchen label
+        state: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"
+```
+
+Values are **pushed**, not polled: the card subscribes to the template over
+Home Assistant's websocket, and Home Assistant re-renders it whenever anything
+the template reads changes. One subscription per distinct template — two fields
+sharing the same string share one — and they are all closed when the card
+leaves the page.
+
+A card that uses no templates behaves exactly as it always has and pays nothing
+for the feature: nothing is walked, subscribed or copied.
+
+### Nested cards are left alone
+
+Card configs can contain other cards: `cards:` on the group and room cards, the
+content of a popup action, a mushroom card dropped into a slot. **Templates
+inside those are not rendered here** — they are passed through untouched to the
+card they belong to.
+
+```yaml
+type: custom:m3-room-card
+area: kitchen
+name: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"   # rendered here
+cards:
+  - type: custom:mushroom-template-card
+    primary: "{{ states('sensor.kitchen_humidity') }} %"           # left for mushroom
+```
+
+The reason is that the inner card renders its own templates, and it renders
+them *live*. Resolving `primary` above would hand mushroom the one string it
+happened to say at the moment the room card was configured — the field would
+freeze at that value and never follow the sensor again. The rule is mechanical:
+the walk stops at any nested object that carries its own `type`, which is what
+a card config looks like whatever card it is for.
+
+The nav card is the exception in the other direction: its entries had templates
+before this existed, with `hidden` / `disabled` read as booleans, and they work
+as documented under [M3 Nav Card](#m3-nav-card).
 
 ## M3 Climate Card
 
