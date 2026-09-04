@@ -24,5 +24,11 @@ jobs:
       - name: Type-check
         run: npm run lint
 
+      # Runs on CI rather than in release.yml on purpose: a failure here is
+      # seen before a release exists, where the same failure would leave a
+      # published release with no bundle attached to it.
+      - name: Unit tests
+        run: npm test
+
       - name: Build
         run: npm run build
