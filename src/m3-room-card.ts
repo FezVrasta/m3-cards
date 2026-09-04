@@ -1751,7 +1751,15 @@ export class M3RoomCard extends LitElement implements LovelaceCard {
         gap: 8px;
         padding: 14px;
         border-radius: ${ROOM_SHEET_RADIUS}px;
-        background: var(--ha-card-background, var(--card-background-color));
+        /* Two layers, for the same reason the calendar card's dialog needs
+           them: the theme's card colour is translucent under a glass theme, by
+           design, and a see-through panel over the tiles it rose out of is
+           unreadable. The colour is kept as an image over an opaque base. */
+        background-color: var(--primary-background-color, #1c1c1c);
+        background-image: linear-gradient(
+          var(--ha-card-background, var(--card-background-color, transparent)),
+          var(--ha-card-background, var(--card-background-color, transparent))
+        );
         transform-origin: bottom center;
         animation: sheet-rise ${unsafeCSS(ROOM_SHEET_MS)}ms ${EASING} both;
       }

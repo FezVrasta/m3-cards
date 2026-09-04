@@ -49,6 +49,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Home Assistant's own `visibility` feature already does that for every card,
   and the card's `hidden` is scoped to what only a template can answer.
 
+- **Calendar and room cards: the panel that opens over them was see-through on
+  a glass theme.** Reported against the calendar card's event details, where the
+  agenda rows read straight through the title and the buttons. Both panels took
+  their background from the theme's card colour, which is the right source for a
+  card and the wrong one for something laid over it: a glass theme makes that
+  colour translucent deliberately. The colour is still used, now painted over an
+  opaque base, so the panel matches the theme and hides what is behind it. The
+  cards' own surfaces are untouched — a card is supposed to let the wallpaper
+  through.
+
 - **Cost card: the projected bars shot off the top of the card when the month
   was changed.** For one frame the elapsed-day count already belonged to the new
   period while the total still belonged to the old one, so the daily average —
@@ -561,6 +571,17 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   ebenfalls **nicht** nachgebaut — Home Assistants eigenes `visibility` kann das
   längst für jede Karte, und `hidden` bleibt auf das beschränkt, was nur eine
   Vorlage beantworten kann.
+
+- **Kalender- und Raumkarte: Das Fenster, das sich über ihnen öffnet, war bei
+  Glas-Themes durchsichtig.** Gemeldet an den Termindetails der Kalenderkarte,
+  wo die Agenda-Zeilen mitten durch Titel und Knöpfe zu lesen waren. Beide
+  Fenster nahmen ihren Hintergrund von der Kartenfarbe des Themes — die richtige
+  Quelle für eine Karte und die falsche für etwas, das darüber liegt: Ein
+  Glas-Theme macht genau diese Farbe absichtlich halbtransparent. Die Farbe wird
+  weiterhin benutzt, jetzt aber über einem deckenden Untergrund, sodass das
+  Fenster zum Theme passt und trotzdem verdeckt, was darunter liegt. Die
+  Kartenflächen selbst bleiben unangetastet — eine Karte *soll* das
+  Hintergrundbild durchscheinen lassen.
 
 - **Kostenkarte: Beim Monatswechsel schossen die Prognosebalken oben aus der
   Karte heraus.** Für einen Frame gehörte die Zahl der vergangenen Tage schon
