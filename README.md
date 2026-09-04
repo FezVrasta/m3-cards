@@ -3561,6 +3561,19 @@ cards:
 
 </details>
 
+## Credits
+
+**M3 Lights Overview**, **M3 Chip Buttons** and **M3 Group Card** were built by
+Fabian Wendel ([UHaFnir](https://github.com/UHaFnir/m3-cards)) in a fork of
+this project, along with the weather card's independent header/chart toggles
+and its configurable hourly strip. Two performance faults in code that was
+already here were his finds as well: every auto-discovering card refetched the
+whole entity registry instead of reading the copy the frontend already holds,
+and opening Home Assistant's card picker ran a full-house scan nine times over.
+
+The card and editor sections above for those three cards are largely his prose,
+lightly adapted.
+
 ## License
 
 MIT

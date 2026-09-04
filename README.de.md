@@ -3646,6 +3646,20 @@ cards:
 
 </details>
 
+## Dank
+
+**M3 Lights Overview**, **M3 Chip Buttons** und **M3 Group Card** stammen von
+Fabian Wendel ([UHaFnir](https://github.com/UHaFnir/m3-cards)), der dieses
+Projekt geforkt hat — ebenso die getrennten Schalter für Kopfbereich und
+Diagramm der Wetterkarte und deren einstellbare Stundenleiste. Zwei
+Performance-Fehler in Code, der hier schon lag, hat er ebenfalls gefunden: Jede
+selbsterkennende Karte holte die gesamte Entitäts-Registry erneut, statt die
+Kopie zu lesen, die das Frontend ohnehin hält, und das Öffnen des
+Karten-Auswahldialogs löste neunmal eine Rundum-Erkennung aus.
+
+Die Abschnitte zu diesen drei Karten oben sind weitgehend sein Text, leicht
+angepasst.
+
 ## Lizenz
 
 MIT
