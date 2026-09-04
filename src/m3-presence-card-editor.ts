@@ -72,6 +72,17 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
     ];
   }
 
+  /**
+   * `hold_action` has been in the config all along with no field to set it
+   * from, so it joins `tap_action` here rather than staying YAML-only.
+   */
+  private _actionsSchema(): SchemaEntry[] {
+    return [
+      { name: "tap_action", selector: { ui_action: {} } },
+      { name: "hold_action", selector: { ui_action: {} } },
+    ];
+  }
+
   private _animationSchema(): SchemaEntry[] {
     return [
       {
@@ -103,6 +114,8 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
       show_since: "editor_presence_show_since",
       show_map: "editor_presence_show_map",
       sort: "editor_presence_sort",
+      tap_action: "editor_tap_action",
+      hold_action: "editor_hold_action",
       animation: "editor_progress_animation",
       glass_background: "editor_glass_background",
       ...radiusLabelMap,
@@ -113,7 +126,14 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
 
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
-    this._config = { ...this._config, ...ev.detail.value };
+    const next = { ...this._config, ...ev.detail.value } as Record<string, unknown>;
+    // `ui_action` clears to undefined rather than "", and a key explicitly set
+    // to undefined is not the same as an absent one once the config is written
+    // back out as YAML.
+    for (const key of ["tap_action", "hold_action"]) {
+      if (next[key] === undefined) delete next[key];
+    }
+    this._config = next as unknown as M3PresenceCardConfig;
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -234,6 +254,10 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
       sort: this._config.sort ?? "home_first",
     };
     const animationData = { animation: this._config.animation ?? "auto" };
+    const actionsData = {
+      tap_action: this._config.tap_action,
+      hold_action: this._config.hold_action,
+    };
 
     return html`
       <div class="editor">
@@ -261,6 +285,20 @@ export class M3PresenceCardEditor extends LitElement implements LovelaceCardEdit
               @value-changed=${this._valueChanged}
             ></ha-form>
             ${contentData.show_map ? html`<div class="hint">${this._t("editor_presence_show_map_helper")}</div>` : nothing}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_interactions")}>
+          <ha-icon slot="leading-icon" icon="mdi:gesture-tap"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${actionsData}
+              .schema=${this._actionsSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_presence_actions_hint")}</div>
           </div>
         </ha-expansion-panel>
 

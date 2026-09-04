@@ -761,6 +761,12 @@ export interface M3PresenceCardConfig {
   unknown_color?: string;
   zone_colors?: Record<string, string>;
   presence_tint_opacity?: number;
+  /**
+   * What a tap on a person does. Card-level, like `hold_action`: one setting
+   * for every row, with the tapped person supplying the target. Unset, a tap
+   * opens more-info for that person, which is what it has always done.
+   */
+  tap_action?: HaActionConfig;
   hold_action?: HaActionConfig;
   text_color?: string;
   secondary_text_color?: string;

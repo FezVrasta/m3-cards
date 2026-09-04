@@ -32,6 +32,34 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
     navigation_path: /lovelace/living-room
   ```
 
+- **The presence card's tap is configurable**, via a card-level `tap_action`.
+  A tap on a person was hardcoded to more-info, so a card meant to be the way
+  into a person's own dashboard view could not be one. `tap_action` takes the
+  standard Home Assistant action config, sits alongside the `hold_action` the
+  card already had, and targets the person actually tapped — `more-info`,
+  `toggle` and a service call that names no target of its own all land on that
+  row's `entity_id`. Unset, a tap opens more-info exactly as before.
+
+  ```yaml
+  type: custom:m3-presence-card
+  tap_action:
+    action: navigate
+    navigation_path: /lovelace/people
+  ```
+
+- **`tap_action` and `hold_action` are in the presence card's editor**, under
+  a new Interactions section. `hold_action` had been in the config all along
+  with no field to set it from, so it was YAML-only.
+
+### Changed
+
+- **The presence card's `hold_action` now runs through the shared action
+  handler**, like every other card's. It used to implement `navigate` and `url`
+  itself and silently ignore the rest, so a `hold_action` of `more-info`,
+  `toggle` or `perform-action` did nothing — and nothing said so, since the
+  editor offered no field for it. Those now work, `confirmation` is honoured,
+  and the two kinds that already worked are unchanged.
+
 ### Hinzugefügt
 
 - **Die Kopfzeile der Raumkarte kann eine Aktion ausführen**, über eine
@@ -51,6 +79,30 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Zustand wird weiter gelesen und angewendet, `collapse_state_entity` und eine
   Automatisierung können eine Karte also weiterhin einklappen, deren Kopfzeile
   navigiert. Ohne `tap_action` ändert sich nichts.
+
+- **Der Tap der Anwesenheitskarte ist einstellbar**, über eine `tap_action` auf
+  Kartenebene. Ein Tap auf eine Person war fest auf More-Info verdrahtet, eine
+  Karte als Weg in die eigene Ansicht einer Person war also nicht möglich.
+  `tap_action` nimmt die übliche Home-Assistant-Aktionskonfiguration, steht
+  neben der bereits vorhandenen `hold_action` und zielt auf die tatsächlich
+  angetippte Person — `more-info`, `toggle` und ein Dienstaufruf ohne eigenes
+  Ziel landen alle auf deren `entity_id`. Ohne Eintrag öffnet ein Tap More-Info
+  wie bisher.
+
+- **`tap_action` und `hold_action` stehen im Editor der Anwesenheitskarte**,
+  unter einem neuen Abschnitt „Interaktionen". `hold_action` steckte schon
+  immer in der Konfiguration, ohne dass es ein Feld dafür gab — sie ließ sich
+  nur in YAML setzen.
+
+### Geändert
+
+- **Die `hold_action` der Anwesenheitskarte läuft nun über den gemeinsamen
+  Aktions-Handler**, wie bei jeder anderen Karte. Bisher setzte sie `navigate`
+  und `url` selbst um und überging den Rest stillschweigend, eine `hold_action`
+  mit `more-info`, `toggle` oder `perform-action` tat also nichts — und nichts
+  wies darauf hin, da der Editor gar kein Feld dafür anbot. Diese funktionieren
+  jetzt, `confirmation` wird beachtet, und die beiden bisher funktionierenden
+  Arten bleiben unverändert.
 
 ## [2.3.2]
 
