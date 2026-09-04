@@ -54,7 +54,7 @@ Beide Fehler ließen die Seite besser aussehen, als sie war.
 - Ein Handy oder ein per DevTools emuliertes Touch-Gerät für alle Drag-Interaktionen
   (Wave-Slider, Wischen) — Maus-Events allein decken `touch-action`-Konflikte nicht ab.
 
-## Cross-Cutting-Checkliste (für jede der 36 Karten)
+## Cross-Cutting-Checkliste (für jede der 39 Karten)
 
 Diese Punkte gelten kartenübergreifend, weil sie über gemeinsame `shared/*`-Module
 implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichzeitig.
@@ -654,6 +654,45 @@ dritten Kalender.
 | Raumkarte: manueller Modus | `mode: manual` | Keine automatisch erkannten Kacheln mehr, nur die eigenen Karten. Ohne `cards` steht dort ein Hinweis statt einer leeren Fläche |
 | Raumkarte: beides zusammen | `mode: auto` **und** `cards:` | Erkannte Kacheln oben, eigene Karten darunter |
 
+## M3 Lights Overview Card
+
+Die Karte entdeckt selbst und hat zwei Filter, die leicht verwechselt werden:
+einer entscheidet, was ein Raum **zeigt**, der andere, was ein Tippen
+**schaltet**. Die meisten Fallen liegen dort.
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Erkennung | `auto_discover: true`, sonst nichts | Räume mit Lichtern erscheinen, jeder mit Name aus dem Bereich; Lichter ohne Bereich tauchen **nicht** als eigener Raum auf |
+| Kopfzeile zählt richtig | Alle Lichter aus, dann eines anschalten | Die Kopfzeile zählt Räume **mit eingeschaltetem Licht**, nicht alle Räume — bei allem aus steht dort 0 |
+| Zwei Ansichten | `view` auf `rooms` und `entities` | Einmal eine Kachel je Raum, einmal eine je Licht; in `entities` zeigt `show_area` den Bereich unter dem Namen |
+| Sortierung | `sort` auf `name`, `area`, `on_first` | Bei `on_first` stehen eingeschaltete Lichter oben und rutschen beim Ausschalten nach unten |
+| Anzeigen ≠ Schalten | `toggle_filter` enger als der Anzeigefilter setzen | Der Raum zeigt weiterhin alle Lichter, ein Tippen schaltet aber nur die des `toggle_filter` |
+| Gruppen nicht doppelt | Eine `light.group` und ihre Mitglieder im selben Bereich, `group_handling` auf `prefer_groups` bzw. `prefer_members` | Einmal zählt nur die Gruppe, einmal nur die Mitglieder — nie beide |
+| Zustand wirkt sofort | Ein Licht per Schalter außerhalb der Karte anschalten | Kachel färbt sich sofort um; die Erkennung läuft dabei **nicht** neu (Zustände sind bewusst nicht Teil des Erkennungsschlüssels) |
+| Popup | `popup` konfigurieren, eine Raumkachel antippen | Popup zeigt nur diesen Raum; Tippen darin öffnet **kein** zweites Popup |
+| Leerer Zustand | Filter so setzen, dass nichts übrig bleibt | Hinweistext statt leerem Raster |
+
+## M3 Chip Buttons Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Umbruch statt Scrollen | Mehr Pillen als in eine Zeile passen, Karte schmal machen | Die Reihe bricht um; sie scrollt **nicht** waagerecht |
+| Zustandsfarbe | `use_entity_color: true` an einer farbigen Lampe | Pille nimmt die Farbe der Entität, nicht die aus `color` |
+| Feste Farbe | `static_color: true` | Pille bleibt „aktiv" eingefärbt, auch wenn die Entität aus ist |
+| Nur Anzeige | `interactive: false` | Kein Tipp-Feedback, kein Zeiger, keine Button-Rolle für Screenreader |
+| Zustandstext | `show_state: true` | Zustand steht neben dem Namen und aktualisiert sich live |
+| Ohne Entität | Pille nur mit `name` und `icon` | Rendert als Beschriftung, wirft nichts |
+
+## M3 Group Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Eine Fläche | Zwei Karten in `cards` legen | Beide sitzen auf **einer** Fläche mit einer Rundung — keine zwei Kacheln mit Lücke |
+| Abstand | `gap` auf 0 und auf 16 | Karten liegen aneinander bzw. deutlich getrennt, die äußere Fläche bleibt eine |
+| Zustände kommen an | Eine interaktive Karte (z. B. Light-Card) einsetzen und bedienen | Sie reagiert und zeigt aktuelle Werte — beweist, dass `hass` an die Kindkarten weitergereicht wird |
+| Kaputte Kindkarte | Eine Karte mit ungültigem `type` eintragen | HA's eigene Fehlerkarte erscheint an ihrer Stelle; die übrigen Karten rendern weiter |
+| Leere Gruppe | `cards: []` | Karte rendert leer statt zu werfen |
+
 ## M3 Nav Card
 
 Die Karte ist Navigations-Chrome statt Datenkachel: sie positioniert sich gegen
@@ -745,7 +784,7 @@ kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.
 1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
    durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
    eine mit Animation wie Progress/Light).
-2. Jede der 36 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+2. Jede der 39 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
 4. Die Kartenzahl an allen fünf Stellen abgleichen, an denen sie steht: beide

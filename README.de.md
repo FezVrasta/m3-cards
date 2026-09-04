@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **36 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **39 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
@@ -3407,6 +3407,228 @@ Eine offene Schublade schließt außerdem bei einem Tipp irgendwo außerhalb. Di
 Fläche, die diesen Tipp fängt, ist unsichtbar und verbraucht ihn — hinter der
 Schublade reagiert also nichts darauf, dass sie weggetippt wurde.
 | `preload_views` | `false` | Reserviert; tut derzeit nichts |
+
+## M3 Lights Overview Card
+
+Eine Raum-für-Raum-Lichtübersicht, nach demselben Muster wie Climate Overview
+oben (die beiden sind dafür gedacht, gestapelt auf einem Dashboard zu
+sitzen): eine Kachel pro Raum mit An/Aus-Status und Anzahl, oder eine flache
+Liste aller Lichter. Ein Tap schaltet die Lichter des Raums; Hold öffnet ein
+Popup.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
+<img src="docs/images/lights-overview-card.png" alt="Lights Overview Card" width="440">
+<img src="docs/images/lights-overview-card-popup.png" alt="Lights Overview Card, Popup" width="440">
+
+```yaml
+type: custom:m3-lights-overview-card
+auto_discover: true
+```
+
+### Entity-Quelle und Raumzuordnung
+
+- **`auto_discover: true`** (Standard): findet alle `light`-Entities, die
+  einem HA-**Bereich** zugeordnet sind, und gruppiert sie zu dessen Kachel.
+  Anders als bei Climate Overview wird ein Licht ohne Bereich verworfen statt
+  zu einer eigenen Kachel zu werden — eine Raum-für-Raum-Übersicht hat für
+  ein nicht zuordenbares Licht nichts Sinnvolles zu zeigen. Filterbar über
+  `include_area` / `exclude_entities` / `include_labels` / `exclude_labels` /
+  `include_state` / `exclude_state`.
+- **`rooms`**: eine manuelle Liste (`name`, `icon`, `entities`,
+  `toggle_entities`) statt Auto-Discovery.
+- **`view`**: `rooms` (Standard, eine Kachel pro Raum) oder `entities` (eine
+  Kachel pro Licht, mit dem Raumnamen als Unterzeile).
+- **`group_handling`**: wenn eine `light.group` und ihre Mitglieder sonst
+  beide als eigene Lichter im selben Raum zählen würden, eine Seite fallen
+  lassen — `prefer_groups` zählt nur die Gruppe, `prefer_members` nur die
+  Mitglieder. Standard `all` zählt beide.
+
+### Was gezeigt wird vs. was ein Tap schaltet
+
+Status und Anzahl einer Kachel spiegeln jedes Licht wider, das der
+Anzeigefilter oben durchlässt. Was ein **Tap** tatsächlich schaltet, kann
+enger sein: `toggle_filter` (dieselbe Syntax wie der Anzeigefilter) setzen,
+um nur eine Teilmenge zu schalten, oder `exclude_toggle_entities` als
+Kurzform für "zeigen, aber nicht schalten" bei bestimmten Entities — nützlich
+für ein zeitgesteuertes Licht oder eine Szenen-Leuchte, die sichtbar sein
+soll, aber nicht Teil des raumweiten Umschaltens. `toggle_inherit_filters:
+false` lässt `toggle_filter` eigenständig stehen, statt den Anzeigefilter
+einzugrenzen. Bei einem manuellen Raum ist `toggle_entities` standardmäßig
+gleich `entities`.
+
+### Tap, Hold und das Popup
+
+Dasselbe Action-System wie bei Climate Overview: `tap_action` (Standard
+`toggle`) / `hold_action` (Standard `popup`, oder `more-info` in der
+`entities`-Ansicht) / `double_tap_action`, wobei `popup.mode` bestimmt, was
+Hold öffnet — **`default-grid`** (dieselbe Karte noch einmal, eingegrenzt auf
+den angetippten Raum), **`default-detail`** (HA's More-Info-Dialog) oder
+**`custom`** (eine beliebige Lovelace-Karte aus `popup.card`, mit
+`[[area_id]]`, `[[entity_id]]`, `[[name]]` aufgelöst gegen den angetippten
+Raum).
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `auto_discover` | boolean | `true` | Automatische Erkennung von Lichtern nach Bereich |
+| `include_area` / `exclude_area` | list\<string\> | – | Filter für Auto-Discovery |
+| `include_entities` / `exclude_entities` | list\<string\> | – | Entity-Filter für Auto-Discovery |
+| `include_labels` / `exclude_labels` | list\<string\> | – | Label-Filter für Auto-Discovery |
+| `include_state` / `exclude_state` | list\<string\> | – | Status-Filter (`on`/`off`/`unavailable`/`unknown`, oder ein eigener Wert) |
+| `group_handling` | `all` \| `prefer_groups` \| `prefer_members` | `all` | Wie eine `light.group` und ihre Mitglieder gezählt werden |
+| `rooms` | Liste (`name`, `icon`, `entities`, `toggle_entities`) | – | Manuelle Raumliste statt Auto-Discovery |
+| `name` / `icon` | string | "Lights" / `mdi:lightbulb-group` | Header |
+| `view` | `rooms` \| `entities` | `rooms` | Kachel pro Raum, oder eine flache Liste pro Licht |
+| `sort` | `name` \| `area` \| `on_first` | `name` | Kachel-Reihenfolge |
+| `show_header` | boolean | `true` | Kartenheader |
+| `show_count` | boolean | `true` | "N/gesamt an" auf einer Mehrlicht-Kachel |
+| `show_area` | boolean | `true` | Raumname als Unterzeile in der `entities`-Ansicht |
+| `hide_empty_rooms` | boolean | `false` | Räume ohne passende Lichter verwerfen |
+| `toggle_filter` | Objekt (dieselben Felder wie der Anzeigefilter) | – | Engerer Filter dafür, was ein Tap tatsächlich schaltet |
+| `exclude_toggle_entities` | list\<string\> | – | Kurzform: zeigen, aber nie schalten |
+| `toggle_inherit_filters` | boolean | `true` | Ob `toggle_filter` den Anzeigefilter eingrenzt oder eigenständig steht |
+| `toggle_group_handling` | `all` \| `prefer_groups` \| `prefer_members` | `group_handling` | `group_handling`, angewendet auf die Schaltmenge |
+| `tap_action` / `hold_action` / `double_tap_action` | Action-Config | toggle / popup / none | Tap-/Hold-/Doppeltap-Actions; ergänzt eine `popup`-Action |
+| `popup` | Objekt (`mode`, `title`, `view`, `sort`, `show_area`, `show_header`, `card`, Filterfelder) | – | Popup der `popup`-Action — siehe oben |
+| `on_color` / `off_color` | string | Theme-Standard | Kachelfarbe nach Status |
+| `accent_color` / `accent_opacity` | string / number | Theme-Standard / `12` | Akzentfarbe des Header-Icons |
+| `tile_tint_opacity` | number | – | Stärke der Kachel-Hintergrundtönung |
+| `text_color` / `secondary_text_color` | string | Theme-Standard | Raumnamen/Werte bzw. Sekundärtext |
+| `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Respektiert `prefers-reduced-motion` |
+| `glass_background` | boolean | `true` | Milchiger Glashintergrund |
+| `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
+
+</details>
+
+## M3 Chip Buttons Card
+
+Eine horizontale Reihe antippbarer Pillen-Chips — einer pro Entity — mit
+Tap-/Hold-/Doppeltipp-Aktionen. Das ist die M3-Antwort auf Bubble Cards
+„sub-buttons only"-Karte: gleiche Grundidee (eine Reihe Icon-Chips), aber
+flachere Konfiguration — ein Formular pro Chip statt mehrerer verschachtelter
+Panels, und explizite Auf/Ab-Buttons zum Umsortieren statt eines Dropdown-Menüs.
+
+Ein Chip kann auch nicht-interaktiv sein (`interactive: false`) — dann wird er
+zu einer reinen Anzeige (z.B. ein Temperatur- oder Feuchte-Chip), das M3-
+Äquivalent zu Bubble Cards separater zweiter Zeile, ohne ein zweites
+Positionierungssystem konfigurieren zu müssen.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
+<img src="docs/images/chip-buttons-card.png" alt="Chip Buttons Card" width="700">
+
+```yaml
+type: custom:m3-chip-buttons-card
+wrap: false
+justify: start
+buttons:
+  - entity: input_select.home_mode
+    name: Daheim
+    icon: mdi:home
+    tap_action:
+      action: more-info
+  - entity: lock.haustuer
+    name: Abgeschlossen
+    color: blue
+    tap_action:
+      action: toggle
+    hold_action:
+      action: more-info
+  - icon: mdi:magnify
+    name: Suche
+    interactive: false
+    tap_action:
+      action: none
+  - entity: sensor.wohnzimmer_temperatur
+    interactive: false
+    show_state: true
+glass_background: true
+radius: 28
+```
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `buttons` | Liste | `[]` | Die Chips, in Anzeigereihenfolge. Jeder Eintrag unterstützt die folgenden Felder |
+| `buttons[].entity` | string | – (optional) | Beliebige Entity. Kann für einen reinen Aktions-/Anzeige-Chip leer gelassen werden |
+| `buttons[].name` | string | `friendly_name` der Entity | Angezeigter Name |
+| `buttons[].icon` | string | Entity-Icon, sonst ein generisches Icon | Icon |
+| `buttons[].color` | string | `primary` | HA-Farbname oder beliebige CSS-Farbe für den Chip im **aktiven** Zustand |
+| `buttons[].inactive_color` | string | – (Standard-Theme-Grau) | Farbe für den Chip im **inaktiven** Zustand |
+| `buttons[].show_state` | boolean | `true` | Entity-Zustand neben dem Namen anzeigen |
+| `buttons[].static_color` | boolean | `false` | Chip immer als „aktiv" darstellen, unabhängig vom tatsächlichen Entity-Zustand (z.B. für einen Status-Chip, der immer hervorstechen soll) |
+| `buttons[].interactive` | boolean | `true` | `false` macht aus dem Chip eine reine Anzeige — keine Tap-/Hold-Handler, nicht per Tastatur fokussierbar |
+| `buttons[].tap_action` | Action | `more-info` | Tap-Aktion, gleicher Aktions-Picker wie bei jeder anderen Karte |
+| `buttons[].hold_action` | Action | `none` | Aktion bei langem Drücken |
+| `buttons[].double_tap_action` | Action | `none` | Aktion bei Doppeltipp |
+| `wrap` | boolean | `false` | Chips auf mehrere Zeilen umbrechen statt horizontal zu scrollen |
+| `justify` | `start` \| `center` \| `end` \| `space-between` | `start` | Horizontale Ausrichtung der Chip-Reihe |
+| `radius` | number (px) | `28` | Eckenradius der Karte |
+| `corners` | object | – | Optionaler Override je Ecke, wie bei jeder anderen Karte |
+| `glass_background` | boolean | `true` | Milchiger Glashintergrund |
+| `card_background` | string | – | Hintergrundfarbe überschreiben |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Press-Animation; `auto` respektiert `prefers-reduced-motion` |
+
+</details>
+
+## M3 Group Card
+
+Fasst andere Karten — M3 oder nicht — in einem gemeinsamen Rahmen zusammen,
+sodass ein Stapel mehrerer kleiner Karten (z.B. zwei oder drei Chip-Button-
+Reihen) wie eine einzige Karte wirkt statt wie ein Haufen separat umrandeter
+Kästen. Die Gruppe zeichnet selbst den äußeren Rahmen/Hintergrund; jede
+verschachtelte Karte, die den Rahmen-Stil dieser Suite teilt, verliert
+automatisch ihren eigenen Rahmen, Hintergrund und ihr Padding, sobald sie in
+einer Gruppe steckt — ganz ohne Konfiguration an der verschachtelten Karte
+selbst. `gap` allein steuert den Abstand zwischen den Reihen, `gap: 0` lässt
+sie sich berühren.
+
+Karten werden über dieselben visuellen Picker hinzugefügt, bearbeitet und
+sortiert, die auch Home Assistants eigener `vertical-stack`-Editor nutzt —
+inklusive Suche, Favoriten und Einfügen aus der Zwischenablage beim
+Hinzufügen einer Karte.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
+<img src="docs/images/group-card.png" alt="Group Card" width="500">
+
+```yaml
+type: custom:m3-group-card
+gap: 4
+cards:
+  - type: custom:m3-chip-buttons-card
+    buttons:
+      - entity: lock.haustuer
+        name: Haustür
+      - entity: binary_sensor.haustuer
+        name: Haustür
+  - type: custom:m3-chip-buttons-card
+    buttons:
+      - entity: lock.hintertuer
+        name: Hintertür
+      - entity: binary_sensor.hintertuer
+        name: Hintertür
+```
+
+### Konfigurationsoptionen
+
+| Option | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `cards` | Liste | `[]` | Die verschachtelten Karten, in Anzeigereihenfolge. Beliebige Lovelace-Karte — M3 oder nicht |
+| `gap` | number (px) | `8` | Abstand zwischen den Reihen. `0` lässt sie sich berühren |
+| `radius` | number (px) | `16` | Eckenradius der Karte |
+| `corners` | object | – | Optionaler Override je Ecke, wie bei jeder anderen Karte |
+| `glass_background` | boolean | `true` | Milchiger Glashintergrund |
+| `card_background` | string | – | Hintergrundfarbe überschreiben |
+
+</details>
 
 ## Lizenz
 
