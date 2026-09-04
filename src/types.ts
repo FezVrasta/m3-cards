@@ -436,6 +436,9 @@ export interface M3CounterCardConfig {
   card_version?: string;
 }
 
+// One of the two places this project uses `type` for something that is not a
+// card type. `NON_CARD_TYPES` in shared/config-templates.ts lists these so the
+// template walk does not mistake such an entry for a nested card config.
 export type PowerEntryType = "consumer" | "producer";
 
 export interface PowerListEntity {
@@ -645,6 +648,7 @@ export interface M3LightCardConfig {
   icon?: string;
   transition?: number;
   show_members?: boolean;
+  show_color_temp?: boolean;
   color_temp_style?: LightColorTempStyle;
   color_temp_presets?: LightColorTempPresets;
   color_palette?: string[];
@@ -773,6 +777,12 @@ export interface M3PresenceCardConfig {
   unknown_color?: string;
   zone_colors?: Record<string, string>;
   presence_tint_opacity?: number;
+  /**
+   * What a tap on a person does. Card-level, like `hold_action`: one setting
+   * for every row, with the tapped person supplying the target. Unset, a tap
+   * opens more-info for that person, which is what it has always done.
+   */
+  tap_action?: HaActionConfig;
   hold_action?: HaActionConfig;
   text_color?: string;
   secondary_text_color?: string;
@@ -1746,6 +1756,13 @@ export interface M3RoomCardConfig {
   cards_columns?: number;
   name?: string;
   icon?: string;
+  /**
+   * What a tap on the card's header does. Unset, the header toggles the fold
+   * when `collapsible` is on and does nothing otherwise — the behaviour the
+   * card has always had. Set, it runs the action instead, and the fold chevron
+   * goes away because the header no longer folds anything.
+   */
+  tap_action?: HaActionConfig;
   /** Opened on hold; falls back to more-info of the category's first entity. */
   detail_path?: string;
   /** Domains beyond the built-in nine, e.g. ["water_heater"]. */

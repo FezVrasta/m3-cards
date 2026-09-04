@@ -58,6 +58,10 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
     ];
   }
 
+  private _colorTempToggleSchema(): SchemaEntry[] {
+    return [{ name: "show_color_temp", selector: { boolean: {} } }];
+  }
+
   private _colorTempSchema(): SchemaEntry[] {
     return [
       {
@@ -121,6 +125,7 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
       transition: "editor_light_transition",
       use_light_color: "editor_light_use_light_color",
       wave_style: "editor_light_wave_style",
+      show_color_temp: "editor_light_show_color_temp",
       color_temp_style: "editor_light_color_temp_style",
       warm: "editor_light_color_temp_warm",
       neutral: "editor_light_color_temp_neutral",
@@ -273,6 +278,8 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
       use_light_color: this._config.use_light_color ?? true,
       wave_style: this._config.wave_style ?? "wavy",
     };
+    const showColorTemp = this._config.show_color_temp !== false;
+    const colorTempToggleData = { show_color_temp: showColorTemp };
     const colorTempData = {
       color_temp_style: this._config.color_temp_style ?? "presets",
       warm: this._config.color_temp_presets?.warm,
@@ -318,11 +325,23 @@ export class M3LightCardEditor extends LitElement implements LovelaceCardEditor 
           <div class="panel-content">
             <ha-form
               .hass=${this.hass}
-              .data=${colorTempData}
-              .schema=${this._colorTempSchema()}
+              .data=${colorTempToggleData}
+              .schema=${this._colorTempToggleSchema()}
               .computeLabel=${this._computeLabel}
-              @value-changed=${this._colorTempPresetChanged}
+              @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="hint">${this._t("editor_light_show_color_temp_helper")}</div>
+            ${showColorTemp
+              ? html`
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${colorTempData}
+                    .schema=${this._colorTempSchema()}
+                    .computeLabel=${this._computeLabel}
+                    @value-changed=${this._colorTempPresetChanged}
+                  ></ha-form>
+                `
+              : nothing}
           </div>
         </ha-expansion-panel>
 

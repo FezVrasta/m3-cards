@@ -54,6 +54,7 @@ import { fireEvent } from "./shared/editor-helpers";
 import { activateOnKey } from "./shared/a11y";
 import { localize, type TranslationKey } from "./localize";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-UPDATES-CARD %c v${CARD_VERSION} `,
@@ -147,7 +148,7 @@ function updateName(attrs: Record<string, any>, id: string): string {
 }
 
 @customElement("m3-updates-card")
-export class M3UpdatesCard extends LitElement implements LovelaceCard {
+export class M3UpdatesCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3UpdatesCardConfig;

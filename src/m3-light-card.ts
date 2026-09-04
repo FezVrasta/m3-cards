@@ -54,6 +54,7 @@ import { hexToHs, hsToRgb, rgbToHex, rgbToHs } from "./shared/color-picker";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters } from "./shared/should-update";
 import { DragThrottle } from "./shared/drag-throttle";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-LIGHT-CARD %c v${CARD_VERSION} `,
@@ -65,7 +66,7 @@ const EASING = unsafeCSS(STANDARD_EASING);
 const DEFAULT_SLIDER_WIDTH = 220;
 
 @customElement("m3-light-card")
-export class M3LightCard extends LitElement implements LovelaceCard {
+export class M3LightCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3LightCardConfig;
@@ -144,6 +145,7 @@ export class M3LightCard extends LitElement implements LovelaceCard {
       animation: "auto",
       wave_style: "wavy",
       use_light_color: true,
+      show_color_temp: true,
       color_temp_style: "presets",
       ...config,
     };
@@ -608,7 +610,9 @@ export class M3LightCard extends LitElement implements LovelaceCard {
             `,
           })}
           ${hasBrightness ? this._renderWaveSlider(displayPct, unavailable) : nothing}
-          ${supportsColorTemp ? this._renderColorTemp(entity, unavailable) : nothing}
+          ${this._config.show_color_temp !== false && supportsColorTemp
+            ? this._renderColorTemp(entity, unavailable)
+            : nothing}
           ${this._config.show_color_wheel && supportsColor
             ? this._renderColorWheel(this._currentHs(entity), unavailable)
             : nothing}

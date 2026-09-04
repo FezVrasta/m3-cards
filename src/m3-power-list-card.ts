@@ -41,6 +41,7 @@ import { renderListRow, captureRowRects, flipRows, listRowStyles } from "./share
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-POWER-LIST-CARD %c v${CARD_VERSION} `,
@@ -61,7 +62,7 @@ interface PowerRow {
 }
 
 @customElement("m3-power-list-card")
-export class M3PowerListCard extends LitElement implements LovelaceCard {
+export class M3PowerListCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3PowerListCardConfig;

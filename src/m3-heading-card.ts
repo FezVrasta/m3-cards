@@ -49,6 +49,7 @@ import {
 } from "./shared/color-config";
 import { readCollapsed, writeCollapsed, type CollapseTarget } from "./shared/collapse-state";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 const EASING = unsafeCSS(STANDARD_EASING);
 
@@ -61,7 +62,7 @@ console.info(
 const STORAGE_PREFIX = "m3-heading-collapsed";
 
 @customElement("m3-heading-card")
-export class M3HeadingCard extends LitElement implements LovelaceCard {
+export class M3HeadingCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3HeadingCardConfig;

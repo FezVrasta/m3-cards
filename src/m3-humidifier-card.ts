@@ -74,6 +74,7 @@ import { buildWavePath, lerpStep } from "./shared/wave";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { hassChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-HUMIDIFIER-CARD %c v${CARD_VERSION} `,
@@ -129,7 +130,7 @@ function prettify(raw: string): string {
 }
 
 @customElement("m3-humidifier-card")
-export class M3HumidifierCard extends LitElement implements LovelaceCard {
+export class M3HumidifierCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3HumidifierCardConfig;

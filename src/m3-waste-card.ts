@@ -28,6 +28,7 @@ import { shouldAnimate, isReducedMotion } from "./shared/animation";
 import { fireEvent } from "./shared/editor-helpers";
 import { localize, type TranslationKey } from "./localize";
 import { hassChangeMatters, listEntities } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-WASTE-CARD %c v${CARD_VERSION} `,
@@ -51,7 +52,7 @@ interface WasteStream {
 }
 
 @customElement("m3-waste-card")
-export class M3WasteCard extends LitElement implements LovelaceCard {
+export class M3WasteCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3WasteCardConfig;

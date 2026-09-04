@@ -6,6 +6,175 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Added
+
+- **Jinja2 templates in every card's own string fields.** A field containing
+  `{{` or `{%` — a name, an icon, a colour, whatever that card reads out of its
+  config — is now subscribed over Home Assistant's `render_template` websocket
+  and pushed a new value whenever anything it reads changes. Until now a card
+  could show a fixed string or one entity's raw state and nothing else, so a
+  composed label meant a template-sensor helper in `configuration.yaml` for
+  every card that wanted one, and a dashboard moved over from mushroom lost
+  every templated label, icon and colour it had.
+
+  Templates inside a **nested** card config — `cards:`, a popup action's
+  content, a mushroom card in a slot — are deliberately left alone and handed
+  to that card verbatim. It renders them itself, and it renders them live;
+  resolving them here would freeze the field at whatever it said when the outer
+  card was configured. The walk stops at any nested object carrying its own
+  `type`.
+
+  Nothing changes for a card that uses no templates, and it costs nothing: no
+  walk, no subscription, no copy of its config. The nav card keeps its own
+  per-entry templates, including the boolean `hidden` / `disabled` fields.
+
+- **The room card's header can run an action**, via a card-level `tap_action`.
+  Until now the header either folded the card or did nothing, and the only
+  action the card offered was `detail_path` on a long press of a category tile
+  — so a room card on an overview had no way to be the door into that room's
+  own view. `tap_action` takes the standard Home Assistant action config and
+  goes through the same handler the heading and status cards use, so
+  `navigate` and `url` behave as they do elsewhere, and `perform-action` does
+  too when it names its own `target`. `more-info` and `toggle` cannot work
+  here: a room is an area, not an entity, so there is no implied target to
+  hand them, and both do nothing without one.
+
+  A tap cannot both fold the card and open a view, so a configured
+  `tap_action` takes the header over from the fold and the chevron goes with
+  it — it promises a fold the header no longer performs. Everything else about
+  `collapsible` is untouched: the stored state is still read and applied, so
+  `collapse_state_entity` and an automation can still fold a card whose header
+  navigates. Leaving `tap_action` unset changes nothing at all.
+
+  ```yaml
+  type: custom:m3-room-card
+  area: living_room
+  tap_action:
+    action: navigate
+    navigation_path: /lovelace/living-room
+  ```
+
+- **The presence card's tap is configurable**, via a card-level `tap_action`.
+  A tap on a person was hardcoded to more-info, so a card meant to be the way
+  into a person's own dashboard view could not be one. `tap_action` takes the
+  standard Home Assistant action config, sits alongside the `hold_action` the
+  card already had, and targets the person actually tapped — `more-info`,
+  `toggle` and a service call that names no target of its own all land on that
+  row's `entity_id`. Unset, a tap opens more-info exactly as before.
+
+  ```yaml
+  type: custom:m3-presence-card
+  tap_action:
+    action: navigate
+    navigation_path: /lovelace/people
+  ```
+
+- **`tap_action` and `hold_action` are in the presence card's editor**, under
+  a new Interactions section. `hold_action` had been in the config all along
+  with no field to set it from, so it was YAML-only.
+
+- **`show_color_temp` for the light card.** The colour temperature row appeared
+  on every light that reports `color_temp`, and nothing could take it away —
+  `color_temp_style` only chooses between the three presets and the continuous
+  slider, it does not hide the row. On a view carrying dozens of light cards
+  that row is height on every one of them, paid for by people who only ever
+  drag the brightness. `show_color_temp: false` leaves it out. It defaults to
+  `true`, so existing dashboards look exactly as they did, and it only ever
+  removes the row — a light without colour temperature support still never
+  shows one. In the editor the switch sits at the top of the **Colour
+  temperature** section, with the style and preset fields below it; they are
+  hidden while it is off, since they have nothing left to describe.
+
+### Changed
+
+- **The presence card's `hold_action` now runs through the shared action
+  handler**, like every other card's. It used to implement `navigate` and `url`
+  itself and silently ignore the rest, so a `hold_action` of `more-info`,
+  `toggle` or `perform-action` did nothing — and nothing said so, since the
+  editor offered no field for it. Those now work, `confirmation` is honoured,
+  and the two kinds that already worked are unchanged.
+
+### Hinzugefügt
+
+- **Jinja2-Templates in allen eigenen Textfeldern jeder Karte.** Ein Feld mit
+  `{{` oder `{%` — Name, Icon, Farbe, was die Karte eben aus ihrer
+  Konfiguration liest — wird jetzt über den `render_template`-Websocket von Home
+  Assistant abonniert und bekommt einen neuen Wert gepusht, sobald sich etwas
+  ändert, das das Template liest. Bisher konnte eine Karte einen festen Text
+  oder den rohen Zustand einer Entität zeigen und sonst nichts: Für jede
+  zusammengesetzte Beschriftung brauchte es einen Template-Sensor-Helfer in der
+  `configuration.yaml`, und ein von Mushroom übernommenes Dashboard verlor jede
+  getemplatete Beschriftung, jedes Icon und jede Farbe.
+
+  Templates in **verschachtelten** Karten-Konfigurationen — `cards:`, der Inhalt
+  eines Popup-Actions, eine Mushroom-Karte in einem Slot — bleiben bewusst
+  unangetastet und gehen unverändert an diese Karte. Sie rendert sie selbst, und
+  zwar live; würden sie hier aufgelöst, fröre das Feld auf dem Wert ein, den es
+  beim Konfigurieren der äußeren Karte hatte. Der Durchlauf stoppt an jedem
+  verschachtelten Objekt mit eigenem `type`.
+
+  Für Karten ohne Templates ändert sich nichts, und es kostet nichts: kein
+  Durchlauf, kein Abo, keine Kopie der Konfiguration. Die Nav-Karte behält ihre
+  eigenen Templates pro Eintrag, samt der Wahrheitswert-Felder `hidden` /
+  `disabled`.
+
+- **Die Kopfzeile der Raumkarte kann eine Aktion ausführen**, über eine
+  `tap_action` auf Kartenebene. Bisher klappte die Kopfzeile die Karte ein oder
+  tat nichts, und die einzige Aktion der Karte war `detail_path` bei langem
+  Druck auf eine Kategorie-Kachel — eine Raumkarte auf einer Übersicht konnte
+  also nicht die Tür in die eigene Ansicht dieses Raums sein. `tap_action`
+  nimmt die übliche Home-Assistant-Aktionskonfiguration und läuft über
+  denselben Handler wie bei der Überschriften- und der Status-Karte: `navigate`
+  und `url` verhalten sich wie überall sonst, `perform-action` ebenfalls, sofern
+  es sein `target` selbst benennt. `more-info` und `toggle` können hier nicht
+  greifen — ein Raum ist ein Bereich, keine Entität, es gibt also kein
+  mitzugebendes Ziel, und ohne eines tun beide nichts.
+
+  Ein Tap kann nicht zugleich einklappen und eine Ansicht öffnen, deshalb
+  übernimmt eine gesetzte `tap_action` die Kopfzeile vom Einklappen, und der
+  Pfeil geht mit — er verspricht ein Einklappen, das die Kopfzeile nicht mehr
+  ausführt. Alles Übrige an `collapsible` bleibt unberührt: der gespeicherte
+  Zustand wird weiter gelesen und angewendet, `collapse_state_entity` und eine
+  Automatisierung können eine Karte also weiterhin einklappen, deren Kopfzeile
+  navigiert. Ohne `tap_action` ändert sich nichts.
+
+- **Der Tap der Anwesenheitskarte ist einstellbar**, über eine `tap_action` auf
+  Kartenebene. Ein Tap auf eine Person war fest auf More-Info verdrahtet, eine
+  Karte als Weg in die eigene Ansicht einer Person war also nicht möglich.
+  `tap_action` nimmt die übliche Home-Assistant-Aktionskonfiguration, steht
+  neben der bereits vorhandenen `hold_action` und zielt auf die tatsächlich
+  angetippte Person — `more-info`, `toggle` und ein Dienstaufruf ohne eigenes
+  Ziel landen alle auf deren `entity_id`. Ohne Eintrag öffnet ein Tap More-Info
+  wie bisher.
+
+- **`tap_action` und `hold_action` stehen im Editor der Anwesenheitskarte**,
+  unter einem neuen Abschnitt „Interaktionen". `hold_action` steckte schon
+  immer in der Konfiguration, ohne dass es ein Feld dafür gab — sie ließ sich
+  nur in YAML setzen.
+
+- **`show_color_temp` für die Light Card.** Die Farbtemperatur-Zeile erschien
+  bei jeder Lampe mit `color_temp`, und nichts konnte sie wegnehmen —
+  `color_temp_style` wählt nur zwischen den drei Voreinstellungen und dem
+  stufenlosen Regler, ausblenden lässt sich die Zeile damit nicht. Auf einer
+  Ansicht mit Dutzenden Light Cards ist das Höhe auf jeder einzelnen, bezahlt
+  von denen, die ohnehin nur die Helligkeit ziehen. `show_color_temp: false`
+  lässt sie weg. Standard ist `true`, bestehende Dashboards sehen also
+  unverändert aus, und die Option nimmt nur weg — eine Lampe ohne
+  Farbtemperatur-Unterstützung zeigt weiterhin keine. Im Editor steht der
+  Schalter oben im Abschnitt **Farbtemperatur**, Stil- und Voreinstellungs-
+  Felder darunter; sie verschwinden, solange er aus ist, weil sie dann nichts
+  mehr beschreiben.
+
+### Geändert
+
+- **Die `hold_action` der Anwesenheitskarte läuft nun über den gemeinsamen
+  Aktions-Handler**, wie bei jeder anderen Karte. Bisher setzte sie `navigate`
+  und `url` selbst um und überging den Rest stillschweigend, eine `hold_action`
+  mit `more-info`, `toggle` oder `perform-action` tat also nichts — und nichts
+  wies darauf hin, da der Editor gar kein Feld dafür anbot. Diese funktionieren
+  jetzt, `confirmation` wird beachtet, und die beiden bisher funktionierenden
+  Arten bleiben unverändert.
+
 ## [2.4.0-uhafnir.1] - 2026-09-04
 
 ### Added

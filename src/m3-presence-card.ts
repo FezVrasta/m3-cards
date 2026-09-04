@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import type {
+  HaActionConfig,
   HomeAssistant,
   M3PresenceCardConfig,
   LovelaceCard,
@@ -30,10 +31,11 @@ import { renderCardHeader, cardHeaderStyles } from "./shared/card-header";
 import { shouldAnimate } from "./shared/animation";
 import { activateOnKey } from "./shared/a11y";
 import { discoverPersonEntities } from "./shared/ha-registry";
-import { fireEvent } from "./shared/editor-helpers";
+import { handleAction, isActionable } from "./shared/actions";
 import { localize, type TranslationKey } from "./localize";
 import { formatNumber } from "./shared/formatting";
 import { discoveryChangeMatters } from "./shared/should-update";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-PRESENCE-CARD %c v${CARD_VERSION} `,
@@ -54,7 +56,7 @@ interface PersonRow {
 }
 
 @customElement("m3-presence-card")
-export class M3PresenceCard extends LitElement implements LovelaceCard {
+export class M3PresenceCard extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3PresenceCardConfig;
@@ -260,17 +262,32 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
     return this._t("since_days").replace("{n}", String(days));
   }
 
-  private _fireMoreInfo(entityId: string): () => void {
-    return () => fireEvent(this, "hass-more-info", { entityId });
+  /**
+   * Runs one of the card's actions against the person that was pressed.
+   *
+   * `tap_action` and `hold_action` are card-level — one setting for every row,
+   * matching how `hold_action` has always been configured — and the row supplies
+   * the target, so `more-info`, `toggle` and a service call with no target of
+   * its own all land on the person actually pressed rather than on some entity
+   * named once in the config.
+   *
+   * With no `tap_action` set, `handleAction` falls back to `more-info` on that
+   * entity, which is what a tap has always done.
+   */
+  private _runAction(action: HaActionConfig | undefined, entityId: string): void {
+    handleAction(this, this.hass, action, entityId);
   }
 
-  private _handlePointerDown(_row: PersonRow): (e: PointerEvent) => void {
+  private _handlePointerDown(row: PersonRow): (e: PointerEvent) => void {
     return () => {
       this._holdFired = false;
-      if (!this._config?.hold_action || this._config.hold_action.action === "none") return;
+      const hold = this._config?.hold_action;
+      // No hold timer at all without an action to run, so a press-and-wait
+      // still ends in the tap it would have before.
+      if (!hold || !isActionable(hold)) return;
       this._holdTimer = window.setTimeout(() => {
         this._holdFired = true;
-        this._triggerHoldAction();
+        this._triggerHoldAction(row.entityId);
       }, HOLD_MS);
     };
   }
@@ -281,19 +298,23 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
         window.clearTimeout(this._holdTimer);
         this._holdTimer = undefined;
       }
-      if (!this._holdFired) this._fireMoreInfo(row.entityId)();
+      if (!this._holdFired) this._runAction(this._config?.tap_action, row.entityId);
     };
   }
 
-  private _triggerHoldAction(): void {
+  /**
+   * The hold now goes through the shared handler as well.
+   *
+   * It used to implement `navigate` and `url` itself and quietly ignore
+   * everything else, so a `hold_action` of `more-info`, `toggle` or
+   * `perform-action` did nothing at all — which the editor never revealed,
+   * because it offered no `hold_action` field to begin with. The two kinds that
+   * did work behave identically here.
+   */
+  private _triggerHoldAction(entityId: string): void {
     const action = this._config?.hold_action;
     if (!action) return;
-    if (action.action === "navigate" && action.navigation_path) {
-      window.history.pushState(null, "", action.navigation_path);
-      window.dispatchEvent(new CustomEvent("location-changed", { bubbles: true, composed: true }));
-    } else if (action.action === "url" && action.url_path) {
-      window.open(action.url_path, action.new_tab === false ? "_self" : "_blank");
-    }
+    this._runAction(action, entityId);
   }
 
   private _watchedEntities(): string[] {
@@ -390,7 +411,7 @@ export class M3PresenceCard extends LitElement implements LovelaceCard {
             this._holdTimer = undefined;
           }
         }}
-        @keydown=${activateOnKey(this._fireMoreInfo(row.entityId))}
+        @keydown=${activateOnKey(() => this._runAction(this._config?.tap_action, row.entityId))}
       >
         <div class="avatar-wrap">
           <div class="avatar" style=${picture ? `background-image: url(${picture});` : ""}>

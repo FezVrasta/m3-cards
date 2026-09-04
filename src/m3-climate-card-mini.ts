@@ -33,6 +33,7 @@ import {
   resolveSetpointSurface,
   setpointSurfaceStyles,
 } from "./shared/climate-surface";
+import { TemplatedCard } from "./shared/templated-card";
 
 console.info(
   `%c M3-CLIMATE-CARD-MINI %c v${CARD_VERSION} `,
@@ -41,7 +42,7 @@ console.info(
 );
 
 @customElement("m3-climate-card-mini")
-export class M3ClimateCardMini extends LitElement implements LovelaceCard {
+export class M3ClimateCardMini extends TemplatedCard(LitElement) implements LovelaceCard {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: M3ClimateCardMiniConfig;

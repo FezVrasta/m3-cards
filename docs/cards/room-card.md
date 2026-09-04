@@ -108,12 +108,69 @@ otherwise more-info for the first entity. Vacuums and locks have no meaningful
 toggle, so a tap opens more-info instead of the card guessing at something a
 person would rather decide.
 
+### Folding a room away
+
+`collapsible: true` puts a chevron in the header and folds the card down to
+that header when it is tapped. The subtitle stays — "occupied · 3 devices on"
+is exactly what a folded room still needs to say, and a fold that hid it would
+turn the card into a label.
+
+The state persists per browser, or across devices in an `input_boolean` via
+`collapse_state_entity` — which also lets an automation fold the guest room
+away while nobody is in it.
+
+```yaml
+type: custom:m3-room-card
+area: guest_room
+collapsible: true
+default_collapsed: true
+```
+
+Setting a header `tap_action` hands the header to that action and hides the
+chevron, since the header no longer folds anything — see "Tapping the header"
+below.
+
+### Tapping the header
+
+The header is the card's title bar, and by default it either folds the card
+(with `collapsible: true`) or does nothing at all. `tap_action` gives it a
+normal Home Assistant action instead — most usefully `navigate`, so the room
+card on an overview becomes the way into that room's own view.
+
+```yaml
+type: custom:m3-room-card
+area: living_room
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/living-room
+```
+
+`navigate` and `url` work as they do everywhere, and `none` makes the header
+deliberately inert. `perform-action` works as long as the action names its own
+`target`.
+
+`more-info` and `toggle` do **not** work here, and it is worth saying plainly:
+a room card is an area, not an entity, so it has no implied target to hand
+them, and both quietly do nothing without one. Point them at a tile's
+`categories[].tap_action` instead, which does have an entity behind it.
+
+A tap cannot both fold the card and open a view, so `tap_action` takes the
+header over from the fold, and the chevron goes with it — it promises a fold
+the header no longer performs. The rest of `collapsible` is untouched: the
+stored state is still read and applied, so `collapse_state_entity` and an
+automation can still fold the card while its header navigates.
+
+Note this is card-level and separate from `categories[].tap_action`, which
+governs a tap on one category tile inside the body, and from `detail_path`,
+which opens on a hold of a tile.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `area` | string | – | The HA area id. Required |
 | `name` / `icon` | string | the area's own | The icon falls back to a guess from the room name |
+| `tap_action` | action | – | What a tap on the header does. Unset, it folds the card when `collapsible` is on. Set, it takes the header over from the fold and the chevron goes |
 | `detail_path` | string | – | Opened on hold |
 | `extra_domains` | list | – | Domains beyond the built-in nine |
 | `category_order` | list | – | Domains in the order you want them; the rest follow behind |

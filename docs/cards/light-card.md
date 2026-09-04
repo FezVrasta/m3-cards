@@ -28,6 +28,11 @@ smooth even on a slow network connection. Entities without `brightness`
 support (e.g. simple on/off lamps) show only the header and power button,
 no slider.
 
+A light that reports `color_temp` also gets a color temperature row —
+three presets, or a continuous slider with `color_temp_style: slider`.
+`show_color_temp: false` leaves it out entirely, which keeps the card
+short on views that hold many lights and only ever change brightness.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -37,6 +42,8 @@ no slider.
 | `icon` | string | entity icon | Icon in the icon tile |
 | `transition` | number | – | Transition duration (seconds) for `light.turn_on` calls |
 | `wave_style` | `wavy` \| `flat` | `wavy` | Slider wave shape |
+| `show_color_temp` | boolean | `true` | Show the color temperature row; `false` hides it even on a light that supports it |
+| `color_temp_style` | `presets` \| `slider` | `presets` | Three preset swatches or a continuous slider |
 | `accent_color` / `track_color` / `handle_color` | string | theme default | Slider colors |
 | `text_color` / `secondary_text_color` | string | theme default | Name / subtitle |
 | `card_background` | string | glass/solid background | Card background |

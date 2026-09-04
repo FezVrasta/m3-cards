@@ -123,6 +123,8 @@ the image — everything else is live data.</sub>
   per card via `animation: auto | on | off`
 - Old configs (e.g. `animations: true/false`) are migrated to the current
   schema automatically on load — no manual dashboard edits needed
+- [Jinja2 templates](#templates) in every card's own string fields, live over
+  the websocket — no template-sensor helper per card
 
 ## Installation
 
@@ -148,6 +150,69 @@ The button opens the repository straight in your own Home Assistant — press
    *Settings → Dashboards → Resources → Add resource*
    - URL: `/local/m3-cards.js`
    - Type: JavaScript module
+
+## Templates
+
+Every card accepts Jinja2 in **its own string fields** — name, icon, colour,
+unit, whatever that card reads out of its config. A field is treated as a
+template as soon as it contains `{{` or `{%`; everything else is left alone.
+
+```yaml
+type: custom:m3-button-card
+entity: light.kitchen
+name: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"
+icon: >-
+  {{ 'mdi:lightbulb-on' if is_state('light.kitchen', 'on') else 'mdi:lightbulb' }}
+```
+
+Before, a field could only be a fixed string or one entity's raw state. A
+composed label meant a template-sensor helper in `configuration.yaml` for every
+card that wanted one — and an icon that depends on an entity had no way to be
+expressed at all:
+
+```yaml
+# configuration.yaml — one of these per card, no longer needed
+template:
+  - sensor:
+      - name: Kitchen label
+        state: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"
+```
+
+Values are **pushed**, not polled: the card subscribes to the template over
+Home Assistant's websocket, and Home Assistant re-renders it whenever anything
+the template reads changes. One subscription per distinct template — two fields
+sharing the same string share one — and they are all closed when the card
+leaves the page.
+
+A card that uses no templates behaves exactly as it always has and pays nothing
+for the feature: nothing is walked, subscribed or copied.
+
+### Nested cards are left alone
+
+Card configs can contain other cards: `cards:` on the group and room cards, the
+content of a popup action, a mushroom card dropped into a slot. **Templates
+inside those are not rendered here** — they are passed through untouched to the
+card they belong to.
+
+```yaml
+type: custom:m3-room-card
+area: kitchen
+name: "{{ states('sensor.kitchen_temperature') | round(1) }} °C"   # rendered here
+cards:
+  - type: custom:mushroom-template-card
+    primary: "{{ states('sensor.kitchen_humidity') }} %"           # left for mushroom
+```
+
+The reason is that the inner card renders its own templates, and it renders
+them *live*. Resolving `primary` above would hand mushroom the one string it
+happened to say at the moment the room card was configured — the field would
+freeze at that value and never follow the sensor again. The rule is mechanical:
+the walk stops at any nested object that carries its own `type`, which is what
+a card config looks like whatever card it is for.
+
+The nav card is the exception in the other direction: its entries had templates
+before this existed, with `hidden` / `disabled` read as booleans, and they work
+as documented under [M3 Nav Card](#m3-nav-card).
 
 ## M3 Climate Card
 
@@ -1291,6 +1356,11 @@ smooth even on a slow network connection. Entities without `brightness`
 support (e.g. simple on/off lamps) show only the header and power button,
 no slider.
 
+A light that reports `color_temp` also gets a color temperature row —
+three presets, or a continuous slider with `color_temp_style: slider`.
+`show_color_temp: false` leaves it out entirely, which keeps the card
+short on views that hold many lights and only ever change brightness.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
@@ -1300,6 +1370,8 @@ no slider.
 | `icon` | string | entity icon | Icon in the icon tile |
 | `transition` | number | – | Transition duration (seconds) for `light.turn_on` calls |
 | `wave_style` | `wavy` \| `flat` | `wavy` | Slider wave shape |
+| `show_color_temp` | boolean | `true` | Show the color temperature row; `false` hides it even on a light that supports it |
+| `color_temp_style` | `presets` \| `slider` | `presets` | Three preset swatches or a continuous slider |
 | `accent_color` / `track_color` / `handle_color` | string | theme default | Slider colors |
 | `text_color` / `secondary_text_color` | string | theme default | Name / subtitle |
 | `card_background` | string | glass/solid background | Card background |
@@ -1497,8 +1569,39 @@ auto_discover: true
 - **`auto_discover: false`**: only the selection explicitly listed in
   `entities` (`person.*` or `device_tracker.*`).
 
-Tapping opens the entity's more-info dialog; a long press (500ms)
+### Interaction
+
+Tapping a person opens their more-info dialog; a long press (500ms)
 optionally triggers `hold_action` (e.g. navigating to a dashboard view).
+
+`tap_action` replaces the more-info on a tap with any standard Home Assistant
+action — `navigate`, `url`, `perform-action`, `toggle`, `more-info`, or `none`.
+Like `hold_action` it is card-level, one setting for the whole grid, and the
+person actually tapped is the target: `more-info`, `toggle` and a service call
+that names no target of its own all land on that person's `entity_id`.
+
+```yaml
+type: custom:m3-presence-card
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/people
+hold_action:
+  action: more-info
+```
+
+Leaving `tap_action` unset keeps the more-info dialog a tap has always opened.
+
+A service that takes no `entity_id` needs an empty `target` to say so —
+otherwise the tapped person is passed along and the service call fails:
+
+```yaml
+hold_action:
+  action: perform-action
+  perform_action: persistent_notification.create
+  target: {}
+  data:
+    message: Someone held a tile
+```
 
 ### Configuration options
 
@@ -1515,7 +1618,8 @@ optionally triggers `hold_action` (e.g. navigating to a dashboard view).
 | `sort` | `home_first` \| `name` | `home_first` | Sort order: home first or alphabetical |
 | `home_color` / `not_home_color` / `zone_color` / `unknown_color` | string | green/blue/purple/gray | Status ring colors |
 | `zone_colors` | object (zone name → color) | – | Override per named zone |
-| `hold_action` | action object | – | Action on a long press (500ms) on an avatar |
+| `tap_action` | action object | more-info | Action on a tap on an avatar, targeting that person. Unset, a tap opens their more-info |
+| `hold_action` | action object | – | Action on a long press (500ms) on an avatar, targeting that person |
 | `text_color` / `secondary_text_color` | string | theme default | Names vs. status line |
 | `card_background` | string | glass/solid background | Card background |
 | `animation` | `auto` \| `on` \| `off` | `auto` | Status-change animation; `auto`/`on` respect `prefers-reduced-motion` |
@@ -3113,12 +3217,69 @@ otherwise more-info for the first entity. Vacuums and locks have no meaningful
 toggle, so a tap opens more-info instead of the card guessing at something a
 person would rather decide.
 
+### Folding a room away
+
+`collapsible: true` puts a chevron in the header and folds the card down to
+that header when it is tapped. The subtitle stays — "occupied · 3 devices on"
+is exactly what a folded room still needs to say, and a fold that hid it would
+turn the card into a label.
+
+The state persists per browser, or across devices in an `input_boolean` via
+`collapse_state_entity` — which also lets an automation fold the guest room
+away while nobody is in it.
+
+```yaml
+type: custom:m3-room-card
+area: guest_room
+collapsible: true
+default_collapsed: true
+```
+
+Setting a header `tap_action` hands the header to that action and hides the
+chevron, since the header no longer folds anything — see "Tapping the header"
+below.
+
+### Tapping the header
+
+The header is the card's title bar, and by default it either folds the card
+(with `collapsible: true`) or does nothing at all. `tap_action` gives it a
+normal Home Assistant action instead — most usefully `navigate`, so the room
+card on an overview becomes the way into that room's own view.
+
+```yaml
+type: custom:m3-room-card
+area: living_room
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/living-room
+```
+
+`navigate` and `url` work as they do everywhere, and `none` makes the header
+deliberately inert. `perform-action` works as long as the action names its own
+`target`.
+
+`more-info` and `toggle` do **not** work here, and it is worth saying plainly:
+a room card is an area, not an entity, so it has no implied target to hand
+them, and both quietly do nothing without one. Point them at a tile's
+`categories[].tap_action` instead, which does have an entity behind it.
+
+A tap cannot both fold the card and open a view, so `tap_action` takes the
+header over from the fold, and the chevron goes with it — it promises a fold
+the header no longer performs. The rest of `collapsible` is untouched: the
+stored state is still read and applied, so `collapse_state_entity` and an
+automation can still fold the card while its header navigates.
+
+Note this is card-level and separate from `categories[].tap_action`, which
+governs a tap on one category tile inside the body, and from `detail_path`,
+which opens on a hold of a tile.
+
 ### Configuration options
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `area` | string | – | The HA area id. Required |
 | `name` / `icon` | string | the area's own | The icon falls back to a guess from the room name |
+| `tap_action` | action | – | What a tap on the header does. Unset, it folds the card when `collapsible` is on. Set, it takes the header over from the fold and the chevron goes |
 | `detail_path` | string | – | Opened on hold |
 | `extra_domains` | list | – | Domains beyond the built-in nine |
 | `category_order` | list | – | Domains in the order you want them; the rest follow behind |
