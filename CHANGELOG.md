@@ -6,6 +6,8 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [2.4.0-uhafnir.1] - 2026-09-04
+
 ### Added
 
 - **Nav Card** — new bottom/side navigation bar (bar, segmented, floating,
