@@ -1434,6 +1434,10 @@ windowWithCards.customCards.push({
   name: "M3 Calendar Card",
   description:
     "Agenda and month grid for any number of calendars, in one card — with running events marked and multi-day events shown on every day they touch.",
-  preview: true,
+  // false: connectedCallback() fetches real events from the backend for every
+  // configured calendar as soon as the card mounts. HA's card-picker preview
+  // would pay that network round-trip just to draw a thumbnail — the same
+  // reasoning as the discovering cards, but a live fetch rather than a scan.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

@@ -642,6 +642,10 @@ windowWithCards.customCards.push({
   name: "M3 Battery Card",
   description:
     "Eine Material-3-Übersicht aller Batteriestände mit automatischer Erkennung, Schwellwert-Farben und Sortierung.",
-  preview: true,
+  // false: HA's "Add card" dialog builds a real, hass-wired element of every
+  // registered type just to draw its preview thumbnail. This card discovers
+  // its entities as soon as it sees a hass, so leaving the preview on runs a
+  // full-house scan for everyone who opens that dialog.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });

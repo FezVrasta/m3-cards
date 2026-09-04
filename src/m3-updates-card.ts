@@ -1262,6 +1262,9 @@ windowWithCards.customCards.push({
   name: "M3 Updates Card",
   description:
     "Übersicht aller verfügbaren Updates (Core, OS, Supervisor, Add-ons, HACS, Firmware) mit Statuszeile und Install-Buttons.",
-  preview: true,
+  // false: this card reads the entity registry over the websocket and scans
+  // every update entity in the house. HA's card-picker preview would run
+  // both just to draw a thumbnail. See m3-battery-card.ts.
+  preview: false,
   documentationURL: "https://github.com/j0sp0r/m3-cards",
 });
