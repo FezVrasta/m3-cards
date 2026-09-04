@@ -145,6 +145,7 @@ export class M3LightCard extends TemplatedCard(LitElement) implements LovelaceCa
       animation: "auto",
       wave_style: "wavy",
       use_light_color: true,
+      show_color_temp: true,
       color_temp_style: "presets",
       ...config,
     };
@@ -609,7 +610,9 @@ export class M3LightCard extends TemplatedCard(LitElement) implements LovelaceCa
             `,
           })}
           ${hasBrightness ? this._renderWaveSlider(displayPct, unavailable) : nothing}
-          ${supportsColorTemp ? this._renderColorTemp(entity, unavailable) : nothing}
+          ${this._config.show_color_temp !== false && supportsColorTemp
+            ? this._renderColorTemp(entity, unavailable)
+            : nothing}
           ${this._config.show_color_wheel && supportsColor
             ? this._renderColorWheel(this._currentHs(entity), unavailable)
             : nothing}

@@ -1330,6 +1330,12 @@ Ziehen auch bei langsamer Netzwerkverbindung flüssig bleibt. Entitäten ohne
 `brightness`-Unterstützung (z.B. reine Ein/Aus-Lampen) zeigen nur Header und
 Power-Button, keinen Slider.
 
+Eine Lampe mit `color_temp` bekommt zusätzlich eine Farbtemperatur-Zeile —
+drei Voreinstellungen oder ein stufenloser Regler mit
+`color_temp_style: slider`. `show_color_temp: false` lässt sie ganz weg, was
+die Karte auf Ansichten mit vielen Lichtern kurz hält, wenn dort ohnehin nur
+die Helligkeit verstellt wird.
+
 ### Konfigurationsoptionen
 
 | Option | Typ | Standard | Beschreibung |
@@ -1339,6 +1345,7 @@ Power-Button, keinen Slider.
 | `icon` | string | Entity-Icon | Icon in der Icon-Kachel |
 | `transition` | number | – | Übergangsdauer (Sekunden) für `light.turn_on`-Aufrufe |
 | `wave_style` | `wavy` \| `flat` | `wavy` | Wellenform des Sliders |
+| `show_color_temp` | boolean | `true` | Farbtemperatur-Zeile anzeigen; `false` blendet sie auch bei einer Lampe aus, die sie unterstützt |
 | `accent_color` / `track_color` / `handle_color` | string | Theme-Standard | Slider-Farben |
 | `text_color` / `secondary_text_color` | string | Theme-Standard | Name / Untertitel |
 | `card_background` | string | Glas-/Solid-Hintergrund | Kartenhintergrund |
