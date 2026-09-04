@@ -409,15 +409,24 @@ export class M3LightsOverviewCard extends LitElement implements LovelaceCard {
     if (!cfg) return undefined;
     const popup = cfg.popup ?? {};
     const merged = mergeEntityFilters(configFilter(cfg), popup, popup.inherit_filters ?? true);
-    const scope: EntityFilterConfig = tile.areaId
-      ? { include_area: [tile.areaId] }
-      : { include_entities: tile.entities };
+    // A tile from an area re-runs discovery scoped to that area, which also
+    // picks up anything added to the room since. A tile from a manual `rooms`
+    // entry cannot: discovery drops entities that have no area, and a manual
+    // room is exactly where those live — the popup came up empty. It already
+    // knows its own entities, so it hands them over as a room of one instead
+    // of asking the registry a question it cannot answer.
+    const scoped: Partial<M3LightsOverviewCardConfig> = tile.areaId
+      ? { include_area: [tile.areaId], rooms: undefined, auto_discover: true }
+      : {
+          rooms: [
+            { name: tile.name, entities: tile.entities, toggle_entities: tile.switchable },
+          ],
+          auto_discover: false,
+        };
     return {
       ...cfg,
       ...merged,
-      ...scope,
-      rooms: undefined,
-      auto_discover: true,
+      ...scoped,
       view: popup.view ?? "entities",
       sort: popup.sort ?? "name",
       group_handling: popup.group_handling ?? cfg.group_handling,
