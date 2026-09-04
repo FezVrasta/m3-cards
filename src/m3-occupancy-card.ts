@@ -28,6 +28,7 @@ import {
   OCCUPANCY_PULSE_MS,
   OCCUPANCY_TINT_OCCUPIED,
   OCCUPANCY_TINT_FREE,
+  OCCUPANCY_TINT_SEGMENT,
   OCCUPANCY_TOGGLE_HEIGHT,
   OCCUPANCY_TOGGLE_RADIUS,
   OCCUPANCY_CHIP_RADIUS,
@@ -646,12 +647,16 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         border-radius: ${OCCUPANCY_ROW_RADIUS}px;
         cursor: pointer;
         box-sizing: border-box;
-        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_FREE}%, var(--ha-card-background, var(--card-background-color)));
+        /* Published as a variable so the segments can build on the row they
+           actually sit on instead of on the card behind it. */
+        --m3o-row: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_FREE}%, var(--ha-card-background, var(--card-background-color)));
+        background: var(--m3o-row);
         transition: border-radius 350ms ${EASING};
       }
 
       .row.occupied {
-        background: color-mix(in srgb, var(--m3o-accent) ${OCCUPANCY_TINT_OCCUPIED}%, var(--ha-card-background, var(--card-background-color)));
+        --m3o-row: color-mix(in srgb, var(--m3o-accent) ${OCCUPANCY_TINT_OCCUPIED}%, var(--ha-card-background, var(--card-background-color)));
+        background: var(--m3o-row);
       }
 
       .row.dead {
@@ -763,7 +768,7 @@ export class M3OccupancyCard extends LitElement implements LovelaceCard {
         min-width: 0;
         height: ${OCCUPANCY_SEGMENT_HEIGHT}px;
         border-radius: ${OCCUPANCY_SEGMENT_RADIUS}px;
-        background: color-mix(in srgb, var(--primary-text-color) 7%, var(--ha-card-background, var(--card-background-color)));
+        background: color-mix(in srgb, var(--primary-text-color) ${OCCUPANCY_TINT_SEGMENT}%, var(--m3o-row, var(--ha-card-background, var(--card-background-color))));
       }
 
       .segment.on {
