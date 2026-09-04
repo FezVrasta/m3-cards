@@ -264,6 +264,26 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Discovering cards fetched the entity registry once per card.** Each
+  `discover*` helper made its own `config/entity_registry/list` call plus the
+  device and area lists, so six discovering cards on one dashboard pulled the
+  same 4,496-entry registry six times over the websocket, on every reconnect.
+  The frontend already holds all three registries on `hass` — this file's own
+  area functions have read them from there all along — so discovery now does
+  too, keeping the websocket only for a frontend old enough to lack them. The
+  snapshot leaves out disabled entities, which changes nothing: discovery
+  starts from `hass.states`, and a disabled entity has no state.
+
+- **Opening "Add card" ran a full-house scan nine times over.** Home Assistant
+  builds a real, `hass`-wired element of every registered card type just to
+  draw its preview thumbnail in the picker. For the eight auto-discovering
+  cards that meant a complete entity scan each, and for the calendar card a
+  live backend fetch of every configured calendar — all to fill a thumbnail.
+  Those nine cards no longer offer a picker preview.
+
+  Both fixes were found in [UHaFnir's fork](https://github.com/UHaFnir/m3-cards)
+  and reimplemented here.
+
 - **Editors: some settings showed their raw config key instead of a name.**
   The shared appearance block supplies the glass, corner-shape and per-corner
   fields, but labelling them was left to each card — and eight editors
@@ -816,6 +836,29 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Die Sammlung registriert **36 Karten**.
 
 ### Behoben
+
+- **Erkennende Karten holten die Entitäts-Registry einmal pro Karte.** Jede
+  `discover*`-Funktion setzte ihren eigenen Aufruf von
+  `config/entity_registry/list` ab, dazu Geräte- und Bereichsliste. Sechs
+  erkennende Karten auf einem Dashboard zogen dieselbe Registry mit 4.496
+  Einträgen also sechsmal über den Websocket, und das bei jedem Neuverbinden.
+  Das Frontend hält alle drei Registries ohnehin auf `hass` — die
+  Bereichsfunktionen derselben Datei lesen von dort seit jeher —, und die
+  Erkennung tut es jetzt auch; der Websocket bleibt nur als Rückfall für ein
+  Frontend, das die Snapshots noch nicht kennt. Im Snapshot fehlen
+  deaktivierte Entitäten, was nichts ändert: Die Erkennung geht von
+  `hass.states` aus, und eine deaktivierte Entität hat keinen Zustand.
+
+- **„Karte hinzufügen“ löste neunmal eine Rundum-Erkennung aus.** Home
+  Assistant erzeugt von jedem angemeldeten Kartentyp ein echtes, mit `hass`
+  verbundenes Element, nur um im Auswahldialog das Vorschaubild zu zeichnen.
+  Bei den acht selbsterkennenden Karten bedeutete das je einen vollständigen
+  Durchlauf über alle Entitäten, bei der Kalenderkarte einen echten Abruf
+  sämtlicher Termine — alles für ein Vorschaubild. Diese neun Karten haben im
+  Auswahldialog jetzt keine Vorschau mehr.
+
+  Beide Funde stammen aus [UHaFnirs Fork](https://github.com/UHaFnir/m3-cards)
+  und wurden hier neu umgesetzt.
 
 - **Editoren: Einige Einstellungen zeigten ihren Konfigurationsschlüssel statt
   eines Namens.** Der gemeinsame Abschnitt „Erscheinungsbild“ liefert die
