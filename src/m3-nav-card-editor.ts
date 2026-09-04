@@ -69,9 +69,36 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     this._emit({ ...this._config, items });
   }
 
+  /**
+   * Fills in a name and icon from the view a newly chosen path points at.
+   *
+   * Picking "Energie — /lovelace/energie" and then typing "Energie" and its
+   * icon again is work the dashboard already knows the answer to. Only empty
+   * fields are filled: anything the author wrote stays, and re-picking a path
+   * never overwrites a label they chose on purpose.
+   */
+  private _withViewDefaults<T extends { name?: string; icon?: string; path?: string }>(
+    current: T | undefined,
+    patch: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const pfad = patch.path;
+    if (typeof pfad !== "string" || !pfad || pfad === current?.path) return patch;
+
+    const views = this._dashboardViews();
+    const index = views.findIndex((view, i) => viewPath(view, i) === pfad);
+    if (index < 0) return patch;
+
+    const view = views[index];
+    const out = { ...patch };
+    if (!("name" in patch) && !current?.name && view.title) out.name = view.title;
+    if (!("icon" in patch) && !current?.icon && view.icon) out.icon = view.icon;
+    return out;
+  }
+
   private _patchItem(index: number, patch: Partial<NavItemConfig>): void {
     const items = [...this._items];
-    items[index] = this._clean({ ...items[index], ...patch }) as NavItemConfig;
+    const voll = this._withViewDefaults(items[index], patch as Record<string, unknown>);
+    items[index] = this._clean({ ...items[index], ...voll }) as NavItemConfig;
     this._setItems(items);
   }
 
@@ -246,7 +273,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const entries = [...this._actionMenu];
     entries[index] = this._clean({
       ...entries[index],
-      ...(ev.detail.value as Record<string, unknown>),
+      ...this._withViewDefaults(entries[index], ev.detail.value as Record<string, unknown>),
     }) as NavActionMenuEntry;
     this._setActionMenu(entries);
   }
@@ -263,7 +290,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "color", selector: { text: {} } },
-      { name: "path", selector: { text: {} } },
+      this._pathSelector(),
       { name: "tap_action", selector: { ui_action: {} } },
     ];
   }
@@ -295,6 +322,29 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
         : parent) as typeof node;
     }
     return [];
+  }
+
+  /**
+   * The target page, as a list of this dashboard's own views rather than a
+   * path to type from memory. `custom_value` keeps the field open for a path
+   * the list cannot know — another dashboard, or an external page.
+   */
+  private _pathSelector(): SchemaEntry {
+    const views = this._dashboardViews();
+    if (!views.length) return { name: "path", selector: { text: {} } };
+    return {
+      name: "path",
+      selector: {
+        select: {
+          mode: "dropdown",
+          custom_value: true,
+          options: views.map((view, index) => {
+            const pfad = viewPath(view, index);
+            return { value: pfad, label: view.title ? `${view.title} — ${pfad}` : pfad };
+          }),
+        },
+      },
+    };
   }
 
   private _importViews(): void {
@@ -428,7 +478,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     return [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
-      { name: "path", selector: { text: {} } },
+      this._pathSelector(),
     ];
   }
 
@@ -783,7 +833,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const schema: SchemaEntry[] = [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
-      { name: "path", selector: { text: {} } },
+      this._pathSelector(),
     ];
     // The second line only exists in the list layout, so it is only asked for
     // there — a field that visibly does nothing is worse than a missing one.
@@ -813,7 +863,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const items = [...this._sheetItems];
     items[index] = this._clean({
       ...items[index],
-      ...(ev.detail.value as Record<string, unknown>),
+      ...this._withViewDefaults(items[index], ev.detail.value as Record<string, unknown>),
     }) as NavSheetItem;
     this._setSheetItems(items);
   }
@@ -907,7 +957,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     return [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
-      { name: "path", selector: { text: {} } },
+      this._pathSelector(),
       { name: "tap_action", selector: { ui_action: {} } },
     ];
   }
@@ -932,7 +982,7 @@ export class M3NavCardEditor extends LitElement implements LovelaceCardEditor {
     const patch = ev.detail.value as Record<string, unknown>;
     entries[entryIndex] = this._clean({
       ...entries[entryIndex],
-      ...patch,
+      ...this._withViewDefaults(entries[entryIndex], patch),
     }) as NavSubmenuEntry;
     this._setSubmenu(index, entries);
   }

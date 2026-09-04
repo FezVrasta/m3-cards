@@ -345,9 +345,14 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * created.
    */
   public static async getStubConfig(hass: HomeAssistant): Promise<M3NavCardConfig> {
+    // A new card starts floating with its labels beside the icons — the shape
+    // a phone's own navigation uses, and the one people recognise. Existing
+    // cards are untouched: setConfig still falls back to "footer" for a config
+    // that never named a style, so nothing moves under anyone.
     const fallback: M3NavCardConfig = {
       type: "custom:m3-nav-card",
-      style: "footer",
+      style: "floating",
+      label_position: "right",
       items: [
         { name: "Home", icon: "mdi:home", path: "/lovelace/0" },
         { name: "Energie", icon: "mdi:flash", path: "/lovelace/energie" },
@@ -368,7 +373,12 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
     const items = views.slice(0, NAV_STUB_BAR_ITEMS).map(entry);
     const rest = views.slice(NAV_STUB_BAR_ITEMS, NAV_STUB_BAR_ITEMS + NAV_STUB_MENU_ITEMS);
-    const config: M3NavCardConfig = { type: "custom:m3-nav-card", style: "footer", items };
+    const config: M3NavCardConfig = {
+      type: "custom:m3-nav-card",
+      style: "floating",
+      label_position: "right",
+      items,
+    };
     if (rest.length) {
       config.action_button = {
         icon: "mdi:dots-horizontal",
