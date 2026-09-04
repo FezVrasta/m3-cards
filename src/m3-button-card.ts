@@ -865,6 +865,14 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       background: ${glassBackground};
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
+      /* Forces its own compositor layer. Without this, Chromium sometimes
+         renders a visible seam where two adjacent backdrop-filter elements'
+         GPU tiles meet (flickers/disappears on scroll-triggered repaint) —
+         a known browser tiling bug, not a layout issue on our end.
+         glassCardStyles has carried this since it was found; these three
+         cards hand-roll their own copy of the rule and so never got it. */
+      transform: translateZ(0);
+      isolation: isolate;
     }
 
     .card-inner.solid {
