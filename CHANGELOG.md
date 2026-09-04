@@ -264,6 +264,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ### Fixed
 
+- **Editors: some settings showed their raw config key instead of a name.**
+  The shared appearance block supplies the glass, corner-shape and per-corner
+  fields, but labelling them was left to each card — and eight editors
+  (calendar, clock, cover, humidifier, leak, NAS, room, waste) never mapped
+  them, so `glass_background` and `radius_preset` appeared verbatim. The block
+  now labels its own fields when a card offers nothing, which fixes all eight
+  at once and means a new card cannot forget. A sweep of every schema field in
+  all 35 editors then found five more falling through: the animation dropdown
+  on the calendar and humidifier cards, an entry's colour and the badge source
+  on the nav card, and a tile override's tap action on the room card. All 610
+  fields now resolve to a translated label.
+
 - **Nav card: the marker had more air above and below it than beside it.** The
   round action button sits next to the bar rather than inside it, so it never
   saw `--nav-scale` — that variable is set on the bar, and a sibling does not
@@ -804,6 +816,20 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 - Die Sammlung registriert **36 Karten**.
 
 ### Behoben
+
+- **Editoren: Einige Einstellungen zeigten ihren Konfigurationsschlüssel statt
+  eines Namens.** Der gemeinsame Abschnitt „Erscheinungsbild“ liefert die
+  Felder für Glas, Eckenform und Einzelecken, das Beschriften blieb aber jeder
+  Karte selbst überlassen — und acht Editoren (Kalender, Uhr, Cover,
+  Luftbefeuchter, Leak, NAS, Raum, Waste) haben sie nie zugeordnet, sodass dort
+  `glass_background` und `radius_preset` wörtlich standen. Der Abschnitt
+  beschriftet seine eigenen Felder jetzt selbst, wenn die Karte nichts liefert:
+  Das behebt alle acht auf einmal, und eine neue Karte kann es nicht mehr
+  vergessen. Eine Prüfung sämtlicher Schemafelder in allen 35 Editoren fand
+  danach fünf weitere: die Animationsauswahl bei Kalender- und
+  Luftbefeuchter-Karte, Farbe und Badge-Inhalt eines Eintrags bei der
+  Navigationskarte sowie die Tap-Aktion einer Kachel-Anpassung bei der
+  Raumkarte. Alle 610 Felder haben jetzt eine übersetzte Beschriftung.
 
 - **Nav-Karte: Über und unter der Markierung war mehr Luft als daneben.** Der
   runde Aktionsknopf steht neben der Leiste, nicht in ihr, und sah `--nav-scale`
