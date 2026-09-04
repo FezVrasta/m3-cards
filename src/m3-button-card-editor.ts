@@ -9,13 +9,11 @@ import type {
 import {
   DEFAULT_BUTTON_RADIUS,
   EDITABLE_STATE_COLOR_KEYS,
-  THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import {
   fireEvent,
-  opacityRow,
-  type ColorOpacityOption,
+  colorRow,
   type SchemaEntry,
 } from "./shared/editor-helpers";
 import {
@@ -257,41 +255,6 @@ export class M3ButtonCardEditor
       : key.charAt(0).toUpperCase() + key.slice(1);
   }
 
-  private _swatchHex(value?: string): string {
-    if (value && /^#[0-9a-fA-F]{6}$/.test(value)) return value;
-    const token = value ? THEME_COLOR_TOKENS[value] : undefined;
-    if (token && /^#[0-9a-fA-F]{6}$/.test(token)) return token;
-    return "#888888";
-  }
-
-  private _colorRow(
-    label: string,
-    value: string | undefined,
-    onChange: (value: string) => void,
-    opacity?: ColorOpacityOption,
-  ) {
-    const hexValue = this._swatchHex(value);
-    return html`
-      <div class="color-row">
-        <label class="color-label">${label}</label>
-        <input
-          type="text"
-          class="color-text"
-          .value=${value ?? ""}
-          placeholder="z.B. red oder #6ba7dc"
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-        <input
-          type="color"
-          class="swatch"
-          .value=${hexValue}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-        ${opacity ? opacityRow(opacity.label, opacity.value, opacity.defaultValue, opacity.onChange) : nothing}
-      </div>
-    `;
-  }
-
   private _colorChanged(value: string): void {
     if (!this._config) return;
     this._config = { ...this._config, color: value || undefined };
@@ -478,7 +441,7 @@ export class M3ButtonCardEditor
         <ha-expansion-panel outlined .header=${this._t("editor_appearance")}>
           <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
           <div class="panel-content">
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_color"),
               this._config.color,
               (v) => this._colorChanged(v),
@@ -490,7 +453,7 @@ export class M3ButtonCardEditor
               },
             )}
             <div class="hint">${this._t("editor_color_helper")}</div>
-            ${this._colorRow(
+            ${colorRow(
               this._t("editor_inactive_color"),
               this._config.inactive_color,
               (v) => this._inactiveColorChanged(v),
@@ -531,7 +494,7 @@ export class M3ButtonCardEditor
           <div class="panel-content">
             <div class="hint">${this._t("editor_state_colors_helper")}</div>
             ${EDITABLE_STATE_COLOR_KEYS.map((key) =>
-              this._colorRow(
+              colorRow(
                 this._stateKeyLabel(key),
                 this._config?.state_colors?.[key],
                 (v) => this._stateColorChanged(key, v),

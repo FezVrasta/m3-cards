@@ -8,10 +8,11 @@ import {
   cornersToggleSchema,
   cornerPresetSchema,
   cornerValueSchema,
+  radiusLabelMap,
 } from "./radius-editor";
 import type { SchemaEntry } from "./editor-helpers";
 import { RADIUS_PRESETS } from "../const";
-import { localize } from "../localize";
+import { localize, type TranslationKey } from "../localize";
 
 // The "Erscheinungsbild" (glass background + radius + per-corner radius)
 // panel is identical across every card editor. This module owns both the
@@ -63,6 +64,33 @@ export function cornerPresetPatch(
   return { custom: false, px: presets[preset] };
 }
 
+/**
+ * What this section calls its own fields, for cards that never said.
+ *
+ * The fields belong to the shared section but the labels were left to each
+ * card's `computeLabel`, so a card that forgot one showed the config key
+ * instead of a name — `glass_background` and `radius_preset` in plain sight,
+ * in eight editors. Anything a card does name still wins; this only fills the
+ * silence, which also means the next card to use the section cannot forget.
+ */
+const OWN_LABELS: Record<string, TranslationKey> = {
+  ...radiusLabelMap,
+  glass_background: "editor_glass_background",
+};
+
+function withOwnLabels(
+  computeLabel: (schema: SchemaEntry) => string,
+  language: string,
+): (schema: SchemaEntry) => string {
+  return (schema) => {
+    const given = computeLabel(schema);
+    // A card that has no label for a field hands the raw name straight back.
+    if (given && given !== schema.name) return given;
+    const key = OWN_LABELS[schema.name];
+    return key ? localize(key, language) : given;
+  };
+}
+
 export function appearanceSchema(): SchemaEntry[] {
   return [{ name: "glass_background", selector: { boolean: {} } }];
 }
@@ -91,6 +119,7 @@ export interface RadiusCornerFieldsParams {
 // climate-mini) instead of using the fully-wrapped renderAppearanceSection.
 export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): TemplateResult {
   const { hass, language, config, defaultRadius, state, computeLabel, presets = RADIUS_PRESETS } = params;
+  const label = withOwnLabels(computeLabel, language);
   const radiusPresetData = { radius_preset: radiusPreset(config.radius, defaultRadius, presets) };
   const radiusValueData = { radius: config.radius ?? defaultRadius };
   const baseRadius = config.radius ?? defaultRadius;
@@ -101,7 +130,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
       .hass=${hass}
       .data=${radiusPresetData}
       .schema=${radiusPresetSchema(language)}
-      .computeLabel=${computeLabel}
+      .computeLabel=${label}
       @value-changed=${params.onRadiusPresetChanged}
     ></ha-form>
     ${state.showCustomRadius
@@ -110,7 +139,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
             .hass=${hass}
             .data=${radiusValueData}
             .schema=${radiusValueSchema()}
-            .computeLabel=${computeLabel}
+            .computeLabel=${label}
             @value-changed=${params.onValueChanged}
           ></ha-form>
         `
@@ -119,7 +148,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
       .hass=${hass}
       .data=${cornersToggleData}
       .schema=${cornersToggleSchema()}
-      .computeLabel=${computeLabel}
+      .computeLabel=${label}
       @value-changed=${params.onCornersToggleChanged}
     ></ha-form>
     ${state.showCorners
@@ -133,7 +162,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
               .hass=${hass}
               .data=${{ [key]: presetVal }}
               .schema=${cornerPresetSchema(key, language)}
-              .computeLabel=${computeLabel}
+              .computeLabel=${label}
               @value-changed=${(ev: CustomEvent) => params.onCornerPresetChanged(key, ev)}
             ></ha-form>
             ${state.cornerCustom[key]
@@ -142,7 +171,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
                     .hass=${hass}
                     .data=${{ [key]: currentPx }}
                     .schema=${cornerValueSchema(key)}
-                    .computeLabel=${computeLabel}
+                    .computeLabel=${label}
                     @value-changed=${(ev: CustomEvent) => params.onCornerValueChanged(key, ev)}
                   ></ha-form>
                 `
@@ -155,6 +184,7 @@ export function renderRadiusCornerFields(params: RadiusCornerFieldsParams): Temp
 
 export function renderAppearanceSection(params: RadiusCornerFieldsParams): TemplateResult {
   const { hass, language, config, computeLabel } = params;
+  const label = withOwnLabels(computeLabel, language);
   const appearanceData = { glass_background: config.glass_background ?? true };
 
   return html`
@@ -165,7 +195,7 @@ export function renderAppearanceSection(params: RadiusCornerFieldsParams): Templ
           .hass=${hass}
           .data=${appearanceData}
           .schema=${appearanceSchema()}
-          .computeLabel=${computeLabel}
+          .computeLabel=${label}
           @value-changed=${params.onValueChanged}
         ></ha-form>
         ${renderRadiusCornerFields(params)}

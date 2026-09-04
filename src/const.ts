@@ -1103,6 +1103,17 @@ export const OCCUPANCY_DOT_SIZE = 9;
 export const OCCUPANCY_PULSE_MS = 2000;
 export const OCCUPANCY_TINT_OCCUPIED = 9;
 export const OCCUPANCY_TINT_FREE = 5;
+/**
+ * Ink for anything drawn on a row — a timeline segment, the well behind the
+ * room icon — mixed into that row rather than into the card behind it.
+ *
+ * The segment used to be 7% ink over the card while the row was 5% over the
+ * same card — two points apart, which is nothing in any theme, and inverted on
+ * an occupied row at 9%: the marks came out lighter than what they lay on.
+ * Building on the row instead makes the distance a fixed one, whatever the row
+ * is doing and whatever the theme mixes underneath.
+ */
+export const OCCUPANCY_TINT_ON_ROW = 12;
 export const OCCUPANCY_CHIP_RADIUS = RADIUS.chip;
 export const DEFAULT_OCCUPANCY_TIMELINE_HOURS = 3;
 export const DEFAULT_OCCUPANCY_TIMELINE_SEGMENTS = 24;

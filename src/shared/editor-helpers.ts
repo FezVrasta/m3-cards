@@ -1,5 +1,7 @@
 import { html, css, nothing } from "lit";
 import { stampVersion } from "./config-migration";
+import { localize } from "../localize";
+import { THEME_COLOR_TOKENS } from "../const";
 
 export interface SchemaEntry {
   name: string;
@@ -72,7 +74,23 @@ export function colorRow(
   onChange: (value: string) => void,
   opacity?: ColorOpacityOption,
 ) {
-  const hexValue = /^#[0-9a-fA-F]{6}$/.test(value ?? "") ? (value as string) : "#888888";
+  // The native swatch only understands a hex, so a named token is resolved to
+  // one for it — otherwise picking "red" left the swatch showing grey. Taken
+  // from the button card's own copy of this row, which is being deleted in
+  // favour of this one.
+  const token = value ? THEME_COLOR_TOKENS[value] : undefined;
+  const hexValue = /^#[0-9a-fA-F]{6}$/.test(value ?? "")
+    ? (value as string)
+    : token && /^#[0-9a-fA-F]{6}$/.test(token)
+      ? token
+      : "#888888";
+  // Every card resolves a colour through the same token list, so "primary" has
+  // always meant "whatever the theme's accent is" — under Material You, the
+  // tone generated from the wallpaper. Nobody would guess to type it into a
+  // free-text field, though, which is why it needed a button of its own.
+  // Clicking it again clears the field, which puts the card back on its own
+  // default rather than on a colour the theme picked.
+  const themeToken = value === "primary" || value === "accent";
   return html`
     <div class="color-row">
       <label class="color-label">${label}</label>
@@ -89,6 +107,18 @@ export function colorRow(
         .value=${hexValue}
         @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
       />
+      <button
+        type="button"
+        class="theme-color ${themeToken ? "active" : ""}"
+        title=${localize(
+          "editor_use_theme_color",
+          document.documentElement.lang,
+        )}
+        aria-pressed=${themeToken ? "true" : "false"}
+        @click=${() => onChange(themeToken ? "" : "primary")}
+      >
+        <ha-icon icon="mdi:palette-swatch-outline"></ha-icon>
+      </button>
       ${opacity ? opacityRow(opacity.label, opacity.value, opacity.defaultValue, opacity.onChange) : nothing}
     </div>
   `;
@@ -198,6 +228,28 @@ export const editorStyles = css`
     padding: 0;
     background: none;
     cursor: pointer;
+  }
+
+  .theme-color {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(127, 127, 127, 0.4);
+    background: transparent;
+    color: var(--secondary-text-color, var(--primary-text-color));
+    cursor: pointer;
+    --mdc-icon-size: 20px;
+  }
+
+  /* Pressed, not merely hovered: the button reports whether the colour is the
+     theme's, so it has to look different while it is. */
+  .theme-color.active {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
   }
 
   .opacity-row {

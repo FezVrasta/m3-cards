@@ -141,3 +141,91 @@ describe("discoverLightRooms", () => {
     expect(rooms.map((r) => r.areaId)).toEqual(["kitchen"]);
   });
 });
+
+// The fixture above hands the card only `callWS`, which exercises the
+// fallback. In a current Home Assistant frontend that path never runs: the
+// registries are already on `hass`, and reading them from there is the whole
+// point of getRegistries. So this fixture provides the snapshots and makes
+// `callWS` throw — if discovery still works, it demonstrably never asked the
+// backend.
+function hassFromSnapshots(fixture: {
+  states: Record<string, { state: string; attributes?: Record<string, unknown> }>;
+  entities: Record<string, { device_id?: string; area_id?: string; labels?: string[] }>;
+  devices?: Record<string, { area_id?: string; labels?: string[] }>;
+  areas?: Record<string, { name: string; icon?: string }>;
+}): HomeAssistant {
+  const states: Record<string, HassEntity> = {};
+  for (const [id, s] of Object.entries(fixture.states)) {
+    states[id] = {
+      entity_id: id,
+      state: s.state,
+      attributes: s.attributes ?? {},
+      last_changed: "",
+      last_updated: "",
+    };
+  }
+  return {
+    states,
+    entities: fixture.entities,
+    devices: fixture.devices ?? {},
+    areas: fixture.areas ?? {},
+    callWS: async () => {
+      throw new Error("callWS must not be reached when hass carries the registries");
+    },
+  } as unknown as HomeAssistant;
+}
+
+describe("discoverLightRooms on the hass registry snapshots", () => {
+  it("resolves rooms without a websocket round-trip", async () => {
+    const hass = hassFromSnapshots({
+      states: { "light.a": { state: "on" }, "light.b": { state: "off" } },
+      entities: { "light.a": { area_id: "kitchen" }, "light.b": { device_id: "dev1" } },
+      devices: { dev1: { area_id: "kitchen" } },
+      areas: { kitchen: { name: "Kitchen", icon: "mdi:silverware" } },
+    });
+    const rooms = await discoverLightRooms(hass, {});
+    expect(rooms).toHaveLength(1);
+    expect(rooms[0].name).toBe("Kitchen");
+    expect(rooms[0].icon).toBe("mdi:silverware");
+    expect(rooms[0].entities).toEqual(["light.a", "light.b"]);
+  });
+
+  it("takes labels from the device as well as the entity", async () => {
+    const hass = hassFromSnapshots({
+      states: { "light.a": { state: "on" }, "light.b": { state: "on" } },
+      entities: {
+        "light.a": { area_id: "kitchen", labels: ["ambient"] },
+        "light.b": { area_id: "kitchen", device_id: "dev1" },
+      },
+      devices: { dev1: { area_id: "kitchen", labels: ["ambient"] } },
+      areas: { kitchen: { name: "Kitchen" } },
+    });
+    const rooms = await discoverLightRooms(hass, { filter: { include_labels: ["ambient"] } });
+    expect(rooms[0].entities).toEqual(["light.a", "light.b"]);
+  });
+
+  // A lamp on a smart plug is a `switch`, so the domains discovery sweeps are
+  // configurable. Nothing in Home Assistant marks a switch as lighting, which
+  // is why the default stays `light` alone.
+  it("sweeps only the light domain unless told otherwise", async () => {
+    const hass = hassFromSnapshots({
+      states: { "light.a": { state: "on" }, "switch.lamp": { state: "on" } },
+      entities: { "light.a": { area_id: "kitchen" }, "switch.lamp": { area_id: "kitchen" } },
+      areas: { kitchen: { name: "Kitchen" } },
+    });
+    expect((await discoverLightRooms(hass, {}))[0].entities).toEqual(["light.a"]);
+    expect((await discoverLightRooms(hass, { domains: ["light", "switch"] }))[0].entities).toEqual([
+      "light.a",
+      "switch.lamp",
+    ]);
+  });
+
+  it("drops an area-less light rather than giving it a room of its own", async () => {
+    const hass = hassFromSnapshots({
+      states: { "light.nowhere": { state: "on" } },
+      entities: { "light.nowhere": {} },
+      areas: {},
+    });
+    expect(await discoverLightRooms(hass, {})).toEqual([]);
+  });
+});

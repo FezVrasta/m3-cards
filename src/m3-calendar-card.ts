@@ -1285,7 +1285,18 @@ export class M3CalendarCard extends LitElement implements LovelaceCard {
       gap: 8px;
       padding: 14px;
       border-radius: 22px;
-      background: var(--ha-card-background, var(--card-background-color));
+      /* Painted in two layers, and it has to be. Taking the theme's card colour
+         on its own is right for a card and wrong for a dialog: a glass theme
+         makes that colour translucent on purpose, and a translucent panel laid
+         over the agenda it came from leaves both unreadable — the rows behind
+         show straight through the title and the buttons. The theme's colour is
+         kept, as an image over an opaque base, so the panel looks like the rest
+         of the theme and still hides what is under it. */
+      background-color: var(--primary-background-color, #1c1c1c);
+      background-image: linear-gradient(
+        var(--ha-card-background, var(--card-background-color, transparent)),
+        var(--ha-card-background, var(--card-background-color, transparent))
+      );
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
       animation: pop-in 0.22s ${EASING};
     }

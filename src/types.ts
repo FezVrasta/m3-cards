@@ -173,6 +173,12 @@ export interface HaActionConfig {
   target?: Record<string, unknown>;
   navigation_path?: string;
   url_path?: string;
+  /**
+   * Ask before running. Home Assistant's own action editor offers this, and an
+   * action that carries it must not run without asking — the whole point of
+   * putting it on "restart Home Assistant" is that a stray tap does not.
+   */
+  confirmation?: boolean | { text?: string };
   new_tab?: boolean;
 }
 

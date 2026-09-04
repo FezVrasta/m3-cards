@@ -216,6 +216,7 @@ export class M3CalendarCardEditor extends LitElement implements LovelaceCardEdit
 
   private _computeLabel = (schema: SchemaEntry): string => {
     const map: Record<string, TranslationKey> = {
+      animation: "editor_progress_animation",
       entity: "editor_calendar_entity",
       name: "editor_calendar_name",
       icon: "editor_humidifier_icon",

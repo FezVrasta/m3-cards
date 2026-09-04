@@ -71,18 +71,31 @@ function localMonthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** Volume units Home Assistant can normalize statistics into. */
+const VOLUME_UNITS = new Set(["L", "mL", "m³", "ft³", "CCF", "gal", "fl. oz."]);
+
 // `recorder/statistics_during_period`'s `units` param normalizes mixed
 // source units within one unit *class* (e.g. Wh/kWh/MWh all -> kWh) — it has
 // no effect on statistics outside the requested class(es), so it's safe to
 // pass unconditionally. Gas/water meter entities (device_class "gas"/
-// "water", unit typically m³) belong to the "volume" class, not "energy" —
-// requesting energy:kWh for them would just silently skip normalization,
-// but explicitly matching the class means multiple gas/water sources in
-// mixed units (e.g. m³ and L) still normalize correctly, same as multi-
-// source kWh electricity entities already do.
+// "water") belong to the "volume" class, not "energy", so they need a target
+// unit of their own for multiple sources in mixed units (m³ and L) to add up.
+//
+// That target has to be the unit the caller will *label* the numbers with,
+// and that is the entity's own — a card writes `unit_of_measurement` under
+// the value unless told otherwise. Asking for m³ regardless, as this did,
+// left a litre meter's month reading a thousandth of the truth with "L"
+// printed beside it: 57 L of watering showed up as "0.06 L", while the daily
+// chart, which asks for no unit at all, had it right. A wrong number under a
+// right label is worse than either.
 function statisticsUnitsFor(hass: HomeAssistant, entityIds: string[]): Record<string, string> {
-  const deviceClass = hass.states[entityIds[0]]?.attributes.device_class;
-  if (deviceClass === "gas" || deviceClass === "water") return { volume: "m³" };
+  const attributes = hass.states[entityIds[0]]?.attributes;
+  if (attributes?.device_class === "gas" || attributes?.device_class === "water") {
+    const unit = String(attributes.unit_of_measurement ?? "");
+    // An unrecognised unit would be rejected outright, so fall back to the
+    // class's base unit and let the values speak for themselves.
+    return { volume: VOLUME_UNITS.has(unit) ? unit : "m³" };
+  }
   return { energy: "kWh" };
 }
 

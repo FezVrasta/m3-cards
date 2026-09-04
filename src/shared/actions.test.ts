@@ -74,3 +74,71 @@ describe("runHaAction", () => {
     expect(ctx.navigate).toHaveBeenCalledWith("/lovelace/0");
   });
 });
+
+// handleAction has honoured `confirmation` since 2.3; runHaAction arrived from
+// a fork that branched before that and did not. A "restart Home Assistant"
+// action configured to ask would have fired on the first tap through this
+// path, which is the one case it was configured not to.
+describe("runHaAction confirmation", () => {
+  // These suites run in Vitest's node environment, where there is no `window`
+  // at all — so one is stood up for the duration rather than pulling in a DOM
+  // implementation for a single global.
+  const withConfirm = (answer: boolean, run: () => void) => {
+    const holder = globalThis as { window?: { confirm?: unknown } };
+    const hadWindow = "window" in holder;
+    const originalWindow = holder.window;
+    const spy = vi.fn().mockReturnValue(answer);
+    holder.window = { ...(originalWindow ?? {}), confirm: spy };
+    try {
+      run();
+    } finally {
+      if (hadWindow) holder.window = originalWindow;
+      else delete holder.window;
+    }
+    return spy;
+  };
+
+  it("does not act when the confirmation is declined", () => {
+    const { hass, callService } = fakeHass();
+    withConfirm(false, () =>
+      runHaAction(
+        hass,
+        { action: "perform-action", perform_action: "homeassistant.restart", confirmation: true },
+        fakeCtx(),
+      ),
+    );
+    expect(callService).not.toHaveBeenCalled();
+  });
+
+  it("acts once the confirmation is accepted", () => {
+    const { hass, callService } = fakeHass();
+    withConfirm(true, () =>
+      runHaAction(
+        hass,
+        { action: "perform-action", perform_action: "homeassistant.restart", confirmation: true },
+        fakeCtx(),
+      ),
+    );
+    expect(callService).toHaveBeenCalledWith("homeassistant", "restart", { entity_id: "light.a" });
+  });
+
+  it("gates the hooks too, not only service calls", () => {
+    const openPopup = vi.fn();
+    const toggle = vi.fn();
+    withConfirm(false, () => {
+      runHaAction(fakeHass().hass, { action: "popup", confirmation: true }, fakeCtx({ openPopup }));
+      runHaAction(fakeHass().hass, { action: "toggle", confirmation: true }, fakeCtx({ toggle }));
+    });
+    expect(openPopup).not.toHaveBeenCalled();
+    expect(toggle).not.toHaveBeenCalled();
+  });
+
+  it("asks nothing when no confirmation is configured", () => {
+    const { hass, callService } = fakeHass();
+    const spy = withConfirm(false, () =>
+      runHaAction(hass, { action: "toggle" }, fakeCtx()),
+    );
+    expect(spy).not.toHaveBeenCalled();
+    expect(callService).toHaveBeenCalled();
+  });
+});

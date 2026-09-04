@@ -54,7 +54,7 @@ Beide Fehler ließen die Seite besser aussehen, als sie war.
 - Ein Handy oder ein per DevTools emuliertes Touch-Gerät für alle Drag-Interaktionen
   (Wave-Slider, Wischen) — Maus-Events allein decken `touch-action`-Konflikte nicht ab.
 
-## Cross-Cutting-Checkliste (für jede der 35 Karten)
+## Cross-Cutting-Checkliste (für jede der 39 Karten)
 
 Diese Punkte gelten kartenübergreifend, weil sie über gemeinsame `shared/*`-Module
 implementiert sind. Ein Fehlschlag hier betrifft potenziell alle Karten gleichzeitig.
@@ -625,6 +625,147 @@ dritten Kalender.
 - [ ] Umschalter Agenda/Monat morpht; `show_view_switch: false` blendet ihn aus
 - [ ] Beim Verlassen des Sichtbereichs hört der Minutentakt auf (VisibleTicker)
 
+| Füllung hinter dem Icon | `icon_fill: solid` an einer eingeschalteten Entität | Die Fläche trägt die Akzentfarbe, die Glyphe wird dunkel. Mit `tint` (Standard) umgekehrt: zarte Fläche, farbige Glyphe |
+| Icon je Zustand | `icon: mdi:power-plug` mit `icon_off: mdi:power-plug-off`, dann schalten | Aus zeigt das durchgestrichene Symbol, An das normale. Ohne `icon_off` bleibt es in beiden Zuständen dasselbe |
+| Formwechsel legt den ganzen Weg zurück | Beim Schalten den Umriss beobachten | Die Ecken wandern gleichmäßig über die volle Dauer. Sie dürfen nicht fast stillstehen und am Ende umklappen — das passierte, solange der Aus-Radius eine große Zahl statt der tatsächlichen halben Kachelhöhe war |
+| Beide Formen im Gleichschritt | Beim Schalten genau hinsehen | Icon-Feld und Kachelumriss verändern sich gemeinsam; die innere Form darf nicht früher fertig sein als die äußere |
+| Feste Farbe blockiert den Zustand nicht | `static_color: true` zusammen mit `icon_off` und `shape_by_state` an einer eingeschalteten Entität | Farben bleiben unverändert, Icon und Form folgen aber dem Zustand — die Kachel darf nicht als ausgeschaltet erscheinen |
+| Form auf flacher Kachel | `shape_by_state` auf einer Kachel mit `grid_options.rows: 1` | Beide Zustände sind unterscheidbar. Der Standardradius von 28px wäre auf 56px Höhe schon eine Kapsel gewesen und hätte im An genauso ausgesehen wie im Aus |
+| Form folgt dem Zustand | `shape_by_state: true` an einer Steckdose, dann schalten | An: Kachel eckig (Standardradius), Icon auf abgerundetem Quadrat. Aus: Kachel als Kapsel, Icon rund. Der Wechsel wird weich animiert |
+| Form ohne Animation | Dasselbe mit `animation: off` | Die beiden Formen stimmen weiterhin, der Wechsel springt aber ohne Übergang |
+| Form abgeschaltet | Ohne `shape_by_state` | Der Eckenradius bleibt in beiden Zuständen der konfigurierte, das Icon bleibt rund |
+
+| Themefarbe je Karte | In einem beliebigen Karten-Editor den Palettenknopf neben einem Farbfeld drücken | Das Feld steht auf `primary`, der Knopf ist markiert, die Karte trägt den Themeton. Nochmal drücken leert das Feld und stellt die Kartenfarbe wieder her |
+| Raumkarte: Karten nebeneinander | `cards_columns` auf 1 und auf 2 | Eine bzw. zwei Karten je Zeile |
+| Raumkarte: Karten im Editor | Im Editor Entitäten über „Entitäten als Kacheln hinzufügen" wählen | Für jede entsteht eine Kachel. Reihenfolge über die Pfeile, Entfernen im aufgeklappten Eintrag |
+| Raumkarte: voller Karten-Editor | Einen Eintrag aufklappen | Der komplette Editor **dieser** Karte erscheint — bei einer Button-Kachel also auch Zustandsfarben, invertierte Farben und alles Weitere, nicht nur eine Auswahl |
+| Raumkarte: gemischte Typen | Eine Button- und eine Licht-Kachel eintragen | Jeder Eintrag zeigt den Editor seines eigenen Kartentyps |
+| Raumkarte: Schreiben trifft nur eine | In einem Eintrag etwas ändern | Nur diese Karte ändert sich; die übrigen und die Einstellungen der Raumkarte selbst bleiben unberührt |
+| Raumkarte: Tipp-Aktion je Kachel | Einen Eintrag aufklappen und `tap_action` auf „Info anzeigen" stellen | Nur diese Kachel öffnet die Details statt zu schalten; die übrigen bleiben unverändert |
+| Raumkarte: Kategorien im manuellen Modus | `mode: manual` und den Editor öffnen | Der Bereich „Kategorien" fehlt — er konfiguriert Kacheln, die in diesem Modus niemand zeichnet |
+| Raumkarte: Scrollen ohne Animationen | `scroll_on_expand: true` zusammen mit `animation: off` | Die Karte springt ohne Übergang ins Sichtfeld — der Weg ohne Animation darf das Scrollen nicht überspringen |
+| Raumkarte: Scrollen unter der Leiste | Mit angedockter Nav-Leiste eine Karte am unteren Rand aufklappen | Die letzte Zeile der Karte steht **über** der Leiste, nicht darunter. Das Scrollen läuft gleichzeitig mit dem Aufklappen, nicht danach |
+| Raumkarte: ins Sichtfeld holen | `scroll_on_expand: true`, eingeklappte Karte am unteren Bildrand aufklappen | Die Seite scrollt nach dem Aufklappen so weit, dass die Karte ganz sichtbar ist. Eine bereits vollständig sichtbare Karte darf sich **nicht** bewegen |
+| Raumkarte: Kontakte trennen | Einen Kontakt in `door_entities` eintragen | Er erscheint als eigener Chip mit Tür-Symbol und wird **nicht** mehr bei den Fenstern gezählt |
+| Raumkarte: keine Doppelzählung | Denselben Kontakt in `window_entities` **und** `door_entities` | Er zählt nur bei den Türen |
+| Raumkarte: Leistung summieren | Mehrere Leistungssensoren über den Wähler eintragen | Ein Chip mit der Summe. Nicht verfügbare Messwerte werden übersprungen, nicht als 0 gezählt |
+| Raumkarte: Summe schlägt Einzelsensor | `power_entities` gesetzt, dazu ein Leistungssensor im Bereich | Die Summe gewinnt; der zufällig gefundene Einzelsensor wird nicht mehr angezeigt |
+| Raumkarte: eigene Karten | `cards:` mit zwei `custom:m3-button-card` füllen | Beide erscheinen im aufklappbaren Bereich, zeigen echte Zustände und lassen sich bedienen — das beweist, dass `hass` bei ihnen ankommt |
+| Raumkarte: manueller Modus | `mode: manual` | Keine automatisch erkannten Kacheln mehr, nur die eigenen Karten. Ohne `cards` steht dort ein Hinweis statt einer leeren Fläche |
+| Raumkarte: beides zusammen | `mode: auto` **und** `cards:` | Erkannte Kacheln oben, eigene Karten darunter |
+
+## M3 Lights Overview Card
+
+Die Karte entdeckt selbst und hat zwei Filter, die leicht verwechselt werden:
+einer entscheidet, was ein Raum **zeigt**, der andere, was ein Tippen
+**schaltet**. Die meisten Fallen liegen dort.
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Erkennung | `auto_discover: true`, sonst nichts | Räume mit Lichtern erscheinen, jeder mit Name aus dem Bereich; Lichter ohne Bereich tauchen **nicht** als eigener Raum auf |
+| Kopfzeile zählt richtig | Alle Lichter aus, dann eines anschalten | Die Kopfzeile zählt Räume **mit eingeschaltetem Licht**, nicht alle Räume — bei allem aus steht dort 0 |
+| Zwei Ansichten | `view` auf `rooms` und `entities` | Einmal eine Kachel je Raum, einmal eine je Licht; in `entities` zeigt `show_area` den Bereich unter dem Namen |
+| Sortierung | `sort` auf `name`, `area`, `on_first` | Bei `on_first` stehen eingeschaltete Lichter oben und rutschen beim Ausschalten nach unten |
+| Anzeigen ≠ Schalten | `toggle_filter` enger als der Anzeigefilter setzen | Der Raum zeigt weiterhin alle Lichter, ein Tippen schaltet aber nur die des `toggle_filter` |
+| Gruppen nicht doppelt | Eine `light.group` und ihre Mitglieder im selben Bereich, `group_handling` auf `prefer_groups` bzw. `prefer_members` | Einmal zählt nur die Gruppe, einmal nur die Mitglieder — nie beide |
+| Zustand wirkt sofort | Ein Licht per Schalter außerhalb der Karte anschalten | Kachel färbt sich sofort um; die Erkennung läuft dabei **nicht** neu (Zustände sind bewusst nicht Teil des Erkennungsschlüssels) |
+| Steckdosen als Licht | `include_domains: [light, switch]`, dann mit `include_entities` eingrenzen — oder die Entitäten je Raum unter `rooms` aufzählen | Die Steckdose erscheint in ihrer Raumkachel, zeigt ihren Zustand und **schaltet beim Tippen wirklich** (der Aufruf geht an `homeassistant`, nicht an `light`) |
+| Popup | `popup` konfigurieren, eine Raumkachel antippen | Popup zeigt nur diesen Raum; Tippen darin öffnet **kein** zweites Popup |
+| Leerer Zustand | Filter so setzen, dass nichts übrig bleibt | Hinweistext statt leerem Raster |
+
+## M3 Chip Buttons Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Umbruch statt Scrollen | Mehr Pillen als in eine Zeile passen, Karte schmal machen | Die Reihe bricht um; sie scrollt **nicht** waagerecht |
+| Zustandsfarbe | `use_entity_color: true` an einer farbigen Lampe | Pille nimmt die Farbe der Entität, nicht die aus `color` |
+| Feste Farbe | `static_color: true` | Pille bleibt „aktiv" eingefärbt, auch wenn die Entität aus ist |
+| Nur Anzeige | `interactive: false` | Kein Tipp-Feedback, kein Zeiger, keine Button-Rolle für Screenreader |
+| Zustandstext | `show_state: true` | Zustand steht neben dem Namen und aktualisiert sich live |
+| Ohne Entität | Pille nur mit `name` und `icon` | Rendert als Beschriftung, wirft nichts |
+
+## M3 Group Card
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Eine Fläche | Zwei Karten in `cards` legen | Beide sitzen auf **einer** Fläche mit einer Rundung — keine zwei Kacheln mit Lücke |
+| Abstand | `gap` auf 0 und auf 16 | Karten liegen aneinander bzw. deutlich getrennt, die äußere Fläche bleibt eine |
+| Zustände kommen an | Eine interaktive Karte (z. B. Light-Card) einsetzen und bedienen | Sie reagiert und zeigt aktuelle Werte — beweist, dass `hass` an die Kindkarten weitergereicht wird |
+| Kaputte Kindkarte | Eine Karte mit ungültigem `type` eintragen | HA's eigene Fehlerkarte erscheint an ihrer Stelle; die übrigen Karten rendern weiter |
+| Leere Gruppe | `cards: []` | Karte rendert leer statt zu werfen |
+
+## M3 Nav Card
+
+Die Karte ist Navigations-Chrome statt Datenkachel: sie positioniert sich gegen
+den Bildschirm, hängt an der URL und hört auf Gesten. Entsprechend liegen die
+Fallen woanders als bei den übrigen Karten.
+
+| Test | Schritte | Erwartung |
+|---|---|---|
+| Vier statische Varianten | `style` nacheinander auf `header`, `footer`, `segmented`, `floating` | `header`/`footer` kleben an der jeweiligen Kante über die volle Breite; `floating` schwebt mit 8px Abstand; `segmented` bleibt eine Pille im Kartenfluss und scrollt mit |
+| Aktiver Eintrag | Zwischen den konfigurierten Seiten navigieren | Genau der Eintrag der aktuellen Seite ist eingefärbt; eine Unterseite (`/lovelace/garten/detail`) hält den Eintrag `/lovelace/garten` aktiv |
+| Kein Aufblitzen beim Wechsel | Mehrfach zwischen benachbarten Seiten wechseln und die Leiste beobachten | Zu keinem Zeitpunkt ist kurz ein anderer Eintrag umrandet, auch nicht für einen Frame |
+| Rückkehr auf eine besuchte Seite | Von A nach B wechseln, dann zurück auf A — mehrfach, und die Leiste dabei filmen | Die Markierung steht sofort auf A. Sie darf **nicht** von B nach A gleiten: die zwischengespeicherte Ansicht kommt mit der Markierung auf B zurück, und die Korrektur muss ohne Übergang passieren |
+| Wisch-Plugin blättert nicht mit | Mit installiertem `hass-swipe-navigation` auf dem Handy: erst irgendwo auf der Seite wischen, dann einen Eintrag der Leiste antippen | Es wird nur die angetippte Seite geöffnet. Kein kurzes Aufblitzen der Nachbarseite, die das Plugin aus der vorherigen Wischgeste errechnet hätte |
+| Aktiver Eintrag nach Rückkehr | Auf Seite A, dann B, dann über die Leiste zurück auf A — nicht neu laden | Die Markierung steht sofort auf A. Sie blieb einen Schritt zurück, solange die Karte aus dem Ansichts-Cache mit ihrem alten Pfad zurückkam |
+| Regex-Override | `match` auf einem Eintrag setzen, das nicht zur `path` passt | Aktiv-Zustand folgt dem Regex; ein kaputtes Muster macht den Eintrag nie aktiv, wirft aber nichts |
+| Template live | In zwei Browser-Tabs öffnen, in Tab A den Zustand einer im Template gelesenen Entität ändern | In Tab B ändert sich Name/Icon/Badge **ohne Reload** — das beweist das Abo statt eines einmaligen Renderns |
+| Template-Abos schließen | Karte aus der Ansicht löschen, Netzwerk-Tab beobachten | Keine weiteren `render_template`-Nachrichten für diese Karte |
+| Badge-Quellen | Je einmal `template`, `entity`, `count_entities` | Zeigt Text/Zustand/Anzahl; bei 0, `off`, leer, `unavailable` verschwindet der Badge ganz |
+| Badge-Darstellung | `badge_style` auf `dot`, `count`, `text` | Punkt ohne Text, Zahl, freier Text — jeweils an der Ecke des Icons |
+| Umschaltpunkt | Karte in eine schmale Dashboard-**Spalte** legen (nicht das Fenster verkleinern) | Mobil-Layout greift; das beweist die ResizeObserver-Messung statt einer Media Query |
+| Beschriftungen | `label_visibility` auf `always`, `active_only`, `never` | Alle, nur am aktiven Eintrag, keine |
+| Tap/Hold/Doppeltipp | Alle drei Aktionen auf einem Eintrag setzen | Jede löst genau einmal aus; ein Tipp ohne konfigurierte Doppeltipp-Aktion fühlt sich **nicht** verzögert an |
+| Haptik | Auf dem Handy in der Companion-App tippen | Kurze Vibration; mit `haptics: false` keine |
+| Ausblenden beim Scrollen | `auto_hide_on_scroll: true`, lange Ansicht scrollen | Leiste fährt beim Runterscrollen weg und beim Hochscrollen zurück |
+| Untermenü öffnen | Eintrag mit `submenu` antippen | Menü wächst aus dem Knopf heraus; schließt bei Auswahl, Klick daneben und Escape |
+| Untermenü am Rand | Denselben Eintrag ganz links und ganz rechts platzieren | Menü bleibt vollständig im Bild, statt über den Rand zu laufen |
+| Untermenü per Halten | `submenu_trigger: hold` | Tipp navigiert, langes Drücken öffnet das Menü |
+| Untermenü mit Tastatur | Menü öffnen, Tab drücken | Fokus erreicht die Menüzeilen; Escape schließt |
+| Sheet: Tippen | `style: sheet`, auf den Griff tippen | Schublade fährt auf und zu |
+| Sheet: Inhalt | `sheet_cards` mit einer **interaktiven** Karte füllen (z. B. Light-Card) | Karte rendert, reagiert auf Bedienung und zeigt aktuelle Zustände — beweist, dass `hass` weitergereicht wird |
+| Sheet: Ziehen | Am Griff auf und ab ziehen | Schublade folgt dem Finger ohne Nachlauf |
+| Sheet: Schwung | Schnell nach oben bzw. unten schnippen, aus halber Position | Öffnet bzw. schließt ganz, unabhängig von der Position beim Loslassen |
+| Sheet: Rastpunkte | `snap_points: [0, 0.5, 1]`, langsam auf halbe Höhe ziehen und loslassen | Rastet auf halber Höhe ein |
+| **Sheet: Scroll-Konflikt** | Schublade mit mehr Inhalt füllen, als hineinpasst. Dann: (a) mitten im Inhalt nach unten ziehen, (b) Inhalt ganz nach oben scrollen und weiter nach unten ziehen | (a) der Inhalt scrollt, das Sheet bewegt sich **nicht**; (b) das Sheet folgt dem Finger |
+| Abstand einstellen | `edge_distance` auf 0 und auf 40 stellen | Leiste klebt am Rand bzw. schwebt deutlich höher. Auch bei 0 bleibt der Platz für die Gestenleiste erhalten |
+| Abstand zur Bildschirmkante | `floating` auf einem Handy mit Gestensteuerung in der Companion-App | Die Leiste sitzt über dem Gestenbalken, nicht darauf. Im Android-WebView ist `env(safe-area-inset-bottom)` 0 — nur Home Assistants `--safe-area-inset-bottom` kennt den echten Wert |
+| Aktiver Eintrag außer Sicht | Leiste mit mehr Einträgen als Platz (`max_width: fit`), auf den letzten Eintrag navigieren | Die Leiste scrollt den aktiven Eintrag von selbst ins Bild. Beim Scrollen von Hand darf sie **nicht** zurückspringen, auch wenn ein Badge-Template währenddessen aktualisiert |
+| Scrollen bleibt ruhig | Zwischen zwei benachbarten Einträgen wechseln, die beide sichtbar sind | Die Leiste bewegt sich **gar nicht**, nur die Markierung wechselt den Platz |
+| Leiste über Seiten hinweg | Ganz nach rechts scrollen, auf den letzten Eintrag wechseln, dann auf den vorletzten | Die Leiste steht auf jeder Seite dort, wo sie auf der vorigen stand; nur die Markierung wechselt. Kein Zurückspringen nach links, keine Animation |
+| `fit` begrenzt wirklich | `max_width: fit` auf einem breiten Fenster | Die Leiste ist so breit wie ihre Einträge und mittig, **nicht** über die volle Breite mit auseinandergezogenen Einträgen |
+| `fit` neben dem runden Knopf | Dasselbe mit `action_button` | Leiste und Knopf stehen zusammen in der Mitte; die Leiste dehnt sich nicht bis zum Knopf |
+| Angedockt trotz `fit` | `header`/`footer` mit `max_width: fit` | Die Glasfläche geht über die volle Breite, nur die Einträge rücken zusammen — keine sichtbare Kante links und rechts der Einträge |
+| Angedockt über die volle Breite | `header`/`footer` am Desktop, Karte in einer schmalen Spalte einer Sections-Ansicht | Die Glasfläche geht über den ganzen Inhaltsbereich, nicht nur über die Spalte, in der die Karte steckt |
+| Angedockt bis an den Rand | `header` bzw. `footer` auf dem Handy | Die Leiste reicht links und rechts bis an den Bildschirmrand. Am Desktop mit ausgeklappter Seitenleiste beginnt sie weiterhin neben dieser, nicht darunter |
+| Form der aktiven Pille | `label_position: right`, aktiven Eintrag ansehen | Die Pille ist eine Kapsel — die Enden sind vollständig rund, nicht abgeflacht. Das Icon sitzt ohne eigenen Kasten direkt darauf, links und rechts gleich viel Luft |
+| Farbe folgt dem Theme | Ohne `accent_color` unter einem Material-You-Theme | Die Markierung trägt den Themeton (`--primary-color`), kein festes Blau. Mit `accent_color` gilt weiterhin die eigene Farbe |
+| Größe der Markierung | `pill_size` auf 0,8 und auf 1,4 | Nur die Markierung wird kleiner bzw. größer; Icon- und Textgröße bleiben unverändert. Wirkt bei den gestapelten Varianten auf die Fläche ums Icon, bei waagerechtem Text auf den ganzen Eintrag |
+| Kacheln und Markierung | `item_background: true`, einmal mit gestapelter Variante (`footer`/`floating`), einmal mit `header` | Die graue Kachel eines nicht gewählten Eintrags hat genau dieselbe Größe und denselben Radius wie die Markierung des gewählten — bei den gestapelten Varianten sitzen beide auf dem Icon, bei `header` beide auf dem Eintrag |
+| Markierung ohne Text | Eine Leiste nur mit Icons (`label_visibility: never`) | Die Markierung ist eine liegende Kapsel wie bei den Leisten mit Text — **kein** Kreis um das Icon |
+| Textgröße neben dem Icon | `label_position: right` und einmal ohne, einmal mit `label_size` | Neben dem Icon steht der Text auf 14px statt 11px; `label_size` überschreibt beides. Unter dem Icon bleibt es bei 11px |
+| Markierung gleitet | `marker_motion: slide`, zwischen zwei Einträgen wechseln | Eine einzelne Fläche wandert sichtbar hinüber. Sie deckt den aktiven Eintrag danach exakt, auch wenn dieser durch sein Icon breiter wird |
+| Markierung beim Ankommen | Mit `slide` eine Seite direkt über die URL aufrufen | Die Markierung steht sofort richtig und gleitet **nicht** von irgendwo herein |
+| Seitenübergang | `page_transition: fade`, Eintrag antippen | Die alte Seite blendet weich in die neue über. In einem Browser ohne View-Transitions wechselt sie wie bisher, ohne Fehler |
+| Einschweben | `page_transition: up` zwischen zwei ähnlich aussehenden Seiten | Die alte Seite blendet zuerst aus, dann steigt die neue leicht von unten ein. Kein gleichzeitiges Ineinanderblenden — genau das macht den Wechsel zwischen zwei Seiten mit gleichem Hintergrund überhaupt sichtbar |
+| Dauer des Übergangs | `page_transition_ms` auf 80 und auf 500 | Sichtbar schneller bzw. träger. Ohne Angabe sind es 180 ms, nicht die 250 ms des Browsers |
+| Übergang nur beim Navigieren | Mit `fade` einen Eintrag mit `toggle`-Aktion antippen | Kein Überblenden — nur Navigationen bekommen einen Seitenwechsel |
+| Textposition | `label_position` auf `below`, `above`, `right`, `left` | Text sitzt unter, über, rechts bzw. links vom Icon. Bei `right`/`left` umschließt die aktive Pille **Icon und Text** zusammen, nicht nur das Icon |
+| Umgekehrte Sichtbarkeit | `icon_visibility: inactive_only` mit `label_visibility: active_only` | Die aktive Seite zeigt nur Text, alle anderen nur ihr Icon |
+| Knopf an- und abschalten | Im Editor unter Darstellung den Schalter „Runden Knopf neben der Leiste zeigen“ umlegen | Aus: Knopf und Menüfelder verschwinden, `action_button` ist aus der Konfiguration entfernt. An: der Knopf ist sofort da, mit einem Lupensymbol als Startwert |
+| Knopf-Menü | `action_button.menu` mit drei Einträgen | Antippen lässt die Pillen nacheinander aufsteigen, der Knopf wird zum X, der Hintergrund dunkelt ab. Schließen per X, Tipp daneben, Escape oder Auswahl — die Pillen klappen in umgekehrter Reihenfolge zurück |
+| Knopf ohne Menü | `action_button` ohne `menu` | Führt wie bisher direkt seine `tap_action` aus, kein Menü, kein X |
+| Swipe-Navigation | Mit installiertem `hass-swipe-navigation` eine Leiste bauen, deren Einträge breiter sind als der Bildschirm, und sie seitlich scrollen | Die Leiste scrollt, die Ansicht wechselt **nicht**. Ohne die Abschirmung liest das Plugin den Wisch als Seitenwechsel |
+| Sheet: Wisch von der Leiste | Von der Navigationsleiste nach oben wischen | Schublade öffnet; ein Tipp auf einen Eintrag navigiert weiterhin normal |
+| Sheet: Zustand merken | `sheet_default: remember`, öffnen, Seite neu laden | Bleibt offen. Mit `sheet_state_entity` zusätzlich auf einem zweiten Gerät prüfen |
+| Sheet: beim Navigieren | Schublade offen lassen, Eintrag antippen | Schublade schließt (außer `collapse_on_navigate: false`) |
+| Sheet: Bearbeiten-Modus | Dashboard in den Bearbeiten-Modus schalten | Sheet wird **im Kartenfluss** und aufgeklappt gezeichnet, nicht am Bildschirm fixiert |
+| Sheet: zwei Instanzen | Zwei Sheet-Karten auf eine Ansicht legen | Nur die erste dockt an; die zweite rendert inline |
+| Sheet: kleines Fenster | Fenster auf unter 600px Höhe bringen (DevTools, Handy quer) | Höhe der Schublade ist auf 50vh begrenzt |
+| Sheet: Safe Area | Auf einem iPhone in Safari öffnen | Leiste sitzt über der Home-Bar, nicht darunter |
+| Reduced Motion | C11/C12 mit `style: sheet` | Schublade springt zwischen den Rastpunkten, ohne Nachfedern |
+| Ganze Karte ausblenden | `hidden` auf ein Template setzen, das wahr wird | Leiste verschwindet vollständig |
+
 ## Bekannte Einschränkungen
 
 Beide Punkte, die hier bis 2.0 standen — die Akzentfarben im hellen Theme und
@@ -644,6 +785,14 @@ kleiner konfigurierte Kachel angehoben und nicht abgeschnitten wird.
 1. Alle Cross-Cutting-Punkte (C1–C15) auf mindestens 3 unterschiedlichen Karten
    durchgehen (eine einfache, eine mit Editor-Unterinhalten wie Battery/Power-List,
    eine mit Animation wie Progress/Light).
-2. Jede der 35 Karten mindestens einmal mit einer Minimal-Config und einmal mit
+2. Jede der 39 Karten mindestens einmal mit einer Minimal-Config und einmal mit
    einer voll ausgereizten Config (alle Farben/Optionen gesetzt) rendern.
 3. `CHANGELOG.md` gegen die tatsächlich getesteten Änderungen abgleichen.
+4. Die Kartenzahl an allen fünf Stellen abgleichen, an denen sie steht: beide
+   READMEs, `package.json`, die Punkte 1 und 2 dieser Liste — und die
+   **Beschreibung des GitHub-Repos**, die in keiner Datei liegt und deshalb bei
+   jedem Release übersehen wird. Sie stand bei 2.3 noch auf 29, sieben Karten
+   und vier Releases zu spät:
+   `gh repo edit j0sp0r/m3-cards --description "…"`
+5. `CARD_VERSION` in `src/const.ts` und `version` in `package.json` auf die neue
+   Nummer setzen. Beides passiert erst zum Release, nicht während der Arbeit.
