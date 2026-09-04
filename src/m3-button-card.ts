@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, type PropertyValues } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
@@ -13,6 +13,10 @@ import type {
 import {
   DEFAULT_BUTTON_COLOR,
   DEFAULT_BUTTON_RADIUS,
+  BUTTON_SHAPE_OFF_RADIUS,
+  BUTTON_SHAPE_ON_RADIUS,
+  BUTTON_SHAPE_ON_ICON_RADIUS,
+  BUTTON_SHAPE_MS,
   THEME_COLOR_TOKENS,
   STATELESS_DOMAINS,
   ACTIVE_STATES,
@@ -22,10 +26,16 @@ import {
 import { localize, type TranslationKey } from "./localize";
 import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
-import { shouldAnimate } from "./shared/animation";
+import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
-import { tintOn, foregroundOn, foregroundColor } from "./shared/color-config";
+import {
+  tintOn,
+  foregroundOn,
+  foregroundColor,
+  fillColor,
+  inkOn,
+} from "./shared/color-config";
 import { chipButtonsStyles, renderChipButtons } from "./shared/chip-buttons";
 import { TapHoldGesture } from "./shared/gestures";
 
@@ -527,6 +537,31 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     return this._formatState(entity);
   }
 
+  /**
+   * Radius that draws a capsule at this card's actual height.
+   *
+   * Not simply a huge number. A browser clamps an over-large radius when it
+   * paints but interpolates the value it was given, so animating from 999px to
+   * 16px spends 98% of the time above the clamp: the outline sits perfectly
+   * still and squares off at the very end, while the icon well, whose two
+   * values are close together, travels the whole way. Measured, the two ends
+   * are a few pixels apart and both shapes move together.
+   */
+  private _capsuleRadius = BUTTON_SHAPE_OFF_RADIUS;
+
+  protected updated(): void {
+    if (this._config?.shape_by_state !== true) return;
+    // A corner radius does not affect height, so re-rendering for a new
+    // measurement cannot feed itself.
+    const shell = this.renderRoot?.querySelector("ha-card");
+    const height = shell?.getBoundingClientRect().height ?? 0;
+    if (height <= 0) return;
+    const capsule = Math.round(height / 2);
+    if (capsule === this._capsuleRadius) return;
+    this._capsuleRadius = capsule;
+    this.requestUpdate();
+  }
+
   protected render() {
     if (!this._config || !this.hass) return nothing;
     const hasEntity = !!this._config.entity;
@@ -552,10 +587,14 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const domain = this._config.entity?.split(".")[0] ?? "";
     // Action-only buttons (no entity) always render "active" — there is no
     // real state to be inactive about, matching STATELESS_DOMAINS behavior.
-    const active =
-      !unavailable &&
-      this._config.static_color !== true &&
-      (entity ? this._isActive(entity.state, domain) : true);
+    // Whether the entity is actually on. `static_color` freezes the colours by
+    // making the card render as inactive, which is what it has always done —
+    // but the off icon and the state shape are not colours. They exist to say
+    // what the entity is doing, and a colour option has no business silencing
+    // them, so they follow this rather than the flag below.
+    const stateActive =
+      !unavailable && (entity ? this._isActive(entity.state, domain) : true);
+    const active = stateActive && this._config.static_color !== true;
     const rawActiveColor = this._activeColor(entity?.state ?? "");
     const rawInactiveColor = this._config.inactive_color
       ? this._resolveColor(this._config.inactive_color)
@@ -566,16 +605,27 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       : rawInactiveColor;
     const sliderFillBg = tintOn(this, color, this._config.color_opacity, 45);
     const iconBgInactive = tintOn(this, inactiveColor, this._config.inactive_opacity, 8);
-    const iconBgActive = tintOn(this, color, this._config.color_opacity, 20);
+    // Solid turns the pair inside out: the accent goes on the well and the
+    // glyph is darkened against it, rather than a wash of accent carrying an
+    // accent-coloured glyph. Louder, and the shape that reads first from a
+    // distance — which is the point of an active state.
+    const solidIcon = this._config.icon_fill === "solid";
+    const iconBgActive = solidIcon
+      ? fillColor(this, color)
+      : tintOn(this, color, this._config.color_opacity, 20);
     // In slider mode the fill runs behind the icon chip; a translucent chip
     // would double-tint over it into a muddy blob. This opaque variant (the
     // same tint mixed into the card surface instead of transparency) covers
     // the fill so the chip reads as its own surface.
-    const iconBgActiveSolid = tintOn(this, color, this._config.color_opacity, 20);
+    const iconBgActiveSolid = solidIcon
+      ? fillColor(this, color)
+      : tintOn(this, color, this._config.color_opacity, 20);
     // The glyph sits in the well, so it is measured against the well rather
     // than against the card — otherwise an active button shows an accent icon
     // on an accent-tinted ground and the glyph disappears.
-    const iconInkActive = foregroundOn(color, iconBgActive);
+    const iconInkActive = solidIcon
+      ? inkOn(iconBgActive, this)
+      : foregroundOn(color, iconBgActive);
     const iconInkInactive = foregroundOn(inactiveColor, iconBgInactive);
     const name =
       this._config.name ||
@@ -585,7 +635,14 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     // With an entity, <ha-state-icon> resolves config icon > entity's own
     // icon > HA's computed domain/device-class default (matching the native
     // tile card) — so no local fallback guess is needed in that case.
-    const icon = this._config.icon || "mdi:gesture-tap-button";
+    // An entity that is off may want to say so with its shape as well: the
+    // struck-through variant of a symbol reads as "not connected" before any
+    // colour does. Falls back to the one icon when no second one is given.
+    const stateIcon =
+      !stateActive && this._config.icon_off
+        ? this._config.icon_off
+        : this._config.icon;
+    const icon = stateIcon || "mdi:gesture-tap-button";
     const stateText = !entity
       ? ""
       : unavailable
@@ -606,8 +663,16 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     const iconOffsetCss = this._config.align_icons
       ? "6.16px"
       : "min(16px, 11cqh)";
+    // A shape that follows the state says what the colour says, in a second
+    // channel — which is the point on a phone's quick settings, where a glance
+    // from across the room reads the outline before it reads the tint.
+    const shaped = this._config.shape_by_state === true;
     const radius = resolveCornerRadius(
-      this._config.radius ?? DEFAULT_BUTTON_RADIUS,
+      shaped
+        ? stateActive
+          ? (this._config.radius ?? BUTTON_SHAPE_ON_RADIUS)
+          : this._capsuleRadius
+        : (this._config.radius ?? DEFAULT_BUTTON_RADIUS),
       this._config.corners,
     );
     const sliderInfo = entity && !unavailable ? this._sliderInfo() : undefined;
@@ -645,7 +710,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     return html`
       <ha-card
         style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-btn-icon-bg-active-solid: ${iconBgActiveSolid}; --m3-btn-icon-ink-active: ${iconInkActive}; --m3-btn-icon-ink-inactive: ${iconInkInactive}; --m3-btn-color-fg: ${foregroundColor(this, color)}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
-        class=${dimUnavailable ? "unavailable" : ""}
+        class=${`${dimUnavailable ? "unavailable" : ""} ${
+          shouldAnimate(this._config.animation) ? "" : "no-animations"
+        }`}
       >
         <div
           class="card-inner ${glassCardClass(this._config.glass_background)} ${sliderInfo ? "sliderable" : ""} ${shouldAnimate(this._config.animation) ? "" : "no-animations"}"
@@ -677,7 +744,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
             ${this._config.show_icon_background !== false
               ? html`
                   <div
-                    class="icon-container ${active ? "active" : ""}"
+                    class="icon-container ${active ? "active" : ""} ${
+                      shaped ? "shaped" : ""
+                    } ${stateActive ? "on" : ""}"
                     @click=${this._onIconClick}
                     @pointerdown=${this._onIconPointerDown}
                     @pointerup=${this._onIconPointerUp}
@@ -687,7 +756,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
                     ${entity
                       ? html`<ha-state-icon
                           .hass=${this.hass}
-                          .icon=${this._config.icon}
+                          .icon=${stateIcon}
                           .stateObj=${entity}
                         ></ha-state-icon>`
                       : html`<ha-icon icon=${icon}></ha-icon>`}
@@ -705,7 +774,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
                     ${entity
                       ? html`<ha-state-icon
                           .hass=${this.hass}
-                          .icon=${this._config.icon}
+                          .icon=${stateIcon}
                           .stateObj=${entity}
                         ></ha-state-icon>`
                       : html`<ha-icon icon=${icon}></ha-icon>`}
@@ -759,6 +828,7 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
 
     ha-card {
       container-type: size;
+      transition: border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
     }
 
     /* .card-inner's glass/solid background and border come from
@@ -773,7 +843,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       cursor: pointer;
       justify-content: center;
       gap: 10px;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition:
+        transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+        border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
     }
 
     .card-inner:active {
@@ -785,6 +857,9 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
       outline-offset: 2px;
     }
 
+    /* The shell clips to its own corners, so it has to stop animating them
+       too when animations are off — not only the surface inside it. */
+    ha-card.no-animations,
     .card-inner.no-animations {
       transition: none;
     }
@@ -864,6 +939,27 @@ export class M3ButtonCard extends LitElement implements LovelaceCard {
     .icon-container.active {
       background: var(--m3-btn-icon-bg-active);
       color: var(--m3-btn-icon-ink-active, var(--m3-btn-color));
+    }
+
+    /* The well is a circle while the entity is off and a rounded square while
+       it is on. */
+    .icon-container.shaped.on {
+      border-radius: ${unsafeCSS(BUTTON_SHAPE_ON_ICON_RADIUS)};
+    }
+
+    /* The well transitions everything over 0.25s, the shell its corners over a
+       little longer and on a different curve — so the inner shape arrived
+       first and the two looked like they were changing for separate reasons.
+       Listing border-radius after "all" overrides it for that one property and
+       leaves the colours alone. */
+    .icon-container.shaped {
+      transition:
+        all 0.25s ease,
+        border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
+    }
+
+    .icon-container.shaped.no-animations {
+      transition: none;
     }
 
     /* Slider mode: opaque chip so the fill behind it doesn't double-tint. */

@@ -699,6 +699,8 @@ export function listAreas(hass: HomeAssistant): AreaInfo[] {
 export type LightGroupHandling = "all" | "prefer_groups" | "prefer_members";
 
 export interface DiscoverLightRoomsOptions {
+  /** Defaults to `["light"]`. Add `switch` for lamps on smart plugs. */
+  domains?: string[];
   filter?: EntityFilterConfig;
   groupHandling?: LightGroupHandling;
   /** Defaults to `filter` — pass a narrower one when what's shown and what a
@@ -739,7 +741,14 @@ export async function discoverLightRooms(
   hass: HomeAssistant,
   opts: DiscoverLightRoomsOptions,
 ): Promise<DiscoveredLightRoom[]> {
-  const lightIds = Object.keys(hass.states).filter((id) => id.startsWith("light."));
+  // Not every light is a `light`. A lamp on a smart plug shows up as a
+  // `switch`, and there is no attribute that says "this switch is lighting" —
+  // only the person who wired it knows. So the domains are configurable and
+  // the existing include/exclude filters narrow them down to the ones that
+  // really are lights.
+  const domains = opts.domains?.length ? opts.domains : ["light"];
+  const prefixes = domains.map((d) => `${d}.`);
+  const lightIds = Object.keys(hass.states).filter((id) => prefixes.some((p) => id.startsWith(p)));
   if (lightIds.length === 0) return [];
 
   const showEntity = buildEntityFilterPredicate(opts.filter);

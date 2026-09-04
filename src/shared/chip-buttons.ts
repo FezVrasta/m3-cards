@@ -165,6 +165,30 @@ export const chipButtonsStyles = css`
     scrollbar-width: none;
   }
 
+  /* The row scrolls with its scrollbar hidden, so a chip that does not fit was
+     cut off mid-word with nothing to say more existed. The edge fades instead
+     — but only on a side that actually has something hidden behind it, which
+     is why these are classes the card sets from the real scroll position and
+     not a mask that is simply always on. A permanent mask would eat into the
+     first chip even when the row fits and there is nothing to scroll to. */
+  .m3-chip-buttons.scroll.fade-start {
+    mask-image: linear-gradient(to right, transparent 0, #000 20px);
+  }
+
+  .m3-chip-buttons.scroll.fade-end {
+    mask-image: linear-gradient(to left, transparent 0, #000 20px);
+  }
+
+  .m3-chip-buttons.scroll.fade-start.fade-end {
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 20px,
+      #000 calc(100% - 20px),
+      transparent 100%
+    );
+  }
+
   .m3-chip-buttons.scroll::-webkit-scrollbar {
     display: none;
   }

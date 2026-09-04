@@ -189,6 +189,29 @@ export const THEME_COLOR_TOKENS: Record<string, string> = {
 export const DEFAULT_BUTTON_COLOR = "primary";
 export const DEFAULT_BUTTON_RADIUS = RADIUS.card;
 
+/**
+ * Corner radius a button takes while it is off, when its shape follows the
+ * entity's state. Large enough to round out into a capsule at any card height.
+ */
+export const BUTTON_SHAPE_OFF_RADIUS = 999;
+/**
+ * Corner radius while it is on, when the shape follows the state.
+ *
+ * Its own number rather than the card's usual radius, because that one is 28px
+ * — which on a card a single grid row tall is exactly half the height, and so
+ * already a capsule. Both states then computed correctly and looked identical.
+ * An explicit `radius` still wins; this is only the default while shaping.
+ */
+export const BUTTON_SHAPE_ON_RADIUS = 16;
+/**
+ * Corner radius of the icon well while the entity is on, as a share of its own
+ * size. A circle when off, a rounded square when on — the same pair of shapes
+ * a phone's quick settings use, where the shape says as much as the colour.
+ */
+export const BUTTON_SHAPE_ON_ICON_RADIUS = "28%";
+/** How long a button takes to change between the two shapes. */
+export const BUTTON_SHAPE_MS = 300;
+
 // ---- Chip-buttons card / shared chip row -----------------------------------
 export const DEFAULT_CHIP_BUTTONS_RADIUS = RADIUS.card;
 export const CHIP_BUTTON_HEIGHT = 34;
@@ -1418,7 +1441,33 @@ export const HEADING_NARROW_PX = 260;
 
 // ---- room card -------------------------------------------------------------
 export const DEFAULT_ROOM_RADIUS = RADIUS.card;
-export const DEFAULT_ROOM_ACCENT = PALETTE.home;
+/** Columns the cards inside a room card are laid out in. */
+export const DEFAULT_ROOM_CARD_COLUMNS = 2;
+
+/**
+ * Card types the room card's editor can build from an entity alone.
+ *
+ * Not a limit on what a room card can hold — it renders any Lovelace card, and
+ * each one gets its own editor once it is in the list. This is only what the
+ * picker knows how to create in one step.
+ */
+export const ROOM_NESTED_CARD_TYPES = [
+  { type: "custom:m3-button-card", label: "editor_room_card_type_button" },
+  { type: "custom:m3-light-card", label: "editor_room_card_type_light" },
+  { type: "custom:m3-cover-card", label: "editor_room_card_type_cover" },
+  { type: "custom:m3-media-card", label: "editor_room_card_type_media" },
+  {
+    type: "custom:m3-climate-card-mini",
+    label: "editor_room_card_type_climate_mini",
+  },
+] as const;
+/**
+ * A room is not a kind of data with a colour of its own — it is a place, and
+ * the dashboard's own accent is the honest default. Under a Material You theme
+ * that is the tone generated from the wallpaper, which is why a fixed blue read
+ * as the one thing on the dashboard that had not been told about the theme.
+ */
+export const DEFAULT_ROOM_ACCENT = "primary";
 export const ROOM_PRESENCE_COLOR = PALETTE.dryAuto;
 
 export const ROOM_HEADER_ICON = 56;
@@ -1493,6 +1542,28 @@ export const ROOM_SHEET_MAX_HEIGHT = 60;
 
 /** Folding a room card down to its header. */
 export const ROOM_FOLD_MS = HEADING_COLLAPSE_MS;
+/** How many elements the search for a docked bar is willing to look at. */
+export const DOCK_SCAN_BUDGET = 4000;
+/** A docked bar has to cover at least this share of the window's width. */
+export const DOCK_MIN_WIDTH_SHARE = 0.34;
+/** And at most this share of its height — above that it is a layer, not a bar. */
+export const DOCK_MAX_HEIGHT_SHARE = 0.5;
+/** How deep the scan for the entities behind manual cards nests. */
+export const ROOM_CARD_SCAN_DEPTH = 4;
+/** Air left around a card that has been scrolled into view. */
+export const ROOM_SCROLL_MARGIN = 8;
+/**
+ * How long the scroll to a freshly opened card takes.
+ *
+ * The browser's own `behavior: "smooth"` picks a duration from the distance and
+ * is generous about it — half a second and more on a long dashboard, which
+ * reads as the page taking its time about a tap that was already answered. This
+ * is short enough to feel like a response and long enough to stay a movement
+ * the eye can follow, so nobody loses track of where the card went.
+ */
+export const ROOM_SCROLL_MS = 240;
+/** The slowest `scroll_duration` the editor will offer. */
+export const ROOM_SCROLL_MAX_MS = 1500;
 export const ROOM_ARROW = HEADING_ARROW;
 export const ROOM_ARROW_RADIUS = HEADING_ARROW_RADIUS;
 export const ROOM_ARROW_RADIUS_FOLDED = HEADING_ARROW_RADIUS_COLLAPSED;
@@ -1656,6 +1727,260 @@ export const CALENDAR_SELECTED_RADIUS = 10;
 export const CALENDAR_ADJACENT_OPACITY = 0.3;
 export const CALENDAR_DAY_ROW_HEIGHT = 40;
 export const CALENDAR_DAY_ROW_RADIUS = 14;
+
+// ---- nav card --------------------------------------------------------------
+// A navigation bar rather than a data card: the numbers below are chrome
+// measurements, so most of them are per-variant rather than derived from the
+// row/chip scale in tokens.ts. `size` scales every one of them proportionally.
+/**
+ * Navigation chrome follows the dashboard's own accent rather than picking a
+ * colour of its own.
+ *
+ * A data card is entitled to a hue that means something — solar yellow, grid
+ * blue. A navigation bar means nothing in particular: it is the frame around
+ * everything else, and the theme already says what colour that frame is. Under
+ * a Material You theme this is the tone generated from the user's wallpaper,
+ * which is why the bar was conspicuously the one blue thing on a green
+ * dashboard. `accent_color` still overrides it, per card or per entry.
+ */
+export const DEFAULT_NAV_COLOR = "primary";
+export const DEFAULT_NAV_RADIUS = RADIUS.card;
+export const DEFAULT_NAV_ICON = "mdi:circle-outline";
+
+/** Below this card width the `mobile` layout block applies. */
+export const NAV_DEFAULT_BREAKPOINT = 768;
+/** `size` is a multiplier on every measurement, clamped to this range. */
+export const NAV_SIZE_MIN = 0.7;
+export const NAV_SIZE_MAX = 1.5;
+
+// The bar itself.
+export const NAV_BAR_HEIGHT = 62;
+export const NAV_BAR_PADDING = 6;
+export const NAV_BAR_GAP = 2;
+export const NAV_ITEM_MIN_WIDTH = 56;
+export const NAV_ITEM_HEIGHT = 50;
+export const NAV_ITEM_RADIUS = 17;
+/** The pressed-state radius morph this suite uses instead of a ripple. */
+export const NAV_ITEM_RADIUS_ACTIVE = 11;
+export const NAV_ITEM_GLYPH = 22;
+export const NAV_ITEM_LABEL_SIZE = 11;
+/**
+ * The same label when it sits beside the icon rather than under it.
+ *
+ * 11px is the size Material gives a label stacked under an icon, where it is
+ * the secondary half of the pair. Set next to the icon it is the tab's name and
+ * carries the entry, and at 11px against a 22px glyph it reads as a caption
+ * somebody forgot to finish.
+ */
+export const NAV_ITEM_LABEL_SIZE_BESIDE = 14;
+export const NAV_ITEM_TINT = 16;
+/**
+ * The active pill hugs the glyph rather than filling the whole entry — a bar
+ * across a wide screen otherwise lights up a third of it. Material's own
+ * bottom navigation sizes the indicator to the icon and leaves the label
+ * outside it, which is what the reference designs show too.
+ */
+export const NAV_INDICATOR_WIDTH = 56;
+export const NAV_INDICATOR_HEIGHT = 32;
+export const NAV_INDICATOR_RADIUS = 16;
+export const NAV_INDICATOR_RADIUS_ACTIVE = 10;
+
+/**
+ * Smallest inset a docked bar treats as chrome rather than padding.
+ *
+ * A docked bar keeps clear of the sidebar by matching the width of the content
+ * area. But a view is also padded away from the screen edges, and that padding
+ * is part of the same measurement — below this many pixels an inset is read as
+ * the view's own padding, and the bar goes to the edge instead. The sidebar is
+ * 56px collapsed, so nothing real falls in the gap.
+ */
+export const NAV_DOCK_MIN_INSET = 40;
+
+/**
+ * How far up the tree a docked bar looks for the view's content area.
+ *
+ * The walk crosses a shadow boundary at nearly every step — card wrapper,
+ * section, sections view, view container — so the content area is a dozen or
+ * so hops away from a card sitting in a grid. Stopping short leaves the widest
+ * thing found so far as the answer, and that is the card's own column: the bar
+ * then spans one column in the middle of the screen instead of the view.
+ */
+export const NAV_DOCK_MAX_DEPTH = 30;
+
+/** Side padding of an entry whose label sits beside its icon. */
+export const NAV_SIDE_PADDING = 16;
+/** The same, for an entry that carries an icon as well as its label. */
+export const NAV_ICON_SIDE_PADDING = 12;
+export const NAV_ITEM_INACTIVE_OPACITY = 0.6;
+export const NAV_PRESS_MS = 200;
+
+/** How long the marker takes to travel from one entry to the next. */
+export const NAV_MARKER_SLIDE_MS = 280;
+
+/**
+ * Default length of the page cross-fade.
+ *
+ * The browser's own default is 250ms, which reads as slow for a change the
+ * reader asked for and expects to have happened already. Navigation should feel
+ * immediate and merely not jump.
+ */
+export const NAV_PAGE_FADE_MS = 180;
+
+/** How far the arriving page glides up in the `up` transition. */
+export const NAV_PAGE_SLIDE_PX = 18;
+
+/**
+ * Share of the transition the outgoing page gets.
+ *
+ * Material's fade-through does not cross-fade: the old page is gone before the
+ * new one starts, so the two never wash out over each other.
+ */
+export const NAV_PAGE_OUT_SHARE = 0.35;
+
+/** `segmented` is one pill holding the entries, so its own frame is tighter. */
+export const NAV_SEGMENT_HEIGHT = 44;
+export const NAV_SEGMENT_RADIUS = 22;
+export const NAV_SEGMENT_ITEM_RADIUS = 18;
+export const NAV_SEGMENT_PADDING = 4;
+
+/** `floating`/`sheet` detach from the view and keep this gap to its edges. */
+export const NAV_FLOAT_INSET = 8;
+
+/**
+ * The bar's corner when nothing is configured: fully round ends, whatever the
+ * bar turns out to be tall.
+ *
+ * Written as a number no bar can reach, so the browser clamps it to half the
+ * height — the intent is a shape, not a measurement. It used to be a fixed 30
+ * against a 62px bar, one pixel short of the capsule it was meant to be, and a
+ * pixel short does not read as a rounded rectangle. It reads as a capsule that
+ * has been squashed: the ends stop curving just before they should and leave a
+ * flat sliver in the middle of each one. Scaling the bar made it worse, because
+ * the number stayed while the height moved.
+ */
+export const NAV_BAR_RADIUS = 999;
+/** What that capsule measures on an unscaled bar, for the editor's slider. */
+export const NAV_BAR_RADIUS_UI = NAV_BAR_HEIGHT / 2;
+/**
+ * The drawer's corner, which cannot be the bar's.
+ *
+ * "Fully round ends" is the right instruction for a box wider than it is tall.
+ * A drawer pulled open is the other way round, and the same instruction turns
+ * it into an oval: the browser clamps the radius to half the *smaller* side, so
+ * a panel 850 wide comes out with 425px corners and stops being a rectangle at
+ * all. A panel wants a corner it can keep, not one derived from its height.
+ */
+export const NAV_SHEET_RADIUS = 30;
+
+/**
+ * How a freshly created nav card is filled in from the dashboard it lands on.
+ *
+ * A card that arrives empty asks the reader to type out what the dashboard
+ * already knows. These two numbers shape the suggestion instead: the first few
+ * views become entries, the next few go behind the round button, and everything
+ * after that is left alone. A bar cannot usefully hold eighty views, and a
+ * suggestion that tried would be worse than none — the point is something
+ * recognisable to edit, not a complete transcription.
+ */
+export const NAV_STUB_BAR_ITEMS = 3;
+export const NAV_STUB_MENU_ITEMS = 5;
+/**
+ * Below HA's dialog band (its dialogs sit far above this), above ordinary card
+ * content. Exposed as `--nav-z` so a dashboard with an unusual stacking context
+ * can move it without a card change.
+ */
+export const NAV_Z_INDEX = 500;
+export const NAV_AUTOHIDE_MS = 220;
+/** A scroll shorter than this does not count as a direction change. */
+export const NAV_AUTOHIDE_THRESHOLD_PX = 12;
+
+// Badges.
+export const NAV_BADGE_DOT = 8;
+export const NAV_BADGE_HEIGHT = 16;
+export const NAV_BADGE_RADIUS = 8;
+export const NAV_BADGE_FONT = 10;
+export const NAV_BADGE_PADDING = 5;
+
+// Popup submenu.
+export const NAV_SUBMENU_RADIUS = 22;
+export const NAV_SUBMENU_ROW_HEIGHT = 44;
+export const NAV_SUBMENU_ROW_RADIUS = 15;
+export const NAV_SUBMENU_PADDING = 6;
+export const NAV_SUBMENU_MIN_WIDTH = 180;
+export const NAV_SUBMENU_MS = 300;
+export const NAV_SUBMENU_TINT = 10;
+
+// ---- action button speed dial ----------------------------------------------
+/** Gap between the trigger and the first entry, and between entries. */
+export const NAV_MENU_GAP = 10;
+/** Height of one labelled entry. */
+export const NAV_MENU_ROW_HEIGHT = 48;
+export const NAV_MENU_ROW_RADIUS = 24;
+/** Diameter of the tinted circle carrying an entry's icon. */
+export const NAV_MENU_GLYPH = 34;
+/** Background tint of an entry, in percent. */
+export const NAV_MENU_TINT = 22;
+/** The stronger tint of the icon circle sitting on that entry. */
+export const NAV_MENU_GLYPH_TINT = 34;
+/** Delay between one entry appearing and the next, in ms. */
+export const NAV_MENU_STAGGER_MS = 45;
+/**
+ * Corner radius the round trigger morphs to while the menu is open — a circle
+ * turning into a rounded square is the Material shape change that says the
+ * button now closes rather than opens.
+ */
+export const NAV_MENU_OPEN_RADIUS = 18;
+/** How far the entries rise as they appear. */
+export const NAV_MENU_RISE = 12;
+export const NAV_MENU_SCRIM_OPACITY = 0.45;
+export const NAV_MENU_MAX_WIDTH = 320;
+
+// Sheet.
+export const NAV_SHEET_HANDLE_WIDTH = 42;
+export const NAV_SHEET_HANDLE_HEIGHT = 4;
+export const NAV_SHEET_HANDLE_RADIUS = 2;
+export const NAV_SHEET_HANDLE_OPACITY = 0.35;
+/**
+ * Air around the grip of a collapsed drawer.
+ *
+ * This band sits on top of the bar, so every pixel of it is a pixel the icons
+ * are pushed down by while the text below them keeps the bar's own padding —
+ * the drawer read as top-heavy for exactly that reason. Ten left a 24px strip
+ * above a bar that is otherwise even top and bottom.
+ *
+ * Two leaves a strip of eight, near enough the bar's own six that the two ends
+ * read as a pair. It cannot go to nothing: the grip has to be grabbable, and
+ * the band is what is grabbed. The last couple of pixels are the price of
+ * having a grip at all, and they are below the threshold where an eye picks a
+ * difference out of a shape this size.
+ */
+export const NAV_SHEET_HANDLE_PADDING = 2;
+export const NAV_SHEET_DEFAULT_MAX_VH = 60;
+
+/** A phone in landscape: 60vh of drawer would leave nothing of the view. */
+export const NAV_SHORT_VIEWPORT_PX = 600;
+export const NAV_SHORT_VIEWPORT_MAX_VH = 50;
+export const NAV_SHEET_TITLE_SIZE = 15;
+export const NAV_SHEET_ACTION_SIZE = 34;
+export const NAV_SHEET_ACTION_RADIUS = 12;
+export const NAV_SHEET_SETTLE_MS = 320;
+
+// Gestures.
+/** Movement under this is a tap, not a drag — the button card's own threshold. */
+export const NAV_DRAG_THRESHOLD_PX = 8;
+export const NAV_HOLD_MS = 500;
+export const NAV_DOUBLE_TAP_MS = 250;
+/**
+ * A release faster than this opens or closes outright, whatever the sheet's
+ * position — a flick is an instruction, not a measurement.
+ */
+export const NAV_FLING_VELOCITY_PX_MS = 0.5;
+/** Pointer samples kept for the velocity estimate at release. */
+export const NAV_VELOCITY_SAMPLES = 5;
+export const NAV_VELOCITY_WINDOW_MS = 100;
+/** One transform write per frame is enough while a finger is down. */
+export const NAV_DRAG_THROTTLE_MS = 16;
+
 
 // ---- m3-group-card ----------------------------------------------------------
 export const DEFAULT_GROUP_RADIUS = RADIUS.card;

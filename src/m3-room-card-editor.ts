@@ -11,6 +11,9 @@ import {
   ROOM_CATEGORIES,
   ROOM_FALLBACK_CATEGORY,
   ROOM_POWER_THRESHOLD,
+  ROOM_NESTED_CARD_TYPES,
+  ROOM_SCROLL_MS,
+  ROOM_SCROLL_MAX_MS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import {
@@ -56,6 +59,116 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
   private _emit(config: M3RoomCardConfig): void {
     this._config = config;
     fireEvent(this, "config-changed", { config });
+  }
+
+  // ---- the card's own cards -------------------------------------------------
+
+  /**
+   * The nested card's own editor, whichever card it is.
+   *
+   * Hand-picking a few fields was the first attempt and the wrong shape: it
+   * offered four of the button card's settings, silently lacked the rest, and
+   * would have fallen behind every time that card grew an option. Asking the
+   * card class for its editor is the same contract Home Assistant itself uses,
+   * so it cannot fall behind — and it works for any card in the suite, not just
+   * the one the entity picker happens to create.
+   *
+   * Kept per row rather than rebuilt each render, or every keystroke would
+   * replace the element under the cursor. The config is pushed back in only
+   * when it differs, so typing in one field does not reset the panel it sits
+   * in. Built asynchronously because a card loads its editor on demand.
+   */
+  @state() private _addType: string = "custom:m3-button-card";
+
+  private _cardEditors = new Map<number, HTMLElement>();
+  private _editorPending = new Set<number>();
+
+  private _nestedEditor(
+    card: Record<string, unknown>,
+    index: number,
+  ): HTMLElement | undefined {
+    const existing = this._cardEditors.get(index);
+    if (existing) {
+      (existing as { hass?: unknown }).hass = this.hass;
+      const key = JSON.stringify(card);
+      const holder = existing as { _lastKey?: string; setConfig?: (c: unknown) => void };
+      if (holder._lastKey !== key) {
+        holder._lastKey = key;
+        holder.setConfig?.(card);
+      }
+      return existing;
+    }
+    if (this._editorPending.has(index)) return undefined;
+    this._editorPending.add(index);
+    void this._buildEditor(card, index);
+    return undefined;
+  }
+
+  private async _buildEditor(
+    card: Record<string, unknown>,
+    index: number,
+  ): Promise<void> {
+    const tag = String(card.type ?? "").replace("custom:", "");
+    const ctor = customElements.get(tag) as
+      | { getConfigElement?: () => Promise<HTMLElement> }
+      | undefined;
+    let el: HTMLElement | undefined;
+    try {
+      el = await ctor?.getConfigElement?.();
+    } catch {
+      el = undefined;
+    }
+    this._editorPending.delete(index);
+    if (!el) {
+      this.requestUpdate();
+      return;
+    }
+    el.addEventListener("config-changed", (ev: Event) => {
+      // Stopped, or the room card's own editor would take the nested card's
+      // config for its own and write that to the dashboard.
+      ev.stopPropagation();
+      const next = (ev as CustomEvent).detail.config as Record<string, unknown>;
+      const cards = [...this._cards];
+      cards[index] = next;
+      (el as { _lastKey?: string })._lastKey = JSON.stringify(next);
+      this._setCards(cards);
+    });
+    this._cardEditors.set(index, el);
+    this.requestUpdate();
+  }
+
+  private get _cards(): Record<string, unknown>[] {
+    return this._config?.cards ?? [];
+  }
+
+  private _setCards(cards: Record<string, unknown>[]): void {
+    if (!this._config) return;
+    const next = { ...this._config };
+    if (cards.length) next.cards = cards;
+    else delete next.cards;
+    this._emit(next);
+  }
+
+  private _moveCard(index: number, delta: number): void {
+    const cards = [...this._cards];
+    const target = index + delta;
+    if (target < 0 || target >= cards.length) return;
+    cards.splice(target, 0, cards.splice(index, 1)[0]);
+    this._setCards(cards);
+  }
+
+  /**
+   * What to call a nested card in the list.
+   *
+   * Its own name if it has one, otherwise the entity it points at, otherwise
+   * the card type — enough to tell the rows apart without pretending to be a
+   * preview of the card.
+   */
+  private _cardLabel(card: Record<string, unknown>, index: number): string {
+    const name = typeof card.name === "string" ? card.name : "";
+    const entity = typeof card.entity === "string" ? card.entity : "";
+    const type = typeof card.type === "string" ? card.type.replace("custom:", "") : "";
+    return name || entity || type || `#${index + 1}`;
   }
 
   // ---- detection ------------------------------------------------------------
@@ -200,9 +313,25 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
           },
         },
       },
+      {
+        name: "mode",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "auto", label: this._t("editor_room_mode_auto") },
+              { value: "manual", label: this._t("editor_room_mode_manual") },
+            ],
+          },
+        },
+      },
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
       { name: "detail_path", selector: { text: {} } },
+      {
+        name: "cards_columns",
+        selector: { number: { min: 1, max: 4, step: 1, mode: "slider" } },
+      },
     ];
   }
 
@@ -242,6 +371,35 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     if (this._config?.collapsible) {
       schema.push(
         { name: "default_collapsed", selector: { boolean: {} } },
+        { name: "scroll_on_expand", selector: { boolean: {} } },
+      );
+      if (this._config?.scroll_on_expand) {
+        schema.push({
+          name: "scroll_duration",
+          selector: {
+            number: {
+              min: 0,
+              max: ROOM_SCROLL_MAX_MS,
+              step: 20,
+              unit_of_measurement: "ms",
+              mode: "box",
+            },
+          },
+        });
+      }
+      schema.push(
+        {
+          name: "collapse_memory",
+          selector: {
+            select: {
+              mode: "dropdown",
+              options: [
+                { value: "device", label: this._t("editor_room_collapse_memory_device") },
+                { value: "session", label: this._t("editor_room_collapse_memory_session") },
+              ],
+            },
+          },
+        },
         {
           name: "collapse_state_entity",
           selector: { entity: { domain: "input_boolean" } },
@@ -355,18 +513,30 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
     this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: px } });
   }
 
+  /** The one choice that changes what the rest of the editor is for. */
+  private _computeHelper = (schema: SchemaEntry): string | undefined =>
+    schema.name === "mode" ? this._t("editor_room_mode_helper") : undefined;
+
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       area: "editor_room_area",
       name: "editor_name",
       icon: "editor_icon",
+      tap_action: "editor_tap_action",
       detail_path: "editor_room_detail_path",
+      mode: "editor_room_mode",
+      cards_columns: "editor_room_cards_columns",
+      add_type: "editor_room_add_type",
+      add_entities: "editor_room_add_cards",
       show_sensors: "editor_room_show_sensors",
       show_windows: "editor_room_show_windows",
       temperature_entity: "editor_room_temperature",
       humidity_entity: "editor_room_humidity",
       power_entity: "editor_room_power",
       power_threshold: "editor_room_power_threshold",
+      power_entities: "editor_room_power_entities",
+      window_entities: "editor_room_windows",
+      door_entities: "editor_room_doors",
       category_tap: "editor_room_category_tap",
       badge: "editor_room_badge",
       tile_name: "editor_room_tile_name",
@@ -375,6 +545,9 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
       presence_style: "editor_room_presence_style",
       collapsible: "editor_room_collapsible",
       default_collapsed: "editor_room_default_collapsed",
+      scroll_on_expand: "editor_room_scroll_on_expand",
+      scroll_duration: "editor_room_scroll_duration",
+      collapse_memory: "editor_room_collapse_memory",
       collapse_state_entity: "editor_room_collapse_entity",
       animation: "editor_progress_animation",
     };
@@ -385,6 +558,11 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
   protected render() {
     if (!this.hass || !this._config) return nothing;
     const cfg = this._config;
+    // Manual mode draws none of the discovered tiles, so everything that
+    // configures them is describing something the card will not render — a
+    // whole section of switches with no effect, which is worse than an absent
+    // one.
+    const manual = (cfg?.mode ?? "auto") === "manual";
     const detected = this._detected();
     const hidden = new Set(cfg.hidden_categories ?? []);
 
@@ -397,18 +575,117 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .hass=${this.hass}
               .data=${{
                 area: cfg.area ?? "",
+                mode: cfg.mode ?? "auto",
                 name: cfg.name ?? "",
                 icon: cfg.icon ?? "",
                 detail_path: cfg.detail_path ?? "",
+                cards_columns: cfg.cards_columns ?? 2,
               }}
               .schema=${this._roomSchema()}
               .computeLabel=${this._computeLabel}
+              .computeHelper=${this._computeHelper}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <div class="block">
+              <div class="block-title">${this._t("editor_room_cards")}</div>
+              ${this._cards.map(
+                (card, index) => html`
+                  <ha-expansion-panel outlined .header=${this._cardLabel(card, index)}>
+                    <!-- Arrows in the header so reordering does not mean
+                         opening and closing every panel on the way. -->
+                    <div slot="icons" class="reorder">
+                      <ha-icon-button
+                        .label=${this._t("editor_room_move_up")}
+                        .disabled=${index === 0}
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          this._moveCard(index, -1);
+                        }}
+                      >
+                        <ha-icon icon="mdi:arrow-up"></ha-icon>
+                      </ha-icon-button>
+                      <ha-icon-button
+                        .label=${this._t("editor_room_move_down")}
+                        .disabled=${index === this._cards.length - 1}
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          this._moveCard(index, 1);
+                        }}
+                      >
+                        <ha-icon icon="mdi:arrow-down"></ha-icon>
+                      </ha-icon-button>
+                    </div>
+                    <div class="panel-content">
+                      ${this._nestedEditor(card, index) ??
+                      html`<div class="hint">
+                        ${this._t("editor_room_card_yaml_only")}
+                      </div>`}
+                      <ha-button
+                        class="remove"
+                        @click=${() =>
+                          this._setCards(this._cards.filter((_, i) => i !== index))}
+                        >${this._t("editor_room_remove_card")}</ha-button
+                      >
+                    </div>
+                  </ha-expansion-panel>
+                `,
+              )}
+              <ha-form
+                .hass=${this.hass}
+                .data=${{ add_type: this._addType, add_entities: [] }}
+                .schema=${[
+                  {
+                    name: "add_type",
+                    selector: {
+                      select: {
+                        mode: "dropdown",
+                        // Paired with its label rather than deriving one from
+                        // the type: the derivation turned "climate-card-mini"
+                        // into a key that did not exist, and the cast it needed
+                        // stopped the compiler from saying so.
+                        options: ROOM_NESTED_CARD_TYPES.map(({ type, label }) => ({
+                          value: type,
+                          label: this._t(label),
+                        })),
+                      },
+                    },
+                  },
+                  {
+                    name: "add_entities",
+                    selector: { entity: { multiple: true } },
+                  },
+                ]}
+                .computeLabel=${this._computeLabel}
+                @value-changed=${(ev: CustomEvent) => {
+                  const value = ev.detail.value as {
+                    add_type?: string;
+                    add_entities?: string[];
+                  };
+                  if (value.add_type && value.add_type !== this._addType) {
+                    this._addType = value.add_type;
+                    return;
+                  }
+                  const picked = value.add_entities;
+                  if (!picked?.length) return;
+                  // One card of the chosen kind per entity. Anything the suite
+                  // does not build from an entity alone is still written by
+                  // hand, and gets its own editor once it is there.
+                  this._setCards([
+                    ...this._cards,
+                    ...picked.map((entity) => ({ type: this._addType, entity })),
+                  ]);
+                }}
+              ></ha-form>
+              <div class="hint">${this._t("editor_room_cards_hint")}</div>
+            </div>
           </div>
         </ha-expansion-panel>
 
-        <ha-expansion-panel outlined .header=${this._t("editor_room_categories")}>
+        ${manual
+          ? nothing
+          : html`<ha-expansion-panel outlined .header=${this._t("editor_room_categories")}>
           <ha-icon slot="leading-icon" icon="mdi:view-grid-outline"></ha-icon>
           <div class="panel-content">
             <div class="hint">${this._t("editor_room_categories_hint")}</div>
@@ -518,7 +795,7 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               this._emit(next);
             })}
           </div>
-        </ha-expansion-panel>
+        </ha-expansion-panel>`}
 
         <ha-expansion-panel outlined .header=${this._t("editor_room_sensors")}>
           <ha-icon slot="leading-icon" icon="mdi:thermometer"></ha-icon>
@@ -537,18 +814,99 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ power_entities: cfg.power_entities ?? [] }}
+              .schema=${[
+                {
+                  name: "power_entities",
+                  // A picker rather than a comma-separated text field: these are
+                  // entity ids nobody types from memory, and the filter keeps
+                  // the list to things measured in watts.
+                  selector: {
+                    entity: {
+                      multiple: true,
+                      filter: { domain: "sensor", device_class: "power" },
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const picked = (ev.detail.value as { power_entities?: string[] })
+                  .power_entities;
+                const next = { ...cfg };
+                if (picked?.length) next.power_entities = picked;
+                else delete next.power_entities;
+                this._emit(next);
+              }}
+            ></ha-form>
+            <div class="hint">${this._t("editor_room_power_entities_hint")}</div>
             ${listRow(this._t("editor_room_extra_sensors"), cfg.extra_sensors ?? [], (values) => {
               const next = { ...cfg };
               if (values.length) next.extra_sensors = values;
               else delete next.extra_sensors;
               this._emit(next);
             })}
-            ${listRow(this._t("editor_room_windows"), cfg.window_entities ?? [], (values) => {
-              const next = { ...cfg };
-              if (values.length) next.window_entities = values;
-              else delete next.window_entities;
-              this._emit(next);
-            })}
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ window_entities: cfg.window_entities ?? [] }}
+              .schema=${[
+                {
+                  name: "window_entities",
+                  // The same picker the power list uses. A sensor that is not
+                  // in the room's area cannot be discovered, and typing its id
+                  // from memory is not a reasonable ask.
+                  selector: {
+                    entity: {
+                      multiple: true,
+                      filter: [
+                        { domain: "binary_sensor", device_class: "window" },
+                        { domain: "binary_sensor", device_class: "door" },
+                        { domain: "binary_sensor", device_class: "opening" },
+                      ],
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const picked = (ev.detail.value as { window_entities?: string[] })
+                  .window_entities;
+                const next = { ...cfg };
+                if (picked?.length) next.window_entities = picked;
+                else delete next.window_entities;
+                this._emit(next);
+              }}
+            ></ha-form>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ door_entities: cfg.door_entities ?? [] }}
+              .schema=${[
+                {
+                  name: "door_entities",
+                  selector: {
+                    entity: {
+                      multiple: true,
+                      filter: [
+                        { domain: "binary_sensor", device_class: "window" },
+                        { domain: "binary_sensor", device_class: "door" },
+                        { domain: "binary_sensor", device_class: "opening" },
+                      ],
+                    },
+                  },
+                },
+              ]}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const picked = (ev.detail.value as { door_entities?: string[] })
+                  .door_entities;
+                const next = { ...cfg };
+                if (picked?.length) next.door_entities = picked;
+                else delete next.door_entities;
+                this._emit(next);
+              }}
+            ></ha-form>
           </div>
         </ha-expansion-panel>
 
@@ -560,6 +918,9 @@ export class M3RoomCardEditor extends LitElement implements LovelaceCardEditor {
               .data=${{
                 collapsible: cfg.collapsible ?? false,
                 default_collapsed: cfg.default_collapsed ?? false,
+                scroll_on_expand: cfg.scroll_on_expand ?? false,
+                scroll_duration: cfg.scroll_duration ?? ROOM_SCROLL_MS,
+                collapse_memory: cfg.collapse_memory ?? "device",
                 collapse_state_entity: cfg.collapse_state_entity ?? "",
               }}
               .schema=${this._foldSchema()}

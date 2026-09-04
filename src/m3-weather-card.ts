@@ -206,8 +206,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       show_chart: true,
       show_sun: true,
       show_days_toggle: true,
-      show_hour_labels: false,
-      group_hourly_conditions: false,
+      show_hour_labels: true,
       show_hourly_icons: true,
       show_hourly_temperatures: true,
       show_temp_axis: false,
@@ -491,10 +490,37 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
       return html`<div class="hint-text">${this._t("weather_no_hourly_forecast")}</div>`;
     }
 
-    const items = this._hourly.slice(0, hours);
-    const n = items.length;
     const width = this._measuredWidth;
     const height = WEATHER_CHART_HEIGHT;
+
+    // How many hours fit before the strip has to start skipping some, and then
+    // how many hours are actually shown — which is not the same number.
+    //
+    // The strip fills a column per hour and writes into every stride-th one.
+    // Unless the stride divides the row exactly, the last few columns stay
+    // empty and the whole strip reads as pushed to the left, with a gap at the
+    // right edge. Forcing the final hour into the row instead fixes the edge
+    // but breaks the rhythm: twelve hours every second one then ends
+    // "18 Uhr · 21 Uhr", and twenty-four every third ends with two hours
+    // almost touching.
+    //
+    // A regular rhythm and a flush right edge can only both hold when the
+    // stride divides the row, so the row is cut back to where it does. That
+    // costs up to stride-1 hours off the tail — twelve requested, eleven drawn
+    // — which is invisible next to a strip that ends ragged, and the chart,
+    // the rain bars and the sun markers are all cut to the same length so
+    // nothing drifts apart.
+    const requested = this._hourly.slice(0, hours);
+    const stride = displayStride(
+      requested.length,
+      width,
+      (this._config?.show_hour_labels ?? true)
+        ? WEATHER_HOUR_LABEL_MIN_WIDTH_PX
+        : WEATHER_HOURLY_SLOT_MIN_WIDTH_PX,
+    );
+    const items =
+      stride > 1 ? requested.slice(0, Math.floor((requested.length - 1) / stride) * stride + 1) : requested;
+    const n = items.length;
     const temps = items.map((it) => it.temperature ?? 0);
     const minTemp = Math.min(...temps);
     const maxTemp = Math.max(...temps);
@@ -517,14 +543,23 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
 
     const sunMarkers = this._config?.show_sun ? this._sunMarkerPositions(items, width) : [];
 
-    const showLabels = this._config?.show_hour_labels ?? false;
-    const groupHourly = this._config?.group_hourly_conditions ?? false;
+    const showLabels = this._config?.show_hour_labels ?? true;
     const showHourlyIcons = this._config?.show_hourly_icons ?? true;
     const showHourlyTemps = this._config?.show_hourly_temperatures ?? true;
     const showChart = this._config?.show_chart ?? true;
-    const labelStride = showLabels ? displayStride(n, width, WEATHER_HOUR_LABEL_MIN_WIDTH_PX) : 1;
-    const hourlyStride = groupHourly ? displayStride(n, width, WEATHER_HOURLY_SLOT_MIN_WIDTH_PX) : 1;
-    const isHourlySlotVisible = (i: number) => i === 0 || i % hourlyStride === 0;
+
+    // One rhythm for the whole strip. Icon, temperature and hour used to thin
+    // out at three different rates, so 24 crowded temperatures sat above eight
+    // times that lined up with none of them, and a reader could not tell which
+    // number belonged to which hour. They share a stride now, which makes each
+    // visible column one reading: this icon, this temperature, at this time.
+    //
+    // The stride follows the widest thing on show — an hour like "13 Uhr"
+    // needs more room than a two-digit temperature — so turning the hours off
+    // packs the icons closer rather than leaving their old gaps behind.
+    // The row was cut to a whole number of strides above, so the first and the
+    // last column both carry content and every step between them is equal.
+    const isHourlySlotVisible = (i: number) => i % stride === 0;
 
     return html`
       <div class="hourly-wrap">
@@ -603,7 +638,7 @@ export class M3WeatherCard extends LitElement implements LovelaceCard {
                 ${items.map(
                   (it, i) => html`
                     <div class="hour-slot">
-                      ${i === 0 || i % labelStride === 0
+                      ${isHourlySlotVisible(i)
                         ? html`
                             <span class="hour-label ${i === 0 ? "now" : ""}">
                               ${i === 0 ? this._t("weather_now") : this._formatHour(new Date(it.datetime))}

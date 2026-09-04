@@ -12,9 +12,10 @@ temperature curve with gradient fill, hourly precipitation bars, sunrise/
 sunset markers on the curve, and an optional daily overview. The header and
 chart can be toggled independently (`show_current` / `show_chart`), so the
 same card can be trimmed down for a compact mobile layout. At higher `hours`
-counts, the icon/temperature strip above the curve can be set to fit the
-card's actual width (`group_hourly_conditions`) instead of packing in every
-hour.
+counts, the icon/temperature strip above the curve automatically thins out
+to whichever regular interval (every 2nd, 3rd, ... hour) fits the card's
+actual width, keeping hour labels, icons and temperatures aligned to the
+same columns.
 
 <details>
 <summary>Configuration, examples & options</summary>
@@ -64,8 +65,7 @@ daily list collapses by default and expands via a button.
 | `show_days_toggle` | boolean | `true` | Collapsible from 4 days on with a "Show N more" button; `false` = always show all configured days directly |
 | `chips` | list (`apparent_temperature`\|`wind_speed`\|`humidity`\|`pressure`\|`uv_index`\|`visibility`) | apparent temp, wind, humidity | Header chips shown |
 | `show_sun` | boolean | `true` | Sunrise/sunset markers on the curve (from `sun.sun`) |
-| `show_hour_labels` | boolean | `false` | Hour-axis labels above the curve |
-| `group_hourly_conditions` | boolean | `false` | Fit the icon/temperature strip to the card's actual width instead of packing in every hour, sampling icons and temperatures at the same regular interval (e.g. every 3rd hour) |
+| `show_hour_labels` | boolean | `true` | Hour-axis labels above the curve |
 | `show_hourly_icons` | boolean | `true` | Weather icons in the hourly strip |
 | `show_hourly_temperatures` | boolean | `true` | Temperatures in the hourly strip |
 | `show_temp_axis` | boolean | `false` | Overlay temperature y-axis on the curve |

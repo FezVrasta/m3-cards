@@ -181,6 +181,12 @@ export interface M3ButtonCardConfig {
   entity?: string;
   name?: string;
   icon?: string;
+  /**
+   * Icon shown while the entity is off. Without one the same icon is used for
+   * both states, which is the usual case — a struck-through or hollow variant
+   * only exists for some symbols.
+   */
+  icon_off?: string;
   color?: string;
   color_opacity?: number;
   inactive_color?: string;
@@ -190,6 +196,13 @@ export interface M3ButtonCardConfig {
   show_state?: boolean;
   state_content?: "state" | "last_changed" | "last_updated";
   show_icon_background?: boolean;
+  /**
+   * How the well behind the icon is filled while the entity is on. `tint` is a
+   * wash of the accent with the accent-coloured glyph on it; `solid` fills the
+   * well with the accent and darkens the glyph, which is the louder of the two
+   * and what a phone's quick settings use.
+   */
+  icon_fill?: "tint" | "solid";
   icon_size?: number;
   align_icons?: boolean;
   static_color?: boolean;
@@ -201,6 +214,12 @@ export interface M3ButtonCardConfig {
    * `chip_buttons_justify`) once the card is resized taller. */
   chip_buttons?: ChipButtonConfig[];
   chip_buttons_justify?: "start" | "center" | "end";
+  /**
+   * Lets the shape follow the entity: a capsule while it is off, the configured
+   * corner radius while it is on, with the icon well going from a circle to a
+   * rounded square alongside it.
+   */
+  shape_by_state?: boolean;
   radius?: number;
   corners?: CornerRadiusConfig;
   glass_background?: boolean;
@@ -710,7 +729,6 @@ export interface M3WeatherCardConfig {
   show_sun?: boolean;
   show_days_toggle?: boolean;
   show_hour_labels?: boolean;
-  group_hourly_conditions?: boolean;
   show_hourly_icons?: boolean;
   show_hourly_temperatures?: boolean;
   show_temp_axis?: boolean;
@@ -938,6 +956,8 @@ export interface LightsOverviewPopupConfig extends EntityFilterConfig {
 export interface M3LightsOverviewCardConfig extends EntityFilterConfig {
   type: string;
   auto_discover?: boolean;
+  /** Defaults to `["light"]`. Add `switch` for lamps on smart plugs, etc. */
+  include_domains?: string[];
   rooms?: LightsOverviewManualRoomConfig[];
   view?: LightsOverviewView;
   sort?: LightsOverviewSort;
@@ -1371,6 +1391,7 @@ export interface M3GroupCardConfig {
 }
 
 export type M3CardConfig =
+  | M3NavCardConfig
   | M3ClimateCardConfig
   | M3ClimateCardMiniConfig
   | M3ButtonCardConfig
@@ -1695,10 +1716,28 @@ export interface RoomCategoryConfig {
   tap_action?: HaActionConfig;
 }
 
+/**
+ * How a room card decides what to show.
+ *
+ * `auto` discovers the area's devices and draws a tile per category, which is
+ * what the card has always done. `manual` draws nothing of its own and leaves
+ * the body to the cards listed in `cards` — a room card holding the sockets of
+ * that room, say, rather than a summary of them.
+ */
+export type RoomCardMode = "auto" | "manual";
+
 export interface M3RoomCardConfig {
   type: string;
   /** HA area id. Everything else is discovered from it. */
   area: string;
+  mode?: RoomCardMode;
+  /**
+   * Lovelace cards drawn inside the room card's folding body. Shown below the
+   * discovered tiles in `auto`, and on their own in `manual`.
+   */
+  cards?: Record<string, unknown>[];
+  /** How many of those cards sit side by side. */
+  cards_columns?: number;
   name?: string;
   icon?: string;
   /** Opened on hold; falls back to more-info of the category's first entity. */
@@ -1724,6 +1763,13 @@ export interface M3RoomCardConfig {
   temperature_entity?: string;
   humidity_entity?: string;
   power_entity?: string;
+  /**
+   * Several power sensors added together, for a room whose consumption is the
+   * sum of its plugs rather than one meter. Wins over `power_entity` and over
+   * discovery, both of which can only name one — and picking one gets it loudly
+   * wrong in an area that also holds a mains channel.
+   */
+  power_entities?: string[];
   /** Watts below which the power chip is not worth the space. */
   power_threshold?: number;
   extra_sensors?: string[];
@@ -1731,9 +1777,27 @@ export interface M3RoomCardConfig {
   show_windows?: boolean;
   /** Leave unset to discover them from the area. */
   window_entities?: string[];
+  /**
+   * Contacts counted apart from the windows — a door, or something that is not
+   * a way in at all, like a blind's position contact. Home Assistant labels
+   * most contact sensors `door` whatever they are on, so which is which cannot
+   * be discovered; it has to be said.
+   */
+  door_entities?: string[];
   /** Fold the card down to its header, like the heading card's variant. */
   collapsible?: boolean;
   default_collapsed?: boolean;
+  /**
+   * Scrolls the card into view after it is unfolded.
+   *
+   * A collapsed card near the bottom of a view opens downwards, off the screen
+   * — so the thing you just asked to see is the thing you cannot see. Only ever
+   * scrolls when part of the card is actually out of view, and by the least it
+   * can.
+   */
+  scroll_on_expand?: boolean;
+  scroll_duration?: number;
+  collapse_memory?: "device" | "session";
   /** An `input_boolean` holding the folded state, instead of localStorage. */
   collapse_state_entity?: string;
   /** Leave unset to discover it from the area. */
@@ -1968,3 +2032,315 @@ export interface M3CalendarCardConfig {
   corners?: CornerRadiusConfig;
   card_version?: string;
 }
+
+
+// ---- m3-nav-card ----------------------------------------------------------
+
+/**
+ * How the bar is drawn. `header`/`footer` dock to the top/bottom of the view,
+ * `segmented` is an inline pill group that sits in the card flow like any other
+ * card, `floating` detaches into a rounded bar over the content, and `sheet`
+ * is `floating` plus a drawer that pulls up over it.
+ */
+export type NavVariant = "header" | "footer" | "segmented" | "floating" | "sheet";
+
+/** Which edge a docked variant attaches to. Ignored by `segmented`. */
+export type NavPosition = "top" | "bottom";
+
+/**
+ * `active_only` is the Google-Photos pattern — every entry an icon, the current
+ * one an icon with its label — and is why this is not a boolean.
+ */
+export type NavLabelVisibility =
+  | "always"
+  | "active_only"
+  | "inactive_only"
+  | "never";
+
+/**
+ * Where an entry's text sits relative to its icon. The horizontal placements
+ * also move the active pill: it wraps icon and text together rather than
+ * sitting behind the icon alone, which is what a bar with side-by-side labels
+ * looks like everywhere it is used.
+ */
+export type NavLabelPosition = "below" | "above" | "right" | "left";
+
+export type NavBadgeStyle = "dot" | "count" | "text";
+
+export type NavContainerStyle = "glass" | "solid" | "transparent";
+
+export type NavSubmenuTrigger = "tap" | "hold";
+
+export type NavSheetDefault = "collapsed" | "expanded" | "remember";
+
+/**
+ * A badge on one entry. The three sources are read in the order template,
+ * entity, count_entities and the first one set wins. Whichever it is, a value
+ * of 0 / "off" / "" / unavailable hides the badge rather than drawing an empty
+ * or zero one — a nav bar covered in grey zeroes says nothing.
+ */
+export interface NavBadgeConfig {
+  /** Jinja2, rendered live over the websocket. */
+  template?: string;
+  /** The entity's state is the badge. */
+  entity?: string;
+  /** Counts how many of these are `on`. */
+  count_entities?: string[];
+  color?: string;
+  /** Jinja2 boolean; the badge is drawn only while this renders truthy. */
+  show_if?: string;
+}
+
+/** One row of a popup submenu. */
+export interface NavSubmenuEntry {
+  name?: string;
+  icon?: string;
+  /** Shorthand for `tap_action: { action: navigate, navigation_path: … }`. */
+  path?: string;
+  tap_action?: HaActionConfig;
+}
+
+export interface NavItemConfig {
+  /** Accepts Jinja2. */
+  name?: string;
+  /** Accepts Jinja2. */
+  icon?: string;
+  /** Where a tap goes, and what the active-state URL match compares against. */
+  path?: string;
+  /** Regex overriding the automatic active match when the path shape is unusual. */
+  match?: string;
+  /** Accepts Jinja2. The active state takes this colour. */
+  color?: string;
+  badge?: NavBadgeConfig;
+  badge_style?: NavBadgeStyle;
+  /** Overrides the per-variant default corner the badge sits in. */
+  badge_position?: "top_right" | "top_left" | "inline";
+  /** Jinja2 boolean: the entry is left out entirely while this is truthy. */
+  hidden?: string;
+  /** Jinja2 boolean: the entry stays visible but stops responding to taps. */
+  disabled?: string;
+  submenu?: NavSubmenuEntry[];
+  tap_action?: HaActionConfig;
+  hold_action?: HaActionConfig;
+  double_tap_action?: HaActionConfig;
+}
+
+/**
+ * A layout override for one width class. Anything left unset falls back to the
+ * card's own top-level value, so configuring neither block keeps the card
+ * behaving as one layout at every width.
+ */
+export interface NavLayoutConfig {
+  style?: NavVariant;
+  position?: NavPosition;
+  /** Width cap for this width class, overriding the card's own. See `max_width`. */
+  max_width?: number | string;
+  /** Coarse switch; `label_visibility` is the finer one and wins when both are set. */
+  show_labels?: boolean;
+  /** Draws nothing at this width class. */
+  hidden?: boolean;
+  /** Only read from the `desktop` block. Width in px, below which `mobile` applies. */
+  breakpoint?: number;
+}
+
+/**
+ * How the current entry is marked. `tint` is a wash of its colour, which sits
+ * quietly in a busy dashboard; `solid` fills the pill with the colour outright
+ * and puts dark ink on it, which is what Material's own navigation does and
+ * what the reference designs show.
+ */
+export type NavActiveStyle = "tint" | "solid";
+
+export type NavMarkerMotion = "none" | "slide";
+
+/**
+ * `fade` cross-fades the two pages. `up` is Material's fade-through: the old
+ * page only fades out, the new one fades in while gliding up a little, which
+ * is what makes a change between two similar-looking pages legible at all.
+ */
+export type NavPageTransition = "none" | "fade" | "up";
+
+/** A detached round button beside the bar — a search or an add, typically. */
+/**
+ * One entry of the action button's speed dial: a labelled pill that rises out
+ * of the button when it is tapped.
+ */
+export interface NavActionMenuEntry {
+  name?: string;
+  icon?: string;
+  /** Overrides the button's colour for this entry alone. */
+  color?: string;
+  path?: string;
+  tap_action?: HaActionConfig;
+}
+
+export interface NavActionButton {
+  icon?: string;
+  color?: string;
+  /** Shown in place of `icon` while the menu is open. Defaults to a cross. */
+  close_icon?: string;
+  tap_action?: HaActionConfig;
+  /**
+   * Entries of the speed dial. With entries the button opens the menu and
+   * `tap_action` is ignored; without them it just runs `tap_action`.
+   */
+  menu?: NavActionMenuEntry[];
+}
+
+export interface NavSheetAction {
+  icon?: string;
+  tap_action?: HaActionConfig;
+}
+
+/**
+ * One shortcut tile in the drawer.
+ *
+ * Deliberately the same shape as a submenu row plus a colour: the entries
+ * people want in a drawer are the ones they already put behind a "more" entry,
+ * and having to retype them in a different shape to move them there would be
+ * the card's problem, not theirs.
+ */
+export interface NavSheetItem {
+  name?: string;
+  icon?: string;
+  /** Shorthand for `tap_action: { action: navigate, navigation_path: … }`. */
+  path?: string;
+  color?: string;
+  /**
+   * The second line in `list` style: free text, an entity id whose state is
+   * shown, or a template. Ignored by the grid, which has no room for it.
+   */
+  secondary?: string;
+  tap_action?: HaActionConfig;
+}
+
+/**
+ * How the drawer draws its shortcuts. `grid` is a wall of icon tiles — most
+ * destinations in the least space. `list` gives each one a full-width row with
+ * an icon, a name, a second line and a chevron, which is worth the space when
+ * the second line actually says something.
+ */
+export type NavSheetItemStyle = "grid" | "list";
+
+export interface M3NavCardConfig {
+  type: string;
+  style?: NavVariant;
+  position?: NavPosition;
+  items?: NavItemConfig[];
+
+  // ---- per-width layouts
+  desktop?: NavLayoutConfig;
+  mobile?: NavLayoutConfig;
+  /** Fallback for `desktop.breakpoint`. */
+  breakpoint?: number;
+
+  // ---- sheet (style: sheet only)
+  /** Shortcut tiles in the drawer, drawn as a grid above the cards. */
+  sheet_items?: NavSheetItem[];
+  /** Tiles per row in `grid` style. Unset fits as many as the width allows. */
+  sheet_columns?: number;
+  sheet_item_style?: NavSheetItemStyle;
+  /** Any Lovelace cards, rendered in the drawer below the shortcuts. */
+  sheet_cards?: Record<string, unknown>[];
+  sheet_title?: string;
+  sheet_action?: NavSheetAction;
+  /** A CSS length, or a number read as vh. */
+  sheet_max_height?: string | number;
+  sheet_default?: NavSheetDefault;
+  /** An `input_boolean` holding the open state, instead of localStorage. */
+  sheet_state_entity?: string;
+  /** Fractions between 0 and 1; [0, 1] by default, [0, 0.5, 1] for a half stop. */
+  snap_points?: number[];
+  collapse_on_navigate?: boolean;
+
+  // ---- behaviour
+  submenu_trigger?: NavSubmenuTrigger;
+  haptics?: boolean;
+  auto_hide_on_scroll?: boolean;
+  /**
+   * Reserved. Home Assistant exposes no way for a card to warm another view,
+   * so this is parsed and stored but does nothing — see the README.
+   */
+  preload_views?: boolean;
+  /** Jinja2 boolean: the whole card draws nothing while this is truthy. */
+  hidden?: string;
+
+  // ---- appearance
+  label_visibility?: NavLabelVisibility;
+  /** Where the text sits relative to the icon. Default `below`. */
+  label_position?: NavLabelPosition;
+  /**
+   * The same three choices for the icons, independently of the labels. The two
+   * axes are what separate the reference designs from each other: labels always
+   * with the icon only on the current entry is one bar, icons always with the
+   * label only on the current entry is a different one.
+   */
+  icon_visibility?: NavLabelVisibility;
+  active_style?: NavActiveStyle;
+  /** A faint surface under every entry, not only the current one. */
+  item_background?: boolean;
+  /** A round button set beside the bar, outside its surface. */
+  action_button?: NavActionButton;
+  /**
+   * Draw the icons at all. Off gives a bar of pure labels, which is what a
+   * segmented control usually is — and the one shape `label_visibility` cannot
+   * produce on its own.
+   */
+  show_icons?: boolean;
+  /**
+   * How wide the bar is allowed to get, centred in the space it docks to.
+   * A number is px, a string is any CSS length, and `"fit"` makes it exactly
+   * as wide as its entries need. Unset spans the whole width — which is right
+   * for a phone and usually far too much for a desktop.
+   */
+  max_width?: number | string;
+  /** Proportional scale for every measurement of the chosen variant, 0.7–1.5. */
+  size?: number;
+  /** Icon size in px, when only the glyphs should grow and not the whole bar. */
+  icon_size?: number;
+  /** Label size in px, when only the text should change and not the whole bar. */
+  label_size?: number;
+  /**
+   * Scales the marker around the active entry — the pill — without touching
+   * anything else. 1 is the Material size; `size` scales the whole bar instead.
+   */
+  pill_size?: number;
+  /**
+   * How the marker gets from one entry to the next. `none` simply appears on
+   * the new entry; `slide` moves one shape across the bar.
+   */
+  marker_motion?: NavMarkerMotion;
+  /**
+   * Whether navigating from this card cross-fades the whole page. Uses the
+   * browser's view-transition support and falls back to a plain navigation.
+   */
+  page_transition?: NavPageTransition;
+  /** How long the page cross-fade runs, in ms. */
+  page_transition_ms?: number;
+  /**
+   * Distance in px between the bar and the edge of the screen it docks to.
+   * Added on top of the device's own safe area, never instead of it — the
+   * gesture bar has to be cleared whatever this says.
+   */
+  edge_distance?: number;
+  container_style?: NavContainerStyle;
+  container_opacity?: number;
+  blur?: number;
+  /** Free CSS, applied to the bar. Advanced; the documented escape hatch. */
+  styles?: Record<string, string>;
+
+  // ---- appearance (shared conventions)
+  name?: string;
+  icon?: string;
+  accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}
+

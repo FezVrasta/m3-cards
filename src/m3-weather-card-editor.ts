@@ -70,7 +70,6 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
       { name: "hours", selector: { number: { min: 0, max: 24, step: 1, mode: "box" } } },
       { name: "show_chart", selector: { boolean: {} } },
       { name: "show_hour_labels", selector: { boolean: {} } },
-      { name: "group_hourly_conditions", selector: { boolean: {} } },
       { name: "show_hourly_icons", selector: { boolean: {} } },
       { name: "show_hourly_temperatures", selector: { boolean: {} } },
       { name: "show_temp_axis", selector: { boolean: {} } },
@@ -123,7 +122,6 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
       hours: "editor_weather_hours",
       show_chart: "editor_weather_show_chart",
       show_hour_labels: "editor_weather_show_hour_labels",
-      group_hourly_conditions: "editor_weather_group_hourly_conditions",
       show_hourly_icons: "editor_weather_show_hourly_icons",
       show_hourly_temperatures: "editor_weather_show_hourly_temperatures",
       show_temp_axis: "editor_weather_show_temp_axis",
@@ -221,8 +219,7 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
       show_current: this._config.show_current ?? true,
       hours: this._config.hours,
       show_chart: this._config.show_chart ?? true,
-      show_hour_labels: this._config.show_hour_labels ?? false,
-      group_hourly_conditions: this._config.group_hourly_conditions ?? false,
+      show_hour_labels: this._config.show_hour_labels ?? true,
       show_hourly_icons: this._config.show_hourly_icons ?? true,
       show_hourly_temperatures: this._config.show_hourly_temperatures ?? true,
       show_temp_axis: this._config.show_temp_axis ?? false,
@@ -259,7 +256,6 @@ export class M3WeatherCardEditor extends LitElement implements LovelaceCardEdito
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}
             ></ha-form>
-            <div class="hint">${this._t("editor_weather_group_hourly_conditions_helper")}</div>
             <div class="hint">${this._t("editor_weather_days_helper")}</div>
             <div class="hint">${this._t("editor_weather_chips_helper")}</div>
           </div>
