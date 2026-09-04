@@ -1583,14 +1583,32 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   }
 
   private _attachGesture(): void {
-    if (this._gesture || this._variant !== "sheet") return;
+    if (this._variant !== "sheet") return;
+
+    const handleNow = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
+
+    // Re-bind when Lit has replaced the nodes underneath us.
+    //
+    // Saving the editor re-renders the card, and Lit hands the drawer fresh
+    // elements. The gesture kept its listeners on the discarded ones, and this
+    // method used to return early on "a gesture already exists" — so the events
+    // arrived at nodes nobody was listening to and the drawer ignored every
+    // tap and drag until the page was reloaded. Two earlier attempts at this
+    // bug fixed the wrong thing, because the wiring looked healthy from the
+    // outside: the gesture object was there, its callbacks were fine, and only
+    // the elements it held were stale.
+    if (this._gesture) {
+      if (handleNow && handleNow === this._boundHandle) return;
+      this._detachGesture();
+    }
+
     // Deliberately not gated on edit mode. Whether dragging makes sense is
     // asked when a finger goes down instead — see `enabled` below. Deciding it
     // here meant the answer was fixed at attach time, and leaving edit mode is
     // not a change this card can see, so the drawer stayed dead until reload.
 
     const body = this.renderRoot?.querySelector<HTMLElement>(".sheet-body");
-    const handle = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
+    const handle = handleNow;
     const content = this.renderRoot?.querySelector<HTMLElement>(".sheet-content");
     const bar = this.renderRoot?.querySelector<HTMLElement>(".bar");
     if (!body || !handle) return;
@@ -1619,6 +1637,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       enabled: () => !this._editing,
     });
 
+    this._boundHandle = handle;
     this._gestureCleanups.push(this._gesture.attachHandle(handle));
     if (content) this._gestureCleanups.push(this._gesture.attachContent(content));
     if (bar) this._gestureCleanups.push(this._gesture.attachBar(bar));
@@ -1631,7 +1650,11 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     this._measurePanel();
   }
 
+  /** The grip the current handlers are bound to, to spot a re-render. */
+  private _boundHandle?: HTMLElement;
+
   private _detachGesture(): void {
+    this._boundHandle = undefined;
     for (const cleanup of this._gestureCleanups) cleanup();
     this._gestureCleanups = [];
     this._gesture?.destroy();
