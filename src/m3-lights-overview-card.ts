@@ -189,6 +189,7 @@ export class M3LightsOverviewCard extends LitElement implements LovelaceCard {
     this._lastDiscoverKey = key;
     this._discoverInFlight = true;
     discoverLightRooms(this.hass, {
+      domains: cfg.include_domains,
       filter,
       toggleFilter,
       groupHandling: cfg.group_handling,
@@ -309,10 +310,16 @@ export class M3LightsOverviewCard extends LitElement implements LovelaceCard {
 
   // Any light on means the room reads as on, so a tap turns everything off —
   // a plain toggle would flip each lamp individually and leave a chequerboard.
+  //
+  // `homeassistant` rather than `light`, because a room's lighting is not
+  // always in the light domain: a lamp on a smart plug is a `switch`, and a
+  // manual room takes whatever entity ids it is given. `light.turn_on` simply
+  // fails on those. The generic service covers every switchable domain, and
+  // for a real light it does exactly what `light.turn_on` did.
   private _toggleRoom(tile: LightsOverviewTile): void {
     if (!this.hass || tile.switchable.length === 0) return;
     const anyOn = tile.switchable.some((id) => this.hass!.states[id]?.state === "on");
-    this.hass.callService("light", anyOn ? "turn_off" : "turn_on", {}, { entity_id: tile.switchable });
+    this.hass.callService("homeassistant", anyOn ? "turn_off" : "turn_on", {}, { entity_id: tile.switchable });
   }
 
   private _defaultAction(kind: ActionKind): HaActionConfig {

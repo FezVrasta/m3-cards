@@ -723,7 +723,6 @@ export interface M3WeatherCardConfig {
   show_sun?: boolean;
   show_days_toggle?: boolean;
   show_hour_labels?: boolean;
-  group_hourly_conditions?: boolean;
   show_hourly_icons?: boolean;
   show_hourly_temperatures?: boolean;
   show_temp_axis?: boolean;
@@ -2193,7 +2192,7 @@ export interface ChipButtonConfig {
 
 export interface ChipButtonsRowConfig {
   buttons: ChipButtonConfig[];
-  /** Default wraps to a new line; unset scrolls horizontally instead. */
+  /** Wrap to a new line instead of scrolling the row sideways. */
   wrap?: boolean;
   justify?: "start" | "center" | "end" | "space-between";
   /** Chips grow to equally fill the row's width instead of sizing to content. */
@@ -2253,6 +2252,9 @@ export interface LightsOverviewPopupConfig extends EntityFilterConfig {
 export interface M3LightsOverviewCardConfig extends EntityFilterConfig {
   type: string;
   auto_discover?: boolean;
+  /** Domains auto-discovery sweeps, default `["light"]`. Add `switch` to pick
+   *  up lamps on smart plugs, then narrow with the include/exclude filters. */
+  include_domains?: string[];
   rooms?: LightsOverviewManualRoomConfig[];
   view?: LightsOverviewView;
   sort?: LightsOverviewSort;
