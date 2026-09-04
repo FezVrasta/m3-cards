@@ -12,7 +12,9 @@ but in this suite's design language. Around it, three older cards grew up: the
 button card learned the shape language a phone's quick settings use, the room
 card learned to hold arbitrary Lovelace cards instead of only what it can
 discover by itself, and every colour field in every card can now be handed back
-to the theme. Three more cards arrived from an unexpected direction: Fabian Wendel
+to the theme.
+
+Three more cards arrived from an unexpected direction: Fabian Wendel
 ([UHaFnir](https://github.com/UHaFnir/m3-cards)) forked the suite, built
 **Lights Overview**, **Chip Buttons** and **Group Card** in its design
 language, improved the weather card, and found two performance faults in
@@ -20,35 +22,6 @@ code that was already here. All of it is in this release. The suite now
 registers 39 cards.
 
 ### Added
-- **Three cards from a fork** — **M3 Lights Overview**
-  (`m3-lights-overview-card`), **M3 Chip Buttons** (`m3-chip-buttons-card`) and
-  **M3 Group Card** (`m3-group-card`), built by Fabian Wendel
-  ([UHaFnir](https://github.com/UHaFnir/m3-cards)) and adopted here.
-
-  **Lights Overview** groups every light by area and gives each room a tile
-  that switches it — or lists the lights themselves, optionally with the ones
-  that are on first. Two independent filters decide what a room *shows* and
-  what a tap actually *switches*. A lamp on a smart plug is a `switch` rather
-  than a `light`, so `include_domains` widens the sweep, and a tap switches
-  through the generic service so those plugs really do turn on.
-
-  **Chip Buttons** is a row of compact pills bound to entities, each able to
-  show its state, take the entity's own colour, hold a fixed one, or render
-  read-only as a label. The row scrolls sideways and its edges fade on
-  whichever side still has chips behind it.
-
-  **Group Card** puts several cards on one surface with a shared background and
-  radius, so related cards read as one block instead of separate tiles.
-
-- **Weather card: the header and the chart switch independently.** A card can
-  be just the current conditions, just the forecast chart, or both. The hourly
-  strip gained icons, temperatures, hour labels and a temperature axis, each
-  switchable. Icon, temperature and hour now share one rhythm and the strip
-  sits square in the card — it measures its own width, draws every 2nd, 3rd or
-  4th hour, and cuts the row back to a whole number of those steps so it ends
-  flush at both edges. Also from UHaFnir's fork.
-
-
 - **M3 Nav Card** (`m3-nav-card`) — a navigation bar for the dashboard, in five
   variants. `header` and `footer` dock to a screen edge, `segmented` is an
   inline pill group that scrolls with the page, `floating` detaches into a
@@ -80,6 +53,35 @@ registers 39 cards.
   finger is going down. Let go and it settles to whichever open or closed
   position is nearest — unless you flicked it, in which case it goes the way it
   was thrown, wherever it happened to be.
+
+- **Three cards from a fork** — **M3 Lights Overview**
+  (`m3-lights-overview-card`), **M3 Chip Buttons** (`m3-chip-buttons-card`) and
+  **M3 Group Card** (`m3-group-card`), built by Fabian Wendel
+  ([UHaFnir](https://github.com/UHaFnir/m3-cards)) and adopted here.
+
+  **Lights Overview** groups every light by area and gives each room a tile
+  that switches it — or lists the lights themselves, optionally with the ones
+  that are on first. Two independent filters decide what a room *shows* and
+  what a tap actually *switches*. A lamp on a smart plug is a `switch` rather
+  than a `light`, so `include_domains` widens the sweep, and a tap switches
+  through the generic service so those plugs really do turn on.
+
+  **Chip Buttons** is a row of compact pills bound to entities, each able to
+  show its state, take the entity's own colour, hold a fixed one, or render
+  read-only as a label. The row scrolls sideways and its edges fade on
+  whichever side still has chips behind it.
+
+  **Group Card** puts several cards on one surface with a shared background and
+  radius, so related cards read as one block instead of separate tiles.
+
+- **Weather card: the header and the chart switch independently.** A card can
+  be just the current conditions, just the forecast chart, or both. The hourly
+  strip gained icons, temperatures, hour labels and a temperature axis, each
+  switchable. Icon, temperature and hour now share one rhythm and the strip
+  sits square in the card — it measures its own width, draws every 2nd, 3rd or
+  4th hour, and cuts the row back to a whole number of those steps so it ends
+  flush at both edges. Also from UHaFnir's fork.
+
 
 - **Nav card: the marker and the page move together.** `marker_motion: slide`
   moves a single shape between entries instead of fading one out and another in
@@ -215,7 +217,9 @@ Niveau der Navbar Card aus der Community, aber in der Designsprache dieser
 Sammlung. Drumherum sind drei ältere Karten erwachsen geworden: die Button-Karte
 beherrscht die Formensprache der Schnelleinstellungen eines Telefons, die
 Raumkarte kann beliebige Lovelace-Karten aufnehmen statt nur das, was sie selbst
-findet, und jedes Farbfeld jeder Karte lässt sich an das Theme zurückgeben. Drei weitere Karten kamen aus unerwarteter Richtung: Fabian Wendel
+findet, und jedes Farbfeld jeder Karte lässt sich an das Theme zurückgeben.
+
+Drei weitere Karten kamen aus unerwarteter Richtung: Fabian Wendel
 ([UHaFnir](https://github.com/UHaFnir/m3-cards)) hat die Sammlung geforkt,
 **Lights Overview**, **Chip Buttons** und **Group Card** in ihrer
 Designsprache gebaut, die Wetterkarte erweitert und zwei Performance-Fehler
@@ -223,38 +227,6 @@ in Code gefunden, der hier schon lag. Alles davon steckt in dieser Version.
 Die Sammlung registriert jetzt 39 Karten.
 
 ### Neu
-- **Drei Karten aus einem Fork** — **M3 Lights Overview**
-  (`m3-lights-overview-card`), **M3 Chip Buttons** (`m3-chip-buttons-card`) und
-  **M3 Group Card** (`m3-group-card`), gebaut von Fabian Wendel
-  ([UHaFnir](https://github.com/UHaFnir/m3-cards)) und hier übernommen.
-
-  **Lights Overview** fasst alle Leuchten nach Bereich zusammen und gibt jedem
-  Raum eine Kachel, die ihn schaltet — oder listet die Leuchten einzeln, auf
-  Wunsch die eingeschalteten zuerst. Zwei getrennte Filter entscheiden, was ein
-  Raum *zeigt* und was ein Tippen *schaltet*. Eine Lampe an einer Funksteckdose
-  ist ein `switch` und kein `light`, deshalb erweitert `include_domains` die
-  Suche, und ein Tippen schaltet über den allgemeinen Dienst — die Steckdose
-  geht also wirklich an.
-
-  **Chip Buttons** ist eine Reihe kompakter Pillen an Entitäten: je Pille
-  wahlweise mit Zustand, in der Farbe der Entität, in einer festen Farbe, oder
-  als reine Anzeige ohne Knopffunktion. Die Reihe scrollt seitlich und blendet
-  ihre Kante auf der Seite aus, hinter der noch Pillen liegen.
-
-  **Group Card** legt mehrere Karten auf eine gemeinsame Fläche mit einem
-  Hintergrund und einer Rundung, damit Zusammengehöriges als ein Block gelesen
-  wird statt als einzelne Kacheln.
-
-- **Wetterkarte: Kopfbereich und Diagramm schalten unabhängig voneinander.**
-  Eine Karte kann nur die aktuellen Werte zeigen, nur das Vorhersagediagramm
-  oder beides. Die Stundenleiste hat Icons, Temperaturen, Uhrzeiten und eine
-  Temperaturachse bekommen, jedes einzeln schaltbar. Icon, Temperatur und
-  Uhrzeit teilen sich jetzt einen Takt, und die Leiste sitzt bündig in der
-  Kachel — sie misst ihre eigene Breite, zeichnet jede 2., 3. oder 4. Stunde
-  und kürzt die Reihe auf ein Vielfaches dieses Schritts, damit sie links wie
-  rechts abschließt. Ebenfalls aus UHaFnirs Fork.
-
-
 - **M3 Nav-Karte** (`m3-nav-card`) — eine Navigationsleiste fürs Dashboard in
   fünf Varianten. `header` und `footer` docken an einen Bildschirmrand,
   `segmented` ist eine Pillengruppe im Fluss der Seite, `floating` löst sich zu
@@ -288,6 +260,38 @@ Die Sammlung registriert jetzt 39 Karten.
   Finger nach unten geht. Lässt man los, geht sie in die nächstgelegene Lage,
   offen oder zu — außer beim Schnippen, dann fliegt sie in die geworfene
   Richtung, gleich wo sie gerade stand.
+
+- **Drei Karten aus einem Fork** — **M3 Lights Overview**
+  (`m3-lights-overview-card`), **M3 Chip Buttons** (`m3-chip-buttons-card`) und
+  **M3 Group Card** (`m3-group-card`), gebaut von Fabian Wendel
+  ([UHaFnir](https://github.com/UHaFnir/m3-cards)) und hier übernommen.
+
+  **Lights Overview** fasst alle Leuchten nach Bereich zusammen und gibt jedem
+  Raum eine Kachel, die ihn schaltet — oder listet die Leuchten einzeln, auf
+  Wunsch die eingeschalteten zuerst. Zwei getrennte Filter entscheiden, was ein
+  Raum *zeigt* und was ein Tippen *schaltet*. Eine Lampe an einer Funksteckdose
+  ist ein `switch` und kein `light`, deshalb erweitert `include_domains` die
+  Suche, und ein Tippen schaltet über den allgemeinen Dienst — die Steckdose
+  geht also wirklich an.
+
+  **Chip Buttons** ist eine Reihe kompakter Pillen an Entitäten: je Pille
+  wahlweise mit Zustand, in der Farbe der Entität, in einer festen Farbe, oder
+  als reine Anzeige ohne Knopffunktion. Die Reihe scrollt seitlich und blendet
+  ihre Kante auf der Seite aus, hinter der noch Pillen liegen.
+
+  **Group Card** legt mehrere Karten auf eine gemeinsame Fläche mit einem
+  Hintergrund und einer Rundung, damit Zusammengehöriges als ein Block gelesen
+  wird statt als einzelne Kacheln.
+
+- **Wetterkarte: Kopfbereich und Diagramm schalten unabhängig voneinander.**
+  Eine Karte kann nur die aktuellen Werte zeigen, nur das Vorhersagediagramm
+  oder beides. Die Stundenleiste hat Icons, Temperaturen, Uhrzeiten und eine
+  Temperaturachse bekommen, jedes einzeln schaltbar. Icon, Temperatur und
+  Uhrzeit teilen sich jetzt einen Takt, und die Leiste sitzt bündig in der
+  Kachel — sie misst ihre eigene Breite, zeichnet jede 2., 3. oder 4. Stunde
+  und kürzt die Reihe auf ein Vielfaches dieses Schritts, damit sie links wie
+  rechts abschließt. Ebenfalls aus UHaFnirs Fork.
+
 
 - **Nav-Karte: Markierung und Seite bewegen sich gemeinsam.**
   `marker_motion: slide` schiebt eine einzige Form zwischen den Einträgen, statt
