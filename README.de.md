@@ -148,6 +148,9 @@ per YAML:
 <img src="docs/images/climate-card.png" alt="Climate Card" width="440">
 <img src="docs/images/climate-card-heating.png" alt="Klima-Karte (reiner Heizthermostat)" width="440">
 
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
 ```yaml
 type: custom:m3-climate-card
 entity: climate.wohnzimmer
@@ -257,6 +260,8 @@ hoch. Zwei Optionen:
 2. **`height` manuell setzen**: falls kein `horizontal-stack` genutzt wird, kann
    pro Karte ein fester Pixelwert (`height: 380`) angegeben werden.
 
+</details>
+
 ## M3 Climate Card Mini
 
 Kompakte Companion-Karte zur großen Klimakarte: Icon-Kachel + Ein/Aus-Button
@@ -265,6 +270,9 @@ unten. Kein Preset-, Sensor- oder Modus-Zeilen-Support — dafür passen zwei
 Kacheln bequem nebeneinander auf ein Handydisplay.
 
 <img src="docs/images/climate-card-mini.png" alt="Climate Card Mini" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-climate-card-mini
@@ -310,12 +318,17 @@ Der Ein/Aus-Button ruft `homeassistant.toggle` auf die Entity auf. Ein Tap auf
 die Icon-Kachel, den Namen/Status oder die Zieltemperatur-Anzeige öffnet den
 More-Info-Dialog.
 
+</details>
+
 ## M3 Button Card
 
 Generische Karte für Entities außerhalb von `climate` (Buttons, Schalter,
 Lichter, Szenen, Türsensoren, ...) im selben Design.
 
 <img src="docs/images/button-card.png" alt="Button Card — Formen, Icon-Füllungen und die zustandsabhängige Form" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-button-card
@@ -400,6 +413,8 @@ tap_action:
   target: {}
 ```
 
+</details>
+
 ## M3 Progress Card
 
 Fortschrittskarte für Haushaltsgeräte mit Status/Prozent/Restzeit-Sensoren
@@ -408,6 +423,9 @@ ist ein Material-3-Expressive-„Wavy“-Indikator: ein wellenförmiger, animier
 aktiver Teil, eine Lücke, ein flacher Track und ein Endpunkt-Dot.
 
 <img src="docs/images/progress-card.png" alt="Progress Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-progress-card
@@ -484,6 +502,8 @@ state_colors:
   done: green
 ```
 
+</details>
+
 ## M3 Energy Card
 
 Balkendiagramm für Energiewerte (Solarerzeugung, Verbrauch, ...). Über `mode`
@@ -500,6 +520,9 @@ gibt es zwei grundsätzlich verschiedene Darstellungen:
 von der Entity übernommen (Icon automatisch anhand `device_class`: `gas` →
 Flamme, `water` → Wassertropfen, sonst Blitz, außer explizit über `icon`
 gesetzt), daher eignet sich der Modus genauso für Gas- oder Wasserzähler.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ### `mode: consumption` — Zeiträume über `period`
 
@@ -682,6 +705,8 @@ glass_background: true
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Gauge Card
 
 Ersetzt eine `energy-grid-neutrality-gauge`-Kachel: zeigt das Verhältnis
@@ -690,6 +715,9 @@ Nettowert in der Mitte. Zwei Segmente mit einer kleinen Lücke am
 Übergangspunkt — die Lücke selbst ist der „Zeiger“, keine separate Nadel.
 
 <img src="docs/images/gauge-card.png" alt="Gauge Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-gauge-card
@@ -737,6 +765,8 @@ und `prefers-reduced-motion` wie die anderen Karten.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Energy Flow Card
 
 Knoten-Diagramm der heutigen Energieflüsse zwischen Solar, Netz, Batterie und
@@ -744,6 +774,9 @@ Haus, mit animierten Fließpunkten entlang der Verbindungslinien und einem
 Autarkie-Balken darunter.
 
 <img src="docs/images/energy-flow-card.png" alt="Energy Flow Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-energy-flow-card
@@ -788,6 +821,8 @@ aktivem `prefers-reduced-motion` komplett weggelassen (nicht nur pausiert).
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Counter Card
 
 Ersetzt eine `tile`-Kachel für Zählerstände: zeigt einen kumulativen
@@ -800,6 +835,9 @@ der Entity, `power_entity` (Leistungs-Chip) ist rein optional — genauso
 geeignet für Gas- oder Wasserzähler (m³) wie für Stromzähler (kWh).
 
 <img src="docs/images/counter-card.png" alt="Counter Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-counter-card
@@ -856,6 +894,8 @@ name: Stromzähler
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Power List Card
 
 Ersetzt eine `entities`-Kachel für Steckdosen-/Leistungsübersichten: zeigt
@@ -863,6 +903,9 @@ Leistungssensoren als sortierte Liste mit Anteilsbalken, blendet inaktive
 Geräte standardmäßig hinter einem Aufklappbereich aus.
 
 <img src="docs/images/power-list-card.png" alt="Power List Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-power-list-card
@@ -920,6 +963,8 @@ name: Steckdosen
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Power Summary Card
 
 Ersetzt eine Reihe einzelner Tile-Karten für Momentanleistungen: fasst
@@ -928,6 +973,9 @@ klarer Hierarchie zusammen. Reine Live-Werte aus `hass.states`, keine
 Statistik-Abfragen nötig.
 
 <img src="docs/images/power-summary-card.png" alt="Power Summary Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-power-summary-card
@@ -997,6 +1045,8 @@ Einspeisung/Bezug.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Top Consumers Card
 
 Ersetzt die native `energy-devices-graph`-Karte: zeigt die größten
@@ -1004,6 +1054,9 @@ Einzelverbraucher eines Zeitraums als Ranking, standardmäßig gespeist aus
 der Geräte-Sektion des HA-Energie-Dashboards.
 
 <img src="docs/images/top-consumers-card.png" alt="Top Consumers Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-top-consumers-card
@@ -1083,6 +1136,8 @@ in `currency`.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Cost Card
 
 Kostenauswertung für einen Zeitraum (Standard: laufender Monat) mit
@@ -1093,6 +1148,9 @@ kann jeder kumulative Energie-Sensor sein (bei
 automatisch verwendet).
 
 <img src="docs/images/cost-card.png" alt="Cost Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-cost-card
@@ -1173,6 +1231,8 @@ deaktiviert, sobald der aktuelle (laufende) Zeitraum erreicht ist.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Light Card
 
 Lichtsteuerung mit Header (Icon, Name, Power-Button) und einem
@@ -1182,6 +1242,9 @@ Springen, Pfeiltasten für ±5 % (Shift für ±1 %). Der Slider nutzt
 Seiten-Scroll kollidiert.
 
 <img src="docs/images/light-card.png" alt="Light Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-light-card
@@ -1210,6 +1273,8 @@ Power-Button, keinen Slider.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Battery Card
 
 Übersicht aller Batteriestand-Sensoren als sortierte Liste mit
@@ -1217,6 +1282,9 @@ Schwellwert-Einfärbung (kritisch/niedrig/mittel/ok), Balken pro Zeile und
 Aufklappbereich für die restlichen Geräte.
 
 <img src="docs/images/battery-card.png" alt="Battery Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-battery-card
@@ -1295,6 +1363,8 @@ praktisch für Sensoren, die dauerhaft 1 % melden.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Weather Card
 
 Wetterkarte mit Header (Icon/Temperatur/Zustand/Chips), geglätteter
@@ -1302,6 +1372,9 @@ Temperaturkurve mit Verlaufsfüllung, Niederschlagsbalken je Stunde,
 Sonnenauf-/-untergangsmarker in der Kurve und optionaler Tagesübersicht.
 
 <img src="docs/images/weather-card.png" alt="Weather Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-weather-card
@@ -1370,6 +1443,8 @@ gekürzt, bis er das tut. Wer in einer schmalen Karte zwölf Stunden anfordert,
 bekommt elf gezeichnet — Kurve, Regenbalken und Sonnenmarker werden auf
 dieselbe Länge gekürzt, damit nichts auseinanderläuft.
 
+</details>
+
 ## M3 Presence Card
 
 Anwesenheitsübersicht als Avatar-Raster für `person`- und
@@ -1378,6 +1453,9 @@ Initialen-Avatar, relativer Zeitangabe („seit 5 Min.“) und optional
 eingebetteter Karte (`hui-map-card`).
 
 <img src="docs/images/presence-card.png" alt="Presence Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-presence-card
@@ -1417,6 +1495,8 @@ optional `hold_action` aus (z.B. Navigation zu einer Karten-Ansicht).
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Media Card
 
 Medienplayer-Karte mit kompakter Ansicht (aus/idle) und voller
@@ -1426,6 +1506,9 @@ interpolierter Fortschritts-Wellen-Slider, Transportsteuerung
 Quellenauswahl und ein Browser für Bibliothek und Warteschlange des Players.
 
 <img src="docs/images/media-card.png" alt="Media Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-media-card
@@ -1488,6 +1571,8 @@ Interpreten-Ordner auf einer Ebene, und alle zu rendern blockiert den Frame.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Climate Overview Card
 
 Eine kompakte Übersicht aller Temperatur-/Feuchte-Sensoren, gruppiert nach
@@ -1496,6 +1581,9 @@ waagerechte Vergleichsskala mit einem Punkt pro Raum, und ein Hinweis-Chip
 im Header für den Raum, der am weitesten vom Komfortbereich abweicht.
 
 <img src="docs/images/climate-overview-card.png" alt="Climate Overview Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-climate-overview-card
@@ -1599,6 +1687,8 @@ Tap, der nichts öffnet, wäre schlimmer als einer, der das Falsche öffnet.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Aquarium Card
 
 Übersicht pro Aquarium: Wassertemperatur gegen einen Sollbereich, ein
@@ -1607,6 +1697,9 @@ Tagesbogen-Beleuchtungsplan, optionale Kamera und Status-Chips für alles,
 was Aufmerksamkeit braucht.
 
 <img src="docs/images/aquarium-card.png" alt="M3 Aquarium Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-aquarium-card
@@ -1746,6 +1839,8 @@ Changelog).
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `20` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Updates Card
 
 Übersicht aller verfügbaren Updates in einer Kachel: Status im Header, eigene
@@ -1757,6 +1852,9 @@ Aufklappbereich für alles, was bereits aktuell ist.
 
 <sub>Screenshot mit simulierten Update-Daten, damit Kern-Boxen, MAJOR-Badge
 und laufende Installation gleichzeitig sichtbar sind.</sub>
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-updates-card
@@ -1891,6 +1989,8 @@ mit dem Hinweis, dass Home Assistant gleich neu startet.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 NAS Card / M3 System Card
 
 Zwei Kacheln mit derselben Implementierung: Speicherbelegung pro Volume,
@@ -1907,6 +2007,9 @@ sonst sind sie identisch.
 die System Card für die eigene Instanz. Die Laufwerksnamen stammen aus
 `mount_names` — Glances meldet sonst Pfade wie
 `/rootfs/srv/dev-disk-by-uuid-…`.</sub>
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-nas-card
@@ -2021,6 +2124,8 @@ geschrieben.
 | `glass_background` | boolean | `true` | Milchiger Glashintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Supply Card
 
 Verbrauchsmaterial — Waschmittel-Pods, Spülmaschinentabs, Filter, Tierfutter
@@ -2029,6 +2134,9 @@ steht groß als Hero mit einem Punkt je verbleibender Einheit, der Rest folgt
 als kompakte Zeilen; ein Tap darauf macht ihn zum Hero.
 
 <img src="docs/images/supply-card.png" alt="Supply Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-supply-card
@@ -2157,6 +2265,8 @@ Je Artikel:
 | `shopping_item` | string | der Name | Text für die To-do-Liste |
 | `usage_per_week` | number | – | Feste Rate für diesen Artikel |
 
+</details>
+
 ## M3 Todo Card
 
 Einkaufs- und Aufgabenlisten im Designsystem des Projekts, als Ersatz für die
@@ -2164,6 +2274,9 @@ eingebaute `todo-list`-Karte von Home Assistant. Eintragen in einer Zeile,
 Abhaken per Tap, und Erledigtes verschwindet in einem Aufklappbereich.
 
 <img src="docs/images/todo-card.png" alt="Todo Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-todo-card
@@ -2226,6 +2339,8 @@ Zeile weg — aus „Obst: Äpfel" wird „Äpfel" unter der Überschrift „Obs
 | `glass_background` | boolean | `true` | Milchglas-Hintergrund |
 | `radius` / `corners` | number / object | `28` | Eckenradius, optional je Ecke |
 
+</details>
+
 ## M3 Occupancy Card
 
 Präsenz Raum für Raum. Jede Zeile ist ein Raum; er gilt als belegt, sobald
@@ -2235,6 +2350,9 @@ Gerät, dann einzelner Sensor). Eine optionale Zeitleiste zeigt, wann ein Raum
 in den letzten Stunden belegt war.
 
 <img src="docs/images/occupancy-card.png" alt="Occupancy Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-occupancy-card
@@ -2259,6 +2377,8 @@ auto_discover: true
 | `max_visible` | number | – | Sichtbare Zeilen begrenzen, Rest aufklappbar |
 | `notify_service` / `notify_enabled` | – | – | Optionale Push je Sensor bei Belegung (standardmäßig aus) |
 
+</details>
+
 ## M3 Cover Card
 
 Steuerung für `cover`-Entitäten, die sich dem Gerät anpasst: Sie liest
@@ -2270,6 +2390,9 @@ fasst mehrere Rollläden — oder Schalterpaare — mit Sammelsteuerung in einer
 Karte zusammen.
 
 <img src="docs/images/cover-card.png" alt="Cover Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 # Einzeln
@@ -2310,6 +2433,8 @@ entity: cover.wohnzimmer
 > **Keine Cover-Integration?** Ein Home-Assistant-Template-Cover bündelt zwei
 > Schalter zu einer `cover`-Entität und schaltet damit Position/Vorschau frei.
 
+</details>
+
 ## M3 Leak Card
 
 Wassermelder-Übersicht mit zwei klar getrennten Zuständen: ruhig, wenn alles
@@ -2319,6 +2444,9 @@ Batterie-Sensor jedes Melders und färbt die ganze Karte rot, sobald einer
 Wasser meldet.
 
 <img src="docs/images/leak-card.png" alt="Leak Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-leak-card
@@ -2353,6 +2481,8 @@ zurück — welcher Sensor nass ist, muss ohne zweiten Tap sichtbar sein.
 > hochpriorisierter Kanal auf Android) — dann wirst du auch bei geschlossenem
 > Dashboard benachrichtigt.
 
+</details>
+
 ## M3 Waste Card
 
 Abfuhrtermine: ein Hero mit der nächsten Abholung, eine Zwei-Wochen-Zeitleiste
@@ -2363,6 +2493,9 @@ automatisch geleert — reine Information) und **reminder** (du stellst selbst
 raus — eskaliert kurz vor dem Termin mit einem Rausgestellt-Knopf).
 
 <img src="docs/images/waste-card.png" alt="Waste Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-waste-card
@@ -2390,6 +2523,8 @@ entities:
 | `ack_entity` | string | – | `input_boolean`/`input_datetime` für „rausgestellt" |
 | `notify_service` / `notify_enabled` | – | – | Optionale Rausstell-Erinnerung per Push (standardmäßig aus) |
 
+</details>
+
 ## M3 Time Card
 
 Eine kompakte Zeitauswahl für einen `input_datetime`-Helfer, mit optionalem
@@ -2398,10 +2533,15 @@ Scrollräder oder segmentierte Anzeige).
 
 <img src="docs/images/time-card.png" alt="Time Card" width="440">
 
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
 ```yaml
 type: custom:m3-time-card
 entity: input_datetime.weckzeit
 ```
+
+</details>
 
 ## Entwicklung
 
@@ -2428,6 +2568,9 @@ ohne Bewegung zwischen den Sekunden schalten auf einen Timer um, der erst zur
 vollen Minute aufwacht.
 
 <img src="docs/images/clock-card.png" alt="Clock Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-clock-card
@@ -2482,6 +2625,8 @@ show_date: true
 die Formen **stillstehen statt verschwinden**, wechselt Ziffern ohne Pop und
 lässt den Sekundenzeiger springen statt gleiten.
 
+</details>
+
 ## M3 Status Card
 
 Zeigt einen Wert groß und mit Bedeutung: eine Zahl, einen Text oder einen
@@ -2492,6 +2637,9 @@ Karte ist die Zuordnung dazwischen: eine Regelliste macht aus `off` ein rotes
 Template-Sensor.
 
 <img src="docs/images/status-card.png" alt="Status Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-status-card
@@ -2591,6 +2739,7 @@ Eine nicht verfügbare Entität zeigt „—“ in neutralem Grau statt ihre Far
 behalten: ein toter Sensor, der weiter grün leuchtet, liest sich als „alles in
 Ordnung“ — also genau falsch herum.
 
+</details>
 
 ## M3 Heading Card
 
@@ -2601,6 +2750,9 @@ Raster. Sie ersetzt die eingebaute heading-Karte von Home Assistant, die ihren
 Zweck erfüllt, aber nicht in der Designsprache dieser Suite.
 
 <img src="docs/images/heading-card.png" alt="Heading Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-heading-card
@@ -2705,6 +2857,7 @@ collapse_state_entity: input_boolean.medien_eingeklappt
 | `collapse_memory` | `device` | Wo der Zustand gemerkt wird. `device` behält ihn dauerhaft, eine offen gelassene Karte ist beim nächsten Mal wieder offen. `session` behält ihn nur, solange die App läuft: er folgt dir durchs Dashboard und ist beim nächsten Start weg, jeder Start zeigt also wieder die Übersicht. Wird ignoriert, wenn `collapse_state_entity` gesetzt ist — dann entscheidet der Helfer |
 | `collapse_state_entity` | string | – | Nur `collapsible`: ein `input_boolean` mit dem Zustand |
 
+</details>
 
 ## M3 Room Card
 
@@ -2714,6 +2867,9 @@ die Klimawerte und ob jemand im Raum ist.
 
 <img src="docs/images/room-card.png" alt="Raumkarte, die einen Bereich selbst auswertet" width="440">
 <img src="docs/images/room-card-manual.png" alt="Raumkarte mit eigenen Karten" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-room-card
@@ -2844,6 +3000,7 @@ dass die Karte etwas rät, das man lieber selbst entscheidet.
 
 Der Editor legt Kacheln über einen Entitätswähler an — als Button-, Licht-, Rollladen-, Medien- oder kompakte Klima-Karte — und jeder Eintrag klappt zum Editor genau dieser Karte auf, eine eingebettete Karte ist also so einstellbar wie überall sonst. Jede andere Lovelace-Karte lässt sich von Hand eintragen und bekommt ebenfalls ihren Editor.
 
+</details>
 
 ## M3 Humidifier Card
 
@@ -2859,6 +3016,9 @@ funktionieren hier ebenso; siehe „Geräte, die keine humidifier-Entität sind"
 <img src="docs/images/humidifier-card.png" alt="Humidifier Card" width="440">
 
 <sub>Dasselbe Gerät zweimal: alles, und darunter `layout: [slider, modes]`.</sub>
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-humidifier-card
@@ -2983,12 +3143,17 @@ zwischen Ist und Ziel ab, statt nichts zu zeigen. Ein Gerät ohne Modi bekommt
 keine Modus-Zeile. Ein Tank, der nur ein `binary_sensor` ist, bekommt nur dann
 einen Chip, wenn er voll ist — „nicht voll" ist keine Nachricht.
 
+</details>
+
 ## M3 Calendar Card
 
 Agenda und Monatsraster für beliebig viele Kalender, in der Designsprache dieser
 Suite.
 
 <img src="docs/images/calendar-card.png" alt="Calendar Card" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-calendar-card
@@ -3066,6 +3231,8 @@ ohne Aussage.
 | `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
 | `navigation_path` | `/calendar` | Ziel von `navigate` und des Knopfs im Detailfenster |
 
+</details>
+
 ## M3 Nav Card
 
 Eine Navigationsleiste fürs Dashboard: eine Reihe Einträge, von denen der zur
@@ -3086,6 +3253,9 @@ Löschen, und die Leiste liest das Dashboard von sich aus nie wieder.
 <img src="docs/images/nav-card.png" alt="Nav Card — fünf Varianten derselben Leiste" width="440">
 <img src="docs/images/nav-card-sheet-list.png" alt="Nav Card — offene Schublade, Kürzel als Zeilen" width="220">
 <img src="docs/images/nav-card-sheet-grid.png" alt="Nav Card — offene Schublade, Kürzel als Kacheln" width="220">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-nav-card
@@ -3423,6 +3593,8 @@ Fläche, die diesen Tipp fängt, ist unsichtbar und verbraucht ihn — hinter de
 Schublade reagiert also nichts darauf, dass sie weggetippt wurde.
 | `preload_views` | `false` | Reserviert; tut derzeit nichts |
 
+</details>
+
 ## M3 Lights Overview Card
 
 Eine Raum-für-Raum-Lichtübersicht, nach demselben Muster wie Climate Overview
@@ -3431,11 +3603,11 @@ sitzen): eine Kachel pro Raum mit An/Aus-Status und Anzahl, oder eine flache
 Liste aller Lichter. Ein Tap schaltet die Lichter des Raums; Hold öffnet ein
 Popup.
 
-<details>
-<summary>Konfiguration, Beispiele & Optionen</summary>
-
 <img src="docs/images/lights-overview-card.png" alt="Lights Overview Card" width="440">
 <img src="docs/images/lights-overview-card-popup.png" alt="Lights Overview Card, Popup" width="440">
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
 
 ```yaml
 type: custom:m3-lights-overview-card
@@ -3533,10 +3705,10 @@ zu einer reinen Anzeige (z.B. ein Temperatur- oder Feuchte-Chip), das M3-
 Äquivalent zu Bubble Cards separater zweiter Zeile, ohne ein zweites
 Positionierungssystem konfigurieren zu müssen.
 
+<img src="docs/images/chip-buttons-card.png" alt="Chip Buttons Card" width="700">
+
 <details>
 <summary>Konfiguration, Beispiele & Optionen</summary>
-
-<img src="docs/images/chip-buttons-card.png" alt="Chip Buttons Card" width="700">
 
 ```yaml
 type: custom:m3-chip-buttons-card
@@ -3610,10 +3782,10 @@ sortiert, die auch Home Assistants eigener `vertical-stack`-Editor nutzt —
 inklusive Suche, Favoriten und Einfügen aus der Zwischenablage beim
 Hinzufügen einer Karte.
 
+<img src="docs/images/group-card.png" alt="Group Card" width="500">
+
 <details>
 <summary>Konfiguration, Beispiele & Optionen</summary>
-
-<img src="docs/images/group-card.png" alt="Group Card" width="500">
 
 ```yaml
 type: custom:m3-group-card
