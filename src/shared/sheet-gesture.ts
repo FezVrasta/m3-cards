@@ -44,6 +44,16 @@ export interface SheetGestureOptions {
   onSettle: (fraction: number) => void;
   /** A press that never became a drag. */
   onTap?: () => void;
+  /**
+   * Asked at the moment a finger goes down, not when the handlers are wired.
+   *
+   * The host used to decide at attach time whether dragging made sense, which
+   * meant a state it reads from its surroundings — dashboard edit mode — had to
+   * be noticed changing, and it was not: the drawer stayed dead until the page
+   * was reloaded. Asking here removes the transition from the problem
+   * entirely.
+   */
+  enabled?: () => boolean;
   reducedMotion: () => boolean;
 }
 
@@ -121,6 +131,7 @@ export class SheetGesture {
 
   private onDown(e: PointerEvent, el: HTMLElement, kind: "handle" | "bar" | "content"): void {
     if (e.button !== undefined && e.button !== 0) return;
+    if (this.opts.enabled && !this.opts.enabled()) return;
     this.startY = e.clientY;
     this.startFraction = this.opts.current();
     this.samples = [{ t: performance.now(), y: e.clientY }];

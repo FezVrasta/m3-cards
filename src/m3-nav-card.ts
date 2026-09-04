@@ -474,7 +474,8 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       if (!this.isConnected) return;
       this._startObserving();
       this._measureDock();
-      if (this._variant === "sheet" && !this._editing) this._attachGesture();
+      // Attached in edit mode too; the gesture asks about edit mode itself.
+      if (this._variant === "sheet") this._attachGesture();
     });
   }
 
@@ -820,7 +821,7 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     }
     // The drawer's elements only exist once the sheet variant has rendered, so
     // the handlers are wired here rather than in firstUpdated.
-    if (this._variant === "sheet" && !this._editing) {
+    if (this._variant === "sheet") {
       this._attachGesture();
       // Re-measured on every render as well as from the observer. The cards in
       // the drawer mount asynchronously and Lit may hand the panel a new body
@@ -1583,9 +1584,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
 
   private _attachGesture(): void {
     if (this._gesture || this._variant !== "sheet") return;
-    // Nothing to drag in the editor: the drawer is pinned open there so the
-    // cards inside it can be configured.
-    if (this._editing) return;
+    // Deliberately not gated on edit mode. Whether dragging makes sense is
+    // asked when a finger goes down instead — see `enabled` below. Deciding it
+    // here meant the answer was fixed at attach time, and leaving edit mode is
+    // not a change this card can see, so the drawer stayed dead until reload.
 
     const body = this.renderRoot?.querySelector<HTMLElement>(".sheet-body");
     const handle = this.renderRoot?.querySelector<HTMLElement>(".handle-zone");
@@ -1612,6 +1614,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         this._setSheetOpen(!this._sheetOpen);
       },
       reducedMotion: () => !shouldAnimate(this._config?.animation),
+      // Nothing to drag in the editor: the drawer is pinned open there so the
+      // cards inside it can be configured.
+      enabled: () => !this._editing,
     });
 
     this._gestureCleanups.push(this._gesture.attachHandle(handle));
