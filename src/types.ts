@@ -633,6 +633,7 @@ export interface M3LightCardConfig {
   icon?: string;
   transition?: number;
   show_members?: boolean;
+  show_color_temp?: boolean;
   color_temp_style?: LightColorTempStyle;
   color_temp_presets?: LightColorTempPresets;
   color_palette?: string[];

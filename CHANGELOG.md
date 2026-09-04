@@ -4,6 +4,37 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Added
+
+- **`show_color_temp` for the light card.** The colour temperature row appeared
+  on every light that reports `color_temp`, and nothing could take it away —
+  `color_temp_style` only chooses between the three presets and the continuous
+  slider, it does not hide the row. On a view carrying dozens of light cards
+  that row is height on every one of them, paid for by people who only ever
+  drag the brightness. `show_color_temp: false` leaves it out. It defaults to
+  `true`, so existing dashboards look exactly as they did, and it only ever
+  removes the row — a light without colour temperature support still never
+  shows one. In the editor the switch sits at the top of the **Colour
+  temperature** section, with the style and preset fields below it; they are
+  hidden while it is off, since they have nothing left to describe.
+
+### Hinzugefügt
+
+- **`show_color_temp` für die Light Card.** Die Farbtemperatur-Zeile erschien
+  bei jeder Lampe mit `color_temp`, und nichts konnte sie wegnehmen —
+  `color_temp_style` wählt nur zwischen den drei Voreinstellungen und dem
+  stufenlosen Regler, ausblenden lässt sich die Zeile damit nicht. Auf einer
+  Ansicht mit Dutzenden Light Cards ist das Höhe auf jeder einzelnen, bezahlt
+  von denen, die ohnehin nur die Helligkeit ziehen. `show_color_temp: false`
+  lässt sie weg. Standard ist `true`, bestehende Dashboards sehen also
+  unverändert aus, und die Option nimmt nur weg — eine Lampe ohne
+  Farbtemperatur-Unterstützung zeigt weiterhin keine. Im Editor steht der
+  Schalter oben im Abschnitt **Farbtemperatur**, Stil- und Voreinstellungs-
+  Felder darunter; sie verschwinden, solange er aus ist, weil sie dann nichts
+  mehr beschreiben.
+
 ## [2.3.2]
 
 Editor tidying for the nav card, following 2.3.1.
