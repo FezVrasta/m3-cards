@@ -14,6 +14,7 @@ import type {
   NavMarkerMotion,
   NavPageTransition,
   NavActionMenuEntry,
+  NavSheetItem,
   NavLabelVisibility,
   NavLayoutConfig,
   NavPosition,
@@ -1173,14 +1174,21 @@ export class M3NavCard extends LitElement implements LovelaceCard {
   /**
    * Whether this variant carries the round action button.
    *
-   * It is a companion to a detached pill: `floating` and `sheet` lie over the
-   * page, and a circle beside one reads as part of the same object. `header`
-   * and `footer` span a screen edge and `segmented` runs in the content flow —
-   * beside those the circle is a stray dot that fell off the bar, and it is
-   * not part of how those variants are drawn.
+   * Only `floating` does. It is a detached pill lying over the page, and a
+   * circle beside one reads as part of the same object.
+   *
+   * `header` and `footer` span a screen edge, `segmented` runs in the content
+   * flow — beside those the circle is a stray dot that fell off the bar. And
+   * `sheet` already has the better answer to "where do the rest of the pages
+   * go": the drawer. A button that opens a small menu, sitting next to a
+   * drawer built to hold exactly those entries, is one door too many.
+   *
+   * Nothing is lost in either case. The entries move to the bar for the three
+   * in-flow variants and into the drawer for the sheet; the config keeps its
+   * action button, so a floating bar shows it again.
    */
   private get _bubbleFits(): boolean {
-    return this._variant === "floating" || this._variant === "sheet";
+    return this._variant === "floating";
   }
 
   private get _resolvedItems(): ResolvedItem[] {
@@ -1194,9 +1202,10 @@ export class M3NavCard extends LitElement implements LovelaceCard {
     // screen already scrolls instead of clipping its last entry. The config is
     // untouched either way, so switching to a floating bar puts them back
     // behind the button.
-    const quelle: NavItemConfig[] = this._bubbleFits
-      ? cfg.items
-      : [...cfg.items, ...(cfg.action_button?.menu ?? [])];
+    const quelle: NavItemConfig[] =
+      this._bubbleFits || this._variant === "sheet"
+        ? cfg.items
+        : [...cfg.items, ...(cfg.action_button?.menu ?? [])];
 
     const out: ResolvedItem[] = [];
     quelle.forEach((item, index) => {
@@ -1448,7 +1457,12 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       cfg?.sheet_items?.length ||
       cfg?.sheet_cards?.length ||
       cfg?.sheet_title ||
-      cfg?.sheet_action?.icon
+      cfg?.sheet_action?.icon ||
+      // An action menu empties into the drawer on this variant, so a card whose
+      // only extra entries live there still has a drawer worth drawing. Without
+      // this the sheet fell back to a plain bar and the entries vanished with
+      // the drawer that was meant to hold them.
+      (this._variant === "sheet" && cfg?.action_button?.menu?.length)
     );
   }
 
@@ -1778,7 +1792,24 @@ export class M3NavCard extends LitElement implements LovelaceCard {
    * a list gives each one a line to say something about itself.
    */
   private _renderSheetItems(): TemplateResult | typeof nothing {
-    const items = this._config?.sheet_items ?? [];
+    // The drawer is where a sheet's "more" entries belong, so an action menu
+    // configured on this card empties into it rather than into a button beside
+    // the bar. Entries already in the drawer win: a path listed in both is not
+    // shown twice.
+    const eigene = this._config?.sheet_items ?? [];
+    const bekannt = new Set(eigene.map((item) => item.path).filter(Boolean));
+    const items: NavSheetItem[] = [
+      ...eigene,
+      ...(this._config?.action_button?.menu ?? [])
+        .filter((entry) => !entry.path || !bekannt.has(entry.path))
+        .map(({ name, icon, color, path, tap_action }) => ({
+          name,
+          icon,
+          color,
+          path,
+          tap_action,
+        })),
+    ];
     if (!items.length) return nothing;
     const accent = resolveThemeColor(this._config?.accent_color ?? DEFAULT_NAV_COLOR);
     const list = (this._config?.sheet_item_style ?? "grid") === "list";
@@ -2285,7 +2316,9 @@ export class M3NavCard extends LitElement implements LovelaceCard {
         ? html`
             ${sheetScrim}
             <div
-              class="sheet ${container} ${widthClass} ${animated ? "" : "no-animations"}"
+              class="sheet ${container} ${widthClass} ${
+                this._sheetOpen || this._sheetFraction > 0 ? "sheet-open" : "sheet-shut"
+              } ${animated ? "" : "no-animations"}"
               style=${`${cssVars} ${freeStyles}`}
             >
               ${this._renderSheetPanel()} ${bar}
@@ -3013,6 +3046,28 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       z-index: 1;
     }
 
+    /* Shut, the sheet is the floating bar — the editor's own help text says so
+       ("the pull-up sheet is the floating bar plus a drawer"), and until now it
+       said it while drawing a strip across the whole screen. Shut it hugs its
+       entries and centres, exactly like the floating variant; opening it lets
+       the drawer take the width its tiles need. The width is transitioned so
+       the two states grow into each other rather than snapping. */
+    .sheet.sheet-shut {
+      width: fit-content;
+      max-width: calc(100% - 2 * var(--nav-edge, ${NAV_FLOAT_INSET}px));
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .sheet {
+      transition: width ${unsafeCSS(NAV_SHEET_SETTLE_MS)}ms ${EASING};
+    }
+
+    .no-animations .sheet,
+    .sheet.no-animations {
+      transition: none;
+    }
+
     /* The drawer's height is what opens and shuts it, so its layout box shrinks
        with it and the bar stays where it belongs. Before the body has been
        measured, these two classes do the same job in percentages. */
@@ -3344,6 +3399,22 @@ export class M3NavCard extends LitElement implements LovelaceCard {
       padding: 12px;
       border: 1px dashed rgba(127, 127, 127, 0.5);
       border-radius: 16px;
+    }
+
+    /* In the editor a docked bar is drawn in the flow, inside a frame whose
+       width the dashboard column decides — not the screen it normally spans.
+       Eight entries are wider than that column, and with nothing said here the
+       bar simply ran out past the dashed frame and off the card. It scrolls
+       inside the frame instead, the same way it already does on screen when
+       its entries outgrow the width. */
+    .edit-frame .bar {
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .edit-frame .bar::-webkit-scrollbar {
+      display: none;
     }
 
     .edit-label {
