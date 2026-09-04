@@ -6,6 +6,16 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation restructured, German README dropped** — the per-card
+  documentation now lives in one small file per card
+  (`docs/cards/<slug>.md`), mechanically assembled into `README.md` via
+  `npm run docs`; `README.md` is generated and should no longer be edited by
+  hand. `README.de.md` (machine-translated, increasingly out of step with the
+  English text) has been removed — the project is English-only going
+  forward.
+
 ### Added
 
 - **Action-glow frame for M3 Climate Card / M3 Climate Card Mini** — both

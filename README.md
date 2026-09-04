@@ -99,8 +99,6 @@ speaker, air conditioner and the updates show simulated states so the active
 renderings (wave indicator, version jump, running installation) are visible in
 the image — everything else is live data.</sub>
 
-🇩🇪 [Deutsches README](README.de.md)
-
 ## Features
 
 - Frosted glass card look (can be turned off for solid themes), shared
@@ -462,80 +460,6 @@ chip_buttons:
     interactive: false
 chip_buttons_justify: end
 ```
-
-</details>
-
-## M3 Chip Buttons Card
-
-A horizontal row of tappable pill-shaped chips — one per entity — with
-tap/hold/double-tap actions. This is the M3 answer to Bubble Card's
-"sub-buttons only" card: same core idea (a row of icon chips), but flatter
-configuration — one form per chip instead of several nested panels, and
-explicit Up/Down buttons to reorder instead of a dropdown menu.
-
-A chip can also be non-interactive (`interactive: false`), which turns it
-into a read-only info readout (e.g. a temperature or humidity chip) — the M3
-equivalent of Bubble Card's separate second row, without a second
-positioning system to configure.
-
-<details>
-<summary>Configuration, examples & options</summary>
-
-<img src="docs/images/chip-buttons-card.png" alt="Chip Buttons Card" width="700">
-
-```yaml
-type: custom:m3-chip-buttons-card
-wrap: false
-justify: start
-buttons:
-  - entity: input_select.home_mode
-    name: Home
-    icon: mdi:home
-    tap_action:
-      action: more-info
-  - entity: lock.front_door
-    name: Locked
-    color: blue
-    tap_action:
-      action: toggle
-    hold_action:
-      action: more-info
-  - icon: mdi:magnify
-    name: Search
-    interactive: false
-    tap_action:
-      action: none
-  - entity: sensor.living_room_temperature
-    interactive: false
-    show_state: true
-glass_background: true
-radius: 28
-```
-
-### Configuration options
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `buttons` | list | `[]` | The chips, in display order. Each entry supports the fields below |
-| `buttons[].entity` | string | – (optional) | Any entity. Can be left empty for a pure action/display chip |
-| `buttons[].name` | string | entity `friendly_name` | Displayed name |
-| `buttons[].icon` | string | entity icon, otherwise a generic icon | Icon |
-| `buttons[].color` | string | `primary` | HA color name or any CSS color for the chip in its **active** state |
-| `buttons[].inactive_color` | string | – (default theme grey) | Color for the chip in its **inactive** state |
-| `buttons[].show_name` | boolean | `true` | `false` hides the name label, leaving an icon-only chip (combine with `show_state` to also hide the state text) |
-| `buttons[].show_state` | boolean | `true` | Show the entity state next to the name |
-| `buttons[].static_color` | boolean | `false` | Always render the chip as "active", regardless of the entity's actual state (e.g. for a status chip that should always stand out) |
-| `buttons[].interactive` | boolean | `true` | `false` turns the chip into a read-only display — no tap/hold handlers, not keyboard-focusable |
-| `buttons[].tap_action` | Action | `more-info` | Tap action, same action picker as every other card |
-| `buttons[].hold_action` | Action | `none` | Long-press action |
-| `buttons[].double_tap_action` | Action | `none` | Double-tap action |
-| `wrap` | boolean | `false` | Wrap chips onto multiple lines instead of scrolling horizontally |
-| `justify` | `start` \| `center` \| `end` \| `space-between` | `start` | Horizontal alignment of the chip row |
-| `radius` | number (px) | `28` | Card corner radius |
-| `corners` | object | – | Optional per-corner override, same as every other card |
-| `glass_background` | boolean | `true` | Frosted glass background |
-| `card_background` | string | – | Override background color |
-| `animation` | `auto` \| `on` \| `off` | `auto` | Press animation; `auto` respects `prefers-reduced-motion` |
 
 </details>
 
@@ -2589,6 +2513,24 @@ stored as "Fruit: apples" reads as "apples" beneath a "Fruit" heading.
 
 </details>
 
+## M3 Time Card
+
+A compact time picker for an `input_datetime` helper, with an optional apply
+button and preset chips. Three input variants (steppers, scroll wheels, or a
+segmented display).
+
+<details>
+<summary>Configuration, examples & options</summary>
+
+<img src="docs/images/time-card.png" alt="Time Card" width="440">
+
+```yaml
+type: custom:m3-time-card
+entity: input_datetime.wake_up
+```
+
+</details>
+
 ## M3 Occupancy Card
 
 Room-by-room presence. Each row is a room; it counts as occupied when any of
@@ -2767,24 +2709,6 @@ entities:
 | `reminder_time` | string | `18:00` | Only remind after this time the day before |
 | `ack_entity` | string | – | `input_boolean`/`input_datetime` storing "put out" |
 | `notify_service` / `notify_enabled` | – | – | Optional put-out reminder push (off by default) |
-
-</details>
-
-## M3 Time Card
-
-A compact time picker for an `input_datetime` helper, with an optional apply
-button and preset chips. Three input variants (steppers, scroll wheels, or a
-segmented display).
-
-<details>
-<summary>Configuration, examples & options</summary>
-
-<img src="docs/images/time-card.png" alt="Time Card" width="440">
-
-```yaml
-type: custom:m3-time-card
-entity: input_datetime.wake_up
-```
 
 </details>
 
@@ -3435,6 +3359,80 @@ heading that already says Today the badge would say nothing.
 | `show_next_chip` | `false` | Header chip with the next event and how far off it is |
 | `tap_action` | `detail` | `detail`, `more-info`, `navigate`, `none` |
 | `navigation_path` | `/calendar` | Where `navigate` goes, and the dialog's button |
+
+</details>
+
+## M3 Chip Buttons Card
+
+A horizontal row of tappable pill-shaped chips — one per entity — with
+tap/hold/double-tap actions. This is the M3 answer to Bubble Card's
+"sub-buttons only" card: same core idea (a row of icon chips), but flatter
+configuration — one form per chip instead of several nested panels, and
+explicit Up/Down buttons to reorder instead of a dropdown menu.
+
+A chip can also be non-interactive (`interactive: false`), which turns it
+into a read-only info readout (e.g. a temperature or humidity chip) — the M3
+equivalent of Bubble Card's separate second row, without a second
+positioning system to configure.
+
+<details>
+<summary>Configuration, examples & options</summary>
+
+<img src="docs/images/chip-buttons-card.png" alt="Chip Buttons Card" width="700">
+
+```yaml
+type: custom:m3-chip-buttons-card
+wrap: false
+justify: start
+buttons:
+  - entity: input_select.home_mode
+    name: Home
+    icon: mdi:home
+    tap_action:
+      action: more-info
+  - entity: lock.front_door
+    name: Locked
+    color: blue
+    tap_action:
+      action: toggle
+    hold_action:
+      action: more-info
+  - icon: mdi:magnify
+    name: Search
+    interactive: false
+    tap_action:
+      action: none
+  - entity: sensor.living_room_temperature
+    interactive: false
+    show_state: true
+glass_background: true
+radius: 28
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `buttons` | list | `[]` | The chips, in display order. Each entry supports the fields below |
+| `buttons[].entity` | string | – (optional) | Any entity. Can be left empty for a pure action/display chip |
+| `buttons[].name` | string | entity `friendly_name` | Displayed name |
+| `buttons[].icon` | string | entity icon, otherwise a generic icon | Icon |
+| `buttons[].color` | string | `primary` | HA color name or any CSS color for the chip in its **active** state |
+| `buttons[].inactive_color` | string | – (default theme grey) | Color for the chip in its **inactive** state |
+| `buttons[].show_name` | boolean | `true` | `false` hides the name label, leaving an icon-only chip (combine with `show_state` to also hide the state text) |
+| `buttons[].show_state` | boolean | `true` | Show the entity state next to the name |
+| `buttons[].static_color` | boolean | `false` | Always render the chip as "active", regardless of the entity's actual state (e.g. for a status chip that should always stand out) |
+| `buttons[].interactive` | boolean | `true` | `false` turns the chip into a read-only display — no tap/hold handlers, not keyboard-focusable |
+| `buttons[].tap_action` | Action | `more-info` | Tap action, same action picker as every other card |
+| `buttons[].hold_action` | Action | `none` | Long-press action |
+| `buttons[].double_tap_action` | Action | `none` | Double-tap action |
+| `wrap` | boolean | `false` | Wrap chips onto multiple lines instead of scrolling horizontally |
+| `justify` | `start` \| `center` \| `end` \| `space-between` | `start` | Horizontal alignment of the chip row |
+| `radius` | number (px) | `28` | Card corner radius |
+| `corners` | object | – | Optional per-corner override, same as every other card |
+| `glass_background` | boolean | `true` | Frosted glass background |
+| `card_background` | string | – | Override background color |
+| `animation` | `auto` \| `on` \| `off` | `auto` | Press animation; `auto` respects `prefers-reduced-motion` |
 
 </details>
 

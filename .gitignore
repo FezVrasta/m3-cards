@@ -23,4 +23,5 @@ docs/HANDOVER.md
 # Private workspace tooling (not part of the public HACS release)
 templates/
 scripts/deploy.sh
+scripts/commit-pending.sh
 dev-dashboard.yaml

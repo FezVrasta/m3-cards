@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "build": "node scripts/build.mjs",
+    "docs": "node scripts/build-readme.mjs",
     "deploy": "npm run build && bash scripts/deploy.sh",
     "check": "tsc --noEmit && eslint src",
     "test": "vitest run",
