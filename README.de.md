@@ -77,7 +77,7 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | --- | --- | --- |
 | [Battery](#m3-battery-card) | `m3-battery-card` | Akkustände aller `device_class: battery`-Sensoren |
 | [Updates](#m3-updates-card) | `m3-updates-card` | Alle verfügbaren Updates (Core, OS, Add-ons, HACS, Firmware) |
-| [NAS](#m3-nas-card--m3-system-card) | `m3-nas-card` | NAS-Volumes, CPU, RAM, Netzwerk über Glances + Syncthing |
+| [NAS](#m3-nas-card--m3-system-card) | `m3-nas-card` | NAS-Volumes, CPU, RAM, Netzwerk über Glances oder Synology DSM + Syncthing |
 | [System](#m3-nas-card--m3-system-card) | `m3-system-card` | Dasselbe, gespeist vom System-Monitor |
 
 ### 🐠 Spezial
@@ -2149,9 +2149,9 @@ mit dem Hinweis, dass Home Assistant gleich neu startet.
 
 Zwei Kacheln mit derselben Implementierung: Speicherbelegung pro Volume,
 darunter CPU, RAM, Temperatur und Netzwerk als kompakte Statuskacheln,
-optional der Zustand der Syncthing-Ordner. Die NAS Card liest die
-**Glances**-Integration, die System Card die **System-Monitor**-Integration —
-sonst sind sie identisch.
+optional der Zustand der Syncthing-Ordner. Die NAS Card liest die **Glances**-
+oder die **Synology-DSM**-Integration, die System Card die
+**System-Monitor**-Integration — sonst sind sie identisch.
 
 <img src="docs/images/nas-card.png" alt="M3 NAS Card" width="440">
 
@@ -2169,6 +2169,11 @@ die System Card für die eigene Instanz. Die Laufwerksnamen stammen aus
 type: custom:m3-nas-card
 name: NAS
 
+# oder, für ein Synology-NAS:
+type: custom:m3-nas-card
+name: NAS
+source: synology_dsm
+
 # oder, für die eigene HA-Instanz:
 type: custom:m3-system-card
 name: Home Assistant
@@ -2177,6 +2182,12 @@ name: Home Assistant
 ### Datenquelle einrichten
 
 Für die System Card genügt die mitgelieferte **System-Monitor**-Integration.
+
+Für ein **Synology**-NAS liest `source: synology_dsm` die mitgelieferte
+**Synology-DSM**-Integration — auf dem NAS selbst muss nichts installiert
+werden. Unter *Einstellungen → Geräte & Dienste* hinzufügen (meist wird sie
+per SSDP gefunden), danach füllt sich die Karte aus deren Entitäten. Was
+worauf abgebildet wird, steht unter [Synology](#synology).
 
 Für die NAS Card muss auf dem NAS **Glances** mit REST-API laufen; danach in
 HA die Glances-Integration mit Host und Port `61208` hinzufügen. Im Container
@@ -2214,12 +2225,71 @@ Mount-Pfade werden für die Anzeige gekürzt (`/rootfs` entfällt,
 UUID-Volumes werden zu „Volume a1b2c3d4“). `mount_names` überschreibt das
 pro Pfad, `exclude_mounts` blendet einzelne aus.
 
+### Synology
+
+Mit `source: synology_dsm` füllt die Karte dieselben Abschnitte aus der
+Synology-DSM-Integration. Erkannt wird genau wie oben — über den
+`translation_key`, nicht über den Anzeigenamen:
+
+| Synology-`translation_key` | Abschnitt der Karte |
+|---|---|
+| `volume_percentage_used` | Volume-Zeile, Prozentwert und Balken |
+| `volume_size_used` | Volume-Zeile, Zeile „belegt / gesamt“ |
+| `volume_size_total` | Volume-Zeile, Zeile „belegt / gesamt“ |
+| `volume_status` | Farbe der Volume-Zeile bei ungesundem Volume |
+| `cpu_total_load` | CPU-Kachel |
+| `memory_real_usage` | RAM-Kachel |
+| `disk_temp` (pro Laufwerk) | Temperatur-Kachel |
+| `temperature` (Gehäuse) | Temperatur-Kachel, wenn kein Laufwerkssensor da ist |
+| `network_down` / `network_up` | Netzwerk-Kachel |
+| *Uptime* (ohne `translation_key`) | Laufzeit im Untertitel |
+
+**Volumes haben Namen, keine Mount-Punkte.** Glances meldet einen Mount-Pfad;
+Synology hat keinen und meldet stattdessen eine DSM-Volume-ID. `exclude_mounts`,
+`mount_names` und `disks[].mount` erwarten deshalb diese ID — `volume_1`,
+`volume_2` — und die Karte zeigt sie als „Volume 1“, sofern `mount_names`
+nichts anderes sagt:
+
+```yaml
+type: custom:m3-nas-card
+source: synology_dsm
+mount_names:
+  volume_1: Medien
+exclude_mounts:
+  - volume_2
+```
+
+Alles Übrige verhält sich wie bei den anderen Quellen: `auto_discover`,
+`config_entry_id` (bei mehreren NAS), `max_visible`, die `show_*`-Schalter,
+die Schwellwerte und die Benachrichtigungen funktionieren unverändert.
+
+Einige der benötigten Sensoren liefert Home Assistant **standardmäßig
+deaktiviert**: `volume_size_total` gehört dazu — ohne ihn zeigt die
+Volume-Zeile den Prozentwert, aber keine Zeile „belegt / gesamt“ — und der
+Uptime-Sensor ebenfalls. Bei Bedarf unter *Einstellungen → Geräte & Dienste →
+Synology DSM → Entitäten* aktivieren. Ein Abschnitt, den das NAS nicht meldet,
+wird schlicht nicht gezeichnet; nichts fällt auf einen Nullwert zurück.
+
+Ein Volume mit `volume_status` `crashed`, `degraded` oder `attention` bekommt
+die kritische bzw. warnende Farbe in seiner Zeile, unabhängig von der
+Belegung. Die SMART-Sensoren pro Laufwerk und der Sicherheitsstatus-Binärsensor
+werden **nicht** angezeigt: DSM legt nicht offen, welche Laufwerke zu welchem
+Volume gehören, es gibt also keine Zeile, an die sie ohne einen neuen Abschnitt
+gehören würden.
+
 ### Temperatur
 
 Glances meldet Platten- und SoC-Sensoren in einer Liste, und der SoC läuft
 immer heißer. Die Karte bevorzugt deshalb Laufwerkssensoren, sobald welche
 vorhanden sind — sonst stünde dort 49 °C, während die Platten bei 32 °C
 liegen. `temperature_labels` legt die Auswahl bei Bedarf selbst fest.
+
+Dieselbe Bevorzugung gilt für Synology: `disk_temp` trägt das Laufwerk als
+Label (`sda`), der Gehäusesensor `temperature` nicht — also gewinnen die
+Laufwerke, und der Gehäusewert kommt nur zum Zug, wenn ein Modell keine
+Sensoren pro Laufwerk liefert. Die Sensoren `volume_disk_temp_avg` / `_max`
+pro Volume bleiben bewusst unberücksichtigt: sie mitteln genau die Laufwerke,
+die ohnehin schon gelesen werden.
 
 ### Synchronisation
 
@@ -2249,11 +2319,11 @@ geschrieben.
 
 | Option | Typ | Standard | Beschreibung |
 |---|---|---|---|
-| `source` | `glances` \| `systemmonitor` | je nach Kacheltyp | Datenquelle |
+| `source` | `glances` \| `systemmonitor` \| `synology_dsm` | je nach Kacheltyp | Datenquelle |
 | `config_entry_id` | string | – | Einschränkung auf eine Instanz, wenn mehrere existieren |
-| `exclude_mounts` | Liste\<string\> | – | Auszublendende Mount-Punkte |
-| `mount_names` | Objekt | – | Mount-Pfad → Anzeigename |
-| `disks` | Liste | – | Explizite Reihenfolge und Benennung der Volumes |
+| `exclude_mounts` | Liste\<string\> | – | Auszublendende Mount-Punkte; bei `synology_dsm` DSM-Volume-IDs (`volume_1`) |
+| `mount_names` | Objekt | – | Mount-Pfad → Anzeigename; bei `synology_dsm` nach DSM-Volume-ID |
+| `disks` | Liste | – | Explizite Reihenfolge und Benennung der Volumes; `mount:` ist bei `synology_dsm` die DSM-Volume-ID |
 | `disk_warn` / `disk_critical` | number | `80` / `90` | Prozent-Schwellwerte der Zeilenfarbe |
 | `temp_warn` / `temp_critical` | number | `55` / `65` | Temperatur-Schwellwerte in °C |
 | `temperature_labels` | Liste\<string\> | – | Zu berücksichtigende Temperatursensoren |
