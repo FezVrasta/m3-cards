@@ -12,4 +12,5 @@
 - [ ] `npm run build` passes
 - [ ] Tested manually in a real Home Assistant dashboard (see `docs/TESTING.md`)
 - [ ] `prefers-reduced-motion` respected for any new animation
-- [ ] README.md / README.de.md updated if config options changed
+- [ ] README.md updated if config options changed (English only — there is no
+      second-language README any more)
