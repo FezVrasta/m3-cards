@@ -3296,6 +3296,29 @@ flags that can contradict it.
 layout: [progress, buttons]   # no sliders, no selects, no chips
 ```
 
+### Wave style
+
+The progress bar and the sliders are drawn as an M3-Expressive sine wave, the
+same one [`m3-progress-card`](#m3-progress-card) and
+[`m3-light-card`](#m3-light-card) draw, from the same `shared/wave.ts`. The key
+is the same on both blocks, because picking a shape per block would be a
+setting nobody wants.
+
+```yaml
+wave_style: wavy   # wavy (default) | flat
+```
+
+`flat` is a look, not an animation setting: it draws straight lines whatever
+`animation` says. The two are independent, and they compose —
+
+| | `wave_style: wavy` | `wave_style: flat` |
+| --- | --- | --- |
+| `animation: auto` / `on` | Wave, travelling while there is progress left to make | Straight line, bar fills |
+| `animation: off` | Wave, frozen | Straight line, no motion |
+
+Under `prefers-reduced-motion` the wave keeps its shape and stops travelling —
+the wave is the component's identity, its movement is the decoration.
+
 ### The status line
 
 The line under the name is the entity's state, run through `states` — the same

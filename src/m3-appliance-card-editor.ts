@@ -410,6 +410,20 @@ export class M3ApplianceCardEditor extends LitElement implements LovelaceCardEdi
           },
         },
       },
+      {
+        // Always offered, unlike the progress card's, because here it decides
+        // the shape whether or not anything is animating.
+        name: "wave_style",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "wavy", label: this._t("editor_appliance_wave_style_wavy") },
+              { value: "flat", label: this._t("editor_appliance_wave_style_flat") },
+            ],
+          },
+        },
+      },
     ];
   }
 
@@ -431,6 +445,7 @@ export class M3ApplianceCardEditor extends LitElement implements LovelaceCardEdi
       show_state: "editor_appliance_chip_show_state",
       layout: "editor_appliance_layout",
       animation: "editor_progress_animation",
+      wave_style: "editor_appliance_wave_style",
       value: "editor_status_rule_value",
       regex: "editor_status_rule_regex",
       above: "editor_status_rule_above",
@@ -650,7 +665,7 @@ export class M3ApplianceCardEditor extends LitElement implements LovelaceCardEdi
           <div class="panel-content">
             <ha-form
               .hass=${this.hass}
-              .data=${{ animation: cfg.animation ?? "auto" }}
+              .data=${{ animation: cfg.animation ?? "auto", wave_style: cfg.wave_style ?? "wavy" }}
               .schema=${this._animationSchema()}
               .computeLabel=${this._computeLabel}
               @value-changed=${this._valueChanged}

@@ -3372,6 +3372,29 @@ fehlt, wird nicht gezeichnet — ein Mechanismus statt einer Liste plus
 layout: [progress, buttons]   # keine Regler, keine Auswahl, keine Chips
 ```
 
+### Wellen-Stil
+
+Fortschrittsbalken und Regler werden als M3-Expressive-Sinuswelle gezeichnet —
+dieselbe, die [`m3-progress-card`](#m3-progress-card) und
+[`m3-light-card`](#m3-light-card) zeichnen, aus demselben `shared/wave.ts`. Der
+Schlüssel gilt für beide Blöcke gemeinsam; eine Form je Block wäre eine
+Einstellung, die niemand möchte.
+
+```yaml
+wave_style: wavy   # wavy (Standard) | flat
+```
+
+`flat` ist eine Form, keine Animationseinstellung: es zeichnet gerade Linien,
+unabhängig von `animation`. Beide sind unabhängig und lassen sich kombinieren —
+
+| | `wave_style: wavy` | `wave_style: flat` |
+| --- | --- | --- |
+| `animation: auto` / `on` | Welle, wandert solange Fortschritt aussteht | Gerade Linie, Balken füllt sich |
+| `animation: off` | Welle, eingefroren | Gerade Linie, keine Bewegung |
+
+Bei `prefers-reduced-motion` behält die Welle ihre Form und wandert nicht mehr —
+die Welle ist die Identität der Komponente, ihre Bewegung nur Zierde.
+
 ### Die Statuszeile
 
 Die Zeile unter dem Namen ist der Zustand der Entität, durch `states`

@@ -6,6 +6,8 @@ import {
   snapToRange,
   splitDuration,
   visibleOptions,
+  waveBarGeometry,
+  waveSliderGeometry,
 } from "./appliance";
 
 describe("resolveSliderRange", () => {
@@ -138,5 +140,71 @@ describe("visibleOptions", () => {
   it("copes with an entity that has no options attribute at all", () => {
     expect(visibleOptions(undefined, ["a"])).toEqual([]);
     expect(visibleOptions("not a list", undefined)).toEqual([]);
+  });
+});
+
+describe("waveBarGeometry", () => {
+  // 200px rail, 12px gap, 3.5px dot => 200 - 12 - 7 = 181px of splittable width.
+  const geom = (pct: number) => waveBarGeometry(200, pct, 12, 3.5);
+
+  it("splits the rail into wave, gap and track", () => {
+    const g = geom(50);
+    expect(g.activeWidth).toBeCloseTo(90.5);
+    expect(g.trackStartX).toBeCloseTo(102.5);
+    expect(g.trackEndX).toBeCloseTo(196.5);
+  });
+
+  it("draws no wave at all below a pixel, rather than a stub", () => {
+    const g = geom(0);
+    expect(g.activeWidth).toBe(0);
+    // With nothing done, the track starts at the very left — no leading gap.
+    expect(g.trackStartX).toBe(0);
+  });
+
+  it("keeps the end dot inside the rail at 100%", () => {
+    const g = geom(100);
+    expect(g.trackEndX).toBeCloseTo(196.5);
+    expect(g.activeWidth).toBeLessThanOrEqual(g.trackEndX);
+  });
+
+  it("clamps a percentage outside 0-100 instead of overflowing the rail", () => {
+    expect(geom(140).activeWidth).toBeCloseTo(geom(100).activeWidth);
+    expect(geom(-20).activeWidth).toBe(0);
+  });
+
+  it("does not produce negative geometry on a rail narrower than its own dot", () => {
+    const g = waveBarGeometry(2, 50, 12, 3.5);
+    expect(g.activeWidth).toBe(0);
+    expect(g.trackEndX).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("waveSliderGeometry", () => {
+  // 200px rail, 20px handle, 12px gap.
+  const geom = (fraction: number) => waveSliderGeometry(200, fraction, 20, 12);
+
+  it("insets the handle by half its width at each end, so it never overhangs", () => {
+    expect(geom(0).handleX).toBe(10);
+    expect(geom(1).handleX).toBe(190);
+  });
+
+  it("leaves half the gap on each side of the handle", () => {
+    const g = geom(0.5);
+    expect(g.handleX).toBe(100);
+    expect(g.activeEnd).toBe(100 - 6 - 10);
+    expect(g.trackStart).toBe(100 + 6 + 10);
+  });
+
+  it("never returns a negative wave length at the low end", () => {
+    expect(geom(0).activeEnd).toBe(0);
+  });
+
+  it("never runs the track past the rail at the high end", () => {
+    expect(geom(1).trackStart).toBeLessThanOrEqual(200);
+  });
+
+  it("clamps a fraction outside 0-1", () => {
+    expect(geom(2).handleX).toBe(geom(1).handleX);
+    expect(geom(-1).handleX).toBe(geom(0).handleX);
   });
 });

@@ -146,3 +146,71 @@ export function visibleOptions(
   if (!allowList?.length) return available;
   return allowList.filter((o) => available.includes(o));
 }
+
+/** Where the wave ends, where the track resumes, and where the dot sits. */
+export interface WaveBarGeometry {
+  /** Width of the wavy, filled portion. 0 when nothing is done yet. */
+  activeWidth: number;
+  /** Where the remaining flat track starts. */
+  trackStartX: number;
+  /** Where the track — and its end dot — stops. */
+  trackEndX: number;
+}
+
+/**
+ * Splits a progress bar into its wave, its gap, and its remaining track.
+ *
+ * The gap and the end dot are the progress card's, so a wavy appliance bar and
+ * a wavy progress bar read as the same component. Pulled out as a pure
+ * function because it is the part worth testing: the SVG around it is
+ * geometry-free.
+ */
+export function waveBarGeometry(
+  widthPx: number,
+  percentage: number,
+  gap: number,
+  dotRadius: number,
+): WaveBarGeometry {
+  const trackEndX = Math.max(0, widthPx - dotRadius);
+  // The dot needs its own diameter of room, and the gap only exists between a
+  // wave and a track — so both come off the width before the split.
+  const available = Math.max(0, widthPx - gap - dotRadius * 2);
+  const clamped = Math.min(100, Math.max(0, percentage));
+  const activeWidth = available * (clamped / 100);
+  const hasActive = activeWidth > 1;
+  return {
+    activeWidth: hasActive ? activeWidth : 0,
+    trackStartX: hasActive ? activeWidth + gap : 0,
+    trackEndX,
+  };
+}
+
+/** Where the wave ends and the track resumes, on either side of a handle. */
+export interface WaveSliderGeometry {
+  handleX: number;
+  activeEnd: number;
+  trackStart: number;
+}
+
+/**
+ * Places a slider's handle and splits the rail around it.
+ *
+ * Half the gap sits on each side of the handle, which is what keeps the wave
+ * from appearing to grow out of it — the humidifier card's arrangement, and
+ * the reason this card's slider looked like its slider even before the wave.
+ */
+export function waveSliderGeometry(
+  widthPx: number,
+  fraction: number,
+  handleWidth: number,
+  gap: number,
+): WaveSliderGeometry {
+  const clamped = Math.min(1, Math.max(0, fraction));
+  const handleX = handleWidth / 2 + clamped * Math.max(0, widthPx - handleWidth);
+  const gapHalf = gap / 2;
+  return {
+    handleX,
+    activeEnd: Math.max(0, handleX - gapHalf - handleWidth / 2),
+    trackStart: Math.min(widthPx, handleX + gapHalf + handleWidth / 2),
+  };
+}

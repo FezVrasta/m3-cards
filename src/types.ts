@@ -253,7 +253,7 @@ export interface M3ProgressCardConfig extends NotifyConfigBase {
   preparing_states?: string[];
   done_states?: string[];
   animation?: "auto" | "on" | "off";
-  wave_style?: "wavy" | "flat";
+  wave_style?: WaveStyle;
   accent_color?: string;
   track_color?: string;
   dot_color?: string;
@@ -612,7 +612,18 @@ export interface M3CostCardConfig extends PricingConfig, NotifyConfigBase {
   card_version?: string;
 }
 
-export type LightWaveStyle = "wavy" | "flat";
+/**
+ * Shape of a wavy indicator: an M3-Expressive sine wave, or a plain line.
+ *
+ * One vocabulary for every card that draws one — the progress card's bar, the
+ * light card's sliders, and the appliance card's bar and sliders — so the same
+ * key means the same thing wherever it appears.
+ */
+export type WaveStyle = "wavy" | "flat";
+
+/** Historical name for {@link WaveStyle}, kept so existing configs and imports
+ *  keep resolving. */
+export type LightWaveStyle = WaveStyle;
 export type LightColorTempStyle = "presets" | "slider";
 
 export interface LightColorTempPresets {
@@ -2447,6 +2458,12 @@ export interface M3ApplianceCardConfig {
    * than an array plus a set of show_* flags that can disagree with it.
    */
   layout?: ApplianceBlock[];
+  /**
+   * Shape of the progress bar and the sliders. Defaults to `wavy`, matching
+   * `m3-progress-card` — this card's progress block is what replaces it, and
+   * the humidifier slider this card's slider is modelled on is wavy too.
+   */
+  wave_style?: WaveStyle;
 
   tap_action?: HaActionConfig;
   accent_color?: string;

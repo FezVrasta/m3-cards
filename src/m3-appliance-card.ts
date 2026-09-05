@@ -1,4 +1,14 @@
-import { LitElement, html, css, nothing, unsafeCSS, type PropertyValues, type TemplateResult } from "lit";
+import {
+  LitElement,
+  html,
+  css,
+  nothing,
+  svg,
+  unsafeCSS,
+  type PropertyValues,
+  type SVGTemplateResult,
+  type TemplateResult,
+} from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   ApplianceBlock,
@@ -14,10 +24,18 @@ import type {
   LovelaceGridOptions,
   M3ApplianceCardConfig,
   StatusRule,
+  WaveStyle,
 } from "./types";
 import {
   APPLIANCE_BAR_HEIGHT,
   APPLIANCE_BAR_RADIUS,
+  APPLIANCE_BAR_SVG_HEIGHT,
+  APPLIANCE_WAVE_AMPLITUDE,
+  APPLIANCE_WAVE_AMPLITUDE_LERP,
+  APPLIANCE_WAVE_DOT_RADIUS,
+  APPLIANCE_WAVE_GAP,
+  APPLIANCE_WAVE_PHASE_SPEED,
+  APPLIANCE_WAVE_WAVELENGTH,
   APPLIANCE_BUTTON_HEIGHT,
   APPLIANCE_BUTTON_RADIUS,
   APPLIANCE_BUTTON_RADIUS_ACTIVE,
@@ -64,7 +82,10 @@ import {
   snapToRange,
   splitDuration,
   visibleOptions,
+  waveBarGeometry,
+  waveSliderGeometry,
 } from "./shared/appliance";
+import { buildWavePath, lerpStep } from "./shared/wave";
 import {
   buildCssVars,
   foregroundOn,
@@ -104,6 +125,16 @@ const DEFAULT_LAYOUT: ApplianceBlock[] = ["progress", "sliders", "selects", "but
 /** Domains whose "on" is worth showing as a filled button. */
 const TOGGLE_DOMAINS = new Set(["switch", "input_boolean", "light", "fan", "siren", "lock"]);
 
+/**
+ * Domains whose state says nothing about whether they can be pressed.
+ *
+ * A `button` entity reads `unknown` until the first time it is pressed, and a
+ * timestamp afterwards. Treating `unknown` as missing would grey out a working
+ * button forever — and every one of them on a fresh install. Only
+ * `unavailable` means the integration is actually refusing it.
+ */
+const STATELESS_DOMAINS = new Set(["button", "input_button", "scene"]);
+
 interface ProgressReading {
   percent?: number;
   remaining?: number;
@@ -121,10 +152,69 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
   /** The entity being dragged and the value the finger is on, before HA echoes it. */
   @state() private _drag?: { entity: string; value: number };
 
+  /** Width of a block, so the wave SVGs can be laid out in real pixels. Every
+   *  block is the same width, so one measurement serves the bar and every
+   *  slider. */
+  @state() private _blockWidth = 0;
+  /** Travelling phase of the wave, in radians. */
+  @state() private _phase = 0;
+  /** Animated toward `_targetAmplitude`, so a wave settles flat instead of
+   *  snapping when the appliance stops. */
+  @state() private _displayAmplitude = 0;
+
+  private _targetAmplitude = 0;
+  private _phaseAnimating = false;
+  private _rafId?: number;
   private _resizeObserver?: ResizeObserver;
+  private _blockObserver?: ResizeObserver;
   private _dragEndTimer?: number;
   private readonly _throttles = new Map<string, DragThrottle<number>>();
   private readonly _ticker = new VisibleTicker(this, (now) => this._onTick(now));
+
+  private get _waveStyle(): WaveStyle {
+    return this._config?.wave_style ?? "wavy";
+  }
+
+  private get _reducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  /**
+   * Whether the wave should be drawn as a wave at all.
+   *
+   * `wave_style: flat` is a look, not an animation setting, so it flattens
+   * regardless of `animation`. Reduced motion stops the travel but keeps the
+   * shape — the wave is the component's identity, its movement is the
+   * decoration.
+   */
+  private get _wavy(): boolean {
+    return this._waveStyle === "wavy";
+  }
+
+  private _startWaveLoop(): void {
+    if (this._rafId !== undefined) return;
+    const tick = (): void => {
+      this._rafId = undefined;
+      if (this._phaseAnimating) this._phase -= APPLIANCE_WAVE_PHASE_SPEED;
+      this._displayAmplitude = lerpStep(
+        this._displayAmplitude,
+        this._targetAmplitude,
+        APPLIANCE_WAVE_AMPLITUDE_LERP,
+      );
+      const settled = Math.abs(this._displayAmplitude - this._targetAmplitude) < 0.01;
+      if (settled) this._displayAmplitude = this._targetAmplitude;
+      if (this._phaseAnimating || !settled) this._rafId = requestAnimationFrame(tick);
+    };
+    this._rafId = requestAnimationFrame(tick);
+  }
+
+  private _stopWaveLoop(): void {
+    if (this._rafId !== undefined) cancelAnimationFrame(this._rafId);
+    this._rafId = undefined;
+  }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import("./m3-appliance-card-editor");
@@ -201,12 +291,29 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
       if (narrow !== this._narrow) this._narrow = narrow;
     });
     this._resizeObserver.observe(this);
+    // Separate from the card observer: this one measures a block's inner width,
+    // which is what the wave SVGs are laid out in.
+    this._blockObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width > 0 && Math.abs(width - this._blockWidth) > 1) this._blockWidth = width;
+    });
     this._ticker.connect();
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    const el = this.renderRoot.querySelector(".wave-host") as HTMLElement | null;
+    if (el && this._blockObserver) {
+      this._blockObserver.disconnect();
+      this._blockObserver.observe(el);
+    }
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this._resizeObserver?.disconnect();
+    this._blockObserver?.disconnect();
+    this._stopWaveLoop();
     this._ticker.disconnect();
     for (const throttle of this._throttles.values()) throttle.clear();
     window.clearTimeout(this._dragEndTimer);
@@ -388,6 +495,29 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
     const progress = this._progress();
     const remaining = progress?.remaining;
 
+    // Decide how the wave behaves this render, before anything draws one.
+    //
+    // `wave_style: flat` is a look rather than an animation setting, so it
+    // flattens whatever `animation` says. Travel is the decoration on top: it
+    // runs only while there is progress still to make, which is the same rule
+    // m3-progress-card uses, and stops entirely under reduced motion — the
+    // shape survives, the movement does not.
+    const wavy = this._wavy;
+    const progressMoving =
+      !!progress && (progress.indeterminate || (progress.percent ?? 0) < 100);
+    this._phaseAnimating =
+      wavy &&
+      !this._reducedMotion &&
+      shouldAnimate(cfg.animation) &&
+      progressMoving &&
+      this._layout.includes("progress");
+    this._targetAmplitude = wavy && !unavailable ? APPLIANCE_WAVE_AMPLITUDE : 0;
+    if (this._phaseAnimating || this._displayAmplitude !== this._targetAmplitude) {
+      this._startWaveLoop();
+    } else {
+      this._stopWaveLoop();
+    }
+
     const headerAction = cfg.tap_action ?? { action: "more-info" as const };
     const headerInteractive = isActionable(headerAction);
 
@@ -467,25 +597,118 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
               >`}
         </div>
         <div
-          class="bar"
+          class="bar wave-host ${this._wavy ? "wavy" : "flat"}"
           role="progressbar"
           aria-label=${cfg?.label ?? this._t("appliance_progress")}
           aria-valuemin=${progress.indeterminate ? nothing : 0}
           aria-valuemax=${progress.indeterminate ? nothing : 100}
           aria-valuenow=${progress.indeterminate ? nothing : Math.round(progress.percent ?? 0)}
         >
-          <div
-            class="bar-fill ${progress.indeterminate ? "indeterminate" : ""} ${
-              animate ? "" : "still"
-            }"
-            style=${progress.indeterminate ? nothing : `width: ${progress.percent ?? 0}%;`}
-          ></div>
+          ${this._wavy && this._blockWidth > 0
+            ? this._renderWaveBar(progress)
+            : html`<div
+                class="bar-fill ${progress.indeterminate ? "indeterminate" : ""} ${
+                  animate ? "" : "still"
+                }"
+                style=${progress.indeterminate ? nothing : `width: ${progress.percent ?? 0}%;`}
+              ></div>`}
         </div>
       </div>
     `;
   }
 
   // ---- slider block ---------------------------------------------------------
+
+  /**
+   * The bar as an M3-Expressive wave: a travelling sine over the done part, a
+   * flat rail over the rest, and the progress card's end dot.
+   *
+   * An indeterminate bar sweeps a fixed-width wave segment instead, because
+   * there is no "done part" to fill — the same thing the flat bar does with a
+   * CSS keyframe.
+   */
+  private _renderWaveBar(progress: ProgressReading): SVGTemplateResult {
+    const width = this._blockWidth;
+    const midY = APPLIANCE_BAR_SVG_HEIGHT / 2;
+    const amplitude = this._displayAmplitude;
+
+    if (progress.indeterminate) {
+      const segWidth = width * APPLIANCE_INDETERMINATE_FRACTION;
+      const travel = Math.max(0, width - segWidth - APPLIANCE_WAVE_DOT_RADIUS * 2);
+      // Parked in the middle when still, matching the flat bar's `.still` rule.
+      const t = this._phaseAnimating
+        ? (performance.now() % APPLIANCE_INDETERMINATE_MS) / APPLIANCE_INDETERMINATE_MS
+        : 0.5;
+      const tri = t < 0.5 ? t * 2 : (1 - t) * 2;
+      const segStartX = tri * travel;
+      const segEndX = segStartX + segWidth;
+      const trackEndX = Math.max(0, width - APPLIANCE_WAVE_DOT_RADIUS);
+      return svg`<svg
+        class="wave-svg"
+        viewBox="0 0 ${width} ${APPLIANCE_BAR_SVG_HEIGHT}"
+        width="100%"
+        height=${APPLIANCE_BAR_SVG_HEIGHT}
+        preserveAspectRatio="none"
+      >
+        ${segStartX > 0
+          ? svg`<line class="wave-track" x1="0" y1=${midY} x2=${segStartX} y2=${midY}></line>`
+          : nothing}
+        <path
+          class="wave-active"
+          d=${buildWavePath(
+            segStartX,
+            segWidth,
+            amplitude,
+            APPLIANCE_WAVE_WAVELENGTH,
+            this._phase,
+            midY,
+          )}
+          fill="none"
+        ></path>
+        ${segEndX < trackEndX
+          ? svg`<line class="wave-track" x1=${segEndX} y1=${midY} x2=${trackEndX} y2=${midY}></line>`
+          : nothing}
+        <circle class="wave-dot" cx=${trackEndX} cy=${midY} r=${APPLIANCE_WAVE_DOT_RADIUS}></circle>
+      </svg>`;
+    }
+
+    const geom = waveBarGeometry(
+      width,
+      progress.percent ?? 0,
+      APPLIANCE_WAVE_GAP,
+      APPLIANCE_WAVE_DOT_RADIUS,
+    );
+    const activePath = geom.activeWidth
+      ? buildWavePath(
+          0,
+          geom.activeWidth,
+          amplitude,
+          APPLIANCE_WAVE_WAVELENGTH,
+          this._phase,
+          midY,
+        )
+      : "";
+
+    return svg`<svg
+      class="wave-svg"
+      viewBox="0 0 ${width} ${APPLIANCE_BAR_SVG_HEIGHT}"
+      width="100%"
+      height=${APPLIANCE_BAR_SVG_HEIGHT}
+      preserveAspectRatio="none"
+    >
+      ${activePath ? svg`<path class="wave-active" d=${activePath} fill="none"></path>` : nothing}
+      ${geom.trackEndX > geom.trackStartX
+        ? svg`<line
+            class="wave-track"
+            x1=${geom.trackStartX}
+            y1=${midY}
+            x2=${geom.trackEndX}
+            y2=${midY}
+          ></line>`
+        : nothing}
+      <circle class="wave-dot" cx=${geom.trackEndX} cy=${midY} r=${APPLIANCE_WAVE_DOT_RADIUS}></circle>
+    </svg>`;
+  }
 
   private _renderSlider(cfg: ApplianceSliderConfig): TemplateResult | typeof nothing {
     const st = this._state(cfg.entity);
@@ -570,15 +793,85 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
             this._scheduleDragEnd();
           }}
         >
-          <div class="slider-track"></div>
-          <div class="slider-fill" style=${`width: ${Math.max(0, Math.min(100, pct))}%;`}></div>
-          <div class="slider-handle" style=${`left: ${Math.max(0, Math.min(100, pct))}%;`}></div>
+          ${this._wavy && this._blockWidth > 0
+            ? this._renderWaveSlider(pct)
+            : html`
+                <div class="slider-track"></div>
+                <div
+                  class="slider-fill"
+                  style=${`width: ${Math.max(0, Math.min(100, pct))}%;`}
+                ></div>
+              `}
+          <div
+            class="slider-handle"
+            style=${this._wavy && this._blockWidth > 0
+              ? `left: ${waveSliderGeometry(
+                  this._blockWidth,
+                  pct / 100,
+                  APPLIANCE_HANDLE_WIDTH,
+                  APPLIANCE_WAVE_GAP,
+                ).handleX}px;`
+              : `left: ${Math.max(0, Math.min(100, pct))}%;`}
+          ></div>
         </div>
       </div>
     `;
   }
 
   // ---- select block ---------------------------------------------------------
+
+  /**
+   * The slider rail as a wave up to the handle and a flat track after it.
+   *
+   * Half the gap sits on each side of the handle so the wave never appears to
+   * sprout from it — the humidifier card's arrangement, which this card's
+   * slider was already shaped after.
+   */
+  private _renderWaveSlider(percentage: number): SVGTemplateResult {
+    const width = this._blockWidth;
+    const height = APPLIANCE_SLIDER_HEIGHT;
+    const midY = height / 2;
+    const geom = waveSliderGeometry(
+      width,
+      percentage / 100,
+      APPLIANCE_HANDLE_WIDTH,
+      APPLIANCE_WAVE_GAP,
+    );
+    const hasActive = geom.activeEnd > 1;
+    const hasTrack = geom.trackStart < width - 1;
+
+    return svg`<svg
+      class="wave-svg"
+      viewBox="0 0 ${width} ${height}"
+      width="100%"
+      height=${height}
+      preserveAspectRatio="none"
+    >
+      ${hasActive
+        ? svg`<path
+            class="wave-active"
+            d=${buildWavePath(
+              0,
+              geom.activeEnd,
+              this._displayAmplitude,
+              APPLIANCE_WAVE_WAVELENGTH,
+              this._phase,
+              midY,
+            )}
+            fill="none"
+          ></path>`
+        : nothing}
+      ${hasTrack
+        ? svg`<line
+            class="wave-track"
+            x1=${geom.trackStart}
+            y1=${midY}
+            x2=${width}
+            y2=${midY}
+          ></line>`
+        : nothing}
+    </svg>`;
+  }
 
   private _renderSelect(cfg: ApplianceSelectConfig, index: number): TemplateResult | typeof nothing {
     const st = this._state(cfg.entity);
@@ -682,7 +975,12 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
     // that does nothing at all.
     if (!cfg.entity && !cfg.tap_action) return nothing;
 
-    const missing = !!cfg.entity && (!st || isMissingState(st.state));
+    const missing =
+      !!cfg.entity &&
+      (!st ||
+        (STATELESS_DOMAINS.has(domain)
+          ? st.state.toLowerCase() === "unavailable"
+          : isMissingState(st.state)));
     const active = TOGGLE_DOMAINS.has(domain) && isOnState(st?.state);
     const color = resolveThemeColor(cfg.color ?? APPLIANCE_PALETTE[index % APPLIANCE_PALETTE.length]);
     const tint = tintOn(this, color, undefined, APPLIANCE_BUTTON_TINT);
@@ -911,6 +1209,51 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
       .bar-fill {
         transition: none;
       }
+    }
+
+    /* ---- wave indicators ---- */
+    /* The wavy bar is an SVG, not a filled box: it needs a transparent host
+       tall enough for the amplitude, with no rounding to clip the stroke. */
+    .bar.wavy {
+      height: ${APPLIANCE_BAR_SVG_HEIGHT}px;
+      border-radius: 0;
+      overflow: visible;
+      background: none;
+    }
+
+    .wave-svg {
+      display: block;
+      width: 100%;
+      overflow: visible;
+    }
+
+    .wave-active {
+      stroke: var(--m3a-accent);
+      stroke-width: ${APPLIANCE_BAR_HEIGHT}px;
+      stroke-linecap: round;
+    }
+
+    .wave-track {
+      stroke: color-mix(in srgb, var(--m3p-secondary-text) 16%, transparent);
+      stroke-width: ${APPLIANCE_BAR_HEIGHT}px;
+      stroke-linecap: round;
+    }
+
+    .wave-dot {
+      fill: var(--m3a-accent);
+    }
+
+    /* On a slider the rail is the humidifier's thickness, not the bar's. */
+    .slider .wave-active,
+    .slider .wave-track {
+      stroke-width: ${APPLIANCE_SLIDER_TRACK}px;
+    }
+
+    .slider .wave-svg {
+      position: absolute;
+      inset: 0;
+      height: 100%;
+      pointer-events: none;
     }
 
     /* ---- sliders ---- */

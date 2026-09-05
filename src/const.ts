@@ -1957,6 +1957,20 @@ export const APPLIANCE_HANDLE_RADIUS = HUMIDIFIER_HANDLE_RADIUS;
 export const APPLIANCE_SLIDER_THROTTLE_MS = HUMIDIFIER_THROTTLE_MS;
 export const APPLIANCE_DRAG_SETTLE_MS = HUMIDIFIER_DRAG_SETTLE_MS;
 
+/* Wave geometry, derived from the humidifier's like the rest of this scale
+   rather than being a second set of numbers. The phase speed comes from the
+   progress card so a wavy appliance bar and a wavy progress bar next to each
+   other travel at the same rate. */
+export const APPLIANCE_WAVE_AMPLITUDE = HUMIDIFIER_WAVE_AMPLITUDE;
+export const APPLIANCE_WAVE_WAVELENGTH = HUMIDIFIER_WAVE_WAVELENGTH;
+export const APPLIANCE_WAVE_GAP = HUMIDIFIER_WAVE_GAP;
+export const APPLIANCE_WAVE_AMPLITUDE_LERP = HUMIDIFIER_WAVE_AMPLITUDE_LERP;
+export const APPLIANCE_WAVE_PHASE_SPEED = WAVE_PHASE_SPEED;
+export const APPLIANCE_WAVE_DOT_RADIUS = WAVE_DOT_RADIUS;
+/* The bar is read rather than dragged, so its wave sits in a taller box than
+   its flat self needs — the stroke has to fit the amplitude without clipping. */
+export const APPLIANCE_BAR_SVG_HEIGHT = 20;
+
 /** Segmented option pills. */
 export const APPLIANCE_OPTION_HEIGHT = HUMIDIFIER_MODE_HEIGHT;
 export const APPLIANCE_OPTION_RADIUS = HUMIDIFIER_MODE_RADIUS;
