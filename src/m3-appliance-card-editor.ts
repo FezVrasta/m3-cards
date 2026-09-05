@@ -1,0 +1,721 @@
+import { LitElement, html, css, nothing, type TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import type {
+  ApplianceBlock,
+  ApplianceChipConfig,
+  ApplianceSelectConfig,
+  HomeAssistant,
+  LovelaceCardEditor,
+  M3ApplianceCardConfig,
+  StatusRule,
+} from "./types";
+import { DEFAULT_APPLIANCE_RADIUS } from "./const";
+import { localize, type TranslationKey } from "./localize";
+import {
+  colorRow,
+  editorStyles,
+  fireEvent,
+  listRow,
+  type SchemaEntry,
+} from "./shared/editor-helpers";
+import {
+  initAppearanceState,
+  radiusPresetPatch,
+  cornerPresetPatch,
+  renderAppearanceSection,
+  type AppearanceState,
+} from "./shared/appearance-editor";
+
+/** The four repeatable list sections, which all behave identically. */
+type ListField = "sliders" | "selects" | "buttons" | "chips";
+
+interface ListEntry {
+  entity?: string;
+  color?: string;
+  states?: StatusRule[];
+  [key: string]: unknown;
+}
+
+/** Which single condition a rule carries, derived from the keys it has. */
+type ConditionKind = "value" | "regex" | "above" | "below" | "else";
+
+const CONDITION_KEYS: Record<Exclude<ConditionKind, "else">, keyof StatusRule> = {
+  value: "value",
+  regex: "regex",
+  above: "above",
+  below: "below",
+};
+
+const ALL_BLOCKS: ApplianceBlock[] = ["progress", "sliders", "selects", "buttons", "chips"];
+
+/** Drops the keys a cleared editor field left behind, so card defaults apply again. */
+function pruned<T extends object>(value: T): T {
+  const out = { ...value } as Record<string, unknown>;
+  for (const [k, v] of Object.entries(out)) {
+    // `false` and `0` are answers; only a blank is an absence.
+    if (v === "" || v === undefined || v === null) delete out[k];
+  }
+  return out as T;
+}
+
+@customElement("m3-appliance-card-editor")
+export class M3ApplianceCardEditor extends LitElement implements LovelaceCardEditor {
+  @property({ attribute: false }) public hass?: HomeAssistant;
+
+  @state() private _config?: M3ApplianceCardConfig;
+  @state() private _appearance: AppearanceState = {
+    showCustomRadius: false,
+    showCorners: false,
+    cornerCustom: {},
+  };
+
+  public setConfig(config: M3ApplianceCardConfig): void {
+    this._config = config;
+    this._appearance = initAppearanceState(config, DEFAULT_APPLIANCE_RADIUS);
+  }
+
+  private get _language(): string {
+    return this.hass?.locale?.language ?? this.hass?.language ?? "en";
+  }
+
+  private _t(key: TranslationKey): string {
+    return localize(key, this._language);
+  }
+
+  private _emit(config: M3ApplianceCardConfig): void {
+    this._config = config;
+    fireEvent(this, "config-changed", { config });
+  }
+
+  private _valueChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    const patch = ev.detail.value as Record<string, unknown>;
+    this._emit(pruned({ ...this._config, ...patch }) as M3ApplianceCardConfig);
+  }
+
+  private _colorChanged(
+    field: "accent_color" | "text_color" | "secondary_text_color" | "card_background",
+    value: string,
+  ): void {
+    if (!this._config) return;
+    if (value) {
+      this._emit({ ...this._config, [field]: value });
+    } else {
+      const { [field]: _drop, ...rest } = this._config;
+      this._emit(rest as M3ApplianceCardConfig);
+    }
+  }
+
+  // ---- appearance -----------------------------------------------------------
+
+  private _radiusPresetChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    const patch = radiusPresetPatch(ev.detail.value.radius_preset as string);
+    this._appearance = { ...this._appearance, showCustomRadius: patch.showCustomRadius };
+    if (patch.radius !== undefined) this._emit({ ...this._config, radius: patch.radius });
+  }
+
+  private _cornersToggleChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    const showCorners = ev.detail.value.use_corners as boolean;
+    this._appearance = { ...this._appearance, showCorners };
+    if (!showCorners) {
+      const { corners: _removed, ...rest } = this._config;
+      this._emit(rest as M3ApplianceCardConfig);
+    }
+  }
+
+  private _cornerPresetChanged(key: string, ev: CustomEvent): void {
+    if (!this._config) return;
+    const patch = cornerPresetPatch(ev.detail.value[key] as string);
+    this._appearance = {
+      ...this._appearance,
+      cornerCustom: { ...this._appearance.cornerCustom, [key]: patch.custom },
+    };
+    if (patch.px !== undefined) {
+      this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: patch.px } });
+    }
+  }
+
+  private _cornerValueChanged(key: string, ev: CustomEvent): void {
+    if (!this._config) return;
+    const px = ev.detail.value[key] as number;
+    this._emit({ ...this._config, corners: { ...(this._config.corners ?? {}), [key]: px } });
+  }
+
+  // ---- the four repeatable lists --------------------------------------------
+  // One set of operations for all of them: the sections differ in their schema
+  // and nothing else, so a slider row and a chip row are added, patched and
+  // removed by the same four methods rather than by sixteen.
+
+  private _list(field: ListField): ListEntry[] {
+    return (this._config?.[field] ?? []) as ListEntry[];
+  }
+
+  private _setList(field: ListField, list: ListEntry[]): void {
+    if (!this._config) return;
+    if (list.length === 0) {
+      const { [field]: _drop, ...rest } = this._config;
+      this._emit(rest as M3ApplianceCardConfig);
+      return;
+    }
+    this._emit({ ...this._config, [field]: list } as M3ApplianceCardConfig);
+  }
+
+  private _patchEntry(field: ListField, index: number, patch: Record<string, unknown>): void {
+    const list = [...this._list(field)];
+    list[index] = pruned({ ...list[index], ...patch });
+    this._setList(field, list);
+  }
+
+  private _addEntry(field: ListField): void {
+    this._setList(field, [...this._list(field), { entity: "" }]);
+  }
+
+  private _removeEntry(field: ListField, index: number): void {
+    this._setList(
+      field,
+      this._list(field).filter((_, i) => i !== index),
+    );
+  }
+
+  private _entryLabel(entry: ListEntry, index: number): string {
+    const name = typeof entry.name === "string" ? entry.name : undefined;
+    const label = typeof entry.label === "string" ? entry.label : undefined;
+    if (name) return name;
+    if (label) return label;
+    if (entry.entity) {
+      return (
+        (this.hass?.states[entry.entity]?.attributes.friendly_name as string | undefined) ??
+        entry.entity
+      );
+    }
+    return `#${index + 1}`;
+  }
+
+  // ---- status rules ---------------------------------------------------------
+
+  private _conditionKind(rule: StatusRule): ConditionKind {
+    for (const kind of ["value", "regex", "above", "below"] as const) {
+      if (rule[CONDITION_KEYS[kind]] !== undefined) return kind;
+    }
+    return "else";
+  }
+
+  private _ruleSchema(kind: ConditionKind): SchemaEntry[] {
+    const condition: SchemaEntry[] =
+      kind === "value"
+        ? [{ name: "value", selector: { text: {} } }]
+        : kind === "regex"
+          ? [{ name: "regex", selector: { text: {} } }]
+          : kind === "above"
+            ? [{ name: "above", selector: { number: { mode: "box", step: "any" } } }]
+            : kind === "below"
+              ? [{ name: "below", selector: { number: { mode: "box", step: "any" } } }]
+              : [];
+    return [
+      ...condition,
+      { name: "label", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+    ];
+  }
+
+  /**
+   * The rule list UI, shared by the card's own `states` and by every chip's.
+   * Both are the same rule shape, so they get the same editor rather than two
+   * that can drift apart.
+   */
+  private _renderRules(
+    rules: StatusRule[],
+    onChange: (rules: StatusRule[]) => void,
+  ): TemplateResult {
+    const setCondition = (index: number, kind: ConditionKind): void => {
+      const next = [...rules];
+      const rule: Record<string, unknown> = { ...next[index] };
+      // Exactly one condition key survives a switch. Leaving the old one behind
+      // would make the rule match on something the editor no longer shows.
+      for (const key of Object.values(CONDITION_KEYS)) delete rule[key];
+      if (kind === "value" || kind === "regex") rule[kind] = "";
+      else if (kind !== "else") rule[kind] = 0;
+      next[index] = rule as StatusRule;
+      onChange(next);
+    };
+
+    return html`
+      <div class="hint">${this._t("editor_appliance_states_hint")}</div>
+      ${rules.map((rule, index) => {
+        const kind = this._conditionKind(rule);
+        return html`
+          <div class="rule-block">
+            <ha-select
+              .label=${this._t("editor_status_rule_condition")}
+              .value=${kind}
+              naturalMenuWidth
+              @selected=${(ev: Event) =>
+                setCondition(index, (ev.target as HTMLSelectElement).value as ConditionKind)}
+              @closed=${(ev: Event) => ev.stopPropagation()}
+            >
+              <mwc-list-item value="value">${this._t("editor_status_rule_value")}</mwc-list-item>
+              <mwc-list-item value="regex">${this._t("editor_status_rule_regex")}</mwc-list-item>
+              <mwc-list-item value="above">${this._t("editor_status_rule_above")}</mwc-list-item>
+              <mwc-list-item value="below">${this._t("editor_status_rule_below")}</mwc-list-item>
+              <mwc-list-item value="else">${this._t("editor_status_preset_none")}</mwc-list-item>
+            </ha-select>
+            <ha-form
+              .hass=${this.hass}
+              .data=${rule}
+              .schema=${this._ruleSchema(kind)}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const next = [...rules];
+                next[index] = pruned({
+                  ...next[index],
+                  ...(ev.detail.value as Record<string, unknown>),
+                }) as StatusRule;
+                onChange(next);
+              }}
+            ></ha-form>
+            ${colorRow(this._t("editor_mode_color"), rule.color, (v) => {
+              const next = [...rules];
+              const { color: _drop, ...rest } = next[index];
+              next[index] = v ? { ...rest, color: v } : (rest as StatusRule);
+              onChange(next);
+            })}
+            <ha-button
+              class="remove"
+              @click=${() => onChange(rules.filter((_, i) => i !== index))}
+              >${this._t("editor_appliance_remove")}</ha-button
+            >
+          </div>
+        `;
+      })}
+      <ha-button raised @click=${() => onChange([...rules, { value: "" }])}
+        >${this._t("editor_status_add_rule")}</ha-button
+      >
+    `;
+  }
+
+  // ---- schemas --------------------------------------------------------------
+
+  private _deviceSchema(): SchemaEntry[] {
+    return [
+      { name: "entity", selector: { entity: {} }, required: true },
+      { name: "name", selector: { text: {} } },
+      { name: "icon", selector: { icon: {} } },
+      { name: "attribute", selector: { text: {} } },
+      { name: "tap_action", selector: { ui_action: {} } },
+    ];
+  }
+
+  private _progressSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "percentage_entity",
+        selector: { entity: { domain: ["sensor", "number", "input_number"] } },
+      },
+      { name: "remaining_entity", selector: { entity: { domain: ["sensor", "input_datetime"] } } },
+      { name: "label", selector: { text: {} } },
+    ];
+  }
+
+  private _entrySchema(field: ListField): SchemaEntry[] {
+    switch (field) {
+      case "sliders":
+        return [
+          { name: "entity", selector: { entity: { domain: ["number", "input_number"] } }, required: true },
+          { name: "label", selector: { text: {} } },
+          { name: "icon", selector: { icon: {} } },
+          { name: "unit", selector: { text: {} } },
+          { name: "min", selector: { number: { mode: "box", step: "any" } } },
+          { name: "max", selector: { number: { mode: "box", step: "any" } } },
+          { name: "step", selector: { number: { mode: "box", step: "any" } } },
+        ];
+      case "selects":
+        return [
+          { name: "entity", selector: { entity: { domain: ["select", "input_select"] } }, required: true },
+          { name: "label", selector: { text: {} } },
+          {
+            name: "style",
+            selector: {
+              select: {
+                mode: "dropdown",
+                options: [
+                  { value: "icon_label", label: this._t("editor_appliance_select_icon_label") },
+                  { value: "label", label: this._t("editor_appliance_select_label") },
+                  { value: "dropdown", label: this._t("editor_appliance_select_dropdown") },
+                ],
+              },
+            },
+          },
+        ];
+      case "buttons":
+        return [
+          {
+            name: "entity",
+            selector: {
+              entity: {
+                domain: ["button", "input_button", "script", "scene", "switch", "input_boolean", "automation"],
+              },
+            },
+          },
+          { name: "name", selector: { text: {} } },
+          { name: "icon", selector: { icon: {} } },
+          { name: "tap_action", selector: { ui_action: {} } },
+        ];
+      case "chips":
+        return [
+          { name: "entity", selector: { entity: {} }, required: true },
+          { name: "name", selector: { text: {} } },
+          { name: "icon", selector: { icon: {} } },
+          { name: "label", selector: { text: {} } },
+          { name: "show_state", selector: { boolean: {} } },
+          { name: "tap_action", selector: { ui_action: {} } },
+        ];
+    }
+  }
+
+  private _layoutSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "layout",
+        selector: {
+          select: {
+            multiple: true,
+            mode: "list",
+            options: [
+              { value: "progress", label: this._t("editor_appliance_block_progress") },
+              { value: "sliders", label: this._t("editor_appliance_block_sliders") },
+              { value: "selects", label: this._t("editor_appliance_block_selects") },
+              { value: "buttons", label: this._t("editor_appliance_block_buttons") },
+              { value: "chips", label: this._t("editor_appliance_block_chips") },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  private _animationSchema(): SchemaEntry[] {
+    return [
+      {
+        name: "animation",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "auto", label: this._t("editor_progress_animation_auto") },
+              { value: "on", label: this._t("editor_progress_animation_on") },
+              { value: "off", label: this._t("editor_progress_animation_off") },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  private _computeLabel = (schema: SchemaEntry): string => {
+    const map: Record<string, TranslationKey> = {
+      entity: "editor_appliance_entity",
+      name: "editor_name",
+      icon: "editor_icon",
+      attribute: "editor_appliance_attribute",
+      tap_action: "editor_tap_action",
+      percentage_entity: "editor_appliance_percentage_entity",
+      remaining_entity: "editor_appliance_remaining_entity",
+      label: "editor_appliance_label",
+      unit: "editor_appliance_unit",
+      min: "editor_appliance_min",
+      max: "editor_appliance_max",
+      step: "editor_appliance_step",
+      style: "editor_appliance_select_style",
+      show_state: "editor_appliance_chip_show_state",
+      layout: "editor_appliance_layout",
+      animation: "editor_progress_animation",
+      value: "editor_status_rule_value",
+      regex: "editor_status_rule_regex",
+      above: "editor_status_rule_above",
+      below: "editor_status_rule_below",
+      glass_background: "editor_glass_background",
+    };
+    const key = map[schema.name];
+    return key ? this._t(key) : schema.name;
+  };
+
+  // ---- render ---------------------------------------------------------------
+
+  private _renderList(field: ListField): TemplateResult {
+    const list = this._list(field);
+    const hint: TranslationKey = (
+      {
+        sliders: "editor_appliance_sliders_hint",
+        selects: "editor_appliance_selects_hint",
+        buttons: "editor_appliance_buttons_hint",
+        chips: "editor_appliance_chips_hint",
+      } as const
+    )[field];
+    const addLabel: TranslationKey = (
+      {
+        sliders: "editor_appliance_add_slider",
+        selects: "editor_appliance_add_select",
+        buttons: "editor_appliance_add_button",
+        chips: "editor_appliance_add_chip",
+      } as const
+    )[field];
+
+    return html`
+      <div class="hint">${this._t(hint)}</div>
+      ${list.map((entry, index) => {
+        const data =
+          field === "chips"
+            ? { show_state: (entry as ApplianceChipConfig).show_state !== false, ...entry }
+            : entry;
+        return html`
+          <div class="entry-block">
+            <div class="entry-title">${this._entryLabel(entry, index)}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${data}
+              .schema=${this._entrySchema(field)}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) =>
+                this._patchEntry(field, index, ev.detail.value as Record<string, unknown>)}
+            ></ha-form>
+            ${field === "selects"
+              ? listRow(
+                  this._t("editor_appliance_select_options"),
+                  ((entry as ApplianceSelectConfig).options ?? []) as string[],
+                  (values) =>
+                    this._patchEntry(field, index, { options: values.length ? values : undefined }),
+                )
+              : nothing}
+            ${colorRow(this._t("editor_mode_color"), entry.color, (v) =>
+              this._patchEntry(field, index, { color: v }),
+            )}
+            ${field === "chips"
+              ? html`
+                  <ha-expansion-panel
+                    outlined
+                    .header=${this._t("editor_appliance_chip_states")}
+                  >
+                    <div class="panel-content">
+                      ${this._renderRules(entry.states ?? [], (rules) =>
+                        this._patchEntry(field, index, {
+                          states: rules.length ? rules : undefined,
+                        }),
+                      )}
+                    </div>
+                  </ha-expansion-panel>
+                `
+              : nothing}
+            <ha-button class="remove" @click=${() => this._removeEntry(field, index)}
+              >${this._t("editor_appliance_remove")}</ha-button
+            >
+          </div>
+        `;
+      })}
+      <ha-button raised @click=${() => this._addEntry(field)}>${this._t(addLabel)}</ha-button>
+    `;
+  }
+
+  protected render() {
+    if (!this.hass || !this._config) return nothing;
+    const cfg = this._config;
+
+    return html`
+      <div class="editor">
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_device")} expanded>
+          <ha-icon slot="leading-icon" icon="mdi:washing-machine"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_appliance_entity_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{
+                entity: cfg.entity ?? "",
+                name: cfg.name ?? "",
+                icon: cfg.icon ?? "",
+                attribute: cfg.attribute ?? "",
+                tap_action: cfg.tap_action,
+              }}
+              .schema=${this._deviceSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_states")}>
+          <ha-icon slot="leading-icon" icon="mdi:swap-horizontal"></ha-icon>
+          <div class="panel-content">
+            ${this._renderRules(cfg.states ?? [], (rules) =>
+              this._emit(
+                rules.length
+                  ? { ...cfg, states: rules }
+                  : ((({ states: _drop, ...rest }) => rest)(cfg) as M3ApplianceCardConfig),
+              ),
+            )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_progress")}>
+          <ha-icon slot="leading-icon" icon="mdi:progress-clock"></ha-icon>
+          <div class="panel-content">
+            <div class="hint">${this._t("editor_appliance_progress_hint")}</div>
+            <ha-form
+              .hass=${this.hass}
+              .data=${{
+                percentage_entity: cfg.progress?.percentage_entity ?? "",
+                remaining_entity: cfg.progress?.remaining_entity ?? "",
+                label: cfg.progress?.label ?? "",
+              }}
+              .schema=${this._progressSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${(ev: CustomEvent) => {
+                const progress = pruned({
+                  ...(cfg.progress ?? {}),
+                  ...(ev.detail.value as Record<string, unknown>),
+                });
+                const hasAny = Object.keys(progress).length > 0;
+                this._emit(
+                  hasAny
+                    ? { ...cfg, progress }
+                    : ((({ progress: _drop, ...rest }) => rest)(cfg) as M3ApplianceCardConfig),
+                );
+              }}
+            ></ha-form>
+            ${colorRow(this._t("editor_mode_color"), cfg.progress?.color, (v) =>
+              this._emit({
+                ...cfg,
+                progress: pruned({ ...(cfg.progress ?? {}), color: v }),
+              }),
+            )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_sliders")}>
+          <ha-icon slot="leading-icon" icon="mdi:tune-variant"></ha-icon>
+          <div class="panel-content">${this._renderList("sliders")}</div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_selects")}>
+          <ha-icon slot="leading-icon" icon="mdi:format-list-bulleted"></ha-icon>
+          <div class="panel-content">${this._renderList("selects")}</div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_buttons")}>
+          <ha-icon slot="leading-icon" icon="mdi:gesture-tap-button"></ha-icon>
+          <div class="panel-content">${this._renderList("buttons")}</div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_chips")}>
+          <ha-icon slot="leading-icon" icon="mdi:card-text-outline"></ha-icon>
+          <div class="panel-content">${this._renderList("chips")}</div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_appliance_layout")}>
+          <ha-icon slot="leading-icon" icon="mdi:view-dashboard-outline"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ layout: cfg.layout ?? ALL_BLOCKS }}
+              .schema=${this._layoutSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_appliance_layout_hint")}</div>
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_progress_colors")}>
+          <ha-icon slot="leading-icon" icon="mdi:palette-outline"></ha-icon>
+          <div class="panel-content">
+            ${colorRow(this._t("editor_clock_accent_color"), cfg.accent_color, (v) =>
+              this._colorChanged("accent_color", v),
+            )}
+            ${colorRow(this._t("editor_progress_text_color"), cfg.text_color, (v) =>
+              this._colorChanged("text_color", v),
+            )}
+            ${colorRow(
+              this._t("editor_progress_secondary_text_color"),
+              cfg.secondary_text_color,
+              (v) => this._colorChanged("secondary_text_color", v),
+            )}
+            ${colorRow(this._t("editor_progress_card_background"), cfg.card_background, (v) =>
+              this._colorChanged("card_background", v),
+            )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_progress_animation")}>
+          <ha-icon slot="leading-icon" icon="mdi:wave"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${{ animation: cfg.animation ?? "auto" }}
+              .schema=${this._animationSchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            <div class="hint">${this._t("editor_progress_animation_reduced_motion_hint")}</div>
+          </div>
+        </ha-expansion-panel>
+
+        ${renderAppearanceSection({
+          hass: this.hass,
+          language: this._language,
+          config: cfg,
+          defaultRadius: DEFAULT_APPLIANCE_RADIUS,
+          state: this._appearance,
+          computeLabel: this._computeLabel,
+          onValueChanged: this._valueChanged.bind(this),
+          onRadiusPresetChanged: this._radiusPresetChanged.bind(this),
+          onCornersToggleChanged: this._cornersToggleChanged.bind(this),
+          onCornerPresetChanged: this._cornerPresetChanged.bind(this),
+          onCornerValueChanged: this._cornerValueChanged.bind(this),
+        })}
+      </div>
+    `;
+  }
+
+  static styles = [
+    editorStyles,
+    css`
+      .entry-block,
+      .rule-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid rgba(127, 127, 127, 0.3);
+        border-radius: 12px;
+      }
+
+      .rule-block {
+        border-style: dashed;
+      }
+
+      .entry-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      ha-select {
+        width: 100%;
+      }
+
+      .remove {
+        align-self: flex-end;
+        --mdc-theme-primary: var(--error-color, #e57368);
+      }
+    `,
+  ];
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "m3-appliance-card-editor": M3ApplianceCardEditor;
+  }
+}

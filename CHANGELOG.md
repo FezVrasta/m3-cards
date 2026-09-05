@@ -85,6 +85,50 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   temperature** section, with the style and preset fields below it; they are
   hidden while it is off, since they have nothing left to describe.
 
+- **A new card: `m3-appliance-card`.** A dashboard full of appliances — washing
+  machine, dryer, oven, fridge, coffee machine, litter robot, printer, NAS —
+  had no card for "an appliance". The progress card draws a running programme
+  and offers no controls; the status card is a grid of readings; the humidifier
+  card has exactly the right anatomy and is locked to `humidifier` entities. So
+  every appliance was a hand-built stack of generic cards, rebuilt from scratch
+  for the next one.
+
+  This is the humidifier card's anatomy with nothing assumed about what is
+  behind it: a header with a squircle icon and a status line, then five
+  optional blocks — a progress bar, labelled sliders for `number` entities,
+  rows of pills for `select` entities, action buttons, and status chips. A
+  block whose entities are not configured is not drawn, so the same card is a
+  washing machine with a progress bar and two buttons, an oven with a
+  temperature slider and two programme rows, or a fridge with nothing but three
+  chips.
+
+  The status line runs on the status card's own rule shape — `value` / `regex`
+  / `above` / `below` plus `label`, `icon`, `color`, first match wins, a rule
+  with no condition as the catch-all — and a matched rule sets the card's
+  accent, so the whole card follows the machine. Chips take the same rules of
+  their own. Buttons with no `tap_action` get the one their domain implies, the
+  same mapping the button card uses; everything a button, chip or header does
+  goes through the shared action handler, so `confirmation` is asked for and
+  `navigate` / `url` / `perform-action` behave as they do everywhere else.
+  Sliders read the entity's own `min` / `max` / `step`, option rows read its
+  `options` and accept a per-option icon map and an allow-list, and a remaining
+  time is read whether the integration publishes minutes, seconds, `1:24:00`,
+  or an absolute completion timestamp.
+
+  ```yaml
+  type: custom:m3-appliance-card
+  entity: sensor.washer_machine_state
+  name: Washing machine
+  states:
+    - { value: run, label: Washing, color: green }
+    - { label: Ready, color: grey }
+  progress:
+    percentage_entity: sensor.washer_progress_percent
+    remaining_entity: sensor.washer_completion_time
+  buttons:
+    - { entity: button.washer_start, name: Start, icon: mdi:play, color: green }
+  ```
+
 ### Changed
 
 - **The presence card's `hold_action` now runs through the shared action
@@ -93,6 +137,14 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   `toggle` or `perform-action` did nothing — and nothing said so, since the
   editor offered no field for it. Those now work, `confirmation` is honoured,
   and the two kinds that already worked are unchanged.
+
+- **The status rule matcher and the domain → default-action mapping are shared
+  helpers now.** Both were private methods — the matcher on the status card,
+  the action mapping on the button card — and the appliance card needs exactly
+  the same answers from both. They moved to `src/shared/state-rules.ts` and
+  `src/shared/entity-actions.ts` unchanged, with tests, and their original
+  owners call them rather than keeping a second copy that could drift. No
+  behaviour change on either card.
 
 ### Hinzugefügt
 
@@ -165,6 +217,52 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Felder darunter; sie verschwinden, solange er aus ist, weil sie dann nichts
   mehr beschreiben.
 
+- **Eine neue Karte: `m3-appliance-card`.** Für ein Dashboard voller
+  Haushaltsgeräte — Waschmaschine, Trockner, Backofen, Kühlschrank,
+  Kaffeemaschine, Katzenklo, Drucker, NAS — gab es keine Karte für „ein
+  Gerät“. Die Progress-Karte zeichnet einen laufenden Vorgang und bietet keine
+  Bedienung; die Status-Karte ist ein Raster aus Messwerten; die
+  Humidifier-Karte hat genau den richtigen Aufbau und ist auf
+  `humidifier`-Entitäten festgelegt. Jedes Gerät war also ein selbstgebauter
+  Stapel allgemeiner Karten — und für das nächste Gerät wieder von vorn.
+
+  Diese Karte ist der Aufbau der Humidifier-Karte, ohne Annahme darüber, was
+  dahintersteckt: ein Kopf mit Squircle-Icon und Statuszeile, darunter fünf
+  optionale Blöcke — ein Fortschrittsbalken, beschriftete Regler für
+  `number`-Entitäten, Pillen-Zeilen für `select`-Entitäten, Aktions-Buttons und
+  Status-Chips. Ein Block ohne konfigurierte Entitäten wird nicht gezeichnet;
+  dieselbe Karte ist damit eine Waschmaschine mit Balken und zwei Knöpfen, ein
+  Backofen mit Temperaturregler und zwei Programmzeilen, oder ein Kühlschrank
+  mit nichts als drei Chips.
+
+  Die Statuszeile läuft über die Regelform der Status-Karte — `value` / `regex`
+  / `above` / `below` plus `label`, `icon`, `color`, erste passende Regel
+  gewinnt, eine Regel ohne Bedingung als Auffangregel — und eine passende Regel
+  setzt den Akzent der Karte, sodass die ganze Karte dem Gerät folgt. Chips
+  nehmen dieselben Regeln für sich. Buttons ohne `tap_action` bekommen die,
+  die ihre Domain nahelegt — dieselbe Zuordnung wie in der Button-Karte; alles,
+  was Button, Chip oder Kopf tun, läuft über den gemeinsamen Aktions-Handler,
+  `confirmation` wird also abgefragt und `navigate` / `url` / `perform-action`
+  verhalten sich wie überall sonst. Regler lesen `min` / `max` / `step` der
+  Entität, Auswahlzeilen deren `options` und akzeptieren eine Icon-Zuordnung je
+  Option sowie eine Positivliste, und eine Restzeit wird gelesen, ob die
+  Integration nun Minuten, Sekunden, `1:24:00` oder einen absoluten
+  Endzeitpunkt veröffentlicht.
+
+  ```yaml
+  type: custom:m3-appliance-card
+  entity: sensor.washer_machine_state
+  name: Waschmaschine
+  states:
+    - { value: run, label: Wäscht, color: green }
+    - { label: Bereit, color: grey }
+  progress:
+    percentage_entity: sensor.washer_progress_percent
+    remaining_entity: sensor.washer_completion_time
+  buttons:
+    - { entity: button.washer_start, name: Start, icon: mdi:play, color: green }
+  ```
+
 ### Geändert
 
 - **Die `hold_action` der Anwesenheitskarte läuft nun über den gemeinsamen
@@ -174,6 +272,15 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   wies darauf hin, da der Editor gar kein Feld dafür anbot. Diese funktionieren
   jetzt, `confirmation` wird beachtet, und die beiden bisher funktionierenden
   Arten bleiben unverändert.
+
+- **Der Regel-Matcher der Statuszeile und die Zuordnung Domain → Standardaktion
+  sind jetzt gemeinsame Helfer.** Beide waren private Methoden — der Matcher in
+  der Status-Karte, die Aktionszuordnung in der Button-Karte — und die
+  Appliance-Karte braucht von beiden genau dieselben Antworten. Sie sind
+  unverändert nach `src/shared/state-rules.ts` und
+  `src/shared/entity-actions.ts` gewandert, mit Tests, und ihre bisherigen
+  Besitzer rufen sie auf, statt eine zweite Kopie zu behalten, die
+  auseinanderlaufen kann. Für beide Karten ändert sich nichts am Verhalten.
 
 ## [2.3.2]
 

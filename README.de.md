@@ -7,7 +7,7 @@
 Material-3-inspirierte, native Lovelace-Karten für Home Assistant — gebaut mit
 TypeScript + [Lit](https://lit.dev), **ohne** Abhängigkeit zu `button-card`,
 `card-mod`, `mod-card` oder `stack-in-card`. Ein einziges Bundle
-(`m3-cards.js`) registriert **39 Karten**, alle in derselben Designsprache.
+(`m3-cards.js`) registriert **40 Karten**, alle in derselben Designsprache.
 
 Neu hier? Fang mit der Kategorie an, die zu dem passt, was du zeigen willst —
 jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
@@ -69,6 +69,7 @@ jede Karte verlinkt weiter unten auf ihre ausführliche Dokumentation.
 | [Group](#m3-group-card) | `m3-group-card` | Mehrere Karten auf einer gemeinsamen Fläche, damit sie als ein Block gelesen werden |
 | [Room](#m3-room-card) | `m3-room-card` | Eine Karte je Bereich: alle gefundenen Gerätetypen, Klimawerte und Präsenz |
 | [Humidifier](#m3-humidifier-card) | `m3-humidifier-card` | Zielfeuchte, Modus, Lüfterstufe und Zusatzfunktionen — auch ohne humidifier-Entität |
+| [Appliance](#m3-appliance-card) | `m3-appliance-card` | Jedes Haushaltsgerät: Status, Fortschritt, Regler, Programm-Pillen, Aktions-Buttons und Chips |
 | [Calendar](#m3-calendar-card) | `m3-calendar-card` | Agenda und Monatsraster für beliebig viele Kalender |
 
 ### 🛠️ System & Wartung
@@ -3321,6 +3322,225 @@ weggelassen. Fehlt es, leitet die Karte Ent- oder Befeuchten aus der Richtung
 zwischen Ist und Ziel ab, statt nichts zu zeigen. Ein Gerät ohne Modi bekommt
 keine Modus-Zeile. Ein Tank, der nur ein `binary_sensor` ist, bekommt nur dann
 einen Chip, wenn er voll ist — „nicht voll" ist keine Nachricht.
+
+</details>
+
+## M3 Appliance Card
+
+Ein Haushaltsgerät mit Status und Bedienung auf derselben Karte.
+
+Für den Fortschrittsbalken einer Waschmaschine gab es die
+[Progress-Karte](#m3-progress-card), für Messwerte die
+[Status-Karte](#m3-status-card) — bedienen lässt sich mit beiden nichts: weder
+starten, noch das Programm wählen, noch den Backofen herunterdrehen. Ein Gerät
+auf dem Dashboard war deshalb ein selbstgebauter Stapel — Progress-Karte, ein
+paar Button-Karten, eine Entities-Karte für den Programm-Select — und für
+Trockner, Backofen, Kaffeemaschine und Katzenklo jedes Mal neu.
+
+Die [Humidifier-Karte](#m3-humidifier-card) hat genau die richtige Form: Kopf,
+beschrifteter Regler, Pillen-Zeilen, Chip-Zeile. Sie ist nur eben auf eine
+Geräteart festgelegt. Diese Karte ist derselbe Aufbau, ohne Annahme darüber,
+was dahintersteckt: Jeder Block ist optional, und ein Block ohne konfigurierte
+Entitäten wird schlicht nicht gezeichnet.
+
+<details>
+<summary>Konfiguration, Beispiele & Optionen</summary>
+
+```yaml
+type: custom:m3-appliance-card
+entity: sensor.washer_machine_state
+```
+
+Mehr braucht eine Karte nicht, die den Zustand eines Geräts zeigt. Alles
+Weitere ist ein Block, den man hinzunimmt.
+
+### Die fünf Blöcke
+
+| Block | Was gezeichnet wird |
+| --- | --- |
+| `progress` | Ein Balken, mit dem Prozentwert neben der Beschriftung. Ohne Prozent-Sensor läuft er unbestimmt, solange eine Restzeit bekannt ist |
+| `sliders` | Je ein beschrifteter Regler pro `number`- oder `input_number`-Entität, über deren eigenes `min`/`max`/`step` |
+| `selects` | Je eine Pillen-Zeile pro `select`- oder `input_select`-Entität, aus deren `options` |
+| `buttons` | Eine Zeile mit Aktions-Buttons — drücken, starten, stoppen, umschalten |
+| `chips` | Kleine farbige Pillen unten: Tür offen, Leistung, Filterstatus |
+
+`layout` bestimmt Reihenfolge und Sichtbarkeit zugleich. Was in der Liste
+fehlt, wird nicht gezeichnet — ein Mechanismus statt einer Liste plus
+`show_*`-Schaltern, die einander widersprechen können.
+
+```yaml
+layout: [progress, buttons]   # keine Regler, keine Auswahl, keine Chips
+```
+
+### Die Statuszeile
+
+Die Zeile unter dem Namen ist der Zustand der Entität, durch `states`
+geschickt — dieselbe Regelform wie bei der [Status-Karte](#m3-status-card), und
+derselbe Code dahinter. Die erste passende Regel gewinnt; eine Regel ganz ohne
+Bedingung gilt für alles Übrige. Eine passende Regel darf auch das Icon
+ersetzen und die Akzentfarbe der Karte setzen, sodass die ganze Karte dem Gerät
+folgt.
+
+```yaml
+states:
+  - { value: run, label: Wäscht, color: green, icon: mdi:washing-machine }
+  - { value: pause, label: Pausiert, color: amber }
+  - { regex: "finish|end", label: Fertig, color: blue }
+  - { label: Bereit, color: grey }         # alles Übrige
+```
+
+Ohne Regeln wird der Zustand aufgeräumt angezeigt: aus `heavy_duty` wird
+„Heavy duty“, eine Zahl behält ihre Einheit.
+
+### Beispiel: Waschmaschine
+
+Status, Fortschritt und die zwei Knöpfe, auf die es ankommt.
+`remaining_entity` nimmt Minuten, Sekunden, eine Dauer wie `1:24:00` oder einen
+absoluten Endzeitpunkt — die Integrationen sind sich hier nicht einig, also
+werden alle vier gelesen.
+
+```yaml
+type: custom:m3-appliance-card
+entity: sensor.washer_machine_state
+name: Waschmaschine
+icon: mdi:washing-machine
+states:
+  - { value: run, label: Wäscht, color: green }
+  - { value: pause, label: Pausiert, color: amber }
+  - { regex: "finish|end", label: Fertig, color: blue }
+  - { label: Bereit, color: grey }
+progress:
+  percentage_entity: sensor.washer_progress_percent
+  remaining_entity: sensor.washer_completion_time
+  label: Fortschritt
+selects:
+  - entity: select.washer_cycle
+    label: Programm
+buttons:
+  - { entity: button.washer_start, name: Start, icon: mdi:play, color: green }
+  - entity: button.washer_stop
+    name: Stopp
+    icon: mdi:stop
+    color: red
+    tap_action:
+      action: perform-action
+      perform_action: button.press
+      target: { entity_id: button.washer_stop }
+      confirmation:
+        text: Programm abbrechen?
+```
+
+### Beispiel: Backofen
+
+Ein Regler für die Solltemperatur und zwei Auswahlzeilen. `icons` gibt einer
+Option ihr eigenes Symbol; `options` schränkt die Zeile auf eine Teilmenge
+dessen ein, was die Entität anbietet — in der geschriebenen Reihenfolge.
+
+```yaml
+type: custom:m3-appliance-card
+entity: sensor.oven_operation_state
+name: Backofen
+icon: mdi:stove
+states:
+  - { value: run, label: Backt, color: "#f0a24a" }
+  - { above: 0, label: Heizt vor, color: amber }
+  - { label: Aus, color: grey }
+sliders:
+  - entity: number.oven_setpoint_temperature
+    label: Temperatur
+    unit: "°C"
+    icon: mdi:thermometer
+selects:
+  - entity: select.oven_program
+    label: Programm
+    options: [hot_air, top_bottom_heat, grill]
+    icons:
+      hot_air: mdi:fan
+      grill: mdi:grill
+  - entity: select.oven_duration
+    label: Dauer
+chips:
+  - { entity: binary_sensor.oven_door, name: Tür, icon: mdi:door,
+      states: [{ value: "on", label: Offen, color: amber },
+               { label: Geschlossen, color: green }] }
+  - { entity: sensor.oven_current_temperature, name: Jetzt, icon: mdi:thermometer, color: red }
+```
+
+### Beispiel: Kühlschrank
+
+Nur Chips. Es gibt nichts zu bedienen, also wird außer den Messwerten nichts
+gezeichnet — keine leere Button-Zeile, kein Balken auf null.
+
+```yaml
+type: custom:m3-appliance-card
+entity: binary_sensor.fridge_door
+name: Kühlschrank
+icon: mdi:fridge-outline
+states:
+  - { value: "on", label: Tür offen, color: red, icon: mdi:fridge-alert-outline }
+  - { label: Geschlossen, color: green }
+layout: [chips]
+chips:
+  - { entity: sensor.fridge_temperature, name: Kühlteil, icon: mdi:fridge-outline, color: blue }
+  - { entity: sensor.freezer_temperature, name: Gefrierteil, icon: mdi:snowflake, color: cyan }
+  - { entity: binary_sensor.freezer_door, name: Gefriertür, icon: mdi:door }
+```
+
+### Buttons
+
+Ein Button ohne eigene `tap_action` bekommt die, die seine Domain nahelegt —
+`button.press`, `script.turn_on`, `scene.turn_on`, `automation.trigger`, oder
+ein Umschalten bei `switch` / `input_boolean` / `light`. Ein `switch` zeigt
+zusätzlich seinen Zustand: Solange er an ist, ist der Button ausgefüllt.
+
+Alles, was Button, Chip oder Kartenkopf tun, läuft über denselben
+Aktions-Handler wie im Rest der Sammlung. Die vollständige
+Home-Assistant-Aktionskonfiguration funktioniert also — einschließlich
+`confirmation`, das vorher nachfragt.
+
+### Chips
+
+Ein Chip ist reine Anzeige, bis er eine `tap_action` bekommt; dann wird er
+antippbar. Jeder Chip hat eigene Farbe, eigenes Icon und optionale
+`states`-Regeln. Ein Chip, dessen Entität nicht verfügbar ist, wird weggelassen
+statt ausgegraut — eine Reihe „—“ sagt nichts und schiebt die aussagekräftigen
+Chips aus dem Bild.
+
+### Optionen
+
+| Option | Standard | Wirkung |
+| --- | --- | --- |
+| `entity` | — | Pflicht. Die Entität, die sagt, was das Gerät gerade tut |
+| `name` / `icon` | von der Entität | Name und Icon im Kopf |
+| `attribute` | — | Dieses Attribut statt des Zustands lesen |
+| `states` | — | Regelliste für die Statuszeile: `value` / `regex` / `above` / `below`, dazu `label`, `icon`, `color` |
+| `progress.percentage_entity` | — | 0–100. Ohne ihn läuft der Balken unbestimmt |
+| `progress.remaining_entity` | — | Minuten, Sekunden, `1:24:00` oder ein Endzeitpunkt |
+| `progress.label` / `progress.color` | „Fortschritt“ / Akzent | Beschriftung und Balkenfarbe |
+| `sliders[]` | — | `entity`, `label`, `icon`, `unit`, `min`, `max`, `step`, `color` |
+| `selects[]` | — | `entity`, `label`, `options`, `icons`, `names`, `style`, `color` |
+| `buttons[]` | — | `entity`, `name`, `icon`, `color`, `tap_action` |
+| `chips[]` | — | `entity`, `name`, `icon`, `label`, `show_state`, `states`, `color`, `tap_action` |
+| `layout` | alle fünf | Welche Blöcke, in welcher Reihenfolge |
+| `tap_action` | `more-info` | Was ein Tippen auf den Kopf auslöst |
+| `accent_color` | `#85b7eb` | Wird von der `color` einer passenden Regel überschrieben |
+| `text_color` / `secondary_text_color` / `card_background` | Theme | Die üblichen Farbüberschreibungen |
+| `glass_background` | `true` | Milchglas-Oberfläche |
+| `animation` | `auto` | `auto`, `on`, `off` — beachtet auch `prefers-reduced-motion` |
+| `radius` / `corners` | `28` | Form der Karte |
+
+Jedes Textfeld — `name`, das `label` einer Regel, der `name` eines Chips oder
+Buttons — läuft durch die [Template-Unterstützung](#templates); ein
+Jinja2-Ausdruck funktioniert also in jedem davon.
+
+### Wenn etwas fehlt
+
+Ein Regler oder eine Auswahlzeile ohne verfügbare Entität wird nicht
+gezeichnet: Eine tote Schiene lädt zu einer Bewegung ein, die nichts bewirkt,
+und Pillen ohne Optionen sind keine Zeile. Ein Button mit nicht verfügbarer
+Entität bleibt sichtbar, aber ausgegraut und nicht klickbar — er gehört zum
+Aufbau der Karte. Chips fallen weg. Die ganze Karte dimmt, wenn ihre eigene
+Status-Entität nicht erreichbar ist.
 
 </details>
 

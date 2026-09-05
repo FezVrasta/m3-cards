@@ -73,6 +73,7 @@ import { glassCardClass, glassCardStyles } from "./shared/glass-card";
 import { formatNumber } from "./shared/formatting";
 import { fetchValueHoursAgo } from "./shared/ha-statistics";
 import { hassChangeMatters } from "./shared/should-update";
+import { findStateRule, numericState } from "./shared/state-rules";
 import { TemplatedCard } from "./shared/templated-card";
 
 const EASING = unsafeCSS(STANDARD_EASING);
@@ -297,23 +298,6 @@ export class M3StatusCard extends TemplatedCard(LitElement) implements LovelaceC
     return [...own, ...preset];
   }
 
-  private _matches(rule: StatusRule, raw: string, numeric: number | undefined): boolean {
-    if (rule.value !== undefined) return raw.toLowerCase() === String(rule.value).toLowerCase();
-    if (rule.regex !== undefined) {
-      try {
-        return new RegExp(rule.regex).test(raw);
-      } catch {
-        // A half-typed pattern in the editor must not throw mid-render.
-        return false;
-      }
-    }
-    if (rule.above !== undefined) return numeric !== undefined && numeric > rule.above;
-    if (rule.below !== undefined) return numeric !== undefined && numeric < rule.below;
-    // No condition at all is a deliberate catch-all — it is how a preset ends
-    // with "and otherwise, green".
-    return true;
-  }
-
   private _formatValue(item: M3StatusItemConfig, raw: string, numeric?: number): string {
     if (numeric === undefined) return raw;
     const decimals =
@@ -364,10 +348,9 @@ export class M3StatusCard extends TemplatedCard(LitElement) implements LovelaceC
       };
     }
 
-    const parsed = parseFloat(raw.replace(",", "."));
-    const numeric = Number.isFinite(parsed) && /^-?[\d.,]+$/.test(raw.trim()) ? parsed : undefined;
+    const numeric = numericState(raw);
 
-    const rule = this._rulesFor(item).find((r) => this._matches(r, raw, numeric));
+    const rule = findStateRule(this._rulesFor(item), raw, numeric);
 
     const unitSource =
       item.unit ??

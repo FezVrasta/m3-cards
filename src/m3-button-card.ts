@@ -28,6 +28,7 @@ import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
 import { activateOnKey } from "./shared/a11y";
+import { defaultEntityAction } from "./shared/entity-actions";
 import {
   tintOn,
   foregroundOn,
@@ -153,28 +154,12 @@ export class M3ButtonCard extends TemplatedCard(LitElement) implements LovelaceC
     return this._resolveColor(configured);
   }
 
+  // The mapping itself now lives in shared/entity-actions.ts, unchanged — the
+  // appliance card draws a row of buttons and needs the same answers, and two
+  // copies of "a button.* entity should be pressed" is exactly the kind of pair
+  // that drifts.
   private _defaultTapAction(domain: string): HaActionConfig {
-    switch (domain) {
-      case "automation":
-        return { action: "call-service", service: "automation.trigger" };
-      case "script":
-        return { action: "call-service", service: "script.turn_on" };
-      case "scene":
-        return { action: "call-service", service: "scene.turn_on" };
-      case "button":
-      case "input_button":
-        return { action: "call-service", service: `${domain}.press` };
-      case "light":
-      case "switch":
-      case "fan":
-      case "input_boolean":
-      case "lock":
-      case "cover":
-      case "siren":
-        return { action: "toggle" };
-      default:
-        return { action: "more-info" };
-    }
+    return defaultEntityAction(domain);
   }
 
   private _sliderDomain(): string | undefined {
