@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   prettifyOption,
+  prettifyState,
   remainingMinutes,
   resolveSliderRange,
   snapToRange,
@@ -206,5 +207,28 @@ describe("waveSliderGeometry", () => {
   it("clamps a fraction outside 0-1", () => {
     expect(geom(2).handleX).toBe(geom(1).handleX);
     expect(geom(-1).handleX).toBe(geom(0).handleX);
+  });
+});
+
+describe("prettifyState", () => {
+  it("prettifies a slug-shaped state, like the option strings it borrows from", () => {
+    expect(prettifyState("heavy_duty")).toBe("Heavy duty");
+    expect(prettifyState("run")).toBe("Run");
+    expect(prettifyState("delayed-start")).toBe("Delayed start");
+  });
+
+  it("leaves a template sensor's free-form text exactly as written", () => {
+    // The bug this guards: `-` read as a word separator turned a freezer at
+    // -16 °C into one at 16 °C.
+    expect(prettifyState("8 °C · -16 °C")).toBe("8 °C · -16 °C");
+    expect(prettifyState("In funzione · 181 °C")).toBe("In funzione · 181 °C");
+  });
+
+  it("does not swallow a hyphen inside real words", () => {
+    expect(prettifyState("Wi-Fi 6 connesso")).toBe("Wi-Fi 6 connesso");
+  });
+
+  it("leaves an already-capitalised single word alone rather than re-casing it", () => {
+    expect(prettifyState("Pronta")).toBe("Pronta");
   });
 });

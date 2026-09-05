@@ -77,6 +77,7 @@ import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { handleAction, isActionable } from "./shared/actions";
 import {
   prettifyOption,
+  prettifyState,
   remainingMinutes,
   resolveSliderRange,
   snapToRange,
@@ -384,7 +385,7 @@ export class M3ApplianceCard extends TemplatedCard(LitElement) implements Lovela
   /** A state nobody wrote a rule for, tidied up rather than shown as `heavy_duty`. */
   private _stateText(st: HassEntity | undefined, raw: string): string {
     const numeric = numericState(raw);
-    if (numeric === undefined) return prettifyOption(raw);
+    if (numeric === undefined) return prettifyState(raw);
     const unit = st?.attributes?.unit_of_measurement as string | undefined;
     const decimals = Math.min(2, (raw.split(/[.,]/)[1] ?? "").length);
     const value = formatNumber(this._language, numeric, {

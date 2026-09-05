@@ -129,6 +129,24 @@ export function prettifyOption(raw: string): string {
 }
 
 /**
+ * A raw state turned into something readable — but only when it is actually a
+ * slug.
+ *
+ * `prettifyOption` exists for integration option strings, where every `_` and
+ * `-` is a word separator. A status entity's state is not that: it is whatever
+ * the integration or a template sensor decided to publish, and running it
+ * through the same rule eats real characters. A fridge reporting
+ * `8 °C · -16 °C` came out as `8 °C · 16 °C` — the minus read as a separator
+ * and the freezer looked like it was above freezing.
+ *
+ * So free-form text is returned untouched, and only a slug-shaped state
+ * (`run`, `heavy_duty`, `delayed-start`) is prettified.
+ */
+export function prettifyState(raw: string): string {
+  return /^[a-z0-9]+(?:[_-][a-z0-9]+)*$/i.test(raw.trim()) ? prettifyOption(raw) : raw;
+}
+
+/**
  * The options a select row shows: the entity's own, narrowed and reordered by
  * an `options` allow-list when one is given.
  *
