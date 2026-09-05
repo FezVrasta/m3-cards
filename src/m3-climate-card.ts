@@ -22,7 +22,7 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { glassBackground } from "./shared/glass-card";
+import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
@@ -324,9 +324,7 @@ export class M3ClimateCard extends TemplatedCard(LitElement) implements Lovelace
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
-          class="card-inner ${this._config.glass_background === false
-            ? "solid"
-            : "glass"} ${animClass}"
+          class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius}; ${heightStyle}`}
         >
           <div
@@ -547,49 +545,17 @@ export class M3ClimateCard extends TemplatedCard(LitElement) implements Lovelace
   }
 
   static styles = css`
-    :host {
-      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
-      -webkit-tap-highlight-color: transparent;
-      display: block;
-      height: 100%;
-    }
+    ${glassCardStyles}
 
     ha-card {
-      height: 100%;
       border-radius: 32px;
-      overflow: hidden;
-      box-shadow: none;
-      background: transparent;
     }
 
+    /* .card-inner's glass/solid background and border come from
+       glassCardStyles. Only the layout this card differs on is set here. */
     .card-inner {
-      box-sizing: border-box;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
       gap: 10px;
-      padding: 12px;
       border-radius: 32px;
-      border: 1px solid rgba(100, 100, 100, 0.25);
-    }
-
-    .card-inner.glass {
-      /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: ${glassBackground};
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      /* Forces its own compositor layer. Without this, Chromium sometimes
-         renders a visible seam where two adjacent backdrop-filter elements'
-         GPU tiles meet (flickers/disappears on scroll-triggered repaint) —
-         a known browser tiling bug, not a layout issue on our end.
-         glassCardStyles has carried this since it was found; these three
-         cards hand-roll their own copy of the rule and so never got it. */
-      transform: translateZ(0);
-      isolation: isolate;
-    }
-
-    .card-inner.solid {
-      background: var(--ha-card-background, var(--card-background-color));
     }
 
     ha-card.unavailable .mode-row,
@@ -598,12 +564,6 @@ export class M3ClimateCard extends TemplatedCard(LitElement) implements Lovelace
     ha-card.unavailable .stepper-row {
       opacity: 0.4;
       pointer-events: none;
-    }
-
-    .missing-entity {
-      padding: 16px;
-      color: var(--error-color, red);
-      font-size: 14px;
     }
 
     /* Header */
