@@ -95,8 +95,6 @@ speaker, air conditioner and the updates show simulated states so the active
 renderings (wave indicator, version jump, running installation) are visible in
 the image — everything else is live data.</sub>
 
-🇩🇪 [Deutsches README](README.de.md)
-
 ## Features
 
 - Frosted glass card look (can be turned off for solid themes), shared
