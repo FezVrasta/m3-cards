@@ -5,6 +5,8 @@ import type {
   LovelaceCardEditor,
   M3ClimateOverviewCardConfig,
   ClimateOverviewRoomConfig,
+  ClimateOverviewPopupMode,
+  HaActionConfig,
 } from "./types";
 import {
   DEFAULT_CLIMATE_OVERVIEW_RADIUS,
@@ -16,8 +18,10 @@ import {
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
 import { fireEvent, colorRow, opacityRow, listRow, editorStyles, type SchemaEntry } from "./shared/editor-helpers";
+import { renderDetailCardField } from "./shared/detail-card-editor";
 import { radiusLabelMap } from "./shared/radius-editor";
 import { discoverClimateRooms } from "./shared/ha-registry";
+import { configFilter } from "./m3-climate-overview-card";
 import {
   initAppearanceState,
   radiusPresetPatch,
@@ -43,6 +47,7 @@ import {
 } from "./shared/notify-editor";
 
 const DEFAULT_NOTIFY_TIME = "09:00:00";
+const ACTION_KEYS = ["tap_action", "hold_action", "double_tap_action"] as const;
 
 // A room only enters the mould digest when both readings exist — the card
 // treats humidity as optional, so a temperature-only room can never satisfy
@@ -96,7 +101,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
   private async _resolveNotifyRooms(): Promise<NotifyRoom[]> {
     const cfg = this._config;
     if (!cfg || !this.hass) return [];
-    const source: { name: string; temperatureEntity: string; humidityEntity?: string }[] = cfg.rooms?.length
+    const source: { name: string; temperatureEntity?: string; humidityEntity?: string }[] = cfg.rooms?.length
       ? cfg.rooms.map((r) => ({
           name: r.name,
           temperatureEntity: r.temperature_entity,
@@ -105,23 +110,25 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       : (cfg.auto_discover ?? true)
         ? (
             await discoverClimateRooms(this.hass, {
-              includeAreas: cfg.include_area,
-              excludeEntities: cfg.exclude_entities,
+              filter: configFilter(cfg),
               nameStrip: cfg.name_strip ?? DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
             })
           ).map((r) => ({ name: r.name, temperatureEntity: r.temperatureEntity, humidityEntity: r.humidityEntity }))
         : [];
 
-    return source
-      .filter((r) => !!r.temperatureEntity && !!r.humidityEntity)
-      .map((r) => ({
-        name:
-          r.name ||
-          (this.hass!.states[r.temperatureEntity]?.attributes.friendly_name as string | undefined) ||
-          r.temperatureEntity,
-        temperatureEntity: r.temperatureEntity,
-        humidityEntity: r.humidityEntity!,
-      }));
+    return source.flatMap((r): NotifyRoom[] => {
+      if (!r.temperatureEntity || !r.humidityEntity) return [];
+      return [
+        {
+          name:
+            r.name ||
+            (this.hass!.states[r.temperatureEntity]?.attributes.friendly_name as string | undefined) ||
+            r.temperatureEntity,
+          temperatureEntity: r.temperatureEntity,
+          humidityEntity: r.humidityEntity,
+        },
+      ];
+    });
   }
 
   // Mirrors _moldRisk() in the card: humidity strictly above the humidity
@@ -220,11 +227,60 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     }
   }
 
+  // Free text as well as the four common states, so exotic states stay reachable.
+  private _stateSelector() {
+    return {
+      select: {
+        multiple: true,
+        custom_value: true,
+        options: [
+          { value: "on", label: this._t("editor_climate_overview_state_on") },
+          { value: "off", label: this._t("editor_climate_overview_state_off") },
+          { value: "unavailable", label: this._t("editor_climate_overview_state_unavailable") },
+          { value: "unknown", label: this._t("editor_climate_overview_state_unknown") },
+        ],
+      },
+    };
+  }
+
+  private _actionSelector() {
+    return {
+      select: {
+        mode: "dropdown" as const,
+        options: [
+          { value: "popup", label: this._t("editor_climate_overview_action_popup") },
+          { value: "more-info", label: this._t("editor_climate_overview_action_more_info") },
+          { value: "none", label: this._t("editor_climate_overview_action_none") },
+        ],
+      },
+    };
+  }
+
+  private _modeSelector() {
+    return {
+      select: {
+        mode: "dropdown" as const,
+        options: [
+          { value: "temperature", label: this._t("editor_climate_overview_mode_temperature") },
+          { value: "thermostat", label: this._t("editor_climate_overview_mode_thermostat") },
+          { value: "thermostat_only", label: this._t("editor_climate_overview_mode_thermostat_only") },
+        ],
+      },
+    };
+  }
+
   private _roomsMetaSchema(): SchemaEntry[] {
     return [
       { name: "auto_discover", selector: { boolean: {} } },
+      { name: "mode", selector: this._modeSelector() },
       { name: "include_area", selector: { area: { multiple: true } } },
+      { name: "exclude_area", selector: { area: { multiple: true } } },
+      { name: "include_labels", selector: { label: { multiple: true } } },
+      { name: "exclude_labels", selector: { label: { multiple: true } } },
+      { name: "include_entities", selector: { entity: { domain: "sensor", multiple: true } } },
       { name: "exclude_entities", selector: { entity: { domain: "sensor", multiple: true } } },
+      { name: "include_state", selector: this._stateSelector() },
+      { name: "exclude_state", selector: this._stateSelector() },
     ];
   }
 
@@ -242,6 +298,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     return [
       { name: "name", selector: { text: {} } },
       { name: "icon", selector: { icon: {} } },
+      { name: "show_header", selector: { boolean: {} } },
       {
         name: "sort",
         selector: {
@@ -274,6 +331,36 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       { name: "show_outlier_chip", selector: { boolean: {} } },
       { name: "show_trend", selector: { boolean: {} } },
       { name: "show_mold_warning", selector: { boolean: {} } },
+    ];
+  }
+
+  private _actionSchema(): SchemaEntry[] {
+    return [
+      { name: "tap_action", selector: this._actionSelector() },
+      { name: "hold_action", selector: this._actionSelector() },
+      { name: "double_tap_action", selector: this._actionSelector() },
+    ];
+  }
+
+  private _popupModeSelector() {
+    return {
+      select: {
+        mode: "dropdown" as const,
+        options: [
+          { value: "default-grid", label: this._t("editor_climate_overview_popup_mode_default_grid") },
+          { value: "default-detail", label: this._t("editor_climate_overview_popup_mode_default_detail") },
+          { value: "custom", label: this._t("editor_climate_overview_popup_mode_custom") },
+        ],
+      },
+    };
+  }
+
+  private _popupSchema(): SchemaEntry[] {
+    return [
+      { name: "title", selector: { text: {} } },
+      { name: "inherit_filters", selector: { boolean: {} } },
+      { name: "exclude_labels", selector: { label: { multiple: true } } },
+      { name: "exclude_entities", selector: { entity: { domain: "sensor", multiple: true } } },
     ];
   }
 
@@ -340,15 +427,28 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
   private _computeLabel = (schema: SchemaEntry): string => {
     const labelMap: Record<string, TranslationKey> = {
       auto_discover: "editor_climate_overview_auto_discover",
+      mode: "editor_climate_overview_mode",
       include_area: "editor_climate_overview_include_area",
+      exclude_area: "editor_climate_overview_exclude_area",
+      include_labels: "editor_climate_overview_include_labels",
+      exclude_labels: "editor_climate_overview_exclude_labels",
+      include_entities: "editor_climate_overview_include_entities",
       exclude_entities: "editor_climate_overview_exclude_entities",
+      include_state: "editor_climate_overview_include_state",
+      exclude_state: "editor_climate_overview_exclude_state",
       name: "editor_name",
       icon: "editor_icon",
+      show_header: "editor_show_header",
       temperature_entity: "editor_climate_overview_room_temp_entity",
       humidity_entity: "editor_climate_overview_room_humidity_entity",
       climate_entity: "editor_climate_room_climate",
       tile_tap_action: "editor_climate_tile_tap",
       max_visible: "editor_climate_max_visible",
+      tap_action: "editor_climate_overview_tap_action",
+      hold_action: "editor_climate_overview_hold_action",
+      double_tap_action: "editor_climate_overview_double_tap_action",
+      title: "editor_climate_overview_popup_title",
+      inherit_filters: "editor_climate_overview_popup_inherit",
       sort: "editor_climate_overview_sort",
       show_scale: "editor_climate_overview_show_scale",
       show_scale_labels: "editor_climate_overview_show_scale_labels",
@@ -380,6 +480,43 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
   private _valueChanged(ev: CustomEvent): void {
     if (!this._config) return;
     this._config = { ...this._config, ...ev.detail.value };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  // The form hands back bare action-kind strings; the config stores HA's
+  // object form so navigate/url stay expressible in YAML.
+  private _actionsChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    const value = ev.detail.value as Record<string, string>;
+    const patch: Partial<Record<(typeof ACTION_KEYS)[number], HaActionConfig>> = {};
+    for (const key of ACTION_KEYS) {
+      const action = value[key];
+      if (action) patch[key] = { action } as HaActionConfig;
+    }
+    this._config = { ...this._config, ...patch };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _popupCardChanged(value: Record<string, unknown> | undefined): void {
+    if (!this._config) return;
+    this._config = { ...this._config, popup: { ...(this._config.popup ?? {}), card: value } };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  // Kept separate from _popupChanged: that ha-form's schema names its field
+  // "mode" too (the auto-discovery mode, editor_climate_overview_mode), and
+  // computeLabel is one shared dictionary keyed by schema name — reusing
+  // "mode" here would show the wrong label on one of the two fields.
+  private _popupModeChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    const mode = (ev.detail.value as { mode: ClimateOverviewPopupMode }).mode;
+    this._config = { ...this._config, popup: { ...(this._config.popup ?? {}), mode } };
+    fireEvent(this, "config-changed", { config: this._config });
+  }
+
+  private _popupChanged(ev: CustomEvent): void {
+    if (!this._config) return;
+    this._config = { ...this._config, popup: { ...(this._config.popup ?? {}), ...ev.detail.value } };
     fireEvent(this, "config-changed", { config: this._config });
   }
 
@@ -446,6 +583,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       icon: value.icon || undefined,
       temperature_entity: value.temperature_entity ?? "",
       humidity_entity: value.humidity_entity || undefined,
+      climate_entity: value.climate_entity || undefined,
       color: rooms[index]?.color,
     };
     this._config = { ...this._config, rooms };
@@ -491,7 +629,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
     const showCorners = ev.detail.value.use_corners as boolean;
     this._appearance = { ...this._appearance, showCorners };
     if (!showCorners) {
-      const { corners, ...rest } = this._config;
+      const { corners: _corners, ...rest } = this._config;
       this._config = rest;
       fireEvent(this, "config-changed", { config: this._config });
     }
@@ -522,14 +660,22 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
 
     const roomsMetaData = {
       auto_discover: this._config.auto_discover ?? true,
+      mode: this._config.mode ?? "temperature",
       include_area: this._config.include_area ?? [],
+      exclude_area: this._config.exclude_area ?? [],
+      include_labels: this._config.include_labels ?? [],
+      exclude_labels: this._config.exclude_labels ?? [],
+      include_entities: this._config.include_entities ?? [],
       exclude_entities: this._config.exclude_entities ?? [],
+      include_state: this._config.include_state ?? [],
+      exclude_state: this._config.exclude_state ?? [],
     };
     const rooms = this._config.rooms ?? [];
 
     const displayData = {
       name: this._config.name,
       icon: this._config.icon,
+      show_header: this._config.show_header ?? true,
       sort: this._config.sort ?? "area",
       tile_tap_action: this._config.tile_tap_action ?? "history",
       max_visible: this._config.max_visible ?? 0,
@@ -538,6 +684,21 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
       show_outlier_chip: this._config.show_outlier_chip ?? true,
       show_trend: this._config.show_trend ?? false,
       show_mold_warning: this._config.show_mold_warning ?? false,
+    };
+
+    const actionsData = {
+      tap_action: this._config.tap_action?.action ?? "more-info",
+      hold_action: this._config.hold_action?.action ?? "popup",
+      double_tap_action: this._config.double_tap_action?.action ?? "none",
+    };
+
+    const popup = this._config.popup ?? {};
+    const popupMode: ClimateOverviewPopupMode = popup.mode ?? "default-grid";
+    const popupData = {
+      title: popup.title ?? "",
+      inherit_filters: popup.inherit_filters ?? true,
+      exclude_labels: popup.exclude_labels ?? [],
+      exclude_entities: popup.exclude_entities ?? [],
     };
 
     const t = this._config.temp_thresholds ?? {};
@@ -560,7 +721,25 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
 
     return html`
       <div class="editor">
-        <ha-expansion-panel outlined .header=${this._t("editor_entities")} expanded>
+        <ha-expansion-panel outlined .header=${this._t("editor_content")} expanded>
+          <ha-icon slot="leading-icon" icon="mdi:text-short"></ha-icon>
+          <div class="panel-content">
+            <ha-form
+              .hass=${this.hass}
+              .data=${displayData}
+              .schema=${this._displaySchema()}
+              .computeLabel=${this._computeLabel}
+              @value-changed=${this._valueChanged}
+            ></ha-form>
+            ${listRow(
+              this._t("editor_climate_overview_name_strip"),
+              this._config.name_strip ?? DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
+              (v) => this._nameStripChanged(v),
+            )}
+          </div>
+        </ha-expansion-panel>
+
+        <ha-expansion-panel outlined .header=${this._t("editor_entities")}>
           <ha-icon slot="leading-icon" icon="mdi:home-search-outline"></ha-icon>
           <div class="panel-content">
             <ha-form
@@ -583,6 +762,7 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
                         icon: r.icon ?? "",
                         temperature_entity: r.temperature_entity,
                         humidity_entity: r.humidity_entity ?? "",
+                        climate_entity: r.climate_entity ?? "",
                       }}
                       .schema=${this._roomSchema()}
                       .computeLabel=${this._computeLabel}
@@ -604,24 +784,61 @@ export class M3ClimateOverviewCardEditor extends LitElement implements LovelaceC
           </div>
         </ha-expansion-panel>
 
-        <ha-expansion-panel outlined .header=${this._t("editor_content")}>
-          <ha-icon slot="leading-icon" icon="mdi:text-short"></ha-icon>
+        <ha-expansion-panel outlined .header=${this._t("editor_behavior")}>
+          <ha-icon slot="leading-icon" icon="mdi:gesture-tap"></ha-icon>
           <div class="panel-content">
             <ha-form
               .hass=${this.hass}
-              .data=${displayData}
-              .schema=${this._displaySchema()}
+              .data=${actionsData}
+              .schema=${this._actionSchema()}
               .computeLabel=${this._computeLabel}
-              .computeHelper=${this._computeHelper}
-              @value-changed=${this._valueChanged}
+              @value-changed=${this._actionsChanged}
             ></ha-form>
-            ${listRow(
-              this._t("editor_climate_overview_name_strip"),
-              this._config.name_strip ?? DEFAULT_CLIMATE_OVERVIEW_NAME_STRIP,
-              (v) => this._nameStripChanged(v),
-            )}
           </div>
         </ha-expansion-panel>
+
+        ${[actionsData.tap_action, actionsData.hold_action, actionsData.double_tap_action].includes("popup")
+          ? html`
+              <ha-expansion-panel outlined .header=${this._t("editor_climate_overview_popup_section")}>
+                <ha-icon slot="leading-icon" icon="mdi:open-in-new"></ha-icon>
+                <div class="panel-content">
+                  <ha-form
+                    .hass=${this.hass}
+                    .data=${{ mode: popupMode }}
+                    .schema=${[{ name: "mode", selector: this._popupModeSelector() }]}
+                    .computeLabel=${() => this._t("editor_climate_overview_popup_mode")}
+                    @value-changed=${this._popupModeChanged}
+                  ></ha-form>
+
+                  ${popupMode === "default-detail"
+                    ? html`<div class="hint">${this._t("editor_climate_overview_popup_mode_default_detail_hint")}</div>`
+                    : nothing}
+
+                  ${popupMode === "default-grid"
+                    ? html`
+                        <ha-form
+                          .hass=${this.hass}
+                          .data=${popupData}
+                          .schema=${this._popupSchema()}
+                          .computeLabel=${this._computeLabel}
+                          @value-changed=${this._popupChanged}
+                        ></ha-form>
+                      `
+                    : nothing}
+
+                  ${popupMode === "custom"
+                    ? renderDetailCardField({
+                        hass: this.hass,
+                        value: popup.card,
+                        label: this._t("editor_climate_overview_popup_card"),
+                        hint: this._t("editor_climate_overview_popup_card_hint"),
+                        onChange: (v) => this._popupCardChanged(v),
+                      })
+                    : nothing}
+                </div>
+              </ha-expansion-panel>
+            `
+          : nothing}
 
         <ha-expansion-panel outlined .header=${this._t("editor_battery_thresholds")}>
           <ha-icon slot="leading-icon" icon="mdi:thermometer-lines"></ha-icon>
