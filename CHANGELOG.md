@@ -85,7 +85,34 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   temperature** section, with the style and preset fields below it; they are
   hidden while it is off, since they have nothing left to describe.
 
+- **Per-person popups on the presence card**, via `person_popups`. `tap_action`
+  is card-level — one setting for the whole grid — so it could send everybody
+  to the same place but never each person to their own. `person_popups` maps an
+  `entity_id` to a popup holding any Lovelace card, with an optional `title` and
+  a `size` of `normal`, `wide` or `fullscreen`.
+
+  A person listed there opens their popup on tap, so the common case needs no
+  `tap_action` at all; requiring one alongside the popup would be a second thing
+  to remember that could only ever be set one way. Everyone else keeps the
+  more-info a tap has always opened, so adding a popup for one person changes
+  nothing for the others. An explicit `tap_action` still wins, which is how the
+  popup goes on the long press instead (`hold_action: {action: popup}`).
+
+  `[[entity_id]]` and `[[name]]` in the content are substituted with the tapped
+  person's, the same placeholders the other cards' popups use. An `action: popup`
+  on someone with no popup configured falls back to their more-info rather than
+  opening an empty dialog.
+
+  The card moves from `handleAction` to `runHaAction` to get the `popup` kind;
+  the branches the two share behave identically, so no other action changes.
+
 ### Changed
+
+- **The shared popup chrome takes an optional title and size.** It was a bare
+  close-button strip at one fixed width, which is all the popups that existed
+  needed. With a title it becomes a real header row, and `wide`/`fullscreen`
+  widen it. Both are opt-in: a caller that passes neither renders exactly as
+  before.
 
 - **The presence card's `hold_action` now runs through the shared action
   handler**, like every other card's. It used to implement `navigate` and `url`
@@ -165,7 +192,36 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   Felder darunter; sie verschwinden, solange er aus ist, weil sie dann nichts
   mehr beschreiben.
 
+- **Eigene Popups pro Person auf der Anwesenheitskarte**, über `person_popups`.
+  Die `tap_action` gilt für die ganze Karte — eine Einstellung für das gesamte
+  Raster — konnte also alle an denselben Ort schicken, aber nie jede Person an
+  ihren eigenen. `person_popups` ordnet einer `entity_id` ein Popup mit einer
+  beliebigen Lovelace-Karte zu, dazu optional `title` und ein `size` von
+  `normal`, `wide` oder `fullscreen`.
+
+  Wer dort eingetragen ist, öffnet beim Tap sein Popup; der Normalfall braucht
+  also gar keine `tap_action`. Eine zusätzlich zu fordern wäre eine zweite Sache
+  zum Merken, die ohnehin nur einen sinnvollen Wert hätte. Alle anderen behalten
+  die Detailansicht, die ein Tap immer geöffnet hat — ein Popup für eine Person
+  ändert für die übrigen nichts. Eine ausdrückliche `tap_action` gewinnt
+  weiterhin; so wandert das Popup auf den langen Druck
+  (`hold_action: {action: popup}`).
+
+  `[[entity_id]]` und `[[name]]` im Inhalt werden durch die angetippte Person
+  ersetzt, dieselben Platzhalter wie bei den Popups der anderen Karten. Ein
+  `action: popup` bei jemandem ohne konfiguriertes Popup fällt auf dessen
+  Detailansicht zurück, statt einen leeren Dialog zu öffnen.
+
+  Die Karte wechselt dafür von `handleAction` zu `runHaAction`; die
+  gemeinsamen Zweige verhalten sich identisch, keine andere Aktion ändert sich.
+
 ### Geändert
+
+- **Die gemeinsame Popup-Hülle nimmt optional Titel und Größe.** Bisher war sie
+  ein nackter Streifen mit Schließen-Knopf in einer festen Breite, mehr
+  brauchten die vorhandenen Popups nicht. Mit Titel wird daraus eine echte
+  Kopfzeile, `wide`/`fullscreen` machen sie breiter. Beides ist optional: Wer
+  nichts davon übergibt, bekommt exakt die bisherige Darstellung.
 
 - **Die `hold_action` der Anwesenheitskarte läuft nun über den gemeinsamen
   Aktions-Handler**, wie bei jeder anderen Karte. Bisher setzte sie `navigate`
