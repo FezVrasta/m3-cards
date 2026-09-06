@@ -625,6 +625,11 @@ export interface M3CostCardConfig extends PricingConfig, NotifyConfigBase {
 }
 
 export type LightWaveStyle = "wavy" | "flat";
+/**
+ * The same two shapes, under the name the cards that are not the light card
+ * use — the appliance card's progress bar and sliders draw the same wave.
+ */
+export type WaveStyle = LightWaveStyle;
 export type LightColorTempStyle = "presets" | "slider";
 
 export interface LightColorTempPresets {
@@ -2400,3 +2405,133 @@ export interface M3NavCardConfig {
   card_version?: string;
 }
 
+export interface ApplianceProgressConfig {
+  /** 0-100. Without it the bar is indeterminate, or absent if nothing is running. */
+  percentage_entity?: string;
+  /**
+   * Minutes left, seconds left, a "1:24:00" duration, or an absolute completion
+   * timestamp — all four shapes are read, because integrations disagree.
+   */
+  remaining_entity?: string;
+  label?: string;
+  color?: string;
+}
+
+/** A `number` / `input_number` row, drawn as a labelled slider. */
+export interface ApplianceSliderConfig {
+  entity: string;
+  label?: string;
+  icon?: string;
+  /** Overrides the entity's `unit_of_measurement`. */
+  unit?: string;
+  /** Each overrides the entity's own attribute; the entity is the default. */
+  min?: number;
+  max?: number;
+  step?: number;
+  color?: string;
+}
+
+/** A `select` / `input_select` row, drawn as a row of pills. */
+export interface ApplianceSelectConfig {
+  entity: string;
+  label?: string;
+  /** Show only these of the entity's options, in this order. */
+  options?: string[];
+  /** Per-option icon, keyed by the raw option string. */
+  icons?: Record<string, string>;
+  /** Per-option label, keyed by the raw option string. */
+  names?: Record<string, string>;
+  color?: string;
+  style?: "icon_label" | "label" | "dropdown";
+}
+
+/** An action button. Without a `tap_action` the entity's domain decides. */
+export interface ApplianceButtonConfig {
+  entity?: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+  tap_action?: HaActionConfig;
+  /**
+   * The card's own popup, opened by an `action: popup` — and by a plain tap,
+   * since a card that has one configured defaults to opening it rather than
+   * more-info.
+   */
+  popup?: AppliancePopupConfig;
+}
+
+/** A small status pill. Read-only unless it is given a `tap_action`. */
+export interface ApplianceChipConfig {
+  entity: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+  /** Fixed text, instead of the name and the state. */
+  label?: string;
+  /** Defaults to true, so a chip says what the entity actually reads. */
+  show_state?: boolean;
+  /** Same rule shape as the card's own `states`, for this chip's text/colour/icon. */
+  states?: StatusRule[];
+  tap_action?: HaActionConfig;
+}
+
+/** The blocks the card can draw, in the order they should appear. */
+export type ApplianceBlock = "progress" | "sliders" | "selects" | "buttons" | "chips";
+
+export interface AppliancePopupConfig {
+  /** Shown in the popup's top bar. Falls back to the card's name. */
+  title?: string;
+  size?: PopupSize;
+  /**
+   * The card to show. `[[entity_id]]` and `[[name]]` placeholders in it resolve
+   * to this card's — see shared/card-template.ts.
+   */
+  content: Record<string, unknown>;
+}
+
+export interface M3ApplianceCardConfig {
+  type: string;
+  /**
+   * The entity that says what the appliance is doing. Usually a `sensor`
+   * holding an operation state, but anything with a state works — a `switch`,
+   * a `binary_sensor`, a `vacuum`.
+   */
+  entity: string;
+  name?: string;
+  icon?: string;
+  /** Show this attribute instead of the state. */
+  attribute?: string;
+  /** First match wins; a rule with no condition is the catch-all. */
+  states?: StatusRule[];
+
+  progress?: ApplianceProgressConfig;
+  sliders?: ApplianceSliderConfig[];
+  selects?: ApplianceSelectConfig[];
+  buttons?: ApplianceButtonConfig[];
+  chips?: ApplianceChipConfig[];
+
+  /**
+   * Which blocks to draw and in what order. Leaving a block out hides it, so
+   * this is both the ordering and the visibility control — one mechanism rather
+   * than an array plus a set of show_* flags that can disagree with it.
+   */
+  layout?: ApplianceBlock[];
+  /**
+   * Shape of the progress bar and the sliders. Defaults to `wavy`, matching
+   * `m3-progress-card` — this card's progress block is what replaces it, and
+   * the humidifier slider this card's slider is modelled on is wavy too.
+   */
+  wave_style?: WaveStyle;
+
+  tap_action?: HaActionConfig;
+  accent_color?: string;
+  accent_opacity?: number;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background?: string;
+  glass_background?: boolean;
+  animation?: "auto" | "on" | "off";
+  radius?: number;
+  corners?: CornerRadiusConfig;
+  card_version?: string;
+}

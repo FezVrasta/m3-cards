@@ -11,6 +11,7 @@ export * from "./m3-power-summary-card";
 export * from "./m3-top-consumers-card";
 export * from "./m3-cost-card";
 export * from "./m3-light-card";
+export * from "./m3-appliance-card";
 export * from "./m3-battery-card";
 export * from "./m3-weather-card";
 export * from "./m3-presence-card";

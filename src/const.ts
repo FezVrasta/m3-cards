@@ -1996,3 +1996,73 @@ export const NAV_DRAG_THROTTLE_MS = 16;
 // ---- m3-group-card ----------------------------------------------------------
 export const DEFAULT_GROUP_RADIUS = RADIUS.card;
 export const DEFAULT_GROUP_GAP = 8;
+
+// ---- m3-appliance-card ----------------------------------------------------
+// Deliberately the humidifier card's numbers rather than a new set: the two
+// cards draw the same vocabulary — a squircle header, labelled blocks, pill
+// rows and chips — and a second scale would show up as a seam wherever the two
+// sit side by side on a dashboard.
+
+export const DEFAULT_APPLIANCE_RADIUS = RADIUS.card;
+export const DEFAULT_APPLIANCE_ICON = "mdi:washing-machine";
+export const DEFAULT_APPLIANCE_ACCENT = PALETTE.home;
+export const APPLIANCE_ICON_TINT = HUMIDIFIER_ICON_TINT;
+export const APPLIANCE_LABEL_SIZE = HUMIDIFIER_LABEL_SIZE;
+export const APPLIANCE_VALUE_SIZE = 22;
+export const APPLIANCE_CAPTION_SIZE = HUMIDIFIER_CAPTION_SIZE;
+
+/** Progress bar. Thinner than the humidifier's slider — it is read, not dragged. */
+export const APPLIANCE_BAR_HEIGHT = 10;
+export const APPLIANCE_BAR_RADIUS = 5;
+/** How much of the track the indeterminate segment covers as it sweeps. */
+export const APPLIANCE_INDETERMINATE_FRACTION = 0.35;
+export const APPLIANCE_INDETERMINATE_MS = 1800;
+
+/** Slider rows: the humidifier's handle on a plain track. */
+export const APPLIANCE_SLIDER_HEIGHT = HUMIDIFIER_SLIDER_HEIGHT;
+export const APPLIANCE_SLIDER_TRACK = HUMIDIFIER_WAVE_STROKE;
+export const APPLIANCE_HANDLE_WIDTH = HUMIDIFIER_HANDLE_WIDTH;
+export const APPLIANCE_HANDLE_HEIGHT = HUMIDIFIER_HANDLE_HEIGHT;
+export const APPLIANCE_HANDLE_RADIUS = HUMIDIFIER_HANDLE_RADIUS;
+export const APPLIANCE_SLIDER_THROTTLE_MS = HUMIDIFIER_THROTTLE_MS;
+export const APPLIANCE_DRAG_SETTLE_MS = HUMIDIFIER_DRAG_SETTLE_MS;
+
+/* Wave geometry, derived from the humidifier's like the rest of this scale
+   rather than being a second set of numbers. The phase speed comes from the
+   progress card so a wavy appliance bar and a wavy progress bar next to each
+   other travel at the same rate. */
+export const APPLIANCE_WAVE_AMPLITUDE = HUMIDIFIER_WAVE_AMPLITUDE;
+export const APPLIANCE_WAVE_WAVELENGTH = HUMIDIFIER_WAVE_WAVELENGTH;
+export const APPLIANCE_WAVE_GAP = HUMIDIFIER_WAVE_GAP;
+export const APPLIANCE_WAVE_AMPLITUDE_LERP = HUMIDIFIER_WAVE_AMPLITUDE_LERP;
+export const APPLIANCE_WAVE_PHASE_SPEED = WAVE_PHASE_SPEED;
+export const APPLIANCE_WAVE_DOT_RADIUS = WAVE_DOT_RADIUS;
+/* The bar is read rather than dragged, so its wave sits in a taller box than
+   its flat self needs — the stroke has to fit the amplitude without clipping. */
+export const APPLIANCE_BAR_SVG_HEIGHT = 20;
+
+/** Segmented option pills. */
+export const APPLIANCE_OPTION_HEIGHT = HUMIDIFIER_MODE_HEIGHT;
+export const APPLIANCE_OPTION_RADIUS = HUMIDIFIER_MODE_RADIUS;
+export const APPLIANCE_OPTION_RADIUS_ACTIVE = HUMIDIFIER_MODE_RADIUS_ACTIVE;
+export const APPLIANCE_OPTION_TINT = HUMIDIFIER_MODE_TINT;
+/** Above this many options the row becomes a dropdown on its own. */
+export const APPLIANCE_OPTION_DROPDOWN_FROM = 6;
+
+/** Action buttons: the fan row's proportions, which read as "press me". */
+export const APPLIANCE_BUTTON_HEIGHT = HUMIDIFIER_FAN_HEIGHT;
+export const APPLIANCE_BUTTON_RADIUS = HUMIDIFIER_FAN_RADIUS;
+export const APPLIANCE_BUTTON_RADIUS_ACTIVE = HUMIDIFIER_FAN_RADIUS_ACTIVE;
+export const APPLIANCE_BUTTON_TINT = HUMIDIFIER_FAN_TINT;
+
+export const APPLIANCE_CHIP_HEIGHT = HUMIDIFIER_CHIP_HEIGHT;
+export const APPLIANCE_CHIP_RADIUS = HUMIDIFIER_CHIP_RADIUS;
+export const APPLIANCE_CHIP_RADIUS_ACTIVE = HUMIDIFIER_CHIP_RADIUS_ACTIVE;
+export const APPLIANCE_CHIP_GAP = HUMIDIFIER_CHIP_GAP;
+export const APPLIANCE_CHIP_TINT = HUMIDIFIER_CHIP_TINT;
+
+/** Below this the option pills drop their labels and the button row wraps. */
+export const APPLIANCE_NARROW_PX = HUMIDIFIER_NARROW_PX;
+
+/** Colours handed to option pills and buttons that configure none. */
+export const APPLIANCE_PALETTE = HUMIDIFIER_MODE_PALETTE;
