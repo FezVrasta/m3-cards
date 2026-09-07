@@ -17,7 +17,7 @@ import {
   THEME_COLOR_TOKENS,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { glassBackground } from "./shared/glass-card";
+import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { formatNumber } from "./shared/formatting";
 import { renderMissingEntity } from "./shared/glass-card";
@@ -269,9 +269,7 @@ export class M3ClimateCardMini extends TemplatedCard(LitElement) implements Love
         class=${dimUnavailable ? "unavailable" : ""}
       >
         <div
-          class="card-inner ${this._config.glass_background === false
-            ? "solid"
-            : "glass"} ${animClass}"
+          class="card-inner ${glassCardClass(this._config.glass_background)} ${animClass}"
           style=${`border-radius: ${radius};`}
         >
           <div class="header">
@@ -364,6 +362,8 @@ export class M3ClimateCardMini extends TemplatedCard(LitElement) implements Love
   }
 
   static styles = css`
+    ${glassCardStyles}
+
     /* See the note in m3-button-card: ha-card is a size container, so a
        percentage height that does not resolve leaves it at 0. This card had no
        min-height at all, so in a masonry column it collapsed entirely — host
@@ -377,61 +377,27 @@ export class M3ClimateCardMini extends TemplatedCard(LitElement) implements Love
        for exactly those sizes. The three sizes below 112px that this does
        raise were already clipping their own content before it. */
     :host {
-      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
-      -webkit-tap-highlight-color: transparent;
       display: grid;
-      height: 100%;
       min-height: 112px;
     }
 
     ha-card {
       border-radius: 28px;
-      overflow: hidden;
-      box-shadow: none;
-      background: transparent;
       container-type: size;
     }
 
+    /* .card-inner's glass/solid background and border come from
+       glassCardStyles. Only the layout this card differs on is set here. */
     .card-inner {
-      box-sizing: border-box;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
       gap: 10px;
-      padding: 12px 10px;
+      padding: var(--m3-group-padding, 12px 10px);
       border-radius: 28px;
-      border: 1px solid rgba(100, 100, 100, 0.25);
-    }
-
-    .card-inner.glass {
-      /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: ${glassBackground};
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      /* Forces its own compositor layer. Without this, Chromium sometimes
-         renders a visible seam where two adjacent backdrop-filter elements'
-         GPU tiles meet (flickers/disappears on scroll-triggered repaint) —
-         a known browser tiling bug, not a layout issue on our end.
-         glassCardStyles has carried this since it was found; these three
-         cards hand-roll their own copy of the rule and so never got it. */
-      transform: translateZ(0);
-      isolation: isolate;
-    }
-
-    .card-inner.solid {
-      background: var(--ha-card-background, var(--card-background-color));
     }
 
     ha-card.unavailable .power-btn,
     ha-card.unavailable .stepper-row {
       opacity: 0.4;
       pointer-events: none;
-    }
-
-    .missing-entity {
-      padding: 16px;
-      color: var(--error-color, red);
-      font-size: 14px;
     }
 
     .header {

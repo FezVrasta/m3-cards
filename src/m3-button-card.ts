@@ -23,7 +23,7 @@ import {
   resolveCornerRadius,
 } from "./const";
 import { localize, type TranslationKey } from "./localize";
-import { glassBackground } from "./shared/glass-card";
+import { glassCardStyles, glassCardClass } from "./shared/glass-card";
 import { hassChangeMatters } from "./shared/should-update";
 import { shouldAnimate, STANDARD_EASING } from "./shared/animation";
 import { migrateAnimationsField } from "./shared/config-migration";
@@ -671,9 +671,7 @@ export class M3ButtonCard extends TemplatedCard(LitElement) implements LovelaceC
         style=${`--m3-btn-color: ${color}; --m3-btn-inactive-color: ${inactiveColor}; --m3-btn-slider-fill-bg: ${sliderFillBg}; --m3-btn-icon-bg-inactive: ${iconBgInactive}; --m3-btn-icon-bg-active: ${iconBgActive}; --m3-btn-icon-bg-active-solid: ${iconBgActiveSolid}; --m3-btn-icon-ink-active: ${iconInkActive}; --m3-btn-icon-ink-inactive: ${iconInkInactive}; --m3-btn-color-fg: ${foregroundColor(this, color)}; --m3-icon-box: ${iconBoxCss}; --m3-icon-glyph: ${iconGlyphCss}; --m3-icon-offset: ${iconOffsetCss}; border-radius: ${radius};`}
       >
         <div
-          class="card-inner ${this._config.glass_background === false
-            ? "solid"
-            : "glass"} ${sliderInfo ? "sliderable" : ""} ${shouldAnimate(this._config.animation) ? "" : "no-animations"}"
+          class="card-inner ${glassCardClass(this._config.glass_background)} ${sliderInfo ? "sliderable" : ""} ${shouldAnimate(this._config.animation) ? "" : "no-animations"}"
           style=${`border-radius: ${radius};`}
           role="button"
           tabindex="0"
@@ -753,6 +751,8 @@ export class M3ButtonCard extends TemplatedCard(LitElement) implements LovelaceC
   }
 
   static styles = css`
+    ${glassCardStyles}
+
     /* Grid rather than block, and the card stretches into the grid area
        instead of taking height: 100%.
 
@@ -767,32 +767,25 @@ export class M3ButtonCard extends TemplatedCard(LitElement) implements LovelaceC
        card fills it and cqh resolves. min-height below is what gives the host
        that height when nothing else does. */
     :host {
-      /* No grey tap rectangle over a rounded card — see glass-card.ts. */
-      -webkit-tap-highlight-color: transparent;
       display: grid;
-      height: 100%;
       min-height: 56px;
     }
 
     ha-card {
-      overflow: hidden;
-      box-shadow: none;
-      background: transparent;
       container-type: size;
       transition: border-radius ${unsafeCSS(BUTTON_SHAPE_MS)}ms ${unsafeCSS(STANDARD_EASING)};
     }
 
+    /* .card-inner's glass/solid background and border come from
+       glassCardStyles. Only the layout this card differs on is set here. */
     .card-inner {
       position: relative;
       overflow: hidden;
-      box-sizing: border-box;
-      height: 100%;
-      padding: min(12px, 9cqh) min(16px, 11cqh) min(12px, 9cqh)
-        var(--m3-icon-offset, min(16px, 11cqh));
-      border: 1px solid rgba(100, 100, 100, 0.25);
+      padding: var(
+        --m3-group-padding,
+        min(12px, 9cqh) min(16px, 11cqh) min(12px, 9cqh) var(--m3-icon-offset, min(16px, 11cqh))
+      );
       cursor: pointer;
-      display: flex;
-      flex-direction: column;
       justify-content: center;
       gap: 10px;
       transition:
@@ -846,33 +839,9 @@ export class M3ButtonCard extends TemplatedCard(LitElement) implements LovelaceC
       transition: none;
     }
 
-    .card-inner.glass {
-      /* Shared value — see glassBackground in shared/glass-card.ts. */
-      background: ${glassBackground};
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      /* Forces its own compositor layer. Without this, Chromium sometimes
-         renders a visible seam where two adjacent backdrop-filter elements'
-         GPU tiles meet (flickers/disappears on scroll-triggered repaint) —
-         a known browser tiling bug, not a layout issue on our end.
-         glassCardStyles has carried this since it was found; these three
-         cards hand-roll their own copy of the rule and so never got it. */
-      transform: translateZ(0);
-      isolation: isolate;
-    }
-
-    .card-inner.solid {
-      background: var(--ha-card-background, var(--card-background-color));
-    }
-
     ha-card.unavailable .card-inner {
       opacity: 0.4;
       pointer-events: none;
-    }
-
-    .missing-entity {
-      color: var(--error-color, red);
-      font-size: 14px;
     }
 
     .content {
