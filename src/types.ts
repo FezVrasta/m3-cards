@@ -2468,6 +2468,17 @@ export interface ApplianceChipConfig {
 /** The blocks the card can draw, in the order they should appear. */
 export type ApplianceBlock = "progress" | "sliders" | "selects" | "buttons" | "chips";
 
+export interface AppliancePopupConfig {
+  /** Shown in the popup's top bar. Falls back to the card's name. */
+  title?: string;
+  size?: PopupSize;
+  /**
+   * The card to show. `[[entity_id]]` and `[[name]]` placeholders in it resolve
+   * to this card's — see shared/card-template.ts.
+   */
+  content: Record<string, unknown>;
+}
+
 export interface M3ApplianceCardConfig {
   type: string;
   /**
@@ -2503,6 +2514,7 @@ export interface M3ApplianceCardConfig {
   wave_style?: WaveStyle;
 
   tap_action?: HaActionConfig;
+  popup?: AppliancePopupConfig;
   accent_color?: string;
   accent_opacity?: number;
   text_color?: string;

@@ -161,6 +161,18 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
     volume_1: Media
   ```
 
+- **The appliance card gets its own popup**, via `popup`. The card is a summary
+  — a state, a progress bar, a few buttons. The full set of controls (every
+  programme, every option, the history) does not belong on a dashboard tile, but
+  it does belong one tap away, and `popup` is that: a `title`, a `size` of
+  `normal`/`wide`/`fullscreen`, and any Lovelace card as `content`.
+
+  A card with a popup configured opens it on tap, so the common case needs no
+  `tap_action`; an explicit one still wins. `[[entity_id]]` and `[[name]]` in
+  the content resolve to that card's, so one popup body can be reused across
+  several appliances. An `action: popup` on a card with no `popup` falls back to
+  more-info rather than opening an empty dialog.
+
 - **Per-person popups on the presence card**, via `person_popups`. `tap_action`
   is card-level — one setting for the whole grid — so it could send everybody
   to the same place but never each person to their own. `person_popups` maps an
@@ -361,6 +373,20 @@ Versionierung folgt [SemVer](https://semver.org/lang/de/).
   mount_names:
     volume_1: Medien
   ```
+
+- **Die Geräte-Karte bekommt ein eigenes Popup**, über `popup`. Die Karte ist
+  eine Zusammenfassung — ein Zustand, ein Fortschrittsbalken, ein paar Knöpfe.
+  Der vollständige Satz an Bedienelementen (jedes Programm, jede Option, der
+  Verlauf) gehört nicht auf eine Dashboard-Kachel, aber sehr wohl einen Tap
+  daneben — genau das ist `popup`: ein `title`, ein `size` aus
+  `normal`/`wide`/`fullscreen` und eine beliebige Lovelace-Karte als `content`.
+
+  Eine Karte mit konfiguriertem Popup öffnet es beim Tap; der Normalfall braucht
+  also keine `tap_action`, eine ausdrückliche gewinnt weiterhin. `[[entity_id]]`
+  und `[[name]]` im Inhalt lösen sich auf die jeweilige Karte auf, sodass ein
+  Popup-Rumpf für mehrere Geräte wiederverwendet werden kann. Ein
+  `action: popup` ohne konfiguriertes `popup` fällt auf die Detailansicht
+  zurück, statt einen leeren Dialog zu öffnen.
 
 - **Eigene Popups pro Person auf der Anwesenheitskarte**, über `person_popups`.
   Die `tap_action` gilt für die ganze Karte — eine Einstellung für das gesamte

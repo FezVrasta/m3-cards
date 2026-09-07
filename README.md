@@ -3570,6 +3570,44 @@ Each chip carries its own colour, icon and optional `states` rules, and a chip
 whose entity is unavailable is left out rather than dimmed — a row of "—" says
 nothing and pushes the ones that do say something off the edge.
 
+### The popup
+
+The card is a summary: a state, a progress bar, a few buttons. The full set of
+controls — every programme, every option, the history — does not belong on a
+dashboard tile, but it does belong one tap away. `popup` is that.
+
+```yaml
+type: custom:m3-appliance-card
+entity: sensor.washer_state
+name: Washing machine
+popup:
+  title: Washing machine        # optional; the card's name is used otherwise
+  size: normal                  # normal (default) | wide | fullscreen
+  content:
+    type: vertical-stack
+    cards:
+      - type: custom:m3-appliance-card
+        entity: sensor.washer_state
+      - type: history-graph
+        entities: [sensor.washer_power]
+```
+
+A card with a popup configured opens it on tap, so the common case needs no
+`tap_action` at all. An explicit one still wins, which is how the popup goes on
+a different gesture, or how a card keeps its more-info:
+
+```yaml
+tap_action:
+  action: more-info
+hold_action:
+  action: popup
+```
+
+`[[entity_id]]` and `[[name]]` anywhere in `content` resolve to this card's, so
+one popup body can be reused across several appliances. An `action: popup` on a
+card with no `popup` configured falls back to more-info rather than opening an
+empty dialog.
+
 ### Options
 
 | Option | Default | What it does |
@@ -3586,7 +3624,8 @@ nothing and pushes the ones that do say something off the edge.
 | `buttons[]` | — | `entity`, `name`, `icon`, `color`, `tap_action` |
 | `chips[]` | — | `entity`, `name`, `icon`, `label`, `show_state`, `states`, `color`, `tap_action` |
 | `layout` | all five | Which blocks, in which order |
-| `tap_action` | `more-info` | What a tap on the header does |
+| `tap_action` | `more-info`, or `popup` when one is configured | What a tap on the header does. Adds a `popup` action kind |
+| `popup` | — | The card's own popup: `title`, `size` (`normal`/`wide`/`fullscreen`) and a `content` card |
 | `accent_color` | `#85b7eb` | Overridden by a matched rule's own `color` |
 | `text_color` / `secondary_text_color` / `card_background` | theme | The usual colour overrides |
 | `glass_background` | `true` | Frosted card surface |
