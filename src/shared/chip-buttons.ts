@@ -5,6 +5,7 @@ import { RADIUS } from "./tokens";
 import { resolveThemeColor, tintOn, foregroundOn } from "./color-config";
 import { runHaAction, navigateTo, type RunActionContext } from "./actions";
 import type { TapHoldGesture } from "./gestures";
+import { stopSwipe } from "./swipe";
 
 // Renders a horizontal row of tappable "chip button" chips — the M3 answer to
 // Bubble Card's sub-buttons feature (see .claude/docs/NOTES.md). Lives in
@@ -61,6 +62,12 @@ export function renderChipButtons(
     <div
       class="m3-chip-buttons ${layoutClass}"
       style=${`justify-content: ${config.justify ?? "start"};`}
+      @touchstart=${stopSwipe}
+      @touchmove=${stopSwipe}
+      @touchend=${stopSwipe}
+      @mousedown=${stopSwipe}
+      @mousemove=${stopSwipe}
+      @mouseup=${stopSwipe}
     >
       ${buttons.map((button, index) =>
         renderChipButton(host, hass, button, chipKey(button, index), state),
